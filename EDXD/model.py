@@ -17,7 +17,7 @@ from typing import Dict, List, Optional
 # paths (shared with other modules)
 # ---------------------------------------------------------------------------
 DATA_DIR   = Path.home() / "EDData" / "EDXD"
-CACHE_DIR  = DATA_DIR / "EDXDdata"
+CACHE_DIR  = DATA_DIR / "system-data"
 CACHE_DIR.mkdir(parents=True, exist_ok=True)        # ensure directory exists
 
 # ---------------------------------------------------------------------------
@@ -43,14 +43,18 @@ def latest_journal(folder: Path) -> Optional[Path]:
 # simple container
 # ---------------------------------------------------------------------------
 class Body:
-    __slots__ = ("name", "landable", "materials", "biosignals")
+    __slots__ = ("name", "landable", "materials",
+                 "biosignals", "geosignals")        # ← NEW
 
     def __init__(self, name: str, landable: bool,
-                 materials: Dict[str, float], biosignals: int = 0):
-        self.name       = name
-        self.landable   = landable
-        self.biosignals = biosignals          # ← NEW
-        self.materials  = materials
+                 materials: Dict[str, float],
+                 biosignals: int = 0,
+                 geosignals: int = 0):              # ← NEW
+        self.name        = name
+        self.landable    = landable
+        self.biosignals  = biosignals
+        self.geosignals  = geosignals               # ← NEW
+        self.materials   = materials
 
 # ---------------------------------------------------------------------------
 # thread-safe data model
@@ -202,12 +206,15 @@ class Controller(threading.Thread):
                 mats = {m["Name"]: m["Percent"] for m in evt.get("Materials", [])}
                 self.m.update_body(evt["BodyName"], evt.get("Landable", False), mats)
                 self.m.bodies[evt["BodyName"]].biosignals = evt.get("BioSignalCount", 0)
+                self.m.bodies[evt["BodyName"]].geosignals = evt.get("GeoSignalCount", 0)
+
 
             elif etype == "SAAMaterialsFound":
                 mats = {m["Name"]: m["Percent"] for m in evt.get("Materials", [])}
                 self.m.update_body(evt["BodyName"], True, mats)
                 self.m.set_target(evt["BodyName"])
-
+                self.m.bodies[evt["BodyName"]].geosignals = evt.get("GeoSignalCount", 0)
+                
             # --- in-game target changed -----------------------------------
             elif etype in ("FSDTarget", "Target", "SAATarget", "SupercruiseTarget"):
                 name = evt.get("Name") or evt.get("BodyName")
