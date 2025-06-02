@@ -1,0 +1,246 @@
+{
+  "Flyiedge JZ-B b32-1 2": {
+    "landable": false,
+    "materials": {}
+  },
+  "Flyiedge JZ-B b32-1 3": {
+    "landable": false,
+    "materials": {}
+  },
+  "Flyiedge JZ-B b32-1 3 a": {
+    "landable": true,
+    "materials": {
+      "sulphur": 27.562984,
+      "carbon": 23.177618,
+      "phosphorus": 14.838707,
+      "iron": 12.474669,
+      "nickel": 9.435317,
+      "manganese": 5.151911,
+      "germanium": 3.604048,
+      "arsenic": 1.611779,
+      "cadmium": 0.968715,
+      "niobium": 0.852577,
+      "polonium": 0.321685
+    }
+  },
+  "Flyiedge JZ-B b32-1 3 b": {
+    "landable": true,
+    "materials": {
+      "sulphur": 27.771381,
+      "carbon": 23.352856,
+      "phosphorus": 14.950898,
+      "iron": 12.42758,
+      "nickel": 9.3997,
+      "selenium": 4.346457,
+      "germanium": 3.599246,
+      "zirconium": 1.443098,
+      "cadmium": 0.965058,
+      "tellurium": 0.932212,
+      "molybdenum": 0.811514
+    }
+  },
+  "Flyiedge JZ-B b32-1 2 a": {
+    "landable": true,
+    "materials": {
+      "sulphur": 26.8493,
+      "carbon": 22.57748,
+      "phosphorus": 14.45449,
+      "iron": 12.114934,
+      "nickel": 9.163228,
+      "manganese": 5.003344,
+      "selenium": 4.202142,
+      "zinc": 3.292386,
+      "niobium": 0.827991,
+      "molybdenum": 0.791098,
+      "yttrium": 0.723611
+    }
+  },
+  "Flyiedge JZ-B b32-1 4": {
+    "landable": false,
+    "materials": {}
+  },
+  "Flyiedge JZ-B b32-1 4 a": {
+    "landable": true,
+    "materials": {
+      "sulphur": 27.208141,
+      "carbon": 22.879229,
+      "phosphorus": 14.647675,
+      "iron": 12.17553,
+      "nickel": 9.209061,
+      "chromium": 5.47574,
+      "zinc": 3.308854,
+      "vanadium": 2.989887,
+      "cadmium": 0.945485,
+      "tin": 0.724943,
+      "technetium": 0.43547
+    }
+  },
+  "Flyiedge JZ-B b32-1 4 b": {
+    "landable": true,
+    "materials": {
+      "sulphur": 26.416239,
+      "carbon": 22.213322,
+      "phosphorus": 14.22135,
+      "iron": 11.821159,
+      "nickel": 8.94103,
+      "chromium": 5.316368,
+      "manganese": 4.882018,
+      "selenium": 4.134365,
+      "niobium": 0.807913,
+      "ruthenium": 0.730032,
+      "mercury": 0.516211
+    }
+  },
+  "Flyiedge JZ-B b32-1 4 d": {
+    "landable": true,
+    "materials": {
+      "sulphur": 27.070751,
+      "carbon": 22.763699,
+      "phosphorus": 14.573709,
+      "iron": 12.114048,
+      "nickel": 9.162558,
+      "chromium": 5.44809,
+      "manganese": 5.002978,
+      "arsenic": 1.569022,
+      "tellurium": 0.908693,
+      "tin": 0.721282,
+      "tungsten": 0.665183
+    }
+  },
+  "Flyiedge JZ-B b32-1 4 e": {
+    "landable": true,
+    "materials": {
+      "sulphur": 28.690493,
+      "carbon": 24.125736,
+      "phosphorus": 15.445709,
+      "iron": 12.838877,
+      "nickel": 9.710787,
+      "zinc": 3.489126,
+      "arsenic": 1.662903,
+      "zirconium": 1.490858,
+      "tellurium": 0.963064,
+      "niobium": 0.877469,
+      "tungsten": 0.704983
+    }
+  },
+  "Flyiedge JZ-B b32-1 4 c": {
+    "landable": true,
+    "materials": {
+      "sulphur": 27.372534,
+      "carbon": 23.017466,
+      "phosphorus": 14.736177,
+      "iron": 12.249096,
+      "nickel": 9.264703,
+      "manganese": 5.058752,
+      "selenium": 4.284033,
+      "arsenic": 1.586514,
+      "cadmium": 0.951198,
+      "antimony": 0.750216,
+      "tin": 0.729323
+    }
+  },
+  "Flyiedge JZ-B b32-1 1": {
+    "landable": false,
+    "materials": {}
+  },
+  "Flyiedge JZ-B b32-1 1 d": {
+    "landable": true,
+    "materials": {
+      "sulphur": 27.174898,
+      "carbon": 22.851274,
+      "phosphorus": 14.629778,
+      "iron": 12.160663,
+      "nickel": 9.197816,
+      "manganese": 5.02223,
+      "germanium": 3.521941,
+      "zinc": 3.304813,
+      "antimony": 0.7448,
+      "tin": 0.724058,
+      "tungsten": 0.667743
+    }
+  },
+  "Flyiedge JZ-B b32-1 1 e": {
+    "landable": true,
+    "materials": {
+      "sulphur": 26.765173,
+      "carbon": 22.506739,
+      "phosphorus": 14.409201,
+      "iron": 11.977312,
+      "nickel": 9.059136,
+      "chromium": 5.386594,
+      "selenium": 4.188976,
+      "zinc": 3.254985,
+      "cadmium": 0.930093,
+      "molybdenum": 0.782112,
+      "ruthenium": 0.739675
+    }
+  },
+  "Flyiedge JZ-B b32-1 1 a": {
+    "landable": true,
+    "materials": {
+      "sulphur": 26.889355,
+      "carbon": 22.611162,
+      "phosphorus": 14.476053,
+      "iron": 12.032882,
+      "nickel": 9.101168,
+      "manganese": 4.969458,
+      "selenium": 4.208411,
+      "zinc": 3.270087,
+      "tellurium": 0.902605,
+      "niobium": 0.822383,
+      "tin": 0.71645
+    }
+  },
+  "Flyiedge JZ-B b32-1 1 c": {
+    "landable": true,
+    "materials": {
+      "sulphur": 26.646927,
+      "carbon": 22.407307,
+      "phosphorus": 14.345542,
+      "iron": 11.924397,
+      "nickel": 9.019114,
+      "chromium": 5.362798,
+      "manganese": 4.924654,
+      "vanadium": 2.928217,
+      "cadmium": 0.925983,
+      "molybdenum": 0.778656,
+      "ruthenium": 0.736408
+    }
+  },
+  "Flyiedge JZ-B b32-1 1 b": {
+    "landable": true,
+    "materials": {
+      "sulphur": 27.035931,
+      "carbon": 22.734417,
+      "phosphorus": 14.554964,
+      "iron": 12.098475,
+      "nickel": 9.15078,
+      "manganese": 4.996547,
+      "germanium": 3.50393,
+      "zinc": 3.287913,
+      "cadmium": 0.939501,
+      "tellurium": 0.907525,
+      "molybdenum": 0.790023
+    }
+  },
+  "Flyiedge JZ-B b32-1 A Belt Cluster 2": {
+    "landable": false,
+    "materials": {}
+  },
+  "Flyiedge JZ-B b32-1": {
+    "landable": false,
+    "materials": {}
+  },
+  "Flyiedge JZ-B b32-1 A Belt Cluster 1": {
+    "landable": false,
+    "materials": {}
+  },
+  "Flyiedge JZ-B b32-1 A Belt Cluster 3": {
+    "landable": false,
+    "materials": {}
+  },
+  "Flyiedge JZ-B b32-1 A Belt Cluster 4": {
+    "landable": false,
+    "materials": {}
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "Flyiedge JR-T d4-73 2": {
+    "landable": false,
+    "materials": {}
+  },
+  "Flyiedge JR-T d4-73 3": {
+    "landable": false,
+    "materials": {}
+  },
+  "Flyiedge JR-T d4-73 1": {
+    "landable": false,
+    "materials": {}
+  },
+  "Flyiedge JR-T d4-73 1 a": {
+    "landable": true,
+    "materials": {
+      "iron": 19.873146,
+      "sulphur": 17.801731,
+      "nickel": 15.031216,
+      "carbon": 14.969412,
+      "phosphorus": 9.583673,
+      "chromium": 8.937613,
+      "germanium": 5.246301,
+      "vanadium": 4.880153,
+      "niobium": 1.358224,
+      "ruthenium": 1.227293,
+      "tungsten": 1.091235
+    }
+  },
+  "Flyiedge JZ-B b32-1 A Belt Cluster 2": {
+    "landable": false,
+    "materials": {}
+  },
+  "Flyiedge JZ-B b32-1": {
+    "landable": false,
+    "materials": {}
+  },
+  "Flyiedge JZ-B b32-1 A Belt Cluster 1": {
+    "landable": false,
+    "materials": {}
+  },
+  "Flyiedge JZ-B b32-1 A Belt Cluster 3": {
+    "landable": false,
+    "materials": {}
+  },
+  "Flyiedge JZ-B b32-1 A Belt Cluster 4": {
+    "landable": false,
+    "materials": {}
+  },
+  "Flyiedge JR-T d4-73": {
+    "landable": false,
+    "materials": {}
+  }
+}

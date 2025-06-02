@@ -1,0 +1,16 @@
+# Python
+EDXD/__pycache__/
+*.py[cod]
+*.pyd
+*.so
+*.egg-info/
+# IDE / editor junk
+.vscode/
+.idea/
+# Virtual-envs
+venv/
+.env/
+# local data
+EDXD/Data/
+config.json
+
