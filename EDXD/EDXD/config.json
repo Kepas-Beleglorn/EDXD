@@ -1,0 +1,33 @@
+{
+  "journal_dir": "/home/kepas/EDData/EDGameData/Saved Games/Frontier Developments/Elite Dangerous",
+  "landable_only": false,
+  "mat_sel": {
+    "antimony": false,
+    "arsenic": false,
+    "boron": false,
+    "cadmium": true,
+    "carbon": false,
+    "chromium": false,
+    "germanium": false,
+    "iron": false,
+    "lead": false,
+    "manganese": false,
+    "mercury": false,
+    "molybdenum": false,
+    "nickel": false,
+    "niobium": true,
+    "phosphorus": false,
+    "polonium": false,
+    "rhenium": false,
+    "ruthenium": false,
+    "selenium": true,
+    "sulphur": false,
+    "technetium": false,
+    "tellurium": false,
+    "tin": false,
+    "tungsten": false,
+    "vanadium": true,
+    "yttrium": false,
+    "zinc": false
+  }
+}

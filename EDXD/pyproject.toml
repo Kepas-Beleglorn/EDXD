@@ -1,0 +1,16 @@
+[project]
+name = "edxd"
+version = "0.3.0"
+description = "Elite Dangerous eXploration Dashboard"
+authors = [{ name = "Kepas Beleglorn", email = "kepas.beleglorn+github@rinkefil.de" }]
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "watchdog>=3.0.0",
+]
+
+[project.scripts]
+edxd = "edxd.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["edxd"]
