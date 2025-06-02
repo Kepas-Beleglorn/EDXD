@@ -11,9 +11,7 @@ import math
 import tkinter as tk
 from tkinter import ttk
 from typing import Dict, List
-
-BG = "#121212"          # almost-black background (matches main viewer)
-FG = "#ff9a00"          # orange foreground
+from gui.theme_handler import apply_theme
 
 # ---------------------------------------------------------------------------
 # master material list – imported by MainWindow and others via gui.RAW_MATS
@@ -28,20 +26,6 @@ RAW_MATS: List[str] = sorted([
     "vanadium",  "yttrium",   "zinc", "zirconium",
 ])
 
-def init_filter_theme():
-    """Call once before creating any ttk widgets in the Filters window."""
-    style = ttk.Style()
-    style.theme_use("clam")
-
-    # Generic defaults for this toplevel
-    style.configure("Dark.TFrame", background=BG)
-    style.configure("Dark.TLabel", background=BG, foreground=FG)
-    style.configure("Dark.TButton", background=BG, foreground=FG,
-                    borderwidth=1, focusthickness=0)
-
-    # Tk checkbuttons (non-ttk) are styled via their own options
-    # inside ConfigPanel._build()
-
 # ---------------------------------------------------------------------------
 class ConfigPanel(tk.Toplevel):
     """
@@ -52,8 +36,8 @@ class ConfigPanel(tk.Toplevel):
 
     def __init__(self, master, prefs: Dict, on_apply):
         super().__init__(master)
-        init_filter_theme()
-        self.configure(background=BG)
+        apply_theme(self)
+
         self.title("Filters")
         self.resizable(False, False)
         self.grab_set()                     # modal
@@ -74,10 +58,7 @@ class ConfigPanel(tk.Toplevel):
         for idx, mat in enumerate(RAW_MATS):
             var = tk.BooleanVar(value=self._prefs["mat_sel"].get(mat, True))
             self.var_mat[mat] = var
-            cb = tk.Checkbutton(frame, text=mat.title(), variable=var,
-                                background=BG, foreground=FG,
-                                activebackground=BG, activeforeground=FG,
-                                selectcolor=BG, highlightthickness=0)
+            cb = ttk.Checkbutton(frame, text=mat.title(), variable=var)
             r, c = divmod(idx, COLS)
             cb.grid(row=r, column=c, sticky="w", padx=4, pady=2)
 

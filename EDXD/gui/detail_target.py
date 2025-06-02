@@ -11,6 +11,7 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 from typing import Optional, Dict
+from gui.theme_handler import apply_theme, apply_text_theme
 
 from model import Body
 
@@ -34,12 +35,8 @@ class DetailTarget(tk.Toplevel):
         self.txt.pack(fill=tk.BOTH, expand=True, padx=4, pady=(0, 6))
 
         # ---- dark theme colours ----
-        self.configure(background="#121212")
-        self.lbl.configure(background="#121212", foreground="#ff9a00")
-
-        self.txt.configure(background="#121212",
-                           foreground="#ff9a00",
-                           insertbackground="#ff9a00")   # caret colour
+        apply_theme(self)
+        apply_text_theme(self.txt)
 
     # ------------------------------------------------------------------
     def render(self, body: Optional[Body], filters: Dict[str, bool]):
