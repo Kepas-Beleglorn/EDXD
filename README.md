@@ -24,6 +24,9 @@ python3 -m venv edxd-env
 source edxd-env/bin/activate
 pip install -r requirements.txt
 python -m edxd --journals "/path/to/Saved Games/Frontier Developments/Elite Dangerous"
+```
+
+---
 
 ## Licence
 EDXD is released under the Creative Commons Attribution-NonCommercial 4.0
