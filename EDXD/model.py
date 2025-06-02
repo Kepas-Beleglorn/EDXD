@@ -16,8 +16,8 @@ from typing import Dict, List, Optional
 # ---------------------------------------------------------------------------
 # paths (shared with other modules)
 # ---------------------------------------------------------------------------
-DATA_DIR   = Path.home() / "EDData" / "EDMineralViewer"
-CACHE_DIR  = DATA_DIR / "EDMVData"
+DATA_DIR   = Path.home() / "EDData" / "EDXD"
+CACHE_DIR  = DATA_DIR / "EDXDdata"
 CACHE_DIR.mkdir(parents=True, exist_ok=True)        # ensure directory exists
 
 # ---------------------------------------------------------------------------
@@ -49,8 +49,8 @@ class Body:
                  materials: Dict[str, float], biosignals: int = 0):
         self.name       = name
         self.landable   = landable
-        self.materials  = materials
         self.biosignals = biosignals          # ← NEW
+        self.materials  = materials
 
 # ---------------------------------------------------------------------------
 # thread-safe data model
