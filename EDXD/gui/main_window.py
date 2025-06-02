@@ -14,6 +14,7 @@ from gui.table_view     import BodiesTable
 from gui.config_panel   import ConfigPanel, RAW_MATS
 from gui.detail_selected import DetailSelected
 from gui.detail_target   import DetailTarget
+from gui.theme_handler import apply_theme
 
 
 class MainWindow(tk.Tk):
@@ -22,12 +23,13 @@ class MainWindow(tk.Tk):
     def __init__(self, model: Model, prefs: Dict):
         super().__init__()
         self.model  = model
-        self.prefs  = prefs              # {'land': bool, 'mat_sel': {...}}
+        self.prefs  = prefs
 
         self.title("ED Mineral Viewer")
         self.geometry("1200x500")
 
-        self._set_theme()          # ← add this line
+        apply_theme(self)
+
         self._build_widgets()
         self.after(500, self._refresh)
         self.var_land.set(self.prefs["land"])
@@ -35,65 +37,6 @@ class MainWindow(tk.Tk):
 
         # listen for target changes
         self.model.register_target_listener(self._update_target)
-
-    # ------------------------------------------------------------------
-    def _set_theme(self):
-        """Configure a dark-orange ttk theme (call before creating widgets)."""
-        style = ttk.Style(self)
-
-        # base colours
-        BG  = "#121212"     # unchanged
-        FG  = "#ff9a00"     # <-- ORANGE text everywhere
-        ACC = "#ff9a00"     # <-- orange accent matches text
-
-
-        # choose a platform-neutral base theme
-        style.theme_use("clam")
-
-        # overall window / frame background
-        style.configure(".", background=BG, foreground=FG, fieldbackground=BG)
-
-        # Buttons
-        style.configure("TButton",
-                        background=BG, foreground=FG,
-                        borderwidth=1, focusthickness=0)
-        style.map("TButton",
-                  background=[("active", BG), ("pressed", ACC)],
-                  foreground=[("active", ACC), ("pressed", BG)])
-
-        # Checkbuttons
-        style.configure("TCheckbutton", background=BG, foreground=FG)
-        style.map("TCheckbutton",
-                  foreground=[("active", ACC)])
-
-        # Treeview headings
-        style.configure("Treeview.Heading",
-                        background=BG, foreground=FG, relief="flat")
-        style.map("Treeview.Heading",
-                  background=[("active", BG)],
-                  foreground=[("active", FG)])
-
-
-        # Treeview rows
-        style.configure("Treeview",
-                        background=BG, foreground=FG,
-                        fieldbackground=BG, borderwidth=0,
-                        rowheight=22)
-
-        style.map("Treeview",
-                  background=[("selected", BG)],
-                  foreground=[("selected", ACC)])
-
-        # Tooltip (from _Tip class)
-        style.configure("Tip.TLabel",
-                        background="#262626", foreground=FG,
-                        borderwidth=1, relief="solid")
-
-        # Labels inherit orange foreground
-        style.configure("TLabel", background=BG, foreground=FG)
-
-        # make the Tk root and any Toplevels inherit the dark background
-        self.configure(background=BG)
 
     # ------------------------------------------------------------------
     def _build_widgets(self):
