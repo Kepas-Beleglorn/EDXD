@@ -7,6 +7,7 @@ EDXD/__pycache__/
 # IDE / editor junk
 .vscode/
 .idea/
+releases/
 # Virtual-envs
 venv/
 .env/
