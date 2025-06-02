@@ -11,6 +11,6 @@ EDXD/__pycache__/
 venv/
 .env/
 # local data
-EDXD/Data/
+EDXD/system-data/
 config.json
 
