@@ -16,6 +16,7 @@ Planned:
 * show potential types of biosigns, if any; update on DSS and on foot sampling
 * show potential types of geosigns, if any; update on DSS
 * maybe more...
+
 ---
 
 ## Installation
