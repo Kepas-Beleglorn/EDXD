@@ -37,3 +37,4 @@ That means you’re welcome to use, modify and share it for free-of-charge,
 **but not sell it**.  See `LICENSE` for details.
 
 https://creativecommons.org/licenses/by-nc/4.0/
+
