@@ -25,7 +25,7 @@ class MainWindow(tk.Tk):
         self.model  = model
         self.prefs  = prefs
 
-        self.title("ED Mineral Viewer")
+        self.title("ED eXploration Dashboard")
         self.geometry("1200x500")
 
         apply_theme(self)
