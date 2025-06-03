@@ -40,7 +40,7 @@ class BodiesTable(ttk.Treeview):
 
     def __init__(self, master, on_select: Callable[[str], None]):
         # define the fixed column order
-        self._all_cols = ("status", "body", "land", "bio", "geo") + tuple(RAW_MATS)
+        self._all_cols = ("status", "body", "land", "bio", "geo", "disc", "map") + tuple(RAW_MATS)
         super().__init__(master, columns=self._all_cols, show="headings", height=18)
 
         # Status column (not sortable)
@@ -63,6 +63,13 @@ class BodiesTable(ttk.Treeview):
         self.heading("geo", text="🌋", command=lambda: self._sort_by("geo"))
         self.column("geo", width=40, anchor="center")
 
+        # Discovery‐value column (🔍)
+        self.heading("disc", text="🔍", command=lambda: self._sort_by("disc"))
+        self.column("disc", width=60, anchor="e")
+
+        # Mapped‐value column (🗺)
+        self.heading("map", text="🗺", command=lambda: self._sort_by("map"))
+        self.column("map", width=60, anchor="e")
 
         # Mineral columns (sortable by their key)
         for mat in RAW_MATS:
@@ -77,6 +84,8 @@ class BodiesTable(ttk.Treeview):
         self._col2name["land"] = "Landable"
         self._col2name["bio"] = "Bio-signals"
         self._col2name["geo"] = "Geo-signals"
+        self._col2name["disc"] = "Scanned value"
+        self._col2name["map"] = "Mapped value"
         self._tip = None
         self._tip_col = None
         self.bind("<Motion>", self._on_motion)
@@ -85,6 +94,8 @@ class BodiesTable(ttk.Treeview):
         # sort state
         self.sort_col: Optional[str] = None
         self.sort_reverse = False
+
+        self._sort_by("body")
 
         # row-select callback
         self.bind("<<TreeviewSelect>>",
@@ -97,8 +108,8 @@ class BodiesTable(ttk.Treeview):
             self.sort_reverse = not self.sort_reverse
         else:
             self.sort_col = col
-            # Minerals, bio, geo sort descending first; others ascend
-            self.sort_reverse = (col in RAW_MATS or col in ("bio", "geo"))
+            # Minerals, and values sort descending first; others ascend
+            self.sort_reverse = (col in RAW_MATS or col in ("disc", "map", "bio", "geo"))
         self.event_generate("<<EdmSortRequest>>")
 
     # ------------------------------------------------------------------
@@ -123,7 +134,7 @@ class BodiesTable(ttk.Treeview):
         visible_mats = [m for m, on in filters.items() if on]
 
         # 2) set displaycolumns in order: status, body, land, bio, geo, <minerals>
-        display = ("status", "body", "land", "bio", "geo") + tuple(visible_mats)
+        display = ("status", "body", "land", "bio", "geo", "disc", "map") + tuple(visible_mats)
         self["displaycolumns"] = display
 
         # 3) update/create rows
@@ -148,10 +159,18 @@ class BodiesTable(ttk.Treeview):
                 name,
                 "🛬" if body.landable else "",
                 f"🌿 {getattr(body, 'biosignals', 0)}"
-                if getattr(body, "biosignals", 0)
+                if getattr(body, "biosignals", 0) > 0
                 else "",
                 f"🌋 {getattr(body, 'geosignals', 0)}"
-                if getattr(body, "geosignals", 0)
+                if getattr(body, "geosignals", 0) > 0
+                else "",
+                # new: discovery value (formatted “1 234 890 Cr”)
+                f"{body.scan_value:,} Cr" 
+                if getattr(body, "scan_value", 0) 
+                else "",
+                # new: mapped value
+                f"{body.mapped_value:,} Cr" 
+                if getattr(body, "mapped_value", 0) 
                 else "",
             ] + [
                 f"{body.materials.get(m,0):.1f} %"
@@ -192,10 +211,16 @@ class BodiesTable(ttk.Treeview):
                 return 0 if cell else 1
             # Bio → place 🌿 rows first
             if self._all_cols[col_index] == "bio":
-                return 0 if cell else 1
+                return cell
             # Geo → place 🌋 rows first
             if self._all_cols[col_index] == "geo":
-                return 0 if cell else 1
+                return cell
+            # Discovery (disc) or Mapped (map) → strip “ Cr” and convert to int
+            if self._all_cols[col_index] in ("disc", "map"):
+                try:
+                    return int(cell.replace(" Cr", "").replace(",", "").strip())
+                except:
+                    return -1
             # Mineral columns → strip " %" and convert to float
             if numeric:
                 val = cell.replace("%", "").strip()

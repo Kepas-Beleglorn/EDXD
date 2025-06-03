@@ -43,18 +43,22 @@ def latest_journal(folder: Path) -> Optional[Path]:
 # simple container
 # ---------------------------------------------------------------------------
 class Body:
-    __slots__ = ("name", "landable", "materials",
-                 "biosignals", "geosignals")        # ← NEW
+    __slots__ = ("name", "landable", "biosignals", "geosignals", "scan_value", "mapped_value", "materials")
 
-    def __init__(self, name: str, landable: bool,
+    def __init__(self, name: str, 
+                 landable: bool,
                  materials: Dict[str, float],
                  biosignals: int = 0,
-                 geosignals: int = 0):              # ← NEW
-        self.name        = name
-        self.landable    = landable
-        self.biosignals  = biosignals
-        self.geosignals  = geosignals               # ← NEW
-        self.materials   = materials
+                 geosignals: int = 0,
+                 scan_value: int = 0,
+                 mapped_value: int = 0):
+        self.name           = name
+        self.landable       = landable
+        self.biosignals     = biosignals
+        self.geosignals     = geosignals
+        self.scan_value     = scan_value
+        self.mapped_value   = mapped_value
+        self.materials      = materials
 
 # ---------------------------------------------------------------------------
 # thread-safe data model
@@ -107,13 +111,17 @@ class Model:
             elif isinstance(cached, dict):
                 for n, e in cached.items():
                     land = e.get("landable", False) if isinstance(e, dict) else False
+                    bio = e.get("biosignals", False) if isinstance(e, dict) else False
+                    geo = e.get("geosignals", False) if isinstance(e, dict) else False
                     mats = e.get("materials", {})   if isinstance(e, dict) else {}
-                    self.bodies[n] = Body(n, land, mats)
+                    self.bodies[n] = Body(n, land, mats, bio, geo)
 
-    def update_body(self, name: str, landable: bool, materials: Dict[str, float]):
+    def update_body(self, name: str, landable: bool, biosignals: int, geosignals: int, materials: Dict[str, float]):
         with self.lock:
             b = self.bodies.get(name, Body(name, landable, {}))
             b.landable = b.landable or landable
+            b.biosignals = b.biosignals or biosignals
+            b.geosignals = b.geosignals or geosignals
             b.materials.update(materials)
             self.bodies[name] = b
             self._save_cache()
@@ -129,7 +137,7 @@ class Model:
             return
         _save(
             CACHE_DIR / f"{self.system_addr}.json",
-            {n: {"landable": b.landable, "materials": b.materials}
+            {n: {"landable": b.landable, "biosignals": b.biosignals, "geosignals": b.geosignals, "materials": b.materials}
              for n, b in self.bodies.items()},
         )
 
@@ -197,23 +205,41 @@ class Controller(threading.Thread):
 
             if etype in ("FSSDiscoveryScan", "FSSAllBodiesFound"):
                 self.m.reset_system(evt.get("SystemName"), evt.get("SystemAddress"))
+                # immediately create a Body(name, False, {}) for every discovered bodyName
+                # so the table shows a row for every body (star, planet, moon, belt…)
+                for entry in evt.get("Bodies", []):
+                    bn = entry.get("BodyName")
+                    if bn and bn not in self.m.bodies:
+                        # create with default zero‐values; material % empty
+                        self.m.bodies[bn] = Body(bn, False, {})
                 self.m.total_bodies = evt.get("BodyCount")
 
             elif etype == "Scan":
                 if self.m.system_name is None:   # first scan in a fresh session
                     self.m.reset_system(evt.get("StarSystem"), evt.get("SystemAddress"))
 
+                body_name = evt.get("BodyName")
                 mats = {m["Name"]: m["Percent"] for m in evt.get("Materials", [])}
-                self.m.update_body(evt["BodyName"], evt.get("Landable", False), mats)
-                self.m.bodies[evt["BodyName"]].biosignals = evt.get("BioSignalCount", 0)
-                self.m.bodies[evt["BodyName"]].geosignals = evt.get("GeoSignalCount", 0)
+                self.m.update_body(body_name, evt.get("Landable", False), 0, 0, mats)
 
+            elif etype == "FSSBodySignals":
+                body_name = evt.get("BodyName")
+                for signal in evt.get("Signals", []):
+                    cbio = 0
+                    cgeo = 0
+                    if signal.get("Type") == "$SAA_SignalType_Biological;":
+                        cbio = signal.get("Count")
+                        #self.m.bodies[body_name].biosignals = signal.get("Count")
+                    if signal.get("Type") == "$SAA_SignalType_Geological;":
+                        cgeo = signal.get("Count")
+                    self.m.update_body(body_name, True, cbio, cgeo, {})
 
             elif etype == "SAAMaterialsFound":
+                body_name = evt.get("BodyName")
                 mats = {m["Name"]: m["Percent"] for m in evt.get("Materials", [])}
-                self.m.update_body(evt["BodyName"], True, mats)
-                self.m.set_target(evt["BodyName"])
-                self.m.bodies[evt["BodyName"]].geosignals = evt.get("GeoSignalCount", 0)
+                self.m.update_body(body_name, True, mats)
+                self.m.set_target(body_name)
+                #self.m.bodies[body_name].geosignals = evt.get("GeoSignalCount", 0)
                 
             # --- in-game target changed -----------------------------------
             elif etype in ("FSDTarget", "Target", "SAATarget", "SupercruiseTarget"):

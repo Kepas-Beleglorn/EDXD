@@ -1,8 +1,8 @@
 [project]
 name = "edxd"
-version = "0.3.0"
+version = "0.3.1"
 description = "Elite Dangerous eXploration Dashboard"
-authors = [{ name = "Kepas Beleglorn", email = "kepas.beleglorn+github@rinkefil.de" }]
+authors = [{ name = "Kepas Beleglorn", email = "kepas.beleglorn+github@rinkefeil.de" }]
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
