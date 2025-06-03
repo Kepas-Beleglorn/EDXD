@@ -11,10 +11,11 @@ A cross-platform, real-time dashboard for explorers:
 
 Planned:
 
-* EDSM API link to pull scan & map values.
-* Bookmark-/route-helper pane.
-* Optional journal replay exporter.
-
+* show scanned/mapped value
+* show first discovered (EDSM)
+* show potential types of biosigns, if any; update on DSS and on foot sampling
+* show potential types of geosigns, if any; update on DSS
+* maybe more...
 ---
 
 ## Installation
