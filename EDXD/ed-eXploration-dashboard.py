@@ -4,8 +4,7 @@ import argparse, queue
 from model import Model, Tail, Controller
 from gui import MainWindow                # imports all sub-widgets
 
-CFG_DIR = Path.home()/".config"/"edmv"
-CFG_DIR.mkdir(parents=True, exist_ok=True)
+CFG_DIR = Path(__file__).resolve().parent
 CFG_FILE = CFG_DIR/"config.json"
 
 def main():
