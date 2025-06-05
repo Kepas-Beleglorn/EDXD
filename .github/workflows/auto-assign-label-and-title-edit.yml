@@ -22,10 +22,16 @@ jobs:
             let newTitle = issue.title;
             if (issue.title.startsWith('x:')) {
               label = 'bug';
-              newTitle = issue.title.replace(/^x:\s*/, '');
+              newTitle = issue.title.replace(/^x:\s*/, '').trim();
             } else if (issue.title.startsWith('e:')) {
               label = 'enhancement';
-              newTitle = issue.title.replace(/^e:\s*/, '');
+              newTitle = issue.title.replace(/^e:\s*/, '').trim();
+            } else if (issue.title.startsWith('X:')) {
+              label = 'bug';
+              newTitle = issue.title.replace(/^X:\s*/, '').trim();
+            } else if (issue.title.startsWith('E:')) {
+              label = 'enhancement';
+              newTitle = issue.title.replace(/^E:\s*/, '').trim();
             }
             // Assign yourself
             await github.rest.issues.addAssignees({
