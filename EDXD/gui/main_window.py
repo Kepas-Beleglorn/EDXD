@@ -16,6 +16,12 @@ from .detail_selected import DetailSelected
 from .detail_target   import DetailTarget
 from .theme_handler import apply_theme
 
+root = tk.Tk()
+root.iconbitmap('../resources/edxd.ico')  # Windows and Linux (with .ico)
+# OR, for PNG (may not work everywhere):
+# icon = tk.PhotoImage(file='path/to/your/icon.png')
+# root.iconphoto(True, icon)
+root.mainloop()
 
 class MainWindow(tk.Tk):
     """Composes toolbar  +  table  +  two detail windows."""
