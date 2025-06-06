@@ -64,7 +64,7 @@ jobs:
           assignees: Kepas-Beleglorn
 
       - name: Add issue to project board
-        uses: actions/add-to-project@v0.4.0
+        uses: actions/add-to-project@v1.0.2
         with:
-          project-url: https://github.com/users/Kepas-Beleglorn/projects/9
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          project-id: PVT_kwDOAAqOuc4AF2fJ
+          github-token: ${{ secrets.PERSONAL_TOKEN }}
