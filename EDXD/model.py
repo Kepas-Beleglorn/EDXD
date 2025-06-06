@@ -29,7 +29,6 @@ def _load(path: Path, default):
     except Exception:
         return default
 
-
 def _save(path: Path, data):
     path.write_text(json.dumps(data, indent=2))
 
