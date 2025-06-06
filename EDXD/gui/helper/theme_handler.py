@@ -3,11 +3,11 @@ theme_handler.py – Centralized theme handling for EDXD GUI
 ==========================================================
 Call `apply_theme(widget)` before creating widgets in any Tk/Toplevel window.
 """
-
+import tkinter
 import tkinter as tk
 import os
 from tkinter import ttk, PhotoImage
-from ...gobal_constants import ICON_PATH, BG, HBG, FG, ACC
+from ...gobal_constants import ICON_PATH, BG, HBG, FG, ACC, BDC
 
 def set_icon(widget):
     # --- set app icon ---
@@ -28,7 +28,7 @@ def apply_theme(widget):
     # Buttons
     style.configure("TButton",
                     background=BG, foreground=FG,
-                    borderwidth=1, focusthickness=1, bordercolor=FG, relief="solid")
+                    borderwidth=1, focusthickness=0, bordercolor=BDC, relief="solid")
     style.map("TButton",
               background=[("active", HBG), ("pressed", ACC)],
               foreground=[("active", ACC), ("pressed", BG)])

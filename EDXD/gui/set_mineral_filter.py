@@ -9,7 +9,7 @@ set_mineral_filter.py – filter & preferences window
 from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
-from typing import Dict, List
+from typing import Dict
 from .helper.theme_handler import apply_theme
 from .helper.window_titlebar_handler import CustomTitlebar
 

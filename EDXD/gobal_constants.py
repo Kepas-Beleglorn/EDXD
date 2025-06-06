@@ -14,10 +14,11 @@ CACHE_DIR.mkdir(parents=True, exist_ok=True)
 # Centralized theme colors
 BG = "#121212"      # background
 FG = "#ff9a00"      # orange foreground/text
-ACC = "#ff9a00"     # accent (same as FG)
+ACC = "#ff9a33"     # accent (same as FG)
 HBG = "#433322"     # hover background
+BDC = "#aa7700"     # border color for buttons
 
-ICON_PATH = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'resources', 'edxd_16.png'))  # Normalize path for OS compatibility
+ICON_PATH = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'resources', 'edxd_16.png'))  # Normalize path for OS compatibility
 
 #-----------------------------------------------------------------------
 # symbol lookup for display in table_view.py
