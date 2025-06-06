@@ -1,0 +1,55 @@
+name: Auto Assign, Label, and Edit Issue Title
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+
+jobs:
+  auto_process_issue:
+    runs-on: ubuntu-latest
+    if: github.event.issue.user.login == 'Kepas-Beleglorn'
+    steps:
+      - name: Check for prefix and update issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const repo = context.repo;
+            let label = null;
+            let newTitle = issue.title;
+            if (issue.title.startsWith('x:')) {
+              label = 'bug';
+              newTitle = issue.title.replace(/^x:\s*/, '').trim();
+            } else if (issue.title.startsWith('e:')) {
+              label = 'enhancement';
+              newTitle = issue.title.replace(/^e:\s*/, '').trim();
+            } else if (issue.title.startsWith('X:')) {
+              label = 'bug';
+              newTitle = issue.title.replace(/^X:\s*/, '').trim();
+            } else if (issue.title.startsWith('E:')) {
+              label = 'enhancement';
+              newTitle = issue.title.replace(/^E:\s*/, '').trim();
+            }
+            // Assign yourself
+            await github.rest.issues.addAssignees({
+              ...repo,
+              issue_number: issue.number,
+              assignees: ['Kepas-Beleglorn']
+            });
+            // Add label if necessary
+            if (label) {
+              await github.rest.issues.addLabels({
+                ...repo,
+                issue_number: issue.number,
+                labels: [label]
+              });
+              // Update title (remove the prefix)
+              await github.rest.issues.update({
+                ...repo,
+                issue_number: issue.number,
+                title: newTitle
+              });
+            }
