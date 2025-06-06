@@ -1,5 +1,5 @@
 """
-config_panel.py – filter & preferences window
+set_mineral_filter.py – filter & preferences window
 ============================================
 • “Landable only” master checkbox
 • 4-column alphabetic grid with a (De)select-all toggle
@@ -11,7 +11,7 @@ import math
 import tkinter as tk
 from tkinter import ttk
 from typing import Dict, List
-from gui.theme_handler import apply_theme
+from .theme_handler import apply_theme
 
 # ---------------------------------------------------------------------------
 # master material list – imported by MainWindow and others via gui.RAW_MATS
@@ -54,12 +54,13 @@ class ConfigPanel(tk.Toplevel):
 
         # ---- mineral check-boxes ------------------------------------
         self.var_mat: Dict[str, tk.BooleanVar] = {}
-        COLS = 4
+        cols = 4
+        rows = int(round(len(RAW_MATS) / 4 ,0))
         for idx, mat in enumerate(RAW_MATS):
             var = tk.BooleanVar(value=self._prefs["mat_sel"].get(mat, True))
             self.var_mat[mat] = var
             cb = ttk.Checkbutton(frame, text=mat.title(), variable=var)
-            r, c = divmod(idx, COLS)
+            c, r = divmod(idx, rows)
             cb.grid(row=r, column=c, sticky="w", padx=4, pady=2)
 
         # ---- (De)select-all & Apply buttons --------------------------
