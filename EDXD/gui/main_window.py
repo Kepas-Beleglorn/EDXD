@@ -27,6 +27,7 @@ class MainWindow(tk.Tk):
 
         self.title("ED eXploration Dashboard")
         self.geometry("1200x500")
+        self.attributes("-topmost", True)
 
         apply_theme(self)
 

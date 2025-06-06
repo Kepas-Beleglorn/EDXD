@@ -40,6 +40,7 @@ class ConfigPanel(tk.Toplevel):
 
         self.title("Filters")
         self.resizable(False, False)
+        self.attributes("-topmost", True)
         self.grab_set()                     # modal
 
         self._prefs = prefs

@@ -24,7 +24,7 @@ class DetailSelected(tk.Toplevel):
         apply_theme(self)
 
         self.title("Selected body")
-        #self.resizable(False, False)
+        self.attributes("-topmost", True)
 
         self.lbl = ttk.Label(self, font=("Segoe UI", 11, "bold"))
         self.lbl.pack(anchor="w", padx=6, pady=(4, 2))
