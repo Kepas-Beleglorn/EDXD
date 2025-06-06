@@ -2,7 +2,6 @@
 main_window.py – root Tk window that wires all GUI pieces together
 =================================================================
 """
-
 from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
