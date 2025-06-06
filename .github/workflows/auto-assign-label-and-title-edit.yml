@@ -53,3 +53,18 @@ jobs:
                 title: newTitle
               });
             }
+
+  auto_assign_and_project:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Assign issue to user
+        uses: actions-ecosystem/action-add-assignees@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          assignees: Kepas-Beleglorn
+
+      - name: Add issue to project board
+        uses: actions/add-to-project@v1.0.2
+        with:
+          project-url: https://github.com/Kepas-Beleglorn/EDXD/projects/1
+          github-token: ${{ secrets.GITHUB_TOKEN }}

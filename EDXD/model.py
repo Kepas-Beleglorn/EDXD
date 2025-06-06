@@ -234,8 +234,7 @@ class Controller(threading.Thread):
                 mats = {m["Name"]: m["Percent"] for m in evt.get("Materials", [])}
                 self.m.update_body(body_name, True, mats)
                 self.m.set_target(body_name)
-                #self.m.bodies[body_name].geosignals = evt.get("GeoSignalCount", 0)
-                
+
             # --- in-game target changed -----------------------------------
             elif etype in ("FSDTarget", "Target", "SAATarget", "SupercruiseTarget"):
                 name = evt.get("Name") or evt.get("BodyName")
