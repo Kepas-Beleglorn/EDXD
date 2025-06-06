@@ -6,22 +6,14 @@ main_window.py – root Tk window that wires all GUI pieces together
 from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
-from pathlib import Path
 from typing import Dict
 
 from ..model import Model, Body
 from .table_view     import BodiesTable
-from .set_mineral_filter   import ConfigPanel, RAW_MATS
+from .set_mineral_filter   import ConfigPanel
 from .detail_selected import DetailSelected
 from .detail_target   import DetailTarget
 from .theme_handler import apply_theme
-
-root = tk.Tk()
-root.iconbitmap('../resources/edxd.ico')  # Windows and Linux (with .ico)
-# OR, for PNG (may not work everywhere):
-# icon = tk.PhotoImage(file='path/to/your/icon.png')
-# root.iconphoto(True, icon)
-root.mainloop()
 
 class MainWindow(tk.Tk):
     """Composes toolbar  +  table  +  two detail windows."""
@@ -101,7 +93,7 @@ class MainWindow(tk.Tk):
 
         if body is None:
             # target not scanned yet – show name, empty materials
-            from model import Body          # avoid circular import at top
+            # from model import Body          # avoid circular import at top
             body = Body(body_name, False, {})
 
         self.win_auto.render(body, self.prefs["mat_sel"])

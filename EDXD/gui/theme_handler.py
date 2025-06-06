@@ -5,7 +5,15 @@ Call `apply_theme(widget)` before creating widgets in any Tk/Toplevel window.
 """
 
 import tkinter as tk
-from tkinter import ttk
+import os
+from tkinter import ttk, Tk, PhotoImage
+# --- set app icon ---
+root = tk.Tk()
+script_dir = os.path.dirname(os.path.abspath(__file__))
+icon_path = os.path.join(script_dir, '..', 'resources', 'edxd.png')
+icon_path = os.path.normpath(icon_path)  # Normalize path for OS compatibility
+img = PhotoImage(file=icon_path)
+root.iconphoto(True, img)
 
 # Centralized theme colors
 BG = "#121212"      # background
