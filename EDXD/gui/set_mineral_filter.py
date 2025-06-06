@@ -15,18 +15,7 @@ from .helper.window_titlebar_handler import CustomTitlebar
 
 TITLE = "Minerals to show"
 
-# ---------------------------------------------------------------------------
-# master material list – imported by MainWindow and others via gui.RAW_MATS
-# ---------------------------------------------------------------------------
-RAW_MATS: List[str] = sorted([
-    "antimony",  "arsenic",   "boron",  "cadmium",
-    "carbon",    "chromium",  "germanium", "iron",
-    "lead",      "manganese", "mercury", "molybdenum",
-    "nickel",    "niobium",   "phosphorus", "polonium",
-    "rhenium",   "ruthenium", "selenium",   "sulphur",
-    "technetium","tellurium", "tin",    "tungsten",
-    "vanadium",  "yttrium",   "zinc", "zirconium",
-])
+from ..gobal_constants import RAW_MATS
 
 # ---------------------------------------------------------------------------
 class ConfigPanel(tk.Toplevel):

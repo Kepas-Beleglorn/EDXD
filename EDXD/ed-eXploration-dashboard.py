@@ -2,12 +2,10 @@
 from pathlib import Path
 import argparse, queue
 
+from .gobal_constants import CFG_FILE
 from .gui.helper.theme_handler import set_icon
 from .model import Model, Tail, Controller, StatusWatcher
 from .gui import MainWindow, RAW_MATS                # imports all sub-widgets
-
-CFG_DIR = Path(__file__).resolve().parent
-CFG_FILE = CFG_DIR/"config.json"
 
 def main():
     import json, sys

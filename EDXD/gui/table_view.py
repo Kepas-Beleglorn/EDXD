@@ -5,17 +5,8 @@ from typing import Dict, Callable, Optional
 
 from ..model import Body
 from .set_mineral_filter import RAW_MATS
+from ..gobal_constants import SYMBOL
 
-# symbol lookup (feel free to extend)
-SYMBOL = {
-    "antimony":   "Sb", "arsenic":    "As", "boron":     "B",  "cadmium": "Cd",
-    "carbon":     "C",  "chromium":   "Cr", "germanium": "Ge", "iron": "Fe",
-    "lead":       "Pb", "manganese":  "Mn", "mercury":   "Hg", "molybdenum": "Mo",
-    "nickel":     "Ni", "niobium":    "Nb", "phosphorus":"P",  "polonium": "Po",
-    "rhenium":    "Re", "ruthenium":  "Ru", "selenium":  "Se", "sulphur": "S",
-    "technetium":"Tc", "tellurium":  "Te", "tin":       "Sn","tungsten":"W",
-    "vanadium":   "V",  "yttrium":    "Y",  "zinc":      "Zn","zirconium":"Zr",
-}
 
 # ---------------------------------------------------------------------------
 # very small tooltip helper

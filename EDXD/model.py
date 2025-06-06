@@ -16,9 +16,7 @@ from typing import Dict, List, Optional
 # ---------------------------------------------------------------------------
 # paths (shared with other modules)
 # ---------------------------------------------------------------------------
-DATA_DIR   = Path(__file__).resolve().parent
-CACHE_DIR  = DATA_DIR / "system-data"
-CACHE_DIR.mkdir(parents=True, exist_ok=True)        # ensure directory exists
+from .gobal_constants import CACHE_DIR
 
 # ---------------------------------------------------------------------------
 # helpers
