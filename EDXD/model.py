@@ -33,11 +33,9 @@ def _load(path: Path, default):
 def _save(path: Path, data):
     path.write_text(json.dumps(data, indent=2))
 
-
 def latest_journal(folder: Path) -> Optional[Path]:
     files = sorted(folder.glob("Journal.*.log"))
     return files[-1] if files else None
-
 
 # ---------------------------------------------------------------------------
 # simple container
@@ -45,7 +43,7 @@ def latest_journal(folder: Path) -> Optional[Path]:
 class Body:
     __slots__ = ("name", "landable", "biosignals", "geosignals", "scan_value", "mapped_value", "materials")
 
-    def __init__(self, name: str, 
+    def __init__(self, name: str,
                  landable: bool,
                  materials: Dict[str, float],
                  biosignals: int = 0,
