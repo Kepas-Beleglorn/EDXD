@@ -142,7 +142,6 @@ class Model:
         with self.lock:
             return self.total_bodies
 
-
 # ---------------------------------------------------------------------------
 # tailer thread – reads the newest Journal file
 # ---------------------------------------------------------------------------
