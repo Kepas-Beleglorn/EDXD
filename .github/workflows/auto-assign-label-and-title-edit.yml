@@ -23,16 +23,22 @@ jobs:
             if (issue.title.startsWith('x:')) {
               label = 'bug';
               newTitle = issue.title.replace(/^x:\s*/, '').trim();
-            } else if (issue.title.startsWith('e:')) {
-              label = 'enhancement';
-              newTitle = issue.title.replace(/^e:\s*/, '').trim();
             } else if (issue.title.startsWith('X:')) {
               label = 'bug';
               newTitle = issue.title.replace(/^X:\s*/, '').trim();
+            } else if (issue.title.startsWith('e:')) {
+              label = 'enhancement';
+              newTitle = issue.title.replace(/^e:\s*/, '').trim();
             } else if (issue.title.startsWith('E:')) {
               label = 'enhancement';
               newTitle = issue.title.replace(/^E:\s*/, '').trim();
-            }
+            } else if (issue.title.startsWith('r:')) {
+              label = 'refactoring';
+              newTitle = issue.title.replace(/^r:\s*/, '').trim();
+            } else if (issue.title.startsWith('R:')) {
+              label = 'refactoring';
+              newTitle = issue.title.replace(/^R:\s*/, '').trim();
+            } 
             // Assign yourself
             await github.rest.issues.addAssignees({
               ...repo,
