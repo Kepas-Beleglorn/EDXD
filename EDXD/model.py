@@ -174,7 +174,6 @@ class Tail(threading.Thread):
                 else:
                     time.sleep(0.2)
 
-
 # ---------------------------------------------------------------------------
 # controller thread – turns Journal lines into Model updates
 # ---------------------------------------------------------------------------
