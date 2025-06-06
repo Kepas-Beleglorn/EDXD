@@ -10,10 +10,12 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 from typing import Optional, Dict
-from .theme_handler import apply_theme, apply_text_theme
+from .helper.theme_handler import apply_theme, apply_text_theme
+from .helper.window_titlebar_handler import CustomTitlebar
 
 from ..model import Body
 
+TITLE = "Selected body"
 
 class DetailSelected(tk.Toplevel):
     """Always reflects the row the user clicked in the BodiesTable."""
@@ -23,8 +25,12 @@ class DetailSelected(tk.Toplevel):
         # ---- dark theme colours ----
         apply_theme(self)
 
-        self.title("Selected body")
+        self.title(TITLE)
         self.attributes("-topmost", True)
+
+        # In your window constructor:
+        self.titlebar = CustomTitlebar(self, title=TITLE, show_close=False)
+        self.titlebar.pack(fill="x")
 
         self.lbl = ttk.Label(self, font=("Segoe UI", 11, "bold"))
         self.lbl.pack(anchor="w", padx=6, pady=(4, 2))

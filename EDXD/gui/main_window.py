@@ -13,7 +13,10 @@ from .table_view     import BodiesTable
 from .set_mineral_filter   import ConfigPanel
 from .detail_selected import DetailSelected
 from .detail_target   import DetailTarget
-from .theme_handler import apply_theme
+from .helper.theme_handler import apply_theme
+from .helper.window_titlebar_handler import CustomTitlebar
+
+TITLE = "ED eXploration Dashboard"
 
 class MainWindow(tk.Tk):
     """Composes toolbar  +  table  +  two detail windows."""
@@ -23,9 +26,13 @@ class MainWindow(tk.Tk):
         self.model  = model
         self.prefs  = prefs
 
-        self.title("ED eXploration Dashboard")
+        self.title(TITLE)
         self.geometry("1200x500")
         self.attributes("-topmost", True)
+
+        # In your window constructor:
+        self.titlebar = CustomTitlebar(self, title=TITLE)
+        self.titlebar.pack(fill="x")
 
         apply_theme(self)
 

@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 from pathlib import Path
 import argparse, queue
+
+from .gui.helper.theme_handler import set_icon
 from .model import Model, Tail, Controller, StatusWatcher
 from .gui import MainWindow, RAW_MATS                # imports all sub-widgets
 
@@ -41,7 +43,9 @@ def main():
     
     StatusWatcher(journal_dir / "Status.json", model).start()   # ← add this
 
-    MainWindow(model, cfg).mainloop()
+    mw = MainWindow(model, cfg)
+    set_icon(mw)
+    mw.mainloop()
 
 if __name__ == "__main__":
     main()

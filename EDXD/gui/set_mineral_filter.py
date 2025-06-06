@@ -7,11 +7,13 @@ set_mineral_filter.py – filter & preferences window
 """
 
 from __future__ import annotations
-import math
 import tkinter as tk
 from tkinter import ttk
 from typing import Dict, List
-from .theme_handler import apply_theme
+from .helper.theme_handler import apply_theme
+from .helper.window_titlebar_handler import CustomTitlebar
+
+TITLE = "Minerals to show"
 
 # ---------------------------------------------------------------------------
 # master material list – imported by MainWindow and others via gui.RAW_MATS
@@ -38,9 +40,14 @@ class ConfigPanel(tk.Toplevel):
         super().__init__(master)
         apply_theme(self)
 
-        self.title("Filters")
+        self.title(TITLE)
         self.resizable(False, False)
         self.attributes("-topmost", True)
+
+        # In your window constructor:
+        self.titlebar = CustomTitlebar(self, title=TITLE)
+        self.titlebar.pack(fill="x")
+
         self.grab_set()                     # modal
 
         self._prefs = prefs
