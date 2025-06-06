@@ -7,14 +7,7 @@ Call `apply_theme(widget)` before creating widgets in any Tk/Toplevel window.
 import tkinter as tk
 import os
 from tkinter import ttk, PhotoImage
-
-# Centralized theme colors
-BG = "#121212"      # background
-FG = "#ff9a00"      # orange foreground/text
-ACC = "#ff9a00"     # accent (same as FG)
-HBG = "#433322"     # hover background
-
-ICON_PATH = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'resources', 'edxd_16.png'))  # Normalize path for OS compatibility
+from ...gobal_constants import ICON_PATH, BG, HBG, FG, ACC
 
 def set_icon(widget):
     # --- set app icon ---
