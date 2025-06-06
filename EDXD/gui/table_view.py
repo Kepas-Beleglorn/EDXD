@@ -3,8 +3,8 @@ import tkinter as tk
 from tkinter import ttk
 from typing import Dict, Callable, Optional
 
-from model import Body
-from gui.config_panel import RAW_MATS
+from ..model import Body
+from .set_mineral_filter import RAW_MATS
 
 # symbol lookup (feel free to extend)
 SYMBOL = {

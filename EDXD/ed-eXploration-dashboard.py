@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 from pathlib import Path
 import argparse, queue
-from model import Model, Tail, Controller
-from gui import MainWindow                # imports all sub-widgets
+from .model import Model, Tail, Controller, StatusWatcher
+from .gui import MainWindow, RAW_MATS                # imports all sub-widgets
 
 CFG_DIR = Path(__file__).resolve().parent
 CFG_FILE = CFG_DIR/"config.json"
@@ -29,7 +29,6 @@ def main():
     Tail(journal_dir, q).start()
     Controller(q, model).start()
 
-    from gui import RAW_MATS
     cfg.setdefault("land", False)
     cfg.setdefault("mat_sel", {m: True for m in RAW_MATS})
     
@@ -40,7 +39,6 @@ def main():
     # ensure defaults even if file is old
     cfg["save"] = _save               #  ← make the save-function available
     
-    from model import StatusWatcher
     StatusWatcher(journal_dir / "Status.json", model).start()   # ← add this
 
     MainWindow(model, cfg).mainloop()

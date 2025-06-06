@@ -9,12 +9,12 @@ from tkinter import ttk
 from pathlib import Path
 from typing import Dict
 
-from model import Model, Body
-from gui.table_view     import BodiesTable
-from gui.config_panel   import ConfigPanel, RAW_MATS
-from gui.detail_selected import DetailSelected
-from gui.detail_target   import DetailTarget
-from gui.theme_handler import apply_theme
+from ..model import Model, Body
+from .table_view     import BodiesTable
+from .set_mineral_filter   import ConfigPanel, RAW_MATS
+from .detail_selected import DetailSelected
+from .detail_target   import DetailTarget
+from .theme_handler import apply_theme
 
 
 class MainWindow(tk.Tk):

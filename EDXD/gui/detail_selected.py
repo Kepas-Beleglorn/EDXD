@@ -10,9 +10,9 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 from typing import Optional, Dict
-from gui.theme_handler import apply_theme, apply_text_theme
+from .theme_handler import apply_theme, apply_text_theme
 
-from model import Body
+from ..model import Body
 
 
 class DetailSelected(tk.Toplevel):
