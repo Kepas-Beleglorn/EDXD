@@ -22,7 +22,7 @@ class DetailTarget(tk.Toplevel):
     def __init__(self, master):
         super().__init__(master)
         self.title("In-game target")
-        self.resizable(False, False)
+        #self.resizable(False, False)
 
         self.lbl = ttk.Label(self, font=("Segoe UI", 11, "bold"))
         self.lbl.pack(anchor="w", padx=6, pady=(4, 2))
