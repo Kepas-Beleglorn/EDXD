@@ -2,15 +2,16 @@
 name = "edxd"
 version = "0.3.2"
 description = "Elite Dangerous eXploration Dashboard"
-authors = [{ name = "Kepas Beleglorn", email = "kepas.beleglorn+github@rinkefeil.de" }]
+authors = [{ name = "Kepas Beleglorn", email = "Kepas-Beleglorn@users.noreply.github.com" }]
 readme = "README.md"
+license='CC BY-NC 4.0'
 requires-python = ">=3.9"
 dependencies = [
     "watchdog>=3.0.0",
 ]
 
 [project.scripts]
-edxd = "edxd.__main__:main"
+edxd = "EDXD.__main__:main"
 
 [tool.setuptools.packages.find]
-where = ["edxd"]
+where = ["EDXD"]

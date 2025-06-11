@@ -3,11 +3,14 @@ EDXD/__pycache__/
 *.py[cod]
 *.pyd
 *.so
+*.spec
 *.egg-info/
 # IDE / editor junk
 .vscode/
 .idea/
-releases/
+dist/
+build/
+.venv/
 # Virtual-envs
 venv/
 .env/

@@ -19,7 +19,7 @@ def main():
         cfg["journal_dir"] = str(args.journals.expanduser())
         CFG_FILE.write_text(json.dumps(cfg, indent=2))
     # ensure defaults even if file is old
-
+    print(CFG_FILE)
     journal_dir = Path(cfg.get("journal_dir", ""))
     if not journal_dir.is_dir():
         sys.exit("Run once with --journals <Saved Games …>")

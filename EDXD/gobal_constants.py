@@ -1,12 +1,25 @@
-from pathlib import Path
 from typing import List
-import os
+import sys
+from pathlib import Path
+
+def get_app_dir():
+    is_frozen = getattr(sys, 'frozen', False)
+    print(is_frozen)
+
+    if is_frozen:
+        local_path = Path(sys.executable).parent
+    else:
+        local_path=Path(__file__).resolve().parent
+
+    print(local_path)
+
+    return local_path
 
 #-----------------------------------------------------------------------
 # general paths for storing data
-APP_DIR = Path(__file__).resolve().parent
+APP_DIR = get_app_dir()
 CFG_FILE = APP_DIR/"config.json"
-CACHE_DIR  = APP_DIR / "system-data"
+CACHE_DIR  = APP_DIR/"system-data"
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
 #-----------------------------------------------------------------------
@@ -18,7 +31,8 @@ ACC = "#ff9a33"     # accent (same as FG)
 HBG = "#433322"     # hover background
 BDC = "#aa7700"     # border color for buttons
 
-ICON_PATH = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'resources', 'edxd_16.png'))  # Normalize path for OS compatibility
+#ICON_PATH = os.path.normpath(os.path.join(APP_DIR, 'resources', 'edxd_16.png'))  # Normalize path for OS compatibility
+ICON_PATH = APP_DIR/"resources/edxd_16.png"  # Normalize path for OS compatibility
 
 #-----------------------------------------------------------------------
 # symbol lookup for display in table_view.py
