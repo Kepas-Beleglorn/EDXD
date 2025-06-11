@@ -90,26 +90,32 @@ class Model:
 
     # ----- mutators ----------------------------------------------------------
     def reset_system(self, name: str, address: Optional[int]):
-        """Clear all bodies and load cache for the new system (if any)."""
+        """Clear all bodies and load cached system if available."""
         with self.lock:
-            self.system_name   = name
-            self.system_addr   = address
+            self.system_name = name
+            self.system_addr = address
             self.bodies.clear()
-            self.target_body   = None
+            self.target_body = None
             self.total_bodies = None
 
             cached = _load(CACHE_DIR / f"{address}.json", {})
-            # tolerate both legacy list (pre-cache-format) and new dict
-            if isinstance(cached, list):
+
+            # Current format: { "total_bodies": int,
+            #                   "bodies": { name: {landable:…, biosignals:…, geosignals:…, materials:…}, … } }
+            if isinstance(cached, dict):
+                # reload total count
+                self.total_bodies = cached.get("total_bodies", None)
+                body_map = cached.get("bodies", {})
+                for n, e in body_map.items():
+                    land = e.get("landable", False)
+                    bio = e.get("biosignals", 0)
+                    geo = e.get("geosignals", 0)
+                    mats = e.get("materials", {})
+                    self.bodies[n] = Body(n, land, mats, bio, geo)
+            elif isinstance(cached, list):
+                # legacy: plain list of names
                 for n in cached:
                     self.bodies[n] = Body(n, False, {})
-            elif isinstance(cached, dict):
-                for n, e in cached.items():
-                    land = e.get("landable", False) if isinstance(e, dict) else False
-                    bio = e.get("biosignals", False) if isinstance(e, dict) else False
-                    geo = e.get("geosignals", False) if isinstance(e, dict) else False
-                    mats = e.get("materials", {})   if isinstance(e, dict) else {}
-                    self.bodies[n] = Body(n, land, mats, bio, geo)
 
     def update_body(self, name: str, landable: bool, biosignals: int, geosignals: int, materials: Dict[str, float]):
         with self.lock:
@@ -128,13 +134,25 @@ class Model:
 
     # ----- cache -------------------------------------------------------------
     def _save_cache(self):
+        """Persist bodies *and* total_bodies to disk."""
         if self.system_addr is None:
             return
-        _save(
-            CACHE_DIR / f"{self.system_addr}.json",
-            {n: {"landable": b.landable, "biosignals": b.biosignals, "geosignals": b.geosignals, "materials": b.materials}
-             for n, b in self.bodies.items()},
-        )
+
+        # Current format: { "total_bodies": int,
+        #                   "bodies": { name: {landable:…, biosignals:…, geosignals:…, materials:…}, … } }
+        data = {
+            "total_bodies": self.total_bodies,
+            "bodies": {
+                n: {
+                    "landable": b.landable,
+                    "biosignals": b.biosignals,
+                    "geosignals": b.geosignals,
+                    "materials": b.materials,
+                }
+                for n, b in self.bodies.items()
+            },
+        }
+        _save(CACHE_DIR / f"{self.system_addr}.json", data)
 
     def snapshot_total(self) -> Optional[int]:
         with self.lock:
