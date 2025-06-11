@@ -1,65 +1,109 @@
-name: Automated Release
+name: Build binaries with PyInstaller
 
 on:
-  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'         # Only build when pushing a version tag, like v0.3.2
+  workflow_dispatch: # Allow manual trigger
 
 jobs:
-  release:
-    runs-on: ubuntu-latest
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.x'
+          python-version: '3.11'
 
-      - name: Extract version from pyproject.toml
-        id: get_version
+      - name: Install dependencies
         run: |
-          version=$(python -c "import tomllib; print(tomllib.load(open('EDXD/pyproject.toml'))['project']['version'])")
-          echo "VERSION=$version" >> $GITHUB_ENV
-          echo "::set-output name=version::$version"
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+          pip install -r requirements.txt
 
-      - name: Create tar.gz archive (excluding pyproject.toml and .gitignore)
+      - name: Build with PyInstaller
         run: |
-          tar --exclude=EDXD/pyproject.toml --exclude=.gitignore -czf EDXD_${{ env.VERSION }}.tar.gz .
+          pyinstaller --onefile --add-data "EDXD/resources:resources" EDXD/ed-eXploration-dashboard.py
+        shell: bash
 
-      - name: Get previous release tag
-        id: prev_release
+      - name: Prepare release directory
         run: |
-          prev_tag=$(gh release list --limit 1 --json tagName --jq '.[0].tagName')
-          echo "PREV_TAG=$prev_tag" >> $GITHUB_ENV
-          echo "::set-output name=prev_tag::$prev_tag"
+          mkdir release
+          cp dist/ed-eXploration-dashboard* release/
+          mkdir -p release/resources
+          cp EDXD/resources/edxd_16.png release/resources/
+        shell: bash
+
+      - name: Archive release for Linux/macOS
+        if: runner.os != 'Windows'
+        run: |
+          tar -czvf edxd-dashboard-${{ runner.os }}.tar.gz -C release .
+        shell: bash
+
+      - name: Archive release for Windows
+        if: runner.os == 'Windows'
+        run: |
+          powershell Compress-Archive -Path release\* -DestinationPath edxd-dashboard-${{ runner.os }}.zip
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: edxd-dashboard-${{ runner.os }}
+          path: |
+            edxd-dashboard-${{ runner.os }}.tar.gz
+            edxd-dashboard-${{ runner.os }}.zip
+
+  release:
+    name: Draft GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Gather closed issues since last tag
+        id: gather_issues
+        run: |
+          LAST_TAG=$(git tag --sort=-creatordate | grep -v "${GITHUB_REF_NAME}" | head -n1)
+          if [ -z "$LAST_TAG" ]; then
+            echo "No previous tag found. Listing all closed issues."
+            ISSUES=$(gh issue list --state closed --json number,title --jq '.[] | "- #" + (.number|tostring) + ": " + .title')
+          else
+            ISSUES=$(gh issue list --state closed --search "closed:>$LAST_TAG" --json number,title --jq '.[] | "- #" + (.number|tostring) + ": " + .title')
+          fi
+          echo "ISSUES<<EOF" >> $GITHUB_ENV
+          echo "${ISSUES}" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Get closed issues since last release
-        id: issues
+      - name: Create release notes
+        id: create_notes
         run: |
-          issues=$(gh issue list --state closed --json number,title,closedAt,labels,url \
-            --search "closed:>${{ steps.prev_release.outputs.prev_tag }}" | \
-            jq -r '.[] | select(.labels[]?.name != "rejected") | "- [#\(.number)](\(.url)): \(.title)"')
-          echo "RELEASE_NOTES=$issues" >> $GITHUB_ENV
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          echo "## Closed issues since last release" > RELEASE_NOTES.md
+          echo "${ISSUES}" >> RELEASE_NOTES.md
 
-      - name: Create tag for new release
-        run: |
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git config --global user.name "github-actions[bot]"
-          git tag "v${{ env.VERSION }}"
-          git push origin "v${{ env.VERSION }}"
-
-      - name: Create GitHub Release
+      - name: Create or update GitHub Release (draft)
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ env.VERSION }}
-          name: Release ${{ env.VERSION }}
-          body: |
-            ## Changes since previous release:
-            ${{ env.RELEASE_NOTES }}
-          files: EDXD_${{ env.VERSION }}.tar.gz
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          body_path: RELEASE_NOTES.md
+          draft: true
+          files: |
+            dist/edxd-dashboard-ubuntu-latest/edxd-dashboard-ubuntu-latest.tar.gz
+            dist/edxd-dashboard-macos-latest/edxd-dashboard-macos-latest.tar.gz
+            dist/edxd-dashboard-windows-latest/edxd-dashboard-windows-latest.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
