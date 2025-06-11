@@ -10,9 +10,9 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 from typing import Dict
-from .helper.theme_handler import apply_theme
-from .helper.window_titlebar_handler import CustomTitlebar
-from .helper.window_properties import WindowProperties
+from EDXD.gui.helper.theme_handler import apply_theme
+from EDXD.gui.helper.window_titlebar_handler import CustomTitlebar
+from EDXD.gui.helper.window_properties import WindowProperties
 
 TITLE = "Minerals to show"
 WINID = "MINERALS_FILTER"

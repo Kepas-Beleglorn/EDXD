@@ -12,12 +12,12 @@ from __future__ import annotations
 import json, threading, time, queue
 from pathlib import Path
 from typing import Dict, List, Optional
-from .resources.BodyAppraiser import calculate_estimated_value, appraise_body
+from EDXD.resources.BodyAppraiser import calculate_estimated_value, appraise_body
 
 # ---------------------------------------------------------------------------
 # paths (shared with other modules)
 # ---------------------------------------------------------------------------
-from .gobal_constants import CACHE_DIR
+from EDXD.gobal_constants import CACHE_DIR
 
 # ---------------------------------------------------------------------------
 # helpers

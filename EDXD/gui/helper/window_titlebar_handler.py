@@ -5,7 +5,7 @@ Call `CustomTitlebar(widget)` before creating widgets in any Tk/Toplevel window.
 """
 import sys
 
-from .theme_handler import BG, FG, HBG, ICON_PATH
+from EDXD.gui.helper.theme_handler import BG, FG, HBG, ICON_PATH
 import tkinter as tk
 import os
 

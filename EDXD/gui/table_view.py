@@ -3,9 +3,9 @@ import tkinter as tk
 from tkinter import ttk
 from typing import Dict, Callable, Optional
 
-from ..model import Body
-from .set_mineral_filter import RAW_MATS
-from ..gobal_constants import SYMBOL
+from EDXD.model import Body
+from EDXD.gui.set_mineral_filter import RAW_MATS
+from EDXD.gobal_constants import SYMBOL
 
 
 # ---------------------------------------------------------------------------

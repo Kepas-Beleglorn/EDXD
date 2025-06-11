@@ -3,11 +3,8 @@ theme_handler.py – Centralized theme handling for EDXD GUI
 ==========================================================
 Call `apply_theme(widget)` before creating widgets in any Tk/Toplevel window.
 """
-import tkinter
-import tkinter as tk
-import os
 from tkinter import ttk, PhotoImage
-from ...gobal_constants import ICON_PATH, BG, HBG, FG, ACC, BDC
+from EDXD.gobal_constants import ICON_PATH, BG, HBG, FG, ACC, BDC
 
 def set_icon(widget):
     # --- set app icon ---

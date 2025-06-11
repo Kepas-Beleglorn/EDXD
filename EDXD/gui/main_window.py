@@ -8,14 +8,14 @@ import tkinter as tk
 from tkinter import ttk
 from typing import Dict
 
-from ..model import Model, Body
-from .table_view     import BodiesTable
-from .set_mineral_filter   import ConfigPanel
-from .detail_selected import DetailSelected
-from .detail_target   import DetailTarget
-from .helper.theme_handler import apply_theme
-from .helper.window_titlebar_handler import CustomTitlebar
-from .helper.window_properties import WindowProperties
+from EDXD.model import Model, Body
+from EDXD.gui.table_view     import BodiesTable
+from EDXD.gui.set_mineral_filter   import ConfigPanel
+from EDXD.gui.detail_selected import DetailSelected
+from EDXD.gui.detail_target   import DetailTarget
+from EDXD.gui.helper.theme_handler import apply_theme
+from EDXD.gui.helper.window_titlebar_handler import CustomTitlebar
+from EDXD.gui.helper.window_properties import WindowProperties
 
 TITLE = "ED eXploration Dashboard"
 WINID = "EDXD_MAIN_WINDOW"

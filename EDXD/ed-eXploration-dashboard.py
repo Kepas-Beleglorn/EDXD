@@ -2,10 +2,10 @@
 from pathlib import Path
 import argparse, queue
 
-from .gobal_constants import CFG_FILE
-from .gui.helper.theme_handler import set_icon
-from .model import Model, Tail, Controller, StatusWatcher
-from .gui import MainWindow, RAW_MATS                # imports all sub-widgets
+from EDXD.gobal_constants import CFG_FILE
+from EDXD.gui.helper.theme_handler import set_icon
+from EDXD.model import Model, Tail, Controller, StatusWatcher
+from EDXD.gui import MainWindow, RAW_MATS                # imports all sub-widgets
 
 def main():
     import json, sys
