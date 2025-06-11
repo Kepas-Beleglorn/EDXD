@@ -38,11 +38,15 @@ def latest_journal(folder: Path) -> Optional[Path]:
 # simple container
 # ---------------------------------------------------------------------------
 class Body:
-    __slots__ = ("name", "landable", "biosignals", "geosignals", "scan_value", "mapped_value", "materials")
+    __slots__ = ("name", "landable", "biosignals", "geosignals",
+                 "scan_value", "mapped_value", "materials",
+                 "bio_found", "geo_found")
 
     def __init__(self, name: str,
                  landable: bool,
                  materials: Dict[str, float],
+                 bio_found: Dict[str, int] | None = None,
+                 geo_found: Dict[str, bool] | None = None,
                  biosignals: int = 0,
                  geosignals: int = 0,
                  scan_value: int = 0,
@@ -54,6 +58,10 @@ class Body:
         self.scan_value     = scan_value
         self.mapped_value   = mapped_value
         self.materials      = materials
+        # { biosign name -> scans_done }         e.g. {"Bacterium Bullaris":2}
+        self.bio_found = bio_found or {}
+        # { "volcanism-01": True … }             True once SRV scanned
+        self.geo_found = geo_found or {}
 
 # ---------------------------------------------------------------------------
 # thread-safe data model
@@ -96,7 +104,6 @@ class Model:
             self.system_addr = address
             self.bodies.clear()
             self.target_body = None
-            self.total_bodies = None
 
             cached = _load(CACHE_DIR / f"{address}.json", {})
 
@@ -111,11 +118,13 @@ class Model:
                     bio = e.get("biosignals", 0)
                     geo = e.get("geosignals", 0)
                     mats = e.get("materials", {})
-                    self.bodies[n] = Body(n, land, mats, bio, geo)
+                    bio_dict = e.get("bio_found", {})
+                    geo_dict = e.get("geo_found", {})
+                    self.bodies[n] = Body(name=n, landable=land, materials=mats, biosignals=bio, geosignals=geo, bio_found=bio_dict, geo_found=geo_dict)
             elif isinstance(cached, list):
                 # legacy: plain list of names
                 for n in cached:
-                    self.bodies[n] = Body(n, False, {})
+                    self.bodies[n] = Body(n, landable=False, materials={})
 
     def update_body(self, name: str, landable: bool, biosignals: int, geosignals: int, materials: Dict[str, float]):
         with self.lock:
@@ -148,6 +157,8 @@ class Model:
                     "biosignals": b.biosignals,
                     "geosignals": b.geosignals,
                     "materials": b.materials,
+                    "bio_found": b.bio_found,
+                    "geo_found": b.geo_found,
                 }
                 for n, b in self.bodies.items()
             },
@@ -225,13 +236,29 @@ class Controller(threading.Thread):
                         self.m.bodies[bn] = Body(bn, False, {})
                 self.m.total_bodies = evt.get("BodyCount")
 
+            # ── on-foot DNA sample or SRV organic scan ─────────────────────
+            elif etype in ("ExobiologySample", "OrganicScan"):
+                body = evt.get("BodyName")  # present in Odyssey 4.0+
+                genus = evt.get("Genus") or evt.get("Species")  # 4.1 uses "Species"
+                if body and genus:
+                    b = self.m.bodies.setdefault(body, Body(body, False, {}))
+                    b.bio_found[genus] = min(b.bio_found.get(genus, 0) + 1, 3)
+
+            # ── SRV geology scan (CodexEntry, but not if IsNewDiscovery=false) ───
+            elif etype == "CodexEntry" and evt.get("Category") == "$Codex_Category_Geology;":
+                body = evt.get("BodyName")
+                site = evt.get("Name") or evt.get("EntryID")
+                if body and site:
+                    b = self.m.bodies.setdefault(body, Body(body, False, {}))
+                    b.geo_found[site] = True
+
             elif etype == "Scan":
                 if self.m.system_name is None:   # first scan in a fresh session
                     self.m.reset_system(evt.get("StarSystem"), evt.get("SystemAddress"))
 
                 body_name = evt.get("BodyName")
                 mats = {m["Name"]: m["Percent"] for m in evt.get("Materials", [])}
-                self.m.update_body(body_name, evt.get("Landable", False), 0, 0, mats)
+                self.m.update_body(name=body_name, landable=evt.get("Landable", False), biosignals=0, geosignals=0, materials=mats)
 
             elif etype == "FSSBodySignals":
                 body_name = evt.get("BodyName")

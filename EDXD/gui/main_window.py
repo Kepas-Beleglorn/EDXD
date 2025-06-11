@@ -30,7 +30,7 @@ class MainWindow(tk.Tk):
 
         self.title(TITLE)
         # Load properties for this window (with defaults if not saved before)
-        self.props = WindowProperties.load(WINID, default_height=500, default_width=1200)
+        self.props = WindowProperties.load(WINID, default_height=1000, default_width=1200)
         self.geometry(f"{self.props.width}x{self.props.height}+{self.props.posx}+{self.props.posy}")
         self._ready = False  # not yet mapped
         self._loading = True # during startup we must not save, otherwise we'll get garbage!!

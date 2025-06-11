@@ -73,6 +73,24 @@ class DetailTarget(tk.Toplevel):
                     self.txt.insert(tk.END,
                                     f"{mat.title():<12} {pct:5.1f}%\n")
 
+            # ── Biosignals progress lines ───────────────────────────────
+            if body.biosignals:
+                self.txt.insert(tk.END, "\nBio-signals:\n")
+                for species, done in body.bio_found.items():
+                    if done >= 3:
+                        self.txt.insert(tk.END, f"  ✅  {species}\n")
+                    else:
+                        self.txt.insert(tk.END, f"  {species}  ({done}/3)\n")
+
+            # ── Geology progress lines ─────────────────────────────────
+            if body.geosignals:
+                self.txt.insert(tk.END, "\nGeo-signals:\n")
+                done = len(body.geo_found)
+                if done >= 1:
+                    self.txt.insert(tk.END, f"  ✅  {done}/{body.geosignals}\n")
+                else:
+                    self.txt.insert(tk.END, f"  🌋  (?)/{body.geosignals}\n")
+
         if not self.txt.get("1.0", tk.END).strip():
             self.txt.insert(tk.END, "—")
 
