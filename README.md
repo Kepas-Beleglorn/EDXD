@@ -21,10 +21,8 @@ Planned:
 
 ## Installation
 
-```
 Just download the zip for your platform, unpack the contents anywhere you like and run with 
 `ed-eXploration-dashboard --journals "/path/to/your/EDJournals/Saved Games/Frontier Developments/Elite Dangerous`"
-```
 
 ---
 
