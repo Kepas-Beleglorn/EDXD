@@ -12,6 +12,7 @@ from __future__ import annotations
 import json, threading, time, queue
 from pathlib import Path
 from typing import Dict, List, Optional
+from .resources.BodyAppraiser import calculate_estimated_value, appraise_body
 
 # ---------------------------------------------------------------------------
 # paths (shared with other modules)
@@ -120,19 +121,24 @@ class Model:
                     mats = e.get("materials", {})
                     bio_dict = e.get("bio_found", {})
                     geo_dict = e.get("geo_found", {})
-                    self.bodies[n] = Body(name=n, landable=land, materials=mats, biosignals=bio, geosignals=geo, bio_found=bio_dict, geo_found=geo_dict)
+                    scan_value = e.get("scan_value", 0)
+                    mapped_value = e.get("mapped_value", 0)
+
+                    self.bodies[n] = Body(name=n, landable=land, materials=mats, biosignals=bio, geosignals=geo, bio_found=bio_dict, geo_found=geo_dict, scan_value=scan_value, mapped_value=mapped_value)
             elif isinstance(cached, list):
                 # legacy: plain list of names
                 for n in cached:
                     self.bodies[n] = Body(n, landable=False, materials={})
 
-    def update_body(self, name: str, landable: bool, biosignals: int, geosignals: int, materials: Dict[str, float]):
+    def update_body(self, name: str, landable: bool, biosignals: int, geosignals: int, materials: Dict[str, float], scandata):
         with self.lock:
             b = self.bodies.get(name, Body(name, landable, {}))
             b.landable = b.landable or landable
             b.biosignals = b.biosignals or biosignals
             b.geosignals = b.geosignals or geosignals
             b.materials.update(materials)
+            b.scan_value = appraise_body(body_info=scandata, just_scanned_value=True)
+            b.mapped_value = appraise_body(body_info=scandata, just_scanned_value=False)
             self.bodies[name] = b
             self._save_cache()
 
@@ -159,6 +165,8 @@ class Model:
                     "materials": b.materials,
                     "bio_found": b.bio_found,
                     "geo_found": b.geo_found,
+                    "scan_value": b.scan_value,
+                    "mapped_value": b.mapped_value
                 }
                 for n, b in self.bodies.items()
             },
@@ -258,7 +266,7 @@ class Controller(threading.Thread):
 
                 body_name = evt.get("BodyName")
                 mats = {m["Name"]: m["Percent"] for m in evt.get("Materials", [])}
-                self.m.update_body(name=body_name, landable=evt.get("Landable", False), biosignals=0, geosignals=0, materials=mats)
+                self.m.update_body(name=body_name, landable=evt.get("Landable", False), biosignals=0, geosignals=0, materials=mats, scandata=evt)
 
             elif etype == "FSSBodySignals":
                 body_name = evt.get("BodyName")

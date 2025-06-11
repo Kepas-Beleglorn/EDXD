@@ -56,11 +56,11 @@ class BodiesTable(ttk.Treeview):
 
         # Discovery‐value column (🔍)
         self.heading("disc", text="🔍", command=lambda: self._sort_by("disc"))
-        self.column("disc", width=60, anchor="e")
+        self.column("disc", width=80, anchor="e")
 
         # Mapped‐value column (🗺)
         self.heading("map", text="🗺", command=lambda: self._sort_by("map"))
-        self.column("map", width=60, anchor="e")
+        self.column("map", width=100, anchor="e")
 
         # Mineral columns (sortable by their key)
         for mat in RAW_MATS:
