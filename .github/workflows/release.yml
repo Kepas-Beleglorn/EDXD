@@ -18,13 +18,13 @@ jobs:
       - name: Extract version from pyproject.toml
         id: get_version
         run: |
-          version=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml'))['project']['version'])")
+          version=$(python -c "import tomllib; print(tomllib.load(open('EDXD/pyproject.toml'))['project']['version'])")
           echo "VERSION=$version" >> $GITHUB_ENV
           echo "::set-output name=version::$version"
 
       - name: Create tar.gz archive (excluding pyproject.toml and .gitignore)
         run: |
-          tar --exclude=pyproject.toml --exclude=.gitignore -czf EDXD_${{ env.VERSION }}.tar.gz .
+          tar --exclude=EDXD/pyproject.toml --exclude=.gitignore -czf EDXD_${{ env.VERSION }}.tar.gz .
 
       - name: Get previous release tag
         id: prev_release
