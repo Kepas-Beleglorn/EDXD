@@ -12,8 +12,10 @@ from tkinter import ttk
 from typing import Dict
 from .helper.theme_handler import apply_theme
 from .helper.window_titlebar_handler import CustomTitlebar
+from .helper.window_properties import WindowProperties
 
 TITLE = "Minerals to show"
+WINID = "MINERALS_FILTER"
 
 from ..gobal_constants import RAW_MATS
 
@@ -31,6 +33,13 @@ class ConfigPanel(tk.Toplevel):
 
         self.title(TITLE)
         self.resizable(False, False)
+        # Load properties for this window (with defaults if not saved before)
+        self.props = WindowProperties.load(WINID, default_height=330, default_width=450, default_posx=master.props.posx, default_posy=master.props.posy)
+        self.geometry(f"{self.props.width}x{self.props.height}+{self.props.posx}+{self.props.posy}")
+        self._ready = False  # not yet mapped
+        self._loading = True  # during startup we must not save, otherwise we'll get garbage!!
+        self.bind("<Map>", self.on_mapped)  # mapped == now visible
+        self.bind("<Configure>", self.on_configure)  # move / resize
         self.attributes("-topmost", True)
 
         # In your window constructor:
@@ -43,6 +52,11 @@ class ConfigPanel(tk.Toplevel):
         self._on_apply = on_apply
 
         self._build_widgets()
+
+        self.after(3000, self.loading_finished)
+
+    def loading_finished(self):
+        self._loading = False
 
     # ------------------------------------------------------------------
     def _build_widgets(self):
@@ -85,3 +99,16 @@ class ConfigPanel(tk.Toplevel):
         if self._on_apply:
             self._on_apply()
         self.destroy()
+
+    # --------------------------------------------------------------
+    def on_mapped(self, _):
+        """First time the window becomes visible."""
+        self._ready = True
+
+    def on_configure(self, event):  # move/resize
+        if self._ready and not self._loading:
+            self.props.height = event.height
+            self.props.width = event.width
+            self.props.posx = event.x
+            self.props.posy = event.y
+            self.props.save()

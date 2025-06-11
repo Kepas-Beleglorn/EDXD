@@ -14,8 +14,9 @@ class WindowProperties:
         self.posx = posx
         self.posy = posy
 
+
     @classmethod
-    def load(cls, window_id: str, default_size=(400, 300), default_pos=(100, 100)):
+    def load(cls, window_id: str, default_height=400, default_width=300, default_posx=100, default_posy=100):
         if os.path.exists(CFG_FILE):
             with open(CFG_FILE, "r") as f:
                 data = json.load(f)
@@ -23,7 +24,7 @@ class WindowProperties:
             if props:
                 return cls(window_id, props["height"], props["width"], props["posx"], props["posy"])
         # Return defaults if not found
-        return cls(window_id, default_size[1], default_size[0], default_pos[0], default_pos[1])
+        return cls(window_id, default_height, default_width, default_posx, default_posy)
 
     def save(self):
         # Read current config or create new
@@ -51,16 +52,34 @@ class WindowProperties:
 *** USAGE ***
 from window_properties import WindowProperties
 
-# Load properties for this window (with defaults if not saved before)
-props = WindowProperties.load("main_window", default_size=(800, 600))
+        # Load properties for this window (with defaults if not saved before)
+        self.props = WindowProperties.load(WINID)
+        self.geometry(f"{self.props.width}x{self.props.height}+{self.props.posx}+{self.props.posy}")
+        self._ready = False  # not yet mapped
+        self._loading = True  # during startup we must not save, otherwise we'll get garbage!!
+        self.bind("<Map>", self.on_mapped)  # mapped == now visible
+        self.bind("<Configure>", self.on_configure)  # move / resize
+        
+        ...
+        
+        self.after(3000, self.loading_finished)
 
-# Set/restore geometry
-root.geometry(f"{props.width}x{props.height}+{props.posx}+{props.posy}")
+    def loading_finished(self):
+        self._loading = False
 
-# ... later, before closing or after a resize/move event
-props.height = new_height
-props.width = new_width
-props.posx = new_x
-props.posy = new_y
-props.save()
+# ... later, after a resize/move event
+    # --------------------------------------------------------------
+    def on_mapped(self, _):
+        #First time the window becomes visible.
+        self._ready = True
+
+    def on_configure(self, event):  # move/resize
+        if self._ready and not self._loading:
+            self.props.height = event.height
+            self.props.width = event.width
+            self.props.posx = event.x
+            self.props.posy = event.y
+            self.props.save()
+
+
 """

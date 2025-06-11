@@ -2,6 +2,7 @@
 main_window.py – root Tk window that wires all GUI pieces together
 =================================================================
 """
+
 from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
@@ -14,8 +15,10 @@ from .detail_selected import DetailSelected
 from .detail_target   import DetailTarget
 from .helper.theme_handler import apply_theme
 from .helper.window_titlebar_handler import CustomTitlebar
+from .helper.window_properties import WindowProperties
 
 TITLE = "ED eXploration Dashboard"
+WINID = "EDXD_MAIN_WINDOW"
 
 class MainWindow(tk.Tk):
     """Composes toolbar  +  table  +  two detail windows."""
@@ -26,7 +29,13 @@ class MainWindow(tk.Tk):
         self.prefs  = prefs
 
         self.title(TITLE)
-        self.geometry("1200x500")
+        # Load properties for this window (with defaults if not saved before)
+        self.props = WindowProperties.load(WINID, default_height=500, default_width=1200)
+        self.geometry(f"{self.props.width}x{self.props.height}+{self.props.posx}+{self.props.posy}")
+        self._ready = False  # not yet mapped
+        self._loading = True # during startup we must not save, otherwise we'll get garbage!!
+        self.bind("<Map>", self.on_mapped)  # mapped == now visible
+        self.bind("<Configure>", self.on_configure)  # move / resize
         self.attributes("-topmost", True)
 
         # In your window constructor:
@@ -42,6 +51,11 @@ class MainWindow(tk.Tk):
 
         # listen for target changes
         self.model.register_target_listener(self._update_target)
+
+        self.after(3000, self.loading_finished)
+
+    def loading_finished(self):
+        self._loading = False
 
     # ------------------------------------------------------------------
     def _build_widgets(self):
@@ -106,8 +120,6 @@ class MainWindow(tk.Tk):
 
         # trigger a table refresh so the status icon updates immediately
         self._refresh()
-
-
         
     # ------------------------------------------------------------------
     # periodic refresh
@@ -138,3 +150,16 @@ class MainWindow(tk.Tk):
         self.lbl_sys.config(text=f"{name}   ({scanned}/{total})")
 
         self.after(1_000, self._refresh)     # schedule next update
+
+    # --------------------------------------------------------------
+    def on_mapped(self, _):
+        """First time the window becomes visible."""
+        self._ready = True
+
+    def on_configure(self, event):  # move/resize
+        if self._ready and not self._loading:
+            self.props.height = event.height
+            self.props.width = event.width
+            self.props.posx = event.x
+            self.props.posy = event.y
+            self.props.save()

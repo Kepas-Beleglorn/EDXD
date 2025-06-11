@@ -12,10 +12,12 @@ from tkinter import ttk
 from typing import Optional, Dict
 from .helper.theme_handler import apply_theme, apply_text_theme
 from .helper.window_titlebar_handler import CustomTitlebar
+from .helper.window_properties import WindowProperties
 
 from ..model import Body
 
 TITLE = "Selected body"
+WINID = "DETAIL_SELECTED"
 
 class DetailSelected(tk.Toplevel):
     """Always reflects the row the user clicked in the BodiesTable."""
@@ -26,6 +28,13 @@ class DetailSelected(tk.Toplevel):
         apply_theme(self)
 
         self.title(TITLE)
+        # Load properties for this window (with defaults if not saved before)
+        self.props = WindowProperties.load(WINID)
+        self.geometry(f"{self.props.width}x{self.props.height}+{self.props.posx}+{self.props.posy}")
+        self._ready = False  # not yet mapped
+        self._loading = True  # during startup we must not save, otherwise we'll get garbage!!
+        self.bind("<Map>", self.on_mapped)  # mapped == now visible
+        self.bind("<Configure>", self.on_configure)  # move / resize
         self.attributes("-topmost", True)
 
         # In your window constructor:
@@ -43,6 +52,11 @@ class DetailSelected(tk.Toplevel):
         self.txt.pack(fill=tk.BOTH, expand=True, padx=4, pady=(0, 6))
         apply_text_theme(self.txt)
         
+
+        self.after(3000, self.loading_finished)
+
+    def loading_finished(self):
+        self._loading = False
 
     # ------------------------------------------------------------------
     def render(self, body: Optional[Body], filters: Dict[str, bool]):
@@ -71,3 +85,15 @@ class DetailSelected(tk.Toplevel):
 
         self.txt.config(state="disabled")
 
+    # --------------------------------------------------------------
+    def on_mapped(self, _):
+        """First time the window becomes visible."""
+        self._ready = True
+
+    def on_configure(self, event):  # move/resize
+        if self._ready and not self._loading:
+            self.props.height = event.height
+            self.props.width = event.width
+            self.props.posx = event.x
+            self.props.posy = event.y
+            self.props.save()
