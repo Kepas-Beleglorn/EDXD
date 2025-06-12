@@ -31,7 +31,7 @@ class BodiesTable(ttk.Treeview):
 
     def __init__(self, master, on_select: Callable[[str], None]):
         # define the fixed column order
-        self._all_cols = ("status", "body", "land", "bio", "geo", "disc", "map") + tuple(RAW_MATS)
+        self._all_cols = ("status", "body", "distance", "land", "bio", "geo", "disc", "map") + tuple(RAW_MATS)
         super().__init__(master, columns=self._all_cols, show="headings", height=18)
 
         # Status column (not sortable)
@@ -41,6 +41,10 @@ class BodiesTable(ttk.Treeview):
         # Body column
         self.heading("body", text="Body", command=lambda: self._sort_by("body"))
         self.column("body", width=300, anchor="w")
+
+        # Distance column
+        self.heading("distance", text="Distance", command=lambda: self._sort_by("distance"))
+        self.column("distance", width=80, anchor="center")
 
         # Landable column
         self.heading("land", text="🛬", command=lambda: self._sort_by("land"))
@@ -71,12 +75,13 @@ class BodiesTable(ttk.Treeview):
         # Tooltip support for mineral headers
         # build a map of column key → tooltip text
         self._col2name: Dict[str, str] = {}
-        self._col2name = {mat: mat.title() for mat in RAW_MATS}
-        self._col2name["land"] = "Landable"
-        self._col2name["bio"] = "Bio-signals"
-        self._col2name["geo"] = "Geo-signals"
-        self._col2name["disc"] = "Scanned value"
-        self._col2name["map"] = "Mapped value"
+        self._col2name              = {mat: mat.title() for mat in RAW_MATS}
+        self._col2name["distance"]  = "Distance from entry point"
+        self._col2name["land"]      = "Landable"
+        self._col2name["bio"]       = "Bio-signals"
+        self._col2name["geo"]       = "Geo-signals"
+        self._col2name["disc"]      = "Scanned value"
+        self._col2name["map"]       = "Mapped value"
         self._tip = None
         self._tip_col = None
         self.bind("<Motion>", self._on_motion)
@@ -125,7 +130,7 @@ class BodiesTable(ttk.Treeview):
         visible_mats = [m for m, on in filters.items() if on]
 
         # 2) set displaycolumns in order: status, body, land, bio, geo, <minerals>
-        display = ("status", "body", "land", "bio", "geo", "disc", "map") + tuple(visible_mats)
+        display = ("status", "body", "distance", "land", "bio", "geo", "disc", "map") + tuple(visible_mats)
         self["displaycolumns"] = display
 
         # 3) update/create rows
@@ -148,6 +153,7 @@ class BodiesTable(ttk.Treeview):
             row = [
                 status_icon,
                 name,
+                f"{body.distance:,} Ls",
                 "🛬" if body.landable else "",
                 f"🌿 {getattr(body, 'biosignals', 0)}"
                 if getattr(body, "biosignals", 0) > 0
@@ -197,6 +203,12 @@ class BodiesTable(ttk.Treeview):
             # Body column → alphabetical
             if self._all_cols[col_index] == "body":
                 return cell.lower()
+            # Discovery (disc) or Mapped (map) → strip “ Cr” and convert to int
+            if self._all_cols[col_index] == "distance":
+                try:
+                    return int(cell.replace(" Ls", "").replace(",", "").strip())
+                except:
+                    return -1
             # Landable → place 🛬 rows first
             if self._all_cols[col_index] == "land":
                 return 0 if cell else 1
