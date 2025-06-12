@@ -36,7 +36,7 @@ class BodiesTable(ttk.Treeview):
 
         # Status column (not sortable)
         self.heading("status", text="🎯🖱")
-        self.column("status", width=40, anchor="center")
+        self.column("status", width=44, anchor="center")
 
         # Body column
         self.heading("body", text="Body", command=lambda: self._sort_by("body"))

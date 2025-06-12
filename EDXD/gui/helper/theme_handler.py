@@ -46,11 +46,11 @@ def apply_theme(widget):
     # Treeview rows
     style.configure("Treeview",
                     background=BG, foreground=FG,
-                    fieldbackground=BG, borderwidth=0,
-                    rowheight=22)
+                    fieldbackground=BG, borderwidth=1,
+                    rowheight=22, bordercolor=BDC, relief="flat")
     style.map("Treeview",
               background=[("selected", BG)],
-              foreground=[("selected", ACC)])
+              foreground=[("selected", BDC)])
 
     # Tooltip (for custom TLabel tooltips)
     style.configure("Tip.TLabel",
@@ -64,7 +64,7 @@ def apply_theme(widget):
     style.configure("TText", background=BG, foreground=FG, insertbackground=FG)
 
     # Set widget background directly (for Tk/Toplevel)
-    widget.configure(background=BG)
+    widget.configure(background=BG, relief="flat")
 
 def apply_text_theme(text_widget):
     """Apply EDXD theme to a tk.Text widget."""
@@ -72,4 +72,5 @@ def apply_text_theme(text_widget):
         background=BG,
         foreground=FG,
         insertbackground=FG  # caret color
-    )
+        , relief="flat"
+        )
