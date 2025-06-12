@@ -153,9 +153,9 @@ class BodiesTable(ttk.Treeview):
             row = [
                 status_icon,
                 name,
-                f"{body.distance:,.0f} Ls"
-                if getattr(body, "distance", 0)
-                else "",
+                f"{body.distance:,.0f} Ls",
+                #if getattr(body, "distance", 0)
+                #else "",
                 "🛬" if body.landable else "",
                 f"🌿 {getattr(body, 'biosignals', 0)}"
                 if getattr(body, "biosignals", 0) > 0
