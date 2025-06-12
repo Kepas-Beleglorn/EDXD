@@ -1,6 +1,6 @@
 # EDXD · Elite Dangerous eXploration Dashboard
 
-A cross-platform, real-time dashboard for explorers:
+### A cross-platform, real-time dashboard for explorers:
 * **100 % Python** – runs on Linux, macOS and Windows (no .NET, no exe).
 
 ### Features
