@@ -31,7 +31,7 @@ class BodiesTable(ttk.Treeview):
 
     def __init__(self, master, on_select: Callable[[str], None]):
         # define the fixed column order
-        self._all_cols = ("status", "body", "distance", "land", "bio", "geo", "disc", "map") + tuple(RAW_MATS)
+        self._all_cols = ("status", "body", "distance", "land", "bio", "geo", "value") + tuple(RAW_MATS)
         super().__init__(master, columns=self._all_cols, show="headings", height=18)
 
         # Status column (not sortable)
@@ -39,11 +39,11 @@ class BodiesTable(ttk.Treeview):
         self.column("status", width=44, anchor="center")
 
         # Body column
-        self.heading("body", text="Body", command=lambda: self._sort_by("body"))
+        self.heading("body", text="Body", command=lambda: self._sort_by("body"), anchor="w")
         self.column("body", width=250, anchor="w")
 
         # Distance column
-        self.heading("distance", text="Distance", command=lambda: self._sort_by("distance"))
+        self.heading("distance", text="Distance", command=lambda: self._sort_by("distance"), anchor="e")
         self.column("distance", width=80, anchor="e")
 
         # Landable column
@@ -58,18 +58,14 @@ class BodiesTable(ttk.Treeview):
         self.heading("geo", text="🌋", command=lambda: self._sort_by("geo"))
         self.column("geo", width=40, anchor="center")
 
-        # Discovery‐value column (🔍)
-        self.heading("disc", text="🔍", command=lambda: self._sort_by("disc"))
-        self.column("disc", width=80, anchor="e")
-
-        # Mapped‐value column (🗺)
-        self.heading("map", text="🗺", command=lambda: self._sort_by("map"))
-        self.column("map", width=100, anchor="e")
+        # Discovery‐value column (🔍💲)
+        self.heading("value", text="🔍💲", command=lambda: self._sort_by("value"), anchor="e")
+        self.column("value", width=80, anchor="e")
 
         # Mineral columns (sortable by their key)
         for mat in RAW_MATS:
             sym = SYMBOL.get(mat, mat[:2].title())
-            self.heading(mat, text=sym, command=lambda m=mat: self._sort_by(m))
+            self.heading(mat, text=sym, command=lambda m=mat: self._sort_by(m), anchor="e")
             self.column(mat, width=60, anchor="e")
 
         # Tooltip support for mineral headers
@@ -80,8 +76,7 @@ class BodiesTable(ttk.Treeview):
         self._col2name["land"]      = "Landable"
         self._col2name["bio"]       = "Bio-signals"
         self._col2name["geo"]       = "Geo-signals"
-        self._col2name["disc"]      = "Scanned value"
-        self._col2name["map"]       = "Mapped value"
+        self._col2name["value"]      = "Estimated value"
         self._tip = None
         self._tip_col = None
         self.bind("<Motion>", self._on_motion)
@@ -105,7 +100,7 @@ class BodiesTable(ttk.Treeview):
         else:
             self.sort_col = col
             # Minerals, and values sort descending first; others ascend
-            self.sort_reverse = (col in RAW_MATS or col in ("disc", "map", "bio", "geo"))
+            self.sort_reverse = (col in RAW_MATS or col in ("value", "bio", "geo"))
         self.event_generate("<<EdmSortRequest>>")
 
     # ------------------------------------------------------------------
@@ -130,7 +125,7 @@ class BodiesTable(ttk.Treeview):
         visible_mats = [m for m, on in filters.items() if on]
 
         # 2) set displaycolumns in order: status, body, land, bio, geo, <minerals>
-        display = ("status", "body", "distance", "land", "bio", "geo", "disc", "map") + tuple(visible_mats)
+        display = ("status", "body", "distance", "land", "bio", "geo", "value") + tuple(visible_mats)
         self["displaycolumns"] = display
 
         # 3) update/create rows
@@ -164,12 +159,8 @@ class BodiesTable(ttk.Treeview):
                 if getattr(body, "geosignals", 0) > 0
                 else "",
                 # new: discovery value (formatted “1 234 890 Cr”)
-                f"{body.scan_value:,} Cr" 
-                if getattr(body, "scan_value", 0) 
-                else "",
-                # new: mapped value
-                f"{body.mapped_value:,} Cr" 
-                if getattr(body, "mapped_value", 0) 
+                f"{body.estimated_value:,} Cr"
+                if getattr(body, "estimated_value", 0)
                 else "",
             ] + [
                 f"{body.materials.get(m,0):.1f} %"
@@ -221,7 +212,7 @@ class BodiesTable(ttk.Treeview):
             if self._all_cols[col_index] == "geo":
                 return cell
             # Discovery (disc) or Mapped (map) → strip “ Cr” and convert to int
-            if self._all_cols[col_index] in ("disc", "map"):
+            if self._all_cols[col_index] == "value":
                 try:
                     return int(cell.replace(" Cr", "").replace(",", "").strip())
                 except:

@@ -41,32 +41,29 @@ def latest_journal(folder: Path) -> Optional[Path]:
 # ---------------------------------------------------------------------------
 class Body:
     __slots__ = ("name", "landable", "biosignals", "geosignals",
-                 "scan_value", "mapped_value", "materials",
+                 "estimated_value", "materials",
                  "bio_found", "geo_found", "distance")
 
     def __init__(self,
-                 materials: Dict[str, float],
-                 name: str,
-                 landable: bool,
-                 distance: int = 0,
-                 bio_found: Dict[str, int] | None = None,
-                 geo_found: Dict[str, bool] | None = None,
-                 biosignals: int = 0,
-                 geosignals: int = 0,
-                 scan_value: int = 0,
-                 mapped_value: int = 0):
-        self.name           = name
-        self.distance       = distance
-        self.landable       = landable
-        self.biosignals     = biosignals
-        self.geosignals     = geosignals
-        self.scan_value     = scan_value
-        self.mapped_value   = mapped_value
-        self.materials      = materials
-        # { biosign name -> scans_done }         e.g. {"Bacterium Bullaris":2}
-        self.bio_found = bio_found or {}
-        # { "volcanism-01": True … }             True once SRV scanned
-        self.geo_found = geo_found or {}
+                 materials:         Dict[str, float],
+                 name:              str,
+                 landable:          bool,
+                 distance:          int = 0,
+                 bio_found:         Dict[str, int] | None = None,
+                 geo_found:         Dict[str, bool] | None = None,
+                 biosignals:        int = 0,
+                 geosignals:        int = 0,
+                 estimated_value:   int = 0):
+
+        self.name               = name
+        self.distance           = distance
+        self.landable           = landable
+        self.biosignals         = biosignals
+        self.geosignals         = geosignals
+        self.estimated_value    = estimated_value
+        self.materials          = materials
+        self.bio_found          = bio_found or {}    # { biosign name -> scans_done }         e.g. {"Bacterium Bullaris":2}
+        self.geo_found          = geo_found or {}    # { "volcanism-01": True … }             True once SRV scanned
 
 # ---------------------------------------------------------------------------
 # thread-safe data model
@@ -126,10 +123,9 @@ class Model:
                     mats = e.get("materials", {})
                     bio_dict = e.get("bio_found", {})
                     geo_dict = e.get("geo_found", {})
-                    scan_value = e.get("scan_value", 0)
-                    mapped_value = e.get("mapped_value", 0)
+                    estimated_value = e.get("estimated_value", 0)
 
-                    self.bodies[n] = Body(name=n, distance=distance, landable=land, materials=mats, biosignals=bio, geosignals=geo, bio_found=bio_dict, geo_found=geo_dict, scan_value=scan_value, mapped_value=mapped_value)
+                    self.bodies[n] = Body(name=n, distance=distance, landable=land, materials=mats, biosignals=bio, geosignals=geo, bio_found=bio_dict, geo_found=geo_dict, estimated_value=estimated_value)
             elif isinstance(cached, list):
                 # legacy: plain list of names
                 for n in cached:
@@ -144,8 +140,7 @@ class Model:
             b.geosignals = b.geosignals or geosignals
             b.materials.update(materials)
             if scandata is not None:
-                b.scan_value = appraise_body(body_info=scandata, just_scanned_value=True)
-                b.mapped_value = appraise_body(body_info=scandata, just_scanned_value=False)
+                b.estimated_value = appraise_body(body_info=scandata, just_scanned_value=False)
             self.bodies[name] = b
             self._save_cache()
 
@@ -173,8 +168,7 @@ class Model:
                     "materials": b.materials,
                     "bio_found": b.bio_found,
                     "geo_found": b.geo_found,
-                    "scan_value": b.scan_value,
-                    "mapped_value": b.mapped_value
+                    "estimated_value": b.estimated_value,
                 }
                 for n, b in self.bodies.items()
             },

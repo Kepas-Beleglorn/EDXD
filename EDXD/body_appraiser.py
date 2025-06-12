@@ -156,11 +156,20 @@ def appraise_body(body_info, just_scanned_value=True):
 
     terraform_state = encode_terraform_state(body_info)
 
+    first_discoverer = "WasDiscovered" in body_info.keys()
+    if first_discoverer:
+        first_discoverer = not body_info['WasDiscovered']
+
+    first_mapper = "WasMapped" in body_info.keys()
+    if first_mapper:
+        first_mapper = not body_info['WasMapped']
+
     options = {
         'haveMapped': not just_scanned_value,  # Always indicate we mapped it so we can tell the max worth
         'efficiencyBonus': True,
-        'isFirstDiscoverer': not body_info['WasDiscovered'],
-        'isFirstMapper': not body_info['WasMapped'],
+#        'isFirstDiscoverer': not body_info['WasDiscovered'],
+        'isFirstDiscoverer': first_discoverer,
+        'isFirstMapper': first_mapper,
     }
 
     return calculate_estimated_value(main_type, specific_type, mass, terraform_state, options)
@@ -272,15 +281,9 @@ def calculate_estimated_value(main_type, specific_type, mass, terraform_state, o
         mass = 1
 
     if main_type == 'Star' or main_type == 1:
-        if options['haveMapped']:
-            return 0
-        else:
             return calculate_estimated_star_value(specific_type, mass)
 
     if mass == 0:
-        if options['haveMapped']:
-            return 0
-        else:
             options['haveMapped'] = True
             return calculate_estimated_planet_value(specific_type, mass, terraform_state, options)
 
