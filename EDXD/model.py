@@ -12,7 +12,7 @@ from __future__ import annotations
 import json, threading, time, queue
 from pathlib import Path
 from typing import Dict, List, Optional
-from EDXD.BodyAppraiser import appraise_body
+from EDXD.body_appraiser import appraise_body
 
 # ---------------------------------------------------------------------------
 # paths (shared with other modules)

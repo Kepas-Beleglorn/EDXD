@@ -277,6 +277,13 @@ def calculate_estimated_value(main_type, specific_type, mass, terraform_state, o
         else:
             return calculate_estimated_star_value(specific_type, mass)
 
+    if mass == 0:
+        if options['haveMapped']:
+            return 0
+        else:
+            options['haveMapped'] = True
+            return calculate_estimated_planet_value(specific_type, mass, terraform_state, options)
+
     if main_type == 'Planet' or main_type == 2:
         return calculate_estimated_planet_value(specific_type, mass, terraform_state, options)
 

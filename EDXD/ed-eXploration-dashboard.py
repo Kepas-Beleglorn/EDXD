@@ -19,7 +19,6 @@ def main():
         cfg["journal_dir"] = str(args.journals.expanduser())
         CFG_FILE.write_text(json.dumps(cfg, indent=2))
     # ensure defaults even if file is old
-    print(CFG_FILE)
     journal_dir = Path(cfg.get("journal_dir", ""))
     if not journal_dir.is_dir():
         sys.exit("Run once with --journals <Saved Games …>")
@@ -33,13 +32,13 @@ def main():
     cfg.setdefault("mat_sel", {m: True for m in RAW_MATS})
     
     def _save():
-        data = {k: v for k, v in cfg.items() if k != "save"}   # drop the fn
+        data = {k: v for k, v in cfg.items() if k != "save"}
         CFG_FILE.write_text(json.dumps(data, indent=2))
         
     # ensure defaults even if file is old
     cfg["save"] = _save               #  ← make the save-function available
     
-    StatusWatcher(journal_dir / "Status.json", model).start()   # ← add this
+    StatusWatcher(journal_dir / "Status.json", model).start()
 
     mw = MainWindow(model, cfg)
     set_icon(mw)
