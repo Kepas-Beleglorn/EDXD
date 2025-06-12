@@ -143,8 +143,9 @@ class Model:
             b.biosignals = b.biosignals or biosignals
             b.geosignals = b.geosignals or geosignals
             b.materials.update(materials)
-            b.scan_value = appraise_body(body_info=scandata, just_scanned_value=True)
-            b.mapped_value = appraise_body(body_info=scandata, just_scanned_value=False)
+            if scandata is not None:
+                b.scan_value = appraise_body(body_info=scandata, just_scanned_value=True)
+                b.mapped_value = appraise_body(body_info=scandata, just_scanned_value=False)
             self.bodies[name] = b
             self._save_cache()
 
@@ -286,8 +287,13 @@ class Controller(threading.Thread):
                         #self.m.bodies[body_name].biosignals = signal.get("Count")
                     if signal.get("Type") == "$SAA_SignalType_Geological;":
                         cgeo = signal.get("Count")
-                    # noinspection PyArgumentList
-                    self.m.update_body(name=body_name, landable=True, biosignals=cbio, geosignals=cgeo)
+                    if body_name in self.m.bodies.keys():
+                        self.m.update_body(name=body_name, landable=True, biosignals=cbio, geosignals=cgeo, distance=self.m.bodies[body_name].distance, materials=self.m.bodies[body_name].materials, scandata={
+                            })
+                    else:
+                        self.m.update_body(name=body_name, landable=True, biosignals=cbio, geosignals=cgeo,
+                                           distance=0,
+                                           materials={}, scandata=None)
 
             elif etype == "SAAMaterialsFound":
                 body_name = evt.get("BodyName")
