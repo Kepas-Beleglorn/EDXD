@@ -1,6 +1,6 @@
 # EDXD · Elite Dangerous eXploration Dashboard
 
-A cross-platform, real-time dashboard for explorers:
+__A cross-platform, real-time dashboard for explorers:__
 
 * **Planetary surface materials** – instantly see every deposit in a system.
 * **Bio-signals & landability** – icons indicate biomasses and whether a body is landable.
@@ -9,7 +9,7 @@ A cross-platform, real-time dashboard for explorers:
 * **Dark “ED” theme** – looks at home next to EDMC / EDSM.
 * **100 % Python** – runs on Linux, macOS and Windows (no .NET, no exe).
 
-Planned:
+__Planned:__
 
 * show scanned/mapped value
 * show first discovered (EDSM)
