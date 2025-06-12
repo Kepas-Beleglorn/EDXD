@@ -2,18 +2,17 @@
 
 A cross-platform, real-time dashboard for explorers:
 
-* **100 % Python** – runs on Linux, macOS and Windows (no .NET, no exe).
-
-Features
 * **Planetary surface materials** – instantly see every deposit in a system.
 * **Bio-signals & landability** – icons indicate biomasses and whether a body is landable.
 * **Dual detail panes** – one for the selected row, one for your current in-game target.
 * **System progress** – live counter of scanned / total bodies (belt clusters ignored).
 * **Dark “ED” theme** – looks at home next to EDMC / EDSM.
-* **Show estimated scanned/mapped value** - is it worthwhile to fire up the SCO?
- 
+* **100 % Python** – runs on Linux, macOS and Windows (no .NET, no exe).
+
 Planned:
-* show first discovered/mapped (EDSM)
+
+* show scanned/mapped value
+* show first discovered (EDSM)
 * show potential types of biosigns, if any; update on DSS and on foot sampling
 * show potential types of geosigns, if any; update on DSS
 * maybe more...
