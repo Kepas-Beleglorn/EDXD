@@ -23,6 +23,7 @@ from EDXD.gobal_constants import CACHE_DIR
 # helpers
 # ---------------------------------------------------------------------------
 def _load(path: Path, default):
+    # noinspection PyBroadException
     try:
         return json.loads(path.read_text())
     except Exception:
@@ -41,11 +42,13 @@ def latest_journal(folder: Path) -> Optional[Path]:
 class Body:
     __slots__ = ("name", "landable", "biosignals", "geosignals",
                  "scan_value", "mapped_value", "materials",
-                 "bio_found", "geo_found")
+                 "bio_found", "geo_found", "distance")
 
-    def __init__(self, name: str,
-                 landable: bool,
+    def __init__(self,
                  materials: Dict[str, float],
+                 name: str,
+                 landable: bool,
+                 distance: int = 0,
                  bio_found: Dict[str, int] | None = None,
                  geo_found: Dict[str, bool] | None = None,
                  biosignals: int = 0,
@@ -53,6 +56,7 @@ class Body:
                  scan_value: int = 0,
                  mapped_value: int = 0):
         self.name           = name
+        self.distance       = distance
         self.landable       = landable
         self.biosignals     = biosignals
         self.geosignals     = geosignals
@@ -115,6 +119,7 @@ class Model:
                 self.total_bodies = cached.get("total_bodies", None)
                 body_map = cached.get("bodies", {})
                 for n, e in body_map.items():
+                    distance = e.get("distance", 0)
                     land = e.get("landable", False)
                     bio = e.get("biosignals", 0)
                     geo = e.get("geosignals", 0)
@@ -124,15 +129,16 @@ class Model:
                     scan_value = e.get("scan_value", 0)
                     mapped_value = e.get("mapped_value", 0)
 
-                    self.bodies[n] = Body(name=n, landable=land, materials=mats, biosignals=bio, geosignals=geo, bio_found=bio_dict, geo_found=geo_dict, scan_value=scan_value, mapped_value=mapped_value)
+                    self.bodies[n] = Body(name=n, distance=distance, landable=land, materials=mats, biosignals=bio, geosignals=geo, bio_found=bio_dict, geo_found=geo_dict, scan_value=scan_value, mapped_value=mapped_value)
             elif isinstance(cached, list):
                 # legacy: plain list of names
                 for n in cached:
-                    self.bodies[n] = Body(n, landable=False, materials={})
+                    self.bodies[n] = Body(name=n, landable=False,materials={})
 
-    def update_body(self, name: str, landable: bool, biosignals: int, geosignals: int, materials: Dict[str, float], scandata):
+    def update_body(self, name: str, distance: int, landable: bool, biosignals: int, geosignals: int, materials: Dict[str, float], scandata):
         with self.lock:
-            b = self.bodies.get(name, Body(name, landable, {}))
+            b = self.bodies.get(name, Body(name=name, landable=landable, materials={}))
+            b.distance = b.distance or distance
             b.landable = b.landable or landable
             b.biosignals = b.biosignals or biosignals
             b.geosignals = b.geosignals or geosignals
@@ -160,6 +166,7 @@ class Model:
             "bodies": {
                 n: {
                     "landable": b.landable,
+                    "distance": b.distance,
                     "biosignals": b.biosignals,
                     "geosignals": b.geosignals,
                     "materials": b.materials,
@@ -220,6 +227,7 @@ class Controller(threading.Thread):
 
     def run(self):
         while True:
+            # noinspection PyBroadException
             try:
                 evt = json.loads(self.q.get())
             except Exception:
@@ -241,7 +249,7 @@ class Controller(threading.Thread):
                     bn = entry.get("BodyName")
                     if bn and bn not in self.m.bodies:
                         # create with default zero‐values; material % empty
-                        self.m.bodies[bn] = Body(bn, False, {})
+                        self.m.bodies[bn] = Body(name=bn, landable=False, materials={})
                 self.m.total_bodies = evt.get("BodyCount")
 
             # ── on-foot DNA sample or SRV organic scan ─────────────────────
@@ -249,7 +257,7 @@ class Controller(threading.Thread):
                 body = evt.get("BodyName")  # present in Odyssey 4.0+
                 genus = evt.get("Genus") or evt.get("Species")  # 4.1 uses "Species"
                 if body and genus:
-                    b = self.m.bodies.setdefault(body, Body(body, False, {}))
+                    b = self.m.bodies.setdefault(body, Body(name=body, landable=False, materials={}))
                     b.bio_found[genus] = min(b.bio_found.get(genus, 0) + 1, 3)
 
             # ── SRV geology scan (CodexEntry, but not if IsNewDiscovery=false) ───
@@ -257,16 +265,16 @@ class Controller(threading.Thread):
                 body = evt.get("BodyName")
                 site = evt.get("Name") or evt.get("EntryID")
                 if body and site:
-                    b = self.m.bodies.setdefault(body, Body(body, False, {}))
+                    b = self.m.bodies.setdefault(body, Body(name=body, landable=False, materials={}))
                     b.geo_found[site] = True
 
             elif etype == "Scan":
                 if self.m.system_name is None:   # first scan in a fresh session
                     self.m.reset_system(evt.get("StarSystem"), evt.get("SystemAddress"))
-
+                distance = evt.get("DistanceFromArrivalLS")
                 body_name = evt.get("BodyName")
                 mats = {m["Name"]: m["Percent"] for m in evt.get("Materials", [])}
-                self.m.update_body(name=body_name, landable=evt.get("Landable", False), biosignals=0, geosignals=0, materials=mats, scandata=evt)
+                self.m.update_body(name=body_name, landable=evt.get("Landable", False), biosignals=0, geosignals=0, materials=mats, scandata=evt, distance=distance)
 
             elif etype == "FSSBodySignals":
                 body_name = evt.get("BodyName")
@@ -278,12 +286,14 @@ class Controller(threading.Thread):
                         #self.m.bodies[body_name].biosignals = signal.get("Count")
                     if signal.get("Type") == "$SAA_SignalType_Geological;":
                         cgeo = signal.get("Count")
-                    self.m.update_body(body_name, True, cbio, cgeo, {})
+                    # noinspection PyArgumentList
+                    self.m.update_body(name=body_name, landable=True, biosignals=cbio, geosignals=cgeo)
 
             elif etype == "SAAMaterialsFound":
                 body_name = evt.get("BodyName")
                 mats = {m["Name"]: m["Percent"] for m in evt.get("Materials", [])}
-                self.m.update_body(body_name, True, mats)
+                # noinspection PyArgumentList
+                self.m.update_body(name=body_name, landable=True, materials=mats)
                 self.m.set_target(body_name)
 
             # --- in-game target changed -----------------------------------
@@ -305,6 +315,7 @@ class StatusWatcher(threading.Thread):
 
     def run(self):
         while True:
+            # noinspection PyBroadException
             try:
                 data = json.loads(self.path.read_text())
                 dest = data.get("Destination", {})
