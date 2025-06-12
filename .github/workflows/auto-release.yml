@@ -1,0 +1,158 @@
+name: Build binaries with PyInstaller and Draft Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  check-version-commit:
+    runs-on: ubuntu-latest
+    outputs:
+      matched: ${{ steps.check.outputs.matched }}
+      tag: ${{ steps.check.outputs.tag }}
+      title: ${{ steps.check.outputs.title }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check commit message for version pattern
+        id: check
+        run: |
+          COMMIT_TITLE="$(git log -1 --pretty=%s)"
+          if [[ "$COMMIT_TITLE" =~ ^(v[0-9]+\.[0-9]+\.[0-9]+) ]]; then
+            TAG="${BASH_REMATCH[1]}"
+            echo "matched=true" >> $GITHUB_OUTPUT
+            echo "tag=$TAG" >> $GITHUB_OUTPUT
+            echo "title=$COMMIT_TITLE" >> $GITHUB_OUTPUT
+          else
+            echo "matched=false" >> $GITHUB_OUTPUT
+          fi
+
+  build:
+    name: Build on ${{ matrix.os }}
+    needs: check-version-commit
+    if: needs.check-version-commit.outputs.matched == 'true'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+          pip install -r requirements.txt
+
+      - name: Build with PyInstaller
+        run: |
+          pyinstaller --onefile --add-data "EDXD/resources:resources" EDXD/ed-eXploration-dashboard.py
+        shell: bash
+
+      - name: Prepare release directory
+        run: |
+          mkdir release
+          cp dist/ed-eXploration-dashboard* release/
+          mkdir -p release/resources
+          cp EDXD/resources/edxd_16.png release/resources/
+        shell: bash
+
+      - name: Archive release for Linux/macOS
+        if: runner.os != 'Windows'
+        run: |
+          tar -czvf edxd-dashboard-${{ runner.os }}.tar.gz -C release .
+        shell: bash
+
+      - name: Archive release for Windows
+        if: runner.os == 'Windows'
+        run: |
+          powershell Compress-Archive -Path release\* -DestinationPath edxd-dashboard-${{ runner.os }}.zip
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: edxd-dashboard-${{ runner.os }}
+          path: |
+            edxd-dashboard-${{ runner.os }}.tar.gz
+            edxd-dashboard-${{ runner.os }}.zip
+
+  tag-and-release:
+    name: Tag & Create GitHub Release
+    needs: [build, check-version-commit]
+    runs-on: ubuntu-latest
+    if: needs.check-version-commit.outputs.matched == 'true'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Determine previous tag
+        id: prev_tag
+        run: |
+          CURRENT="${{ needs.check-version-commit.outputs.tag }}"
+          # List all tags except current, sorted by semver descending
+          PREV=$(git tag --sort=-v:refname | grep -v "^$CURRENT$" | head -n1)
+          if [ -z "$PREV" ]; then
+            PREV=$CURRENT
+          fi
+          echo "prev_tag=$PREV" >> $GITHUB_OUTPUT
+
+      - name: Create new tag if not exists
+        run: |
+          TAG="${{ needs.check-version-commit.outputs.tag }}"
+          # Check if the tag exists
+          if ! git tag | grep -q "^$TAG$"; then
+            git tag "$TAG"
+            git push origin "$TAG"
+          fi
+
+      - name: Write release notes
+        id: relnotes
+        run: |
+          echo "**Full Changelog**: https://github.com/Kepas-Beleglorn/EDXD-test/compare/${{ steps.prev_tag.outputs.prev_tag }}...${{ needs.check-version-commit.outputs.tag }}" > RELEASE_NOTES.md
+
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: List downloaded files
+        run: ls -R dist
+
+      - name: Create or update GitHub Release (draft)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.check-version-commit.outputs.tag }}
+          name: ${{ needs.check-version-commit.outputs.title }}
+          body_path: RELEASE_NOTES.md
+          draft: false
+          make_latest: true
+          files: |
+            dist/**/*.tar.gz
+            dist/**/*.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
+
+
+
+
