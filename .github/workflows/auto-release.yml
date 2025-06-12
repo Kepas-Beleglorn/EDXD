@@ -1,4 +1,3 @@
-#file: noinspection SpellCheckingInspection
 name: Build binaries with PyInstaller and Draft Release
 
 on:
@@ -14,6 +13,8 @@ jobs:
       matched: ${{ steps.check.outputs.matched }}
       tag: ${{ steps.check.outputs.tag }}
       title: ${{ steps.check.outputs.title }}
+      body: ${{ steps.check.outputs.body }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -24,11 +25,16 @@ jobs:
         id: check
         run: |
           COMMIT_TITLE="$(git log -1 --pretty=%s)"
+          COMMIT_BODY="$(git log -1 --pretty=%b)"
           if [[ "$COMMIT_TITLE" =~ ^(v[0-9]+\.[0-9]+\.[0-9]+) ]]; then
             TAG="${BASH_REMATCH[1]}"
             echo "matched=true" >> $GITHUB_OUTPUT
             echo "tag=$TAG" >> $GITHUB_OUTPUT
             echo "title=$COMMIT_TITLE" >> $GITHUB_OUTPUT
+            # Replace newlines in body for safe output
+            echo "body<<EOF" >> $GITHUB_OUTPUT
+            echo "$COMMIT_BODY" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
           else
             echo "matched=false" >> $GITHUB_OUTPUT
           fi
@@ -130,7 +136,9 @@ jobs:
       - name: Write release notes
         id: relnotes
         run: |
-          echo "**Full Changelog**: https://github.com/Kepas-Beleglorn/EDXD-test/compare/${{ steps.prev_tag.outputs.prev_tag }}...${{ needs.check-version-commit.outputs.tag }}" > RELEASE_NOTES.md
+          echo "${{ needs.check-version-commit.outputs.body }}" > RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "**Full Changelog**: https://github.com/Kepas-Beleglorn/EDXD/compare/${{ steps.prev_tag.outputs.prev_tag }}...${{ needs.check-version-commit.outputs.tag }}" >> RELEASE_NOTES.md
 
       - name: Download all build artifacts
         uses: actions/download-artifact@v4
