@@ -40,11 +40,11 @@ class BodiesTable(ttk.Treeview):
 
         # Body column
         self.heading("body", text="Body", command=lambda: self._sort_by("body"))
-        self.column("body", width=300, anchor="w")
+        self.column("body", width=250, anchor="w")
 
         # Distance column
         self.heading("distance", text="Distance", command=lambda: self._sort_by("distance"))
-        self.column("distance", width=80, anchor="center")
+        self.column("distance", width=80, anchor="e")
 
         # Landable column
         self.heading("land", text="🛬", command=lambda: self._sort_by("land"))
@@ -153,7 +153,9 @@ class BodiesTable(ttk.Treeview):
             row = [
                 status_icon,
                 name,
-                f"{body.distance:,} Ls",
+                f"{body.distance:,.0f} Ls"
+                if getattr(body, "distance", 0)
+                else "",
                 "🛬" if body.landable else "",
                 f"🌿 {getattr(body, 'biosignals', 0)}"
                 if getattr(body, "biosignals", 0) > 0
