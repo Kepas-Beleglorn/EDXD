@@ -3,8 +3,6 @@ window_titlebar_handler.py – Centralized theme handling for EDXD title bars
 ==========================================================
 Call `CustomTitlebar(widget)` before creating widgets in any Tk/Toplevel window.
 """
-import sys
-
 from EDXD.gui.helper.theme_handler import BG, FG, HBG, ICON_PATH
 import tkinter as tk
 import os
@@ -84,7 +82,9 @@ class CustomTitlebar(tk.Frame):
             self.x = event.x
             self.y = event.y
         def do_move(event):
+            # noinspection PyUnresolvedReferences
             x = event.x_root - self.x
+            # noinspection PyUnresolvedReferences
             y = event.y_root - self.y
             self.parent.geometry(f'+{x}+{y}')
         # Bind dragging to icon, title, and frame itself

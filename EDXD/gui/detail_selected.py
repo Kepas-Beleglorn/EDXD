@@ -32,7 +32,7 @@ class DetailSelected(tk.Toplevel):
         self.props = WindowProperties.load(WINID)
         self.geometry(f"{self.props.width}x{self.props.height}+{self.props.posx}+{self.props.posy}")
         self._ready = False  # not yet mapped
-        self._loading = True  # during startup we must not save, otherwise we'll get garbage!!
+        self._loading = True  # during startup, we must not save, otherwise we'll get garbage!!
         self.bind("<Map>", self.on_mapped)  # mapped == now visible
         self.bind("<Configure>", self.on_configure)  # move / resize
         self.attributes("-topmost", True)
@@ -51,9 +51,9 @@ class DetailSelected(tk.Toplevel):
                            font=("Segoe UI", 9))
         self.txt.pack(fill=tk.BOTH, expand=True, padx=4, pady=(0, 6))
         apply_text_theme(self.txt)
-        
 
-        self.after(3000, self.loading_finished)
+        # noinspection PyTypeChecker
+        self.after(ms=3000, func=self.loading_finished)
 
     def loading_finished(self):
         self._loading = False

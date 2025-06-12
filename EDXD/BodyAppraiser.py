@@ -81,6 +81,7 @@ star_types = {
 }
 
 # Type mappings from EDSM\<Alias Repo>\Body\Planet\Type.php
+# noinspection SpellCheckingInspection
 body_types = {
     'Metal-rich body': 1,
     'Metal rich body': 1,
@@ -140,10 +141,10 @@ def encode_star_type(body_info):
 
 
 def appraise_body(body_info, just_scanned_value=True):
-    main_type = None
-    specific_type = None
-    mass = None
-    terraform_state = None
+    #main_type = None
+    #specific_type = None
+    #mass = None
+    #terraform_state = None
     if "StarType" in body_info:
         main_type = 'Star'
         specific_type = encode_star_type(body_info)

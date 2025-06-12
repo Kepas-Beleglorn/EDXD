@@ -27,17 +27,17 @@ class ConfigPanel(tk.Toplevel):
     * Presents 27 mineral check-boxes in a 4-column grid + (De)select-all + Apply.
     """
 
-    def __init__(self, master, prefs: Dict, on_apply):
+    def __init__(self, master: tk, prefs: Dict, on_apply):
         super().__init__(master)
         apply_theme(self)
 
         self.title(TITLE)
-        self.resizable(False, False)
+        self.resizable(width=False, height=False)
         # Load properties for this window (with defaults if not saved before)
         self.props = WindowProperties.load(WINID, default_height=330, default_width=450, default_posx=master.props.posx, default_posy=master.props.posy)
         self.geometry(f"{self.props.width}x{self.props.height}+{self.props.posx}+{self.props.posy}")
         self._ready = False  # not yet mapped
-        self._loading = True  # during startup we must not save, otherwise we'll get garbage!!
+        self._loading = True  # during startup, we must not save, otherwise we'll get garbage!!
         self.bind("<Map>", self.on_mapped)  # mapped == now visible
         self.bind("<Configure>", self.on_configure)  # move / resize
         self.attributes("-topmost", True)
@@ -53,7 +53,8 @@ class ConfigPanel(tk.Toplevel):
 
         self._build_widgets()
 
-        self.after(3000, self.loading_finished)
+        # noinspection PyTypeChecker
+        self.after(ms=3000, func=self.loading_finished)
 
     def loading_finished(self):
         self._loading = False
@@ -66,7 +67,7 @@ class ConfigPanel(tk.Toplevel):
         # ---- mineral check-boxes ------------------------------------
         self.var_mat: Dict[str, tk.BooleanVar] = {}
         cols = 4
-        rows = int(round(len(RAW_MATS) / 4 ,0))
+        rows = int(round(len(RAW_MATS) / cols ,0))
         for idx, mat in enumerate(RAW_MATS):
             var = tk.BooleanVar(value=self._prefs["mat_sel"].get(mat, True))
             self.var_mat[mat] = var
@@ -76,7 +77,7 @@ class ConfigPanel(tk.Toplevel):
 
         # ---- (De)select-all & Apply buttons --------------------------
         btns = ttk.Frame(self, style="Dark.TFrame")
-        btns.pack(pady=(4, 8))
+        btns.pack(pady=(cols, cols*2))
 
         def toggle_all():
             new = not all(v.get() for v in self.var_mat.values())

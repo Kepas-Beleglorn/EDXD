@@ -33,7 +33,7 @@ class MainWindow(tk.Tk):
         self.props = WindowProperties.load(WINID, default_height=1000, default_width=1200)
         self.geometry(f"{self.props.width}x{self.props.height}+{self.props.posx}+{self.props.posy}")
         self._ready = False  # not yet mapped
-        self._loading = True # during startup we must not save, otherwise we'll get garbage!!
+        self._loading = True # during startup, we must not save, otherwise we'll get garbage!!
         self.bind("<Map>", self.on_mapped)  # mapped == now visible
         self.bind("<Configure>", self.on_configure)  # move / resize
         self.attributes("-topmost", True)
@@ -45,14 +45,16 @@ class MainWindow(tk.Tk):
         apply_theme(self)
 
         self._build_widgets()
-        self.after(500, self._refresh)
+        # noinspection PyTypeChecker
+        self.after(ms=500, func=self._refresh)
         self.var_land.set(self.prefs["land"])
         self._selected = None          # currently clicked body name
 
         # listen for target changes
         self.model.register_target_listener(self._update_target)
 
-        self.after(3000, self.loading_finished)
+        # noinspection PyTypeChecker
+        self.after(ms=3000, func=self.loading_finished)
 
     def loading_finished(self):
         self._loading = False
@@ -114,7 +116,7 @@ class MainWindow(tk.Tk):
         if body is None:
             # target not scanned yet – show name, empty materials
             # from model import Body          # avoid circular import at top
-            body = Body(body_name, False, {})
+            body = Body(name=body_name, landable=False, materials={})
 
         self.win_auto.render(body, self.prefs["mat_sel"])
 
@@ -149,7 +151,8 @@ class MainWindow(tk.Tk):
         name = self.model.system_name or "No system"
         self.lbl_sys.config(text=f"{name}   ({scanned}/{total})")
 
-        self.after(1_000, self._refresh)     # schedule next update
+        # noinspection PyTypeChecker
+        self.after(ms=1_000, func=self._refresh)     # schedule next update
 
     # --------------------------------------------------------------
     def on_mapped(self, _):
