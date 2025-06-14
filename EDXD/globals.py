@@ -35,7 +35,10 @@ DEFAULT_WIDTH = 500
 MIN_HEIGHT = 100
 MIN_WIDTH = 200
 
-RESIZE_MARGIN = 8
+DEFAULT_POS_X = 500
+DEFAULT_POS_Y = 500
+
+RESIZE_MARGIN = 5
 
 #-----------------------------------------------------------------------
 # symbol lookup for display in table_view.py

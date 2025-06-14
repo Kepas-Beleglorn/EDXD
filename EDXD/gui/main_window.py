@@ -8,6 +8,7 @@ from EDXD.gui.custom_title_bar import CustomTitleBar
 from EDXD.gui.helper.gui_handler import init_widget
 from EDXD.gui.table_view import BodiesTable
 from EDXD.gui.helper.window_properties import WindowProperties
+from EDXD.globals import DEFAULT_HEIGHT, DEFAULT_WIDTH, DEFAULT_POS_Y, DEFAULT_POS_X, RESIZE_MARGIN
 
 from EDXD.globals import logging
 import inspect, functools
@@ -28,7 +29,6 @@ def log_call(level=logging.INFO):
         return wrapper
     return decorator
 
-
 TITLE = "ED eXploration Dashboard"
 WINID = "EDXD_MAIN_WINDOW"
 
@@ -38,12 +38,11 @@ class MainFrame(wx.Frame):
     @log_call()
     def __init__(self, model: Model, prefs: Dict):
         # 1. Load saved properties (or use defaults)
-        props = WindowProperties.load(WINID, default_height=600, default_width=900, default_posx=100, default_posy=100)
+        props = WindowProperties.load(WINID, default_height=DEFAULT_HEIGHT, default_width=DEFAULT_WIDTH, default_posx=DEFAULT_POS_X, default_posy=DEFAULT_POS_Y)
         super().__init__(parent=None, style=wx.NO_BORDER | wx.FRAME_SHAPED | wx.STAY_ON_TOP)
 
         # 2. Apply geometry
-        self.SetSize(wx.Size(width=props.width, height=props.height))
-        self.SetPosition(wx.Point(x=props.posx, y=props.posy))
+        init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
 
         self._resizing = False
         self._resize_dir = None
@@ -53,8 +52,6 @@ class MainFrame(wx.Frame):
         self.Bind(wx.EVT_LEFT_DOWN, self.on_mouse_down)
         self.Bind(wx.EVT_LEFT_UP, self.on_mouse_up)
         self.Bind(wx.EVT_MOTION, self.on_mouse_move)
-
-        init_widget(self, width=1000, height=500, title=TITLE)
 
         self.Bind(wx.EVT_CLOSE, self.on_close)
 
@@ -78,7 +75,9 @@ class MainFrame(wx.Frame):
         init_widget(self.table_view)
         vbox.Add(self.table_view, 1, wx.EXPAND)
 
-        self.SetSizer(vbox)
+        main_box = wx.BoxSizer(wx.VERTICAL)
+        main_box.Add(vbox, 1, wx.EXPAND | wx.ALL, RESIZE_MARGIN)
+        self.SetSizer(main_box)
 
         # noinspection PyTypeChecker
         #logging.info(f"init before first refresh: {self.table_view}")
@@ -174,7 +173,7 @@ class MainFrame(wx.Frame):
         #     win.Destroy()
         event.Skip()  # Let wx close the window
 
-    @log_call()
+    #@log_call()
     def hit_test(self, pos):
         # Returns direction: 'left', 'right', 'top', 'bottom', or 'corner' (for diagonal)
         x, y = pos
@@ -185,9 +184,11 @@ class MainFrame(wx.Frame):
         if x > w - margin: directions.append('right')
         if y < margin: directions.append('top')
         if y > h - margin: directions.append('bottom')
+
+        logging.info(f"Margin: {margin}, Directions: {directions}, X: {x}, Y: {y}, W: {w}, H: {h}")
         return directions
 
-    @log_call()
+    #@log_call()
     def on_mouse_down(self, evt):
         directions = self.hit_test(evt.GetPosition())
         if directions:
@@ -197,13 +198,13 @@ class MainFrame(wx.Frame):
             self._frame_start = self.GetSize(), self.GetPosition()
         evt.Skip()
 
-    @log_call()
+    #@log_call()
     def on_mouse_up(self, evt):
         self._resizing = False
         self._resize_dir = None
         evt.Skip()
 
-    @log_call()
+    #@log_call()
     def on_mouse_move(self, evt):
         if self._resizing and evt.Dragging() and evt.LeftIsDown():
             dx = evt.GetPosition().x - self._mouse_start.x
