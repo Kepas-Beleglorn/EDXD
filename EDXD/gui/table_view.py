@@ -35,7 +35,7 @@ def log_call(level=logging.INFO):
 
 class BodiesTable(gridlib.Grid):
     """Table with Status | Body | 🛬 | 🌿 | 🌋 | one column per mineral."""
-    @log_call()
+    #@log_call()
     def __init__(self, parent, on_select: Callable[[str], None]):
         super().__init__(parent)
         self._all_cols = ["status", "body", "distance", "land", "bio", "geo", "value"] + list(RAW_MATS)
@@ -132,7 +132,6 @@ class BodiesTable(gridlib.Grid):
             return  # Ignore event
         event.Skip()
 
-    @log_call()
     def refresh(
             self,
             bodies: Dict[str, Body],

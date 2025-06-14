@@ -5,6 +5,7 @@ from EDXD.gui.helper.gui_handler import init_widget, ICON_PATH
 from EDXD.globals import logging
 import inspect, functools
 
+
 def log_call(level=logging.INFO):
     """Decorator that logs function name and bound arguments."""
     def decorator(fn):
@@ -31,13 +32,14 @@ class CustomTitleBar(wx.Panel):
         init_widget(widget=self, width=40, height=40)
         self._prev_size = None
         self._prev_pos = None
+        self._current_pos = None    # required for proper resizing on maximize
 
         # Layout
         hbox = wx.BoxSizer(wx.HORIZONTAL)
 
         # App icon
         icon = wx.Bitmap(ICON_PATH.as_posix(), wx.BITMAP_TYPE_PNG)
-        icon_widget = wx.StaticBitmap(self, -1, icon)
+        icon_widget = wx.StaticBitmap(self, -1, wx.BitmapBundle(icon))
         hbox.Add(icon_widget, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 8)
 
         # Title label
@@ -50,11 +52,11 @@ class CustomTitleBar(wx.Panel):
         hbox.Add(self.title_label, 1, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 12)
 
         # Minimize, Maximize, Close buttons
-        self.btn_min = wx.Button(self, size=(30, 30), style=wx.BORDER_NONE)
+        self.btn_min = wx.Button(self, size=wx.Size(30, 30), style=wx.BORDER_NONE)
         init_widget(widget=self.btn_min, title="_")
-        self.btn_max = wx.Button(self, size=(30, 30), style=wx.BORDER_NONE)
+        self.btn_max = wx.Button(self, size=wx.Size(30, 30), style=wx.BORDER_NONE)
         init_widget(widget=self.btn_max, title="□")
-        self.btn_close = wx.Button(self, size=(30, 30), style=wx.BORDER_NONE)
+        self.btn_close = wx.Button(self, size=wx.Size(30, 30), style=wx.BORDER_NONE)
         init_widget(widget=self.btn_close, title="✕")
         for btn in (self.btn_min, self.btn_max, self.btn_close):
             btn.SetFont(font)
@@ -101,11 +103,10 @@ class CustomTitleBar(wx.Panel):
                 self.ReleaseMouse()
 
     # ... (other code unchanged)
-    @log_call()
+    #@log_call()
     def on_maximize(self, event):
         if getattr(self.parent, "_is_maximized", False):
             # Restore
-            logging.info(f"Restoring to: {self._prev_pos}, {self._prev_size}")
             self.parent._is_maximized = False
             if self._prev_size and self._prev_pos:
                 self.parent.SetSize(self._prev_size)
@@ -114,12 +115,39 @@ class CustomTitleBar(wx.Panel):
         else:
             # Maximize manually to fill the screen
             self._prev_size = self.parent.GetSize()
-            self._prev_pos = self.parent.GetPosition()
-            logging.info(f"Saving pos/size: {self._prev_pos}, {self._prev_size}")
-            display = wx.Display()
-            logging.info(f"Display: {display}")
-            rect = display.GetGeometry()
-            logging.info(f"geom rect: {rect}")
-            self.parent.SetPosition((rect.x, rect.y))
-            self.parent.SetSize((rect.width, rect.height))
-            self.parent._is_maximized = True
+            self._prev_pos = self.parent.GetScreenPosition()
+            center = wx.Point(self._prev_pos.x + self._prev_size.x // 2, self._prev_pos.y + self._prev_size.y // 2)
+            display_idx = wx.Display.GetFromPoint(center)
+            if display_idx != wx.NOT_FOUND:
+                display = wx.Display(display_idx)
+                rect = display.GetGeometry()
+                self.parent.SetPosition((rect.x, rect.y))
+                self.parent.SetSize((rect.width, rect.height))
+                self.parent._is_maximized = True
+                self._current_pos = self.parent.GetPosition()
+                wx.CallLater(millis=100, callableObj=self._resize_if_required)
+
+    # horizontal taskbar offest must be read from the custom title bar, not from the parent!
+    @log_call()
+    def _resize_if_required(self):
+        logging.info(f"Maximized parent pos and size: {self.parent.GetPosition()} - {self.parent.GetSize()}")
+        logging.info(f"Current pos: {self._current_pos}")
+        pos_x, pos_y = self.parent.GetPosition()
+        alt_pos_x, alt_pos_y = self._current_pos
+
+        width, height = self.parent.GetSize()
+        logging.info(f"current size: {self.parent.GetSize()}")
+
+        if pos_x != alt_pos_x:
+            if pos_x > 0:
+                width -= pos_x
+            else:
+                width += pos_x
+
+        if pos_y != alt_pos_y:
+            if pos_y > 0:
+                height -= pos_y
+            else:
+                height += pos_y
+
+        self.parent.SetSize(width, height)

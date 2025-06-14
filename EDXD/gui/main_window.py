@@ -61,11 +61,11 @@ class MainFrame(wx.Frame):
         self.SetSizer(vbox)
 
         # noinspection PyTypeChecker
-        logging.info(f"init before first refresh: {self.table_view}")
+        #logging.info(f"init before first refresh: {self.table_view}")
         wx.CallLater(millis=500, callableObj=self._refresh)
         #self.var_land.set(self.prefs["land"])
         self._selected = None  # currently clicked body name
-        logging.info(f"init after first refresh: {self.table_view}")
+        #logging.info(f"init after first refresh: {self.table_view}")
 
         # listen for target changes
         self.model.register_target_listener(self._update_target)
@@ -114,7 +114,7 @@ class MainFrame(wx.Frame):
     # ------------------------------------------------------------------
     # periodic refresh
     # ------------------------------------------------------------------
-    @log_call()
+    #@log_call()
     def _refresh(self):
         self.table_view.refresh(
             bodies=self.model.snapshot_bodies(),
@@ -123,7 +123,7 @@ class MainFrame(wx.Frame):
             selected_name=self._selected,
             target_name=self.model.target_body
         )
-        logging.info(f"Refreshed: {self.model.target_body}")
+        #logging.info(f"Refreshed: {self.model.target_body}")
         # keep the auto-window live even if nothing else changes
         tgt = self.model.snapshot_target()
         if tgt:
