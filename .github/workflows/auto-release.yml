@@ -26,7 +26,7 @@ jobs:
         run: |
           COMMIT_TITLE="$(git log -1 --pretty=%s)"
           COMMIT_BODY="$(git log -1 --pretty=%b)"
-          if [[ "$COMMIT_TITLE" =~ ^(v[0-9]+\.[0-9]+\.[0-9]+) ]]; then
+          if [[ "$COMMIT_TITLE" =~ ^(v[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+) ]]; then
             TAG="${BASH_REMATCH[1]}"
             echo "matched=true" >> $GITHUB_OUTPUT
             echo "tag=$TAG" >> $GITHUB_OUTPUT
