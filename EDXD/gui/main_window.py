@@ -68,16 +68,14 @@ class MainFrame(wx.Frame):
 
         # VBox sizer for titlebar + content
         vbox = wx.BoxSizer(wx.VERTICAL)
-        vbox.Add(self.titlebar, 0, wx.EXPAND)
+        vbox.Add(self.titlebar, 0, wx.EXPAND | wx.EAST | wx.WEST | wx.NORTH, RESIZE_MARGIN)
 
         # In your main frame:
         self.table_view = BodiesTable(self, on_select=on_body_selected)
         init_widget(self.table_view)
-        vbox.Add(self.table_view, 1, wx.EXPAND)
+        vbox.Add(self.table_view, 1, wx.EXPAND | wx.EAST | wx.WEST | wx.SOUTH, RESIZE_MARGIN)
 
-        main_box = wx.BoxSizer(wx.VERTICAL)
-        main_box.Add(vbox, 1, wx.EXPAND | wx.ALL, RESIZE_MARGIN)
-        self.SetSizer(main_box)
+        self.SetSizer(vbox)
 
         # noinspection PyTypeChecker
         #logging.info(f"init before first refresh: {self.table_view}")
