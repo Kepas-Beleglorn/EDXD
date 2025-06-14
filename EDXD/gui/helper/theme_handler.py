@@ -1,76 +1,75 @@
-"""
-theme_handler.py – Centralized theme handling for EDXD GUI
-==========================================================
-Call `apply_theme(widget)` before creating widgets in any Tk/Toplevel window.
-"""
-from tkinter import ttk, PhotoImage
-from EDXD.gobal_constants import ICON_PATH, BG, HBG, FG, ACC, BDC
+import wx
+import wx.grid as gridlib
+from EDXD.globals import ICON_PATH
 
-def set_icon(widget):
-    # --- set app icon ---
-    img = PhotoImage(file=ICON_PATH)
-    widget.iconphoto(True, img)
+def get_theme(theme: str = "dark"):
+    # Data for theme_handler
+    if theme == "dark":
+        return get_dark_theme()
+    else:
+        return get_dark_theme()
+
+def get_dark_theme():
+    ed_dark_theme = dict(
+        background          = wx.Colour("#121212"),
+        background_hover    = wx.Colour("#433322"),
+        foreground          = wx.Colour("#ff9a00"),
+        foreground_accent   = wx.Colour("#ff9a33"),
+        border              = wx.Colour("#aa7700"),
+        font                = wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL),
+        font_bold           = wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD),
+        color_debug         = wx.Colour("#00ff00")
+    )
+    return ed_dark_theme
 
 def apply_theme(widget):
-    """
-    Apply EDXD dark-orange theme to the provided widget (Tk or Toplevel).
-    Should be called before creating child widgets.
-    """
-    style = ttk.Style(widget)
-    style.theme_use("clam")
+    if widget.ClassName == "wxFrame":
+        apply_theme_to_frame(widget)
+    elif widget.ClassName == "wxPanel":
+        apply_theme_to_panel(widget)
+    elif widget.ClassName == "wxStaticText":
+        apply_theme_to_static_text(widget)
+    elif widget.ClassName == "wxButton":
+        apply_theme_to_button(widget)
+    elif widget.ClassName == "wxGrid":
+        apply_theme_to_grid(widget)
+    else:
+        return
 
-    # Global background/foreground
-    style.configure(".", background=BG, foreground=FG, fieldbackground=BG)
+def apply_theme_to_frame(widget: wx.Frame):
+    theme = get_theme()
+    widget.SetBackgroundColour(theme["background"])
+    widget.SetForegroundColour(theme["foreground"])
+    widget.SetIcon(wx.Icon(ICON_PATH.as_posix(), wx.BITMAP_TYPE_ICO))
 
-    # Buttons
-    style.configure("TButton",
-                    background=BG, foreground=FG,
-                    borderwidth=1, focusthickness=0, bordercolor=BDC, relief="solid")
-    style.map("TButton",
-              background=[("active", HBG), ("pressed", ACC)],
-              foreground=[("active", ACC), ("pressed", BG)])
+def apply_theme_to_panel(widget: wx.Panel):
+    theme = get_theme()
+    widget.SetBackgroundColour(theme["background"])
+    widget.SetForegroundColour(theme["foreground"])
+    widget.SetFont(theme["font_bold"])
 
-    # Checkbuttons
-    style.configure("TCheckbutton", background=BG, foreground=FG)
-    style.map("TCheckbutton",
-              background=[("active", HBG)],
-              foreground=[("active", ACC)])
+def apply_theme_to_button(widget: wx.Button):
+    theme = get_theme()
+    widget.SetBackgroundColour(theme["background"])
+    widget.SetForegroundColour(theme["foreground"])
+    widget.SetFont(theme["font"])
+    widget.style = wx.BORDER_NONE
 
-    # Treeview headings
-    style.configure("Treeview.Heading",
-                    background=BG, foreground=FG, relief="flat")
-    style.map("Treeview.Heading",
-              background=[("active", BG)],
-              foreground=[("active", FG)])
+def apply_theme_to_static_text(widget: wx.StaticText):
+    theme = get_theme()
+    widget.SetBackgroundColour(theme["background"])
+    widget.SetForegroundColour(theme["foreground"])
+    widget.SetFont(theme["font"])
 
-    # Treeview rows
-    style.configure("Treeview",
-                    background=BG, foreground=FG,
-                    fieldbackground=BG, borderwidth=1,
-                    rowheight=22, bordercolor=BDC, relief="flat")
-    style.map("Treeview",
-              background=[("selected", BG)],
-              foreground=[("selected", BDC)])
+def apply_theme_to_grid(widget: gridlib.Grid):
+    theme = get_theme()
+    widget.DefaultCellBackgroundColour = theme["background"]
+    widget.DefaultCellTextColour = theme["foreground"]
+    widget.LabelTextColour = theme["foreground"]
+    widget.SetFont(theme["font"])
+    widget.SelectionBackground = theme["background_hover"]
+    widget.SelectionForeground = theme["foreground_accent"]
+    widget.CellHighlightPenWidth = 0
 
-    # Tooltip (for custom TLabel tooltips)
-    style.configure("Tip.TLabel",
-                    background="#262626", foreground=FG,
-                    borderwidth=1, relief="solid")
 
-    # Labels
-    style.configure("TLabel", background=BG, foreground=FG)
 
-    # Textfields
-    style.configure("TText", background=BG, foreground=FG, insertbackground=FG)
-
-    # Set widget background directly (for Tk/Toplevel)
-    widget.configure(background=BG, relief="flat")
-
-def apply_text_theme(text_widget):
-    """Apply EDXD theme to a tk.Text widget."""
-    text_widget.configure(
-        background=BG,
-        foreground=FG,
-        insertbackground=FG  # caret color
-        , relief="flat"
-        )

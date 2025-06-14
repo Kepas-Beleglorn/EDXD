@@ -17,7 +17,7 @@ from EDXD.body_appraiser import appraise_body
 # ---------------------------------------------------------------------------
 # paths (shared with other modules)
 # ---------------------------------------------------------------------------
-from EDXD.gobal_constants import CACHE_DIR
+from EDXD.globals import CACHE_DIR
 
 # ---------------------------------------------------------------------------
 # helpers
@@ -229,7 +229,6 @@ class Controller(threading.Thread):
                 continue
 
             etype = evt.get("event")
-
             # ───── jump to a new system ───────────────────────────────
             if etype == "FSDJump":
                 self.m.reset_system(evt.get("StarSystem"),

@@ -2,7 +2,7 @@
 
 import json
 import os
-from EDXD.gobal_constants import CFG_FILE
+from EDXD.globals import CFG_FILE
 
 class WindowProperties:
     __slots__ = ("window_id", "height", "width", "posx", "posy")

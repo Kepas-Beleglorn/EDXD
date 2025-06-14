@@ -1,19 +1,25 @@
-from typing import List
 import sys
+from typing import List
 from pathlib import Path
 
 def get_app_dir():
     is_frozen = getattr(sys, 'frozen', False)
-    print(is_frozen)
-
     if is_frozen:
         local_path = Path(sys.executable).parent
     else:
         local_path=Path(__file__).resolve().parent
-
-    print(local_path)
-
     return local_path
+
+
+import logging
+from datetime import timezone, datetime
+
+# 1️⃣ Configure the root logger once, ideally at program start
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S%z",          # ISO-ish, includes timezone offset
+)
 
 #-----------------------------------------------------------------------
 # general paths for storing data
@@ -21,18 +27,10 @@ APP_DIR = get_app_dir()
 CFG_FILE = APP_DIR/"config.json"
 CACHE_DIR  = APP_DIR/"system-data"
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
-
-#-----------------------------------------------------------------------
-# Data for theme_handler
-# Centralized theme colors
-BG = "#121212"      # background
-FG = "#ff9a00"      # orange foreground/text
-ACC = "#ff9a33"     # accent (same as FG)
-HBG = "#433322"     # hover background
-BDC = "#aa7700"     # border color for buttons
-
-#ICON_PATH = os.path.normpath(os.path.join(APP_DIR, 'resources', 'edxd_16.png'))  # Normalize path for OS compatibility
 ICON_PATH = APP_DIR/"resources/edxd_16.png"  # Normalize path for OS compatibility
+
+DEFAULT_HEIGHT = 500
+DEFAULT_WIDTH = 500
 
 #-----------------------------------------------------------------------
 # symbol lookup for display in table_view.py

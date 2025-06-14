@@ -26,7 +26,7 @@ jobs:
         run: |
           COMMIT_TITLE="$(git log -1 --pretty=%s)"
           COMMIT_BODY="$(git log -1 --pretty=%b)"
-          if [[ "$COMMIT_TITLE" =~ ^(v[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+) ]]; then
+          if [[ "$COMMIT_TITLE" =~ ^(v[0-9]+\.[0-9]+\.[0-9]+) ]]; then
             TAG="${BASH_REMATCH[1]}"
             echo "matched=true" >> $GITHUB_OUTPUT
             echo "tag=$TAG" >> $GITHUB_OUTPUT
@@ -58,6 +58,21 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+
+      - name: Install system dependencies for wxPython
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libglib2.0-dev libgstreamer1.0-dev \
+          libgstreamer-plugins-base1.0-dev libgtk-3-0
+        if: runner.os == 'Linux'
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
       - name: Install dependencies
         run: |
@@ -132,13 +147,13 @@ jobs:
             git tag "$TAG"
             git push origin "$TAG"
           fi
-
+          
       - name: Write release notes
         id: relnotes
         run: |
           echo "${{ needs.check-version-commit.outputs.body }}" > RELEASE_NOTES.md
           echo "" >> RELEASE_NOTES.md
-          echo "**Full Changelog**: https://github.com/Kepas-Beleglorn/EDXD/compare/${{ steps.prev_tag.outputs.prev_tag }}...${{ needs.check-version-commit.outputs.tag }}" >> RELEASE_NOTES.md
+          echo "**Full Changelog**: https://github.com/Kepas-Beleglorn/EDXD-test/compare/${{ steps.prev_tag.outputs.prev_tag }}...${{ needs.check-version-commit.outputs.tag }}" >> RELEASE_NOTES.md
 
       - name: Download all build artifacts
         uses: actions/download-artifact@v4
@@ -161,7 +176,7 @@ jobs:
             dist/**/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
-
-
-
-
+          
+          
+          
+          
