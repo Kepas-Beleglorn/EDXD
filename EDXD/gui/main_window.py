@@ -30,6 +30,7 @@ def log_call(level=logging.INFO):
 
 
 TITLE = "ED eXploration Dashboard"
+WINID = "EDXD_MAIN_WINDOW"
 
 class MainFrame(wx.Frame):
     @log_call()
@@ -37,9 +38,10 @@ class MainFrame(wx.Frame):
         super().__init__(parent=None, style=wx.NO_BORDER | wx.FRAME_SHAPED | wx.STAY_ON_TOP)
         init_widget(self, width=1000, height=500, title=TITLE)
 
+        self.Bind(wx.EVT_CLOSE, self.on_close)
+
         # Define the handler as a method
         def on_body_selected(body_name: str) -> None:
-            logging.info(f"Selected body: {body_name}")
             self._row_clicked(body_name)
             # You can update other parts of the UI here
 
@@ -143,5 +145,14 @@ class MainFrame(wx.Frame):
         # noinspection PyTypeChecker
         wx.CallLater(millis=1000, callableObj=self._refresh)  # schedule next update
 
-
+    def on_close(self, event):
+        # Save geometry
+        x, y = self.GetPosition()
+        w, h = self.GetSize()
+        props = WindowProperties(window_id=WINID, height=h, width=w, posx=x, posy=y)
+        props.save()
+        # Now close all child windows as needed!
+        # for win in self.child_windows:
+        #     win.Destroy()
+        event.Skip()  # Let wx close the window
 

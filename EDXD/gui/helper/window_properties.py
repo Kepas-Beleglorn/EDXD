@@ -1,4 +1,29 @@
+"""
+saves /loads stored window positions and sizes
+------------------------------------------------------
+===================== USAGE SAVE =====================
+class WINDOW(wx.Frame):
+    def __init__(self, ...):
+        ...
+        self.Bind(wx.EVT_CLOSE, self.on_close)
+        ...
 
+    def on_close(self, event):
+        # Save geometry
+        x, y = self.GetPosition()
+        w, h = self.GetSize()
+        props = WindowProperties(window_id=WINID, height=h, width=w, posx=x, posy=y)
+        props.save()
+        # Now close all child windows as needed!
+        # for win in self.child_windows:
+        #     win.Destroy()
+        event.Skip()  # Let wx close the window
+
+------------------------------------------------------
+===================== USAGE LOAD =====================
+
+
+"""
 
 import json
 import os
@@ -46,40 +71,3 @@ class WindowProperties:
 
     def __repr__(self):
         return f"WindowProperties({self.window_id}, {self.height}, {self.width}, {self.posx}, {self.posy})"
-
-
-"""
-*** USAGE ***
-from window_properties import WindowProperties
-
-        # Load properties for this window (with defaults if not saved before)
-        self.props = WindowProperties.load(WINID)
-        self.geometry(f"{self.props.width}x{self.props.height}+{self.props.posx}+{self.props.posy}")
-        self._ready = False  # not yet mapped
-        self._loading = True  # during startup we must not save, otherwise we'll get garbage!!
-        self.bind("<Map>", self.on_mapped)  # mapped == now visible
-        self.bind("<Configure>", self.on_configure)  # move / resize
-        
-        ...
-        
-        self.after(3000, self.loading_finished)
-
-    def loading_finished(self):
-        self._loading = False
-
-# ... later, after a resize/move event
-    # --------------------------------------------------------------
-    def on_mapped(self, _):
-        #First time the window becomes visible.
-        self._ready = True
-
-    def on_configure(self, event):  # move/resize
-        if self._ready and not self._loading:
-            self.props.height = event.height
-            self.props.width = event.width
-            self.props.posx = event.x
-            self.props.posy = event.y
-            self.props.save()
-
-
-"""
