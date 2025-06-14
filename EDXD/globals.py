@@ -32,6 +32,11 @@ ICON_PATH = APP_DIR/"resources/edxd_16.png"  # Normalize path for OS compatibili
 DEFAULT_HEIGHT = 500
 DEFAULT_WIDTH = 500
 
+MIN_HEIGHT = 100
+MIN_WIDTH = 200
+
+RESIZE_MARGIN = 8
+
 #-----------------------------------------------------------------------
 # symbol lookup for display in table_view.py
 SYMBOL = {

@@ -21,7 +21,15 @@ class WINDOW(wx.Frame):
 
 ------------------------------------------------------
 ===================== USAGE LOAD =====================
+class WINDOW(wx.Frame):
+    def __init__(self, model, prefs):
+        # 1. Load saved properties (or use defaults)
+        props = WindowProperties.load("MAIN_FRAME", default_height=600, default_width=900, default_posx=100, default_posy=100)
+        super().__init__(parent=None, style=wx.NO_BORDER | wx.FRAME_SHAPED | wx.STAY_ON_TOP)
 
+        # 2. Apply geometry
+        self.SetSize((props.width, props.height))
+        self.SetPosition((props.posx, props.posy))
 
 """
 
@@ -33,11 +41,11 @@ class WindowProperties:
     __slots__ = ("window_id", "height", "width", "posx", "posy")
 
     def __init__(self, window_id: str, height: int, width: int, posx: int, posy: int):
-        self.window_id = window_id
-        self.height = height
-        self.width = width
-        self.posx = posx
-        self.posy = posy
+        self.window_id: str = window_id
+        self.height:    int = height
+        self.width:     int = width
+        self.posx:      int = posx
+        self.posy:      int = posy
 
 
     @classmethod
