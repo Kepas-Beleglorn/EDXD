@@ -12,7 +12,6 @@ def get_app_dir():
 
 
 import logging
-from datetime import timezone, datetime
 
 # 1️⃣ Configure the root logger once, ideally at program start
 logging.basicConfig(
@@ -27,7 +26,7 @@ APP_DIR = get_app_dir()
 CFG_FILE = APP_DIR/"config.json"
 CACHE_DIR  = APP_DIR/"system-data"
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
-ICON_PATH = APP_DIR/"resources/edxd_16.png"  # Normalize path for OS compatibility
+ICON_PATH = APP_DIR/"resources/edxd_128.png"  # Normalize path for OS compatibility
 
 DEFAULT_HEIGHT = 500
 DEFAULT_WIDTH = 500
@@ -39,6 +38,9 @@ DEFAULT_POS_X = 500
 DEFAULT_POS_Y = 500
 
 RESIZE_MARGIN = 5
+SIZE_CTRL_BUTTONS = 24
+SIZE_APP_ICON = 20
+
 
 #-----------------------------------------------------------------------
 # symbol lookup for display in table_view.py

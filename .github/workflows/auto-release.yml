@@ -90,7 +90,7 @@ jobs:
           mkdir release
           cp dist/ed-eXploration-dashboard* release/
           mkdir -p release/resources
-          cp EDXD/resources/edxd_16.png release/resources/
+          cp EDXD/resources/edxd_128.png release/resources/
         shell: bash
 
       - name: Archive release for Linux/macOS

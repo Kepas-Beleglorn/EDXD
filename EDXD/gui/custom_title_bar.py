@@ -2,7 +2,7 @@ import wx
 
 from EDXD.gui.helper.gui_handler import init_widget, ICON_PATH
 
-from EDXD.globals import logging
+from EDXD.globals import logging, SIZE_CTRL_BUTTONS, SIZE_APP_ICON
 import inspect, functools
 
 
@@ -38,9 +38,9 @@ class CustomTitleBar(wx.Panel):
         hbox = wx.BoxSizer(wx.HORIZONTAL)
 
         # App icon
-        icon = wx.Bitmap(ICON_PATH.as_posix(), wx.BITMAP_TYPE_PNG)
-        icon_widget = wx.StaticBitmap(self, -1, wx.BitmapBundle(icon))
-        hbox.Add(icon_widget, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 8)
+        icon_widget = self.set_icon()
+        # Add to your sizer as before
+        hbox.Add(icon_widget, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT)
 
         # Title label
         self.title_label = wx.StaticText(self)
@@ -49,18 +49,18 @@ class CustomTitleBar(wx.Panel):
         font.PointSize += 4
         font.FontWeight = wx.FONTWEIGHT_BOLD
         self.title_label.SetFont(font)
-        hbox.Add(self.title_label, 1, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 12)
+        hbox.Add(self.title_label, 1, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 6)
 
         # Minimize, Maximize, Close buttons
-        self.btn_min = wx.Button(self, size=wx.Size(30, 30), style=wx.BORDER_NONE)
+        self.btn_min = wx.Button(self, size=wx.Size(SIZE_CTRL_BUTTONS, SIZE_CTRL_BUTTONS), style=wx.BORDER_NONE)
         init_widget(widget=self.btn_min, title="_")
-        self.btn_max = wx.Button(self, size=wx.Size(30, 30), style=wx.BORDER_NONE)
+        self.btn_max = wx.Button(self, size=wx.Size(SIZE_CTRL_BUTTONS, SIZE_CTRL_BUTTONS), style=wx.BORDER_NONE)
         init_widget(widget=self.btn_max, title="□")
-        self.btn_close = wx.Button(self, size=wx.Size(30, 30), style=wx.BORDER_NONE)
+        self.btn_close = wx.Button(self, size=wx.Size(SIZE_CTRL_BUTTONS, SIZE_CTRL_BUTTONS), style=wx.BORDER_NONE)
         init_widget(widget=self.btn_close, title="✕")
         for btn in (self.btn_min, self.btn_max, self.btn_close):
             btn.SetFont(font)
-            hbox.Add(btn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 6)
+            hbox.Add(btn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT | wx.SOUTH, 6)
 
         self.SetSizer(hbox)
 
@@ -80,8 +80,20 @@ class CustomTitleBar(wx.Panel):
         self.dragging = False
         self._drag_pos = None
 
+    def set_icon(self) ->wx.StaticBitmap:
+        # Load the original image as a wx.Image
+        image = wx.Image(ICON_PATH.as_posix(), wx.BITMAP_TYPE_PNG)
+        # Scale it to the desired size (e.g., 30x30), using high-quality scaling
+        scaled_image = image.Scale(SIZE_APP_ICON, SIZE_APP_ICON, wx.IMAGE_QUALITY_HIGH)
+        # Convert the scaled wx.Image back to a wx.Bitmap for use in widgets
+        scaled_bmp = wx.Bitmap(scaled_image)
+        # Wrap in wx.BitmapBundle for DPI awareness (recommended in wxPython 4.1+)
+        icon_bundle = wx.BitmapBundle.FromBitmap(scaled_bmp)
+        # Use in your StaticBitmap
+        return wx.StaticBitmap(self, -1, icon_bundle)
+
     # ... (other code unchanged)
-    def on_left_down(self, event):
+    def on_left_down(self):
         self.dragging = False
         self.dragging = True
         # Get positions in screen coordinates
@@ -105,7 +117,7 @@ class CustomTitleBar(wx.Panel):
 
     # ... (other code unchanged)
     #@log_call()
-    def on_maximize(self, event):
+    def on_maximize(self):
         if getattr(self.parent, "_is_maximized", False):
             # Restore
             self.parent._is_maximized = False
