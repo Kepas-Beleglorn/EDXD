@@ -164,4 +164,3 @@ class CustomTitleBar(wx.Panel):
                 height += pos_y
 
         self.parent.SetSize(width, height)
-
