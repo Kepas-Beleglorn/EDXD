@@ -30,6 +30,7 @@ class MainWindowOptions(wx.Panel):
     def __init__(self, parent, title):
         super().__init__(parent)
         self.parent = parent
+        self.SetCursor(wx.Cursor(wx.CURSOR_ARROW))
         # Layout
         options_box = wx.BoxSizer(wx.HORIZONTAL)
 
