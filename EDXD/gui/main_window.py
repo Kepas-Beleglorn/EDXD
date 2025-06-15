@@ -34,8 +34,6 @@ WINID = "EDXD_MAIN_WINDOW"
 
 class MainFrame(wx.Frame):
     from EDXD.globals import RESIZE_MARGIN # px area at edge/corner for resizing
-
-    @log_call()
     def __init__(self, model: Model, prefs: Dict):
         # 1. Load saved properties (or use defaults)
         props = WindowProperties.load(WINID, default_height=DEFAULT_HEIGHT, default_width=DEFAULT_WIDTH, default_posx=DEFAULT_POS_X, default_posy=DEFAULT_POS_Y)
@@ -78,11 +76,9 @@ class MainFrame(wx.Frame):
         self.SetSizer(vbox)
 
         # noinspection PyTypeChecker
-        #logging.info(f"init before first refresh: {self.table_view}")
         wx.CallLater(millis=500, callableObj=self._refresh)
         #self.var_land.set(self.prefs["land"])
         self._selected = None  # currently clicked body name
-        #logging.info(f"init after first refresh: {self.table_view}")
 
         # listen for target changes
         self.model.register_target_listener(self._update_target)
@@ -183,7 +179,7 @@ class MainFrame(wx.Frame):
         if y < margin: directions.append('top')
         if y > h - margin: directions.append('bottom')
 
-        logging.info(f"Margin: {margin}, Directions: {directions}, X: {x}, Y: {y}, W: {w}, H: {h}")
+        #logging.info(f"Margin: {margin}, Directions: {directions}, X: {x}, Y: {y}, W: {w}, H: {h}")
         return directions
 
     #@log_call()

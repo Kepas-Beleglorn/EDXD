@@ -1,9 +1,11 @@
 import wx
 
-from EDXD.gui.helper.gui_handler import init_widget, ICON_PATH
+from EDXD.gui.helper.gui_handler import init_widget
 
-from EDXD.globals import logging, SIZE_CTRL_BUTTONS, SIZE_APP_ICON
+from EDXD.globals import logging, SIZE_CTRL_BUTTONS, SIZE_APP_ICON, ICON_PATH
 import inspect, functools
+
+from EDXD.gui.helper.gui_hover_button import HoverButton
 
 
 def log_call(level=logging.INFO):
@@ -24,7 +26,6 @@ def log_call(level=logging.INFO):
 
 
 class CustomTitleBar(wx.Panel):
-    @log_call()
     def __init__(self, parent, title):
         super().__init__(parent)
         self._drag_offset = None
@@ -52,12 +53,9 @@ class CustomTitleBar(wx.Panel):
         hbox.Add(self.title_label, 1, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 6)
 
         # Minimize, Maximize, Close buttons
-        self.btn_min = wx.Button(self, size=wx.Size(SIZE_CTRL_BUTTONS, SIZE_CTRL_BUTTONS), style=wx.BORDER_NONE)
-        init_widget(widget=self.btn_min, title="_")
-        self.btn_max = wx.Button(self, size=wx.Size(SIZE_CTRL_BUTTONS, SIZE_CTRL_BUTTONS), style=wx.BORDER_NONE)
-        init_widget(widget=self.btn_max, title="□")
-        self.btn_close = wx.Button(self, size=wx.Size(SIZE_CTRL_BUTTONS, SIZE_CTRL_BUTTONS), style=wx.BORDER_NONE)
-        init_widget(widget=self.btn_close, title="✕")
+        self.btn_min = HoverButton(self, label="_", size=wx.Size(SIZE_CTRL_BUTTONS, SIZE_CTRL_BUTTONS), style=wx.BORDER_NONE)
+        self.btn_max = HoverButton(self, label="□", size=wx.Size(SIZE_CTRL_BUTTONS, SIZE_CTRL_BUTTONS), style=wx.BORDER_NONE)
+        self.btn_close = HoverButton(self, label="✕", size=wx.Size(SIZE_CTRL_BUTTONS, SIZE_CTRL_BUTTONS), style=wx.BORDER_NONE)
         for btn in (self.btn_min, self.btn_max, self.btn_close):
             btn.SetFont(font)
             hbox.Add(btn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT | wx.SOUTH, 6)
@@ -93,7 +91,8 @@ class CustomTitleBar(wx.Panel):
         return wx.StaticBitmap(self, -1, icon_bundle)
 
     # ... (other code unchanged)
-    def on_left_down(self):
+    def on_left_down(self, event):
+        logging.info(event.GetEventObject())
         self.dragging = False
         self.dragging = True
         # Get positions in screen coordinates
@@ -117,7 +116,8 @@ class CustomTitleBar(wx.Panel):
 
     # ... (other code unchanged)
     #@log_call()
-    def on_maximize(self):
+    def on_maximize(self, event):
+        logging.info(event.GetEventObject())
         if getattr(self.parent, "_is_maximized", False):
             # Restore
             self.parent._is_maximized = False
