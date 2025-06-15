@@ -4,7 +4,7 @@ import wx
 from typing import Dict
 
 from EDXD.model import Model, Body
-from EDXD.gui.custom_title_bar import CustomTitleBar
+from EDXD.gui.helper.dynamic_frame import DynamicFrame
 from EDXD.gui.helper.gui_handler import init_widget
 from EDXD.gui.table_view import BodiesTable
 from EDXD.gui.helper.window_properties import WindowProperties
@@ -33,26 +33,14 @@ def log_call(level=logging.INFO):
 TITLE = "ED eXploration Dashboard"
 WINID = "EDXD_MAIN_WINDOW"
 
-class MainFrame(wx.Frame):
-    from EDXD.globals import RESIZE_MARGIN # px area at edge/corner for resizing
+class MainFrame(DynamicFrame):
     def __init__(self, model: Model, prefs: Dict):
         # 1. Load saved properties (or use defaults)
         props = WindowProperties.load(WINID, default_height=DEFAULT_HEIGHT, default_width=DEFAULT_WIDTH, default_posx=DEFAULT_POS_X, default_posy=DEFAULT_POS_Y)
-        super().__init__(parent=None, style=wx.NO_BORDER | wx.FRAME_SHAPED | wx.STAY_ON_TOP)
-
+        wx.Frame.__init__(self, parent=None, style=wx.NO_BORDER | wx.FRAME_SHAPED | wx.STAY_ON_TOP)
+        DynamicFrame.__init__(self, title=TITLE, win_id=WINID, parent=None, style=wx.NO_BORDER | wx.FRAME_SHAPED | wx.STAY_ON_TOP)
         # 2. Apply geometry
         init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
-
-        self._resizing = False
-        self._resize_dir = None
-        self._mouse_start = None
-        self._frame_start = None
-
-        self.Bind(wx.EVT_LEFT_DOWN, self.on_mouse_down)
-        self.Bind(wx.EVT_LEFT_UP, self.on_mouse_up)
-        self.Bind(wx.EVT_MOTION, self.on_mouse_move)
-
-        self.Bind(wx.EVT_CLOSE, self.on_close)
 
         # Define the handler as a method
         def on_body_selected(body_name: str) -> None:
@@ -62,24 +50,16 @@ class MainFrame(wx.Frame):
         self.model = model
         self.prefs = prefs
 
-
-        # Window box sizer for titlebar + content
-        window_box = wx.BoxSizer(wx.VERTICAL)
-
-        # 1. add custom titlebar
-        self.titlebar = CustomTitleBar(parent=self, title=TITLE)
-        window_box.Add(self.titlebar, 0, wx.EXPAND | wx.EAST | wx.WEST | wx.NORTH, RESIZE_MARGIN)
-
         # 2. add options panel (mineral filter, landable, and maybe more in the future
         self.options = MainWindowOptions(parent=self, title="Show only landable bodies")
-        window_box.Add(self.options, 0, wx.EXPAND | wx.EAST | wx.WEST, RESIZE_MARGIN)
+        self.window_box.Add(self.options, 0, wx.EXPAND | wx.EAST | wx.WEST, RESIZE_MARGIN)
 
         # 3. System table with body info
         self.table_view = BodiesTable(self, on_select=on_body_selected)
         init_widget(self.table_view)
-        window_box.Add(self.table_view, 1, wx.EXPAND | wx.EAST | wx.WEST | wx.SOUTH, RESIZE_MARGIN)
+        self.window_box.Add(self.table_view, 1, wx.EXPAND | wx.EAST | wx.WEST | wx.SOUTH, RESIZE_MARGIN)
 
-        self.SetSizer(window_box)
+        self.SetSizer(self.window_box)
 
         # noinspection PyTypeChecker
         wx.CallLater(millis=500, callableObj=self._refresh)
@@ -163,83 +143,3 @@ class MainFrame(wx.Frame):
         # noinspection PyTypeChecker
         wx.CallLater(millis=1000, callableObj=self._refresh)  # schedule next update
 
-    def on_close(self, event):
-        # Save geometry
-        x, y = self.GetPosition()
-        w, h = self.GetSize()
-        props = WindowProperties(window_id=WINID, height=h, width=w, posx=x, posy=y)
-        props.save()
-        # Now close all child windows as needed!
-        # for win in self.child_windows:
-        #     win.Destroy()
-        event.Skip()  # Let wx close the window
-
-    #@log_call()
-    def hit_test(self, pos):
-        # Returns direction: 'left', 'right', 'top', 'bottom', or 'corner' (for diagonal)
-        x, y = pos
-        w, h = self.GetSize()
-        margin = self.RESIZE_MARGIN
-        directions = []
-        if x < margin: directions.append('left')
-        if x > w - margin: directions.append('right')
-        if y < margin: directions.append('top')
-        if y > h - margin: directions.append('bottom')
-
-        #logging.info(f"Margin: {margin}, Directions: {directions}, X: {x}, Y: {y}, W: {w}, H: {h}")
-        return directions
-
-    #@log_call()
-    def on_mouse_down(self, evt):
-        directions = self.hit_test(evt.GetPosition())
-        if directions:
-            self._resizing = True
-            self._resize_dir = directions
-            self._mouse_start = evt.GetPosition()
-            self._frame_start = self.GetSize(), self.GetPosition()
-        evt.Skip()
-
-    #@log_call()
-    def on_mouse_up(self, evt):
-        self._resizing = False
-        self._resize_dir = None
-        evt.Skip()
-
-    #@log_call()
-    def on_mouse_move(self, evt):
-        if self._resizing and evt.Dragging() and evt.LeftIsDown():
-            dx = evt.GetPosition().x - self._mouse_start.x
-            dy = evt.GetPosition().y - self._mouse_start.y
-            size, pos = self._frame_start
-            w, h = size
-            x, y = pos
-            directions = self._resize_dir
-            if 'right' in directions:
-                w = max(w + dx, 200)  # 200 = min width
-            if 'bottom' in directions:
-                h = max(h + dy, 150)  # 150 = min height
-            if 'left' in directions:
-                new_w = max(w - dx, 200)
-                if new_w != w:
-                    x += dx
-                w = new_w
-            if 'top' in directions:
-                new_h = max(h - dy, 150)
-                if new_h != h:
-                    y += dy
-                h = new_h
-            self.SetSize(wx.Size(w, h))
-            self.SetPosition(wx.Point(x, y))
-        else:
-            # Change cursor if hovering over edge/corner
-            directions = self.hit_test(evt.GetPosition())
-            if directions:
-                if 'left' in directions or 'right' in directions:
-                    self.SetCursor(wx.Cursor(wx.CURSOR_SIZEWE))
-                elif 'top' in directions or 'bottom' in directions:
-                    self.SetCursor(wx.Cursor(wx.CURSOR_SIZENS))
-                else:
-                    self.SetCursor(wx.Cursor(wx.CURSOR_ARROW))
-            else:
-                self.SetCursor(wx.Cursor(wx.CURSOR_ARROW))
-        evt.Skip()

@@ -16,8 +16,8 @@ import logging
 # 1️⃣ Configure the root logger once, ideally at program start
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S%z",          # ISO-ish, includes timezone offset
+    format="%(asctime)s.%(msecs)03d | %(levelname)s | %(name)s | %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",  # No .%f here!
 )
 
 #-----------------------------------------------------------------------

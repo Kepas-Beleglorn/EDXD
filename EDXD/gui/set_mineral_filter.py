@@ -7,48 +7,31 @@ set_mineral_filter.py – filter & preferences window
 """
 
 from __future__ import annotations
-import tkinter as tk
-from tkinter import ttk
+import wx
 from typing import Dict
-from EDXD.gui.helper.theme_handler import apply_theme
-from EDXD.gui.helper.window_titlebar_handler import CustomTitlebar
+from EDXD.gui.custom_title_bar import CustomTitleBar
+from EDXD.gui.helper.dynamic_frame import DynamicFrame
+from EDXD.gui.helper.gui_handler import init_widget
 from EDXD.gui.helper.window_properties import WindowProperties
 
 TITLE = "Minerals to show"
 WINID = "MINERALS_FILTER"
 
-from ..gobal_constants import RAW_MATS
+from EDXD.globals import DEFAULT_HEIGHT, DEFAULT_WIDTH, DEFAULT_POS_Y, DEFAULT_POS_X, RESIZE_MARGIN, RAW_MATS
 
 # ---------------------------------------------------------------------------
-class ConfigPanel(tk.Toplevel):
-    """
-    Dark-theme filter window.
-    * Landable checkbox lives in MainWindow.
-    * Presents 27 mineral check-boxes in a 4-column grid + (De)select-all + Apply.
-    """
+class MineralsFilter(DynamicFrame):
+    def __init__(self, parent, prefs: Dict):
+        # 1. Load saved properties (or use defaults)
+        props = WindowProperties.load(WINID, default_height=DEFAULT_HEIGHT, default_width=DEFAULT_WIDTH, default_posx=DEFAULT_POS_X, default_posy=DEFAULT_POS_Y)
+        super().__init__(parent=parent, style=wx.NO_BORDER | wx.FRAME_SHAPED | wx.STAY_ON_TOP, title=TITLE)
+        # 2. Apply geometry
+        init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
 
-    def __init__(self, master: tk, prefs: Dict, on_apply):
-        super().__init__(master)
-        apply_theme(self)
-
-        self.title(TITLE)
-        self.resizable(width=False, height=False)
-        # Load properties for this window (with defaults if not saved before)
-        self.props = WindowProperties.load(WINID, default_height=330, default_width=450, default_posx=master.props.posx, default_posy=master.props.posy)
-        self.geometry(f"{self.props.width}x{self.props.height}+{self.props.posx}+{self.props.posy}")
-        self._ready = False  # not yet mapped
-        self._loading = True  # during startup, we must not save, otherwise we'll get garbage!!
-        self.bind("<Map>", self.on_mapped)  # mapped == now visible
-        self.bind("<Configure>", self.on_configure)  # move / resize
-        self.attributes("-topmost", True)
-
-        # In your window constructor:
-        self.titlebar = CustomTitlebar(self, title=TITLE)
-        self.titlebar.pack(fill="x")
+        self.Bind(wx.EVT_CLOSE, self.on_close)
 
         self.grab_set()                     # modal
 
-        self._prefs = prefs
         self._on_apply = on_apply
 
         self._build_widgets()
@@ -99,12 +82,7 @@ class ConfigPanel(tk.Toplevel):
         # notify main window & close
         if self._on_apply:
             self._on_apply()
-        self.destroy()
-
-    # --------------------------------------------------------------
-    def on_mapped(self, _):
-        """First time the window becomes visible."""
-        self._ready = True
+        self.on_close(none)
 
     def on_configure(self, event):  # move/resize
         if self._ready and not self._loading:
@@ -113,3 +91,14 @@ class ConfigPanel(tk.Toplevel):
             self.props.posx = event.x
             self.props.posy = event.y
             self.props.save()
+
+    def on_close(self, event):
+        # Save geometry
+        x, y = self.GetPosition()
+        w, h = self.GetSize()
+        props = WindowProperties(window_id=WINID, height=h, width=w, posx=x, posy=y)
+        props.save()
+        # Now close all child windows as needed!
+        # for win in self.child_windows:
+        #     win.Destroy()
+        event.Skip()  # Let wx close the window
