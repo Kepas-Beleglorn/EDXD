@@ -29,11 +29,11 @@ def init_widget(widget, width: int = DEFAULT_WIDTH, height: int = DEFAULT_HEIGHT
     logging.info(f"widget class name: {widget.ClassName} | widget name: {widget.Name} | pure widget: {widget}")
     if widget.Name == "frame":
         init_frame(widget=widget, width=width, height=height, posx=posx, posy=posy, title=title)
-    elif widget.ClassName == "panel":
+    elif widget.Name == "panel":
         init_panel(widget=widget, title=title)
-    elif widget.ClassName == "staticText":
+    elif widget.Name == "staticText":
         init_static_text(widget=widget, title=title)
-    elif widget.ClassName == "genbutton":
+    elif widget.Name == "genbutton":
         if is_ctrl_box:
             init_gen_button_ctrl_box(widget=widget, title=title)
         else:

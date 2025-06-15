@@ -5,7 +5,7 @@ from EDXD.gui.helper.gui_handler import init_widget
 from EDXD.globals import logging, SIZE_CTRL_BUTTONS, SIZE_APP_ICON, ICON_PATH
 import inspect, functools
 
-from EDXD.gui.helper.gui_hover_button import HoverButton
+from EDXD.gui.helper.gui_dynamic_button import DynamicButton
 
 
 def log_call(level=logging.INFO):
@@ -53,9 +53,9 @@ class CustomTitleBar(wx.Panel):
         hbox.Add(self.title_label, 1, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 6)
 
         # Minimize, Maximize, Close buttons
-        self.btn_min = HoverButton(self, label="_", size=wx.Size(SIZE_CTRL_BUTTONS, SIZE_CTRL_BUTTONS), style=wx.BORDER_NONE)
-        self.btn_max = HoverButton(self, label="□", size=wx.Size(SIZE_CTRL_BUTTONS, SIZE_CTRL_BUTTONS), style=wx.BORDER_NONE)
-        self.btn_close = HoverButton(self, label="✕", size=wx.Size(SIZE_CTRL_BUTTONS, SIZE_CTRL_BUTTONS), style=wx.BORDER_NONE)
+        self.btn_min = DynamicButton(self, label="_", size=wx.Size(SIZE_CTRL_BUTTONS, SIZE_CTRL_BUTTONS), style=wx.BORDER_NONE)
+        self.btn_max = DynamicButton(self, label="□", size=wx.Size(SIZE_CTRL_BUTTONS, SIZE_CTRL_BUTTONS), style=wx.BORDER_NONE)
+        self.btn_close = DynamicButton(self, label="✕", size=wx.Size(SIZE_CTRL_BUTTONS, SIZE_CTRL_BUTTONS), style=wx.BORDER_NONE)
         for btn in (self.btn_min, self.btn_max, self.btn_close):
             btn.SetFont(font)
             hbox.Add(btn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT | wx.SOUTH, 6)
