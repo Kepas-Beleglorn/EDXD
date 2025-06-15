@@ -34,11 +34,11 @@ def get_dark_theme():
     ed_dark_theme = dict(
         background          = wx.Colour("#121212"),
         background_hover    = wx.Colour("#433322"),
-        background_click    = wx.Colour("#433322"),
+        background_click    = wx.Colour("#554433"),
         foreground          = wx.Colour("#ff9a00"),
         foreground_accent   = wx.Colour("#ff9a33"),
         foreground_hover    = wx.Colour("#ff9a33"),
-        foreground_click    = wx.Colour("#ff9a33"),
+        foreground_click    = wx.Colour("#ffaa44"),
         border              = wx.Colour("#aa7700"),
         font                = wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL),
         font_bold           = wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD),

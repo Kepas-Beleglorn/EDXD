@@ -8,6 +8,7 @@ from EDXD.gui.custom_title_bar import CustomTitleBar
 from EDXD.gui.helper.gui_handler import init_widget
 from EDXD.gui.table_view import BodiesTable
 from EDXD.gui.helper.window_properties import WindowProperties
+from EDXD.gui.main_window_options import MainWindowOptions
 from EDXD.globals import DEFAULT_HEIGHT, DEFAULT_WIDTH, DEFAULT_POS_Y, DEFAULT_POS_X, RESIZE_MARGIN
 
 from EDXD.globals import logging
@@ -61,23 +62,29 @@ class MainFrame(wx.Frame):
         self.model = model
         self.prefs = prefs
 
-        # customized titlebar
+
+        # Window box sizer for titlebar + content
+        window_box = wx.BoxSizer(wx.VERTICAL)
+
+        # 1. add custom titlebar
         self.titlebar = CustomTitleBar(parent=self, title=TITLE)
+        window_box.Add(self.titlebar, 0, wx.EXPAND | wx.EAST | wx.WEST | wx.NORTH, RESIZE_MARGIN)
 
-        # VBox sizer for titlebar + content
-        vbox = wx.BoxSizer(wx.VERTICAL)
-        vbox.Add(self.titlebar, 0, wx.EXPAND | wx.EAST | wx.WEST | wx.NORTH, RESIZE_MARGIN)
+        # 2. add options panel (mineral filter, landable, and maybe more in the future
+        self.options = MainWindowOptions(parent=self, title="Show only landable bodies")
+        window_box.Add(self.options, 0, wx.EXPAND | wx.EAST | wx.WEST, RESIZE_MARGIN)
 
-        # In your main frame:
+        # 3. System table with body info
         self.table_view = BodiesTable(self, on_select=on_body_selected)
         init_widget(self.table_view)
-        vbox.Add(self.table_view, 1, wx.EXPAND | wx.EAST | wx.WEST | wx.SOUTH, RESIZE_MARGIN)
+        window_box.Add(self.table_view, 1, wx.EXPAND | wx.EAST | wx.WEST | wx.SOUTH, RESIZE_MARGIN)
 
-        self.SetSizer(vbox)
+        self.SetSizer(window_box)
 
         # noinspection PyTypeChecker
         wx.CallLater(millis=500, callableObj=self._refresh)
-        #self.var_land.set(self.prefs["land"])
+        self.options.chk_landable.SetToggle(self.prefs["land"])
+        self.options.chk_landable.Bind(wx.EVT_BUTTON, self._toggle_land)
         self._selected = None  # currently clicked body name
 
         # listen for target changes
@@ -95,10 +102,10 @@ class MainFrame(wx.Frame):
         # GUI-only refresh; real cache reload is handled by Model/Controller
         self._refresh()
 
-    def _toggle_land(self):
-        #self.prefs["land"] = self.var_land.get()
-        #self.prefs["save"]()
-        #self._refresh()
+    def _toggle_land(self, event):
+        self.prefs["land"] = self.options.chk_landable.GetToggle()
+        self.prefs["save"]()
+        self._refresh()
         pass
 
     def _row_clicked(self, body_name: str):

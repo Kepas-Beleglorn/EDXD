@@ -36,31 +36,31 @@ class CustomTitleBar(wx.Panel):
         self._current_pos = None    # required for proper resizing on maximize
 
         # Layout
-        hbox = wx.BoxSizer(wx.HORIZONTAL)
+        custom_title_bar_box = wx.BoxSizer(wx.HORIZONTAL)
 
         # App icon
         icon_widget = self.set_icon()
         # Add to your sizer as before
-        hbox.Add(icon_widget, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT)
+        custom_title_bar_box.Add(icon_widget, 0, wx.ALIGN_CENTER_VERTICAL | wx.LEFT)
 
         # Title label
-        self.title_label = wx.StaticText(self)
+        self.title_label = wx.StaticText(parent=self)
         init_widget(widget=self.title_label, title=title)
         font = self.title_label.GetFont()
         font.PointSize += 4
         font.FontWeight = wx.FONTWEIGHT_BOLD
         self.title_label.SetFont(font)
-        hbox.Add(self.title_label, 1, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 6)
+        custom_title_bar_box.Add(self.title_label, 1, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 6)
 
         # Minimize, Maximize, Close buttons
-        self.btn_min = DynamicButton(self, label="_", size=wx.Size(SIZE_CTRL_BUTTONS, SIZE_CTRL_BUTTONS), style=wx.BORDER_NONE)
-        self.btn_max = DynamicButton(self, label="□", size=wx.Size(SIZE_CTRL_BUTTONS, SIZE_CTRL_BUTTONS), style=wx.BORDER_NONE)
-        self.btn_close = DynamicButton(self, label="✕", size=wx.Size(SIZE_CTRL_BUTTONS, SIZE_CTRL_BUTTONS), style=wx.BORDER_NONE)
+        self.btn_min = DynamicButton(parent=self, label="_", size=wx.Size(SIZE_CTRL_BUTTONS, SIZE_CTRL_BUTTONS), style=wx.BORDER_NONE)
+        self.btn_max = DynamicButton(parent=self, label="□", size=wx.Size(SIZE_CTRL_BUTTONS, SIZE_CTRL_BUTTONS), style=wx.BORDER_NONE)
+        self.btn_close = DynamicButton(parent=self, label="✕", size=wx.Size(SIZE_CTRL_BUTTONS, SIZE_CTRL_BUTTONS), style=wx.BORDER_NONE)
         for btn in (self.btn_min, self.btn_max, self.btn_close):
             btn.SetFont(font)
-            hbox.Add(btn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT | wx.SOUTH, 6)
+            custom_title_bar_box.Add(btn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT | wx.SOUTH, 6)
 
-        self.SetSizer(hbox)
+        self.SetSizer(custom_title_bar_box)
 
         # Bind events for dragging
         self.Bind(wx.EVT_LEFT_DOWN, self.on_left_down)
