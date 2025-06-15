@@ -37,7 +37,6 @@ class MainFrame(DynamicFrame):
     def __init__(self, model: Model, prefs: Dict):
         # 1. Load saved properties (or use defaults)
         props = WindowProperties.load(WINID, default_height=DEFAULT_HEIGHT, default_width=DEFAULT_WIDTH, default_posx=DEFAULT_POS_X, default_posy=DEFAULT_POS_Y)
-        wx.Frame.__init__(self, parent=None, style=wx.NO_BORDER | wx.FRAME_SHAPED | wx.STAY_ON_TOP)
         DynamicFrame.__init__(self, title=TITLE, win_id=WINID, parent=None, style=wx.NO_BORDER | wx.FRAME_SHAPED | wx.STAY_ON_TOP)
         # 2. Apply geometry
         init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
@@ -49,6 +48,7 @@ class MainFrame(DynamicFrame):
 
         self.model = model
         self.prefs = prefs
+        self._refresh_timer = None
 
         # 2. add options panel (mineral filter, landable, and maybe more in the future
         self.options = MainWindowOptions(parent=self, title="Show only landable bodies")
@@ -62,7 +62,7 @@ class MainFrame(DynamicFrame):
         self.SetSizer(self.window_box)
 
         # noinspection PyTypeChecker
-        wx.CallLater(millis=500, callableObj=self._refresh)
+        self._refresh_timer = wx.CallLater(millis=500, callableObj=self._refresh)
         self.options.chk_landable.SetToggle(self.prefs["land"])
         self.options.chk_landable.Bind(wx.EVT_BUTTON, self._toggle_land)
         self._selected = None  # currently clicked body name
@@ -141,5 +141,7 @@ class MainFrame(DynamicFrame):
         #self.lbl_sys.config(text=f"{name}   ({scanned}/{total})")
 
         # noinspection PyTypeChecker
-        wx.CallLater(millis=1000, callableObj=self._refresh)  # schedule next update
+        if self._refresh_timer:
+            self._refresh_timer.Stop()
+        self._refresh_timer = wx.CallLater(millis=1000, callableObj=self._refresh)  # schedule next update
 

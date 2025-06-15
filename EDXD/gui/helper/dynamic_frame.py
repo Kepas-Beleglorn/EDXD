@@ -120,3 +120,6 @@ class DynamicFrame(wx.Frame):
         w, h = self.GetSize()
         props = WindowProperties(window_id=self.win_id, height=h, width=w, posx=x, posy=y)
         props.save()
+        if hasattr(self, '_refresh_timer') and getattr(self, '_refresh_timer') is not None:
+            getattr(self, '_refresh_timer').Stop()
+        event.Skip()
