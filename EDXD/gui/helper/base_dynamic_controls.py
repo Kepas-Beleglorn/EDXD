@@ -1,4 +1,5 @@
 import wx
+from EDXD.gui.helper.theme_handler import get_theme
 from typing import Protocol
 
 class DynamicControlsBaseHint(Protocol):
@@ -18,22 +19,27 @@ class DynamicControlsBaseHint(Protocol):
 class DynamicControlsBase:
     def __init__(
             self,
-            normal_bg,
-            hover_bg,
-            pressed_bg,
-            normal_fg,
-            hover_fg,
-            pressed_fg,
+            normal_bg   = None,
+            hover_bg    = None,
+            pressed_bg  = None,
+            toggled_bg  = None,
+            normal_fg   = None,
+            hover_fg    = None,
+            pressed_fg  = None,
+            toggled_fg  = None,
             *args,
             **kwargs
     ):
+        theme = get_theme()
         self._init_dynamic_controls(
-            normal_bg,
-            hover_bg,
-            pressed_bg,
-            normal_fg,
-            hover_fg,
-            pressed_fg,
+            normal_bg   = normal_bg     or theme["background"],
+            hover_bg    = hover_bg      or theme["background_hover"],
+            pressed_bg  = pressed_bg    or theme["background_hover"],
+            toggled_bg  = toggled_bg    or theme["background_toggled"],
+            normal_fg   = normal_fg     or theme["foreground"],
+            hover_fg    = hover_fg      or theme["foreground_hover"],
+            pressed_fg  = pressed_fg    or theme["foreground_hover"],
+            toggled_fg  = toggled_fg    or theme["foreground_toggled"],
             *args,
             **kwargs
         )
@@ -43,19 +49,23 @@ class DynamicControlsBase:
             normal_bg,
             hover_bg,
             pressed_bg,
+            toggled_bg,
             normal_fg,
             hover_fg,
             pressed_fg,
+            toggled_fg,
             *args,
             **kwargs):
 
         self._hover_colors = {
-            "normal_bg": normal_bg,
-            "hover_bg": hover_bg,
-            "pressed_bg": pressed_bg,
-            "normal_fg": normal_fg,
-            "hover_fg": hover_fg,
-            "pressed_fg": pressed_fg,
+            "normal_bg":    normal_bg,
+            "hover_bg":     hover_bg,
+            "pressed_bg":   pressed_bg,
+            "toggled_bg":   toggled_bg,
+            "normal_fg":    normal_fg,
+            "hover_fg":     hover_fg,
+            "pressed_fg":   pressed_fg,
+            "toggled_fg":   toggled_fg
         }
         self._is_hovered = False
         self._is_pressed = False
