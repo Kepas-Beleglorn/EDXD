@@ -5,7 +5,6 @@ from EDXD.gui.helper.gui_handler import init_widget
 from EDXD.globals import logging, SIZE_CTRL_BUTTONS, SIZE_APP_ICON, ICON_PATH
 import inspect, functools
 
-from EDXD.gui.helper.gui_dynamic_button import DynamicButton
 from EDXD.gui.helper.gui_dynamic_toggle_button import DynamicToggleButton
 
 

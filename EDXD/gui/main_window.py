@@ -83,6 +83,9 @@ class MainFrame(DynamicFrame):
         self._refresh()
 
     def _toggle_land(self, event):
+        # Call the toggle button's handler so its visuals/state update
+        if hasattr(self.options.chk_landable, "on_toggle"):
+            self.options.chk_landable.on_toggle(event)
         self.prefs["land"] = self.options.chk_landable.GetToggle()
         self.prefs["save"]()
         self._refresh()

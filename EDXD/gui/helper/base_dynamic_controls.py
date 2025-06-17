@@ -14,7 +14,7 @@ class DynamicControlsBaseHint(Protocol):
     _is_pressed: ...
     _is_released: ...
     _is_hovered: ...
-    _hover_colors: ...
+    _themed_colors: ...
 
 class DynamicControlsBase:
     def __init__(
@@ -27,6 +27,7 @@ class DynamicControlsBase:
             hover_fg    = None,
             pressed_fg  = None,
             toggled_fg  = None,
+            debug_color = None,
             *args,
             **kwargs
     ):
@@ -34,12 +35,13 @@ class DynamicControlsBase:
         self._init_dynamic_controls(
             normal_bg   = normal_bg     or theme["background"],
             hover_bg    = hover_bg      or theme["background_hover"],
-            pressed_bg  = pressed_bg    or theme["background_hover"],
+            pressed_bg  = pressed_bg    or theme["background_click"],
             toggled_bg  = toggled_bg    or theme["background_toggled"],
             normal_fg   = normal_fg     or theme["foreground"],
             hover_fg    = hover_fg      or theme["foreground_hover"],
-            pressed_fg  = pressed_fg    or theme["foreground_hover"],
+            pressed_fg  = pressed_fg    or theme["foreground_click"],
             toggled_fg  = toggled_fg    or theme["foreground_toggled"],
+            debug_color = debug_color   or theme["color_debug"],
             *args,
             **kwargs
         )
@@ -54,10 +56,11 @@ class DynamicControlsBase:
             hover_fg,
             pressed_fg,
             toggled_fg,
+            debug_color,
             *args,
             **kwargs):
 
-        self._hover_colors = {
+        self._themed_colors = {
             "normal_bg":    normal_bg,
             "hover_bg":     hover_bg,
             "pressed_bg":   pressed_bg,
@@ -65,7 +68,8 @@ class DynamicControlsBase:
             "normal_fg":    normal_fg,
             "hover_fg":     hover_fg,
             "pressed_fg":   pressed_fg,
-            "toggled_fg":   toggled_fg
+            "toggled_fg":   toggled_fg,
+            "debug_color":  debug_color
         }
         self._is_hovered = False
         self._is_pressed = False
@@ -81,36 +85,36 @@ class DynamicControlsBase:
     def _on_enter(self: "DynamicControlsBaseHint", event):
         self._is_hovered = True
         if self._is_pressed:
-            self.SetBackgroundColour(self._hover_colors["pressed_bg"])
-            self.SetForegroundColour(self._hover_colors["pressed_fg"])
+            self.SetBackgroundColour(self._themed_colors["pressed_bg"])
+            self.SetForegroundColour(self._themed_colors["pressed_fg"])
         else:
-            self.SetBackgroundColour(self._hover_colors["hover_bg"])
-            self.SetForegroundColour(self._hover_colors["hover_fg"])
+            self.SetBackgroundColour(self._themed_colors["hover_bg"])
+            self.SetForegroundColour(self._themed_colors["hover_fg"])
         self.Refresh()
         event.Skip()
 
     def _on_leave(self: "DynamicControlsBaseHint", event):
         self._is_hovered = False
         self._is_pressed = False
-        self.SetBackgroundColour(self._hover_colors["normal_bg"])
-        self.SetForegroundColour(self._hover_colors["normal_fg"])
+        self.SetBackgroundColour(self._themed_colors["normal_bg"])
+        self.SetForegroundColour(self._themed_colors["normal_fg"])
         self.Refresh()
         event.Skip()
 
     def _on_press(self: "DynamicControlsBaseHint", event):
         self._is_pressed = True
-        self.SetBackgroundColour(self._hover_colors["pressed_bg"])
-        self.SetForegroundColour(self._hover_colors["pressed_fg"])
+        self.SetBackgroundColour(self._themed_colors["pressed_bg"])
+        self.SetForegroundColour(self._themed_colors["pressed_fg"])
         self.Refresh()
         event.Skip()
 
     def _on_release(self: "DynamicControlsBaseHint", event):
         self._is_pressed = False
         if self._is_hovered:
-            self.SetBackgroundColour(self._hover_colors["hover_bg"])
-            self.SetForegroundColour(self._hover_colors["hover_fg"])
+            self.SetBackgroundColour(self._themed_colors["hover_bg"])
+            self.SetForegroundColour(self._themed_colors["hover_fg"])
         else:
-            self.SetBackgroundColour(self._hover_colors["normal_bg"])
-            self.SetForegroundColour(self._hover_colors["normal_fg"])
+            self.SetBackgroundColour(self._themed_colors["normal_bg"])
+            self.SetForegroundColour(self._themed_colors["normal_fg"])
         self.Refresh()
         event.Skip()
