@@ -51,7 +51,7 @@ class MainFrame(DynamicFrame):
         self._refresh_timer = None
 
         # 2. add options panel (mineral filter, landable, and maybe more in the future
-        self.options = MainWindowOptions(parent=self, title="Show only landable bodies")
+        self.options = MainWindowOptions(parent=self)
         self.window_box.Add(self.options, 0, wx.EXPAND | wx.EAST | wx.WEST, RESIZE_MARGIN)
 
         # 3. System table with body info

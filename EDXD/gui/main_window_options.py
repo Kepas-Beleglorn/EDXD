@@ -25,7 +25,7 @@ def log_call(level=logging.INFO):
 
 
 class MainWindowOptions(wx.Panel):
-    def __init__(self, parent, title):
+    def __init__(self, parent, title:str = ""):
         super().__init__(parent)
         self.parent = parent
         self.theme = get_theme()
@@ -35,9 +35,9 @@ class MainWindowOptions(wx.Panel):
         options_box = wx.BoxSizer(wx.HORIZONTAL)
 
         # Checkbox for "landable"
-        self.chk_landable = DynamicToggleButton(parent=self, label=title, size=wx.Size(180 + self.theme["button_border_width"], 31 + self.theme["button_border_width"]))
+        self.chk_landable = DynamicToggleButton(parent=self, label="Show only landable bodies", size=wx.Size(180 + self.theme["button_border_width"], 31 + self.theme["button_border_width"]), draw_border=True, is_toggled=self.parent.prefs["land"])
 
-        margin = self.theme["utton_border_margin"] + self.theme["button_border_width"]
+        margin = self.theme["button_border_margin"] + self.theme["button_border_width"]
         options_box.Add(self.chk_landable, 0, wx.ALIGN_CENTER_VERTICAL | wx.TOP | wx.BOTTOM, margin)
 
         self.SetSizer(options_box)

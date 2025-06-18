@@ -53,9 +53,9 @@ class CustomTitleBar(wx.Panel):
         custom_title_bar_box.Add(self.title_label, 1, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 6)
 
         # Minimize, Maximize, Close buttons
-        self.btn_min = DynamicButton(parent=self, label="_", size=wx.Size(SIZE_CTRL_BUTTONS, SIZE_CTRL_BUTTONS), style=wx.BORDER_NONE)
-        self.btn_max = DynamicButton(parent=self, label="□", size=wx.Size(SIZE_CTRL_BUTTONS, SIZE_CTRL_BUTTONS), style=wx.BORDER_NONE)
-        self.btn_close = DynamicButton(parent=self, label="✕", size=wx.Size(SIZE_CTRL_BUTTONS, SIZE_CTRL_BUTTONS), style=wx.BORDER_NONE)
+        self.btn_min = DynamicButton(parent=self, label="_", size=wx.Size(SIZE_CTRL_BUTTONS, SIZE_CTRL_BUTTONS), style=wx.BORDER_NONE, draw_border=False, draw_background=False)
+        self.btn_max = DynamicButton(parent=self, label="□", size=wx.Size(SIZE_CTRL_BUTTONS, SIZE_CTRL_BUTTONS), style=wx.BORDER_NONE, draw_border=False, draw_background=False)
+        self.btn_close = DynamicButton(parent=self, label="✕", size=wx.Size(SIZE_CTRL_BUTTONS, SIZE_CTRL_BUTTONS), style=wx.BORDER_NONE, draw_border=False, draw_background=False)
         for btn in (self.btn_min, self.btn_max, self.btn_close):
             btn.SetFont(font)
             custom_title_bar_box.Add(btn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT | wx.SOUTH, 6)

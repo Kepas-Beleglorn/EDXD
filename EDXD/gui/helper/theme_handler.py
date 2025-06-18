@@ -32,24 +32,24 @@ def get_theme(theme: str = "dark"):
 
 def _get_dark_theme():
     ed_dark_theme = dict(
-        background          = wx.Colour("#121212"),
-        background_hover    = wx.Colour("#433322"),
-        background_click    = wx.Colour("#663322"),
-        background_toggled  = wx.Colour("#553322"),
-        foreground          = wx.Colour("#ff9a00"),
-        foreground_accent   = wx.Colour("#ff9a33"),
-        foreground_hover    = wx.Colour("#ff9a33"),
-        foreground_click    = wx.Colour("#ffbb55"),
-        foreground_toggled  = wx.Colour("#ffaa44"),
-        border              = wx.Colour("#aa4400"),
-        border_button_light = wx.Colour("#99440088"),
-        border_button_dark  = wx.Colour("#88330088"),
-        border_thickness    = 1,
-        button_border_width = 3,
-        utton_border_margin = 1,
-        font                = wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL),
-        font_bold           = wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD),
-        color_debug         = wx.Colour("#00ff00")
+        background              = wx.Colour("#121212"),
+        background_hover        = wx.Colour("#433322"),
+        background_click        = wx.Colour("#663322"),
+        background_toggled      = wx.Colour("#553322"),
+        foreground              = wx.Colour("#ff9a00"),
+        foreground_accent       = wx.Colour("#ff9a33"),
+        foreground_hover        = wx.Colour("#ff9a33"),
+        foreground_click        = wx.Colour("#ffbb55"),
+        foreground_toggled      = wx.Colour("#ffaa44"),
+        border                  = wx.Colour("#aa4400"),
+        border_button_light     = wx.Colour("#bb550088"),
+        border_button_dark      = wx.Colour("#88330088"),
+        border_thickness        = 1,
+        button_border_width     = 3,
+        button_border_margin    = 1,
+        font                    = wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL),
+        font_bold               = wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD),
+        color_debug             = wx.Colour("#00ff00")
     )
     return ed_dark_theme
 
@@ -82,8 +82,8 @@ def _apply_theme_to_panel(widget: wx.Panel):
 
 def _apply_theme_to_button(widget: buttons.GenButton):
     theme = get_theme()
-    widget.SetBackgroundColour(theme["background"])
-    widget.SetForegroundColour(theme["foreground"])
+    #widget.SetBackgroundColour(theme["background"])
+    #widget.SetForegroundColour(theme["foreground"])
     widget.SetFont(theme["font"])
     widget.style = wx.BORDER_NONE
 

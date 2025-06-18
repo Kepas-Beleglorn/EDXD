@@ -11,9 +11,11 @@ class DynamicControlsBaseHint(Protocol):
     def _on_leave(self, event): ...
     def _on_press(self, event): ...
     def _on_release(self, event): ...
+    def on_toggle(self, event): ...
     _is_pressed: ...
     _is_released: ...
     _is_hovered: ...
+    _is_toggled: ...
     _themed_colors: ...
 
 class DynamicControlsBase:
@@ -32,6 +34,8 @@ class DynamicControlsBase:
             border_button_light = None,
             border_button_dark  = None,
             debug_color         = None,
+            draw_border: bool   = True,
+            draw_background: bool = True,
             *args,
             **kwargs
     ):
@@ -46,10 +50,12 @@ class DynamicControlsBase:
             hover_fg            = hover_fg              or theme["foreground_hover"],
             pressed_fg          = pressed_fg            or theme["foreground_click"],
             toggled_fg          = toggled_fg            or theme["foreground_toggled"],
-            border              = border                or theme["border_button_light"],
+            border              = border                or theme["border"],
             border_button_light = border_button_light   or theme["border_button_light"],
             border_button_dark  = border_button_dark    or theme["border_button_dark"],
             debug_color         = debug_color           or theme["color_debug"],
+            draw_border         = draw_border,
+            draw_background     = draw_background,
             *args,
             **kwargs
         )
@@ -69,6 +75,8 @@ class DynamicControlsBase:
             border_button_light,
             border_button_dark,
             debug_color,
+            draw_border,
+            draw_background,
             *args,
             **kwargs):
 
@@ -89,6 +97,9 @@ class DynamicControlsBase:
         }
         self._is_hovered = False
         self._is_pressed = False
+        self._is_toggled = False
+        self._shall_draw_border = draw_border
+        self._shall_draw_background = draw_background
 
         self.SetBackgroundColour(normal_bg)
         self.SetForegroundColour(normal_fg)
@@ -97,12 +108,11 @@ class DynamicControlsBase:
         self.Bind(wx.EVT_LEAVE_WINDOW, self._on_leave)
         self.Bind(wx.EVT_LEFT_DOWN, self._on_press)
         self.Bind(wx.EVT_LEFT_UP, self._on_release)
-
         if self.GetName() == "togglebutton":
-            print("bind toggle button")
-            self.Bind(wx.EVT_BUTTON, self._on_toggle)
+            self.Bind(wx.EVT_BUTTON, self.on_toggle)
 
-    def _on_toggle(self, evt):
+
+    def on_toggle(self, evt):
         print("event toggle")
         self.Refresh()
         evt.Skip()
@@ -128,7 +138,6 @@ class DynamicControlsBase:
 
     def _on_press(self: "DynamicControlsBaseHint", event):
         self._is_pressed = True
-        self.SetBackgroundColour(self._themed_colors["pressed_bg"])
         self.SetForegroundColour(self._themed_colors["pressed_fg"])
         self.Refresh()
         event.Skip()
@@ -145,19 +154,24 @@ class DynamicControlsBase:
         event.Skip()
 
     def DrawBezel(self, dc, x1, y1, x2, y2):
-        theme = get_theme()
+        if self._shall_draw_border:
+            self._draw_background(dc, x1, y1, x2, y2)
+        if self._shall_draw_border:
+            self._draw_border(dc, x1, y1, x2, y2)
+
+    def _draw_background(self, dc, x1, y1, x2, y2):
         color_bg_toggled = self._themed_colors["toggled_bg"]
         color_bg_hovered = self._themed_colors["hover_bg"]
         color_bg_normal = self._themed_colors["normal_bg"]
-        color_btn_border_light = self._themed_colors["border_button_light"]
-        color_btn_border_dark = self._themed_colors["border_button_dark"]
-        btn_border_width = theme["button_border_width"]
+        color_bg_pressed = self._themed_colors["pressed_bg"]
 
-        """Custom painted background for both toggled and untoggled states."""
-        if  self.GetName() == "togglebutton" and self.GetValue():
+        # Custom painted background for both toggled and untoggled states.
+        if self._is_toggled and not self._is_pressed and not self._is_hovered:
             bg = color_bg_toggled
-        elif getattr(self, "_is_hovered", False):
+        elif self._is_hovered and not self._is_pressed:
             bg = color_bg_hovered
+        elif self._is_pressed:
+            bg = color_bg_pressed
         else:
             bg = color_bg_normal
 
@@ -167,29 +181,31 @@ class DynamicControlsBase:
         dc.DrawRectangle(x1, y1, x2 - x1, y2 - y1)
         self.hasFocus = False
 
+    def _draw_border(self, dc, x1, y1, x2, y2):
+        theme = get_theme()
+        color_btn_border_light = self._themed_colors["border_button_light"]
+        color_btn_border_dark = self._themed_colors["border_button_dark"]
+        btn_border_width = theme["button_border_width"]
 
-        # Optionally, draw a border or focus indicator here
-
+        # draw a border or focus indicator here
         # 3D effect: light on top/left, dark on bottom/right
         light = color_btn_border_light
         dark = color_btn_border_dark
 
-        #brush_light = wx.Brush(light)
-        #brush_dark = wx.Brush(dark)
+        # brush_light = wx.Brush(light)
+        # brush_dark = wx.Brush(dark)
         pen_light = wx.Pen(colour=light, width=btn_border_width)
         pen_dark = wx.Pen(colour=dark, width=btn_border_width)
         # Top edge
-        #dc.SetBrush(brush_light)
+        # dc.SetBrush(brush_light)
         dc.SetPen(pen_light)
         dc.DrawLine(x1, y1, x2, y1)
         # Left edge
         dc.DrawLine(x1, y1, x1, y2)
 
         # Bottom edge
-        #dc.SetBrush(brush_dark)
+        # dc.SetBrush(brush_dark)
         dc.SetPen(pen_dark)
         dc.DrawLine(x1, y2, x2, y2)
         # Right edge
         dc.DrawLine(x2, y1, x2, y2)
-
-        # Label will be drawn by the default paint event
