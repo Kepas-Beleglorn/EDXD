@@ -26,11 +26,11 @@ def log_call(level=logging.INFO):
 def get_theme(theme: str = "dark"):
     # Data for theme_handler
     if theme == "dark":
-        return get_dark_theme()
+        return _get_dark_theme()
     else:
-        return get_dark_theme()
+        return _get_dark_theme()
 
-def get_dark_theme():
+def _get_dark_theme():
     ed_dark_theme = dict(
         background          = wx.Colour("#121212"),
         background_hover    = wx.Colour("#433322"),
@@ -41,7 +41,12 @@ def get_dark_theme():
         foreground_hover    = wx.Colour("#ff9a33"),
         foreground_click    = wx.Colour("#ffbb55"),
         foreground_toggled  = wx.Colour("#ffaa44"),
-        border              = wx.Colour("#aa7700"),
+        border              = wx.Colour("#aa4400"),
+        border_button_light = wx.Colour("#99440088"),
+        border_button_dark  = wx.Colour("#88330088"),
+        border_thickness    = 1,
+        button_border_width = 3,
+        utton_border_margin = 1,
         font                = wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL),
         font_bold           = wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD),
         color_debug         = wx.Colour("#00ff00")
@@ -50,44 +55,45 @@ def get_dark_theme():
 
 def apply_theme(widget):
     if widget.Name == "frame":
-        apply_theme_to_frame(widget)
+        _apply_theme_to_frame(widget)
     elif widget.Name == "panel":
-        apply_theme_to_panel(widget)
+        _apply_theme_to_panel(widget)
     elif widget.Name == "staticText":
-        apply_theme_to_static_text(widget)
+        _apply_theme_to_static_text(widget)
     elif widget.Name == "genbutton":
-        apply_theme_to_button(widget)
+
+        _apply_theme_to_button(widget)
     elif widget.Name == "grid":
-        apply_theme_to_grid(widget)
+        _apply_theme_to_grid(widget)
     else:
         return
 
-def apply_theme_to_frame(widget: wx.Frame):
+def _apply_theme_to_frame(widget: wx.Frame):
     theme = get_theme()
     widget.SetBackgroundColour(theme["background"])
     widget.SetForegroundColour(theme["foreground"])
     widget.SetIcon(wx.Icon(ICON_PATH.as_posix(), wx.BITMAP_TYPE_ICO))
 
-def apply_theme_to_panel(widget: wx.Panel):
+def _apply_theme_to_panel(widget: wx.Panel):
     theme = get_theme()
     widget.SetBackgroundColour(theme["background"])
     widget.SetForegroundColour(theme["foreground"])
     widget.SetFont(theme["font_bold"])
 
-def apply_theme_to_button(widget: buttons.GenButton):
+def _apply_theme_to_button(widget: buttons.GenButton):
     theme = get_theme()
     widget.SetBackgroundColour(theme["background"])
     widget.SetForegroundColour(theme["foreground"])
     widget.SetFont(theme["font"])
     widget.style = wx.BORDER_NONE
 
-def apply_theme_to_static_text(widget: wx.StaticText):
+def _apply_theme_to_static_text(widget: wx.StaticText):
     theme = get_theme()
     widget.SetBackgroundColour(theme["background"])
     widget.SetForegroundColour(theme["foreground"])
     widget.SetFont(theme["font"])
 
-def apply_theme_to_grid(widget: gridlib.Grid):
+def _apply_theme_to_grid(widget: gridlib.Grid):
     theme = get_theme()
     widget.DefaultCellBackgroundColour = theme["background"]
     widget.DefaultCellTextColour = theme["foreground"]
