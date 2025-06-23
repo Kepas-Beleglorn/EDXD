@@ -22,7 +22,7 @@ def log_call(level=logging.INFO):
 
 class DynamicFrame(wx.Frame):
     from EDXD.globals import RESIZE_MARGIN  # px area at edge/corner for resizing
-    def __init__(self, parent, style, title, win_id):
+    def __init__(self, parent, style, title, win_id, show_minimize: bool = False, show_maximize: bool = False, show_close: bool = False):
         super().__init__(parent=parent, title=title, style=style)
 
         self.win_id = win_id
@@ -35,7 +35,7 @@ class DynamicFrame(wx.Frame):
         self.window_box = wx.BoxSizer(wx.VERTICAL)
 
         # 1. add custom titlebar
-        self.titlebar = CustomTitleBar(parent=self, title=title)
+        self.titlebar = CustomTitleBar(parent=self, title=title, show_minimize=show_minimize, show_maximize=show_maximize, show_close=show_close)
         self.window_box.Add(self.titlebar, 0, wx.EXPAND | wx.EAST | wx.WEST | wx.NORTH, self.RESIZE_MARGIN)
 
         self.Bind(wx.EVT_LEFT_DOWN, self.on_mouse_down)

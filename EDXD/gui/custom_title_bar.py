@@ -26,7 +26,7 @@ def log_call(level=logging.INFO):
 
 
 class CustomTitleBar(wx.Panel):
-    def __init__(self, parent, title):
+    def __init__(self, parent, title, show_minimize: bool = False, show_maximize: bool = False, show_close: bool = False):
         super().__init__(parent)
         self._drag_offset = None
         self.parent = parent
@@ -53,12 +53,20 @@ class CustomTitleBar(wx.Panel):
         custom_title_bar_box.Add(self.title_label, 1, wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 6)
 
         # Minimize, Maximize, Close buttons
-        self.btn_min = DynamicButton(parent=self, label="_", size=wx.Size(SIZE_CTRL_BUTTONS, SIZE_CTRL_BUTTONS), style=wx.BORDER_NONE, draw_border=False, draw_background=False)
-        self.btn_max = DynamicButton(parent=self, label="□", size=wx.Size(SIZE_CTRL_BUTTONS, SIZE_CTRL_BUTTONS), style=wx.BORDER_NONE, draw_border=False, draw_background=False)
-        self.btn_close = DynamicButton(parent=self, label="✕", size=wx.Size(SIZE_CTRL_BUTTONS, SIZE_CTRL_BUTTONS), style=wx.BORDER_NONE, draw_border=False, draw_background=False)
-        for btn in (self.btn_min, self.btn_max, self.btn_close):
-            btn.SetFont(font)
-            custom_title_bar_box.Add(btn, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT | wx.SOUTH, 6)
+        if show_minimize:
+            self.btn_min = DynamicButton(parent=self, label="_", size=wx.Size(SIZE_CTRL_BUTTONS, SIZE_CTRL_BUTTONS), style=wx.BORDER_NONE, draw_border=False, draw_background=False)
+            custom_title_bar_box.Add(self.btn_min, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT | wx.SOUTH, 6)
+            self.btn_min.Bind(wx.EVT_BUTTON, lambda evt: parent.Iconize())
+
+        if show_maximize:
+            self.btn_max = DynamicButton(parent=self, label="□", size=wx.Size(SIZE_CTRL_BUTTONS, SIZE_CTRL_BUTTONS), style=wx.BORDER_NONE, draw_border=False, draw_background=False)
+            custom_title_bar_box.Add(self.btn_max, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT | wx.SOUTH, 6)
+            self.btn_max.Bind(wx.EVT_BUTTON, self.on_maximize)
+
+        if show_close:
+            self.btn_close = DynamicButton(parent=self, label="✕", size=wx.Size(SIZE_CTRL_BUTTONS, SIZE_CTRL_BUTTONS), style=wx.BORDER_NONE, draw_border=False, draw_background=False)
+            custom_title_bar_box.Add(self.btn_close, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT | wx.SOUTH, 6)
+            self.btn_close.Bind(wx.EVT_BUTTON, lambda evt: parent.Close())
 
         self.SetSizer(custom_title_bar_box)
 
@@ -69,11 +77,6 @@ class CustomTitleBar(wx.Panel):
         self.title_label.Bind(wx.EVT_MOTION, self.on_mouse_move)
         icon_widget.Bind(wx.EVT_LEFT_DOWN, self.on_left_down)
         icon_widget.Bind(wx.EVT_MOTION, self.on_mouse_move)
-
-        # Bind button events
-        self.btn_min.Bind(wx.EVT_BUTTON, lambda evt: parent.Iconize())
-        self.btn_max.Bind(wx.EVT_BUTTON, self.on_maximize)
-        self.btn_close.Bind(wx.EVT_BUTTON, lambda evt: parent.Close())
 
         self.dragging = False
         self._drag_pos = None
