@@ -23,10 +23,10 @@ def log_call(level=logging.INFO):
         return wrapper
     return decorator
 
-@log_call()
+#@log_call()
 def init_widget(widget, width: int = DEFAULT_WIDTH, height: int = DEFAULT_HEIGHT, posx: int = DEFAULT_POS_X, posy: int = DEFAULT_POS_Y, title: str = "", is_ctrl_box: bool = False):
     apply_theme(widget=widget)
-    logging.info(f"widget class name: {widget.ClassName} | widget name: {widget.Name} | pure widget: {widget}")
+    #logging.info(f"widget class name: {widget.ClassName} | widget name: {widget.Name} | pure widget: {widget}")
     if widget.Name == "frame":
         init_frame(widget=widget, width=width, height=height, posx=posx, posy=posy, title=title)
     elif widget.Name == "panel":

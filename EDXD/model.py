@@ -18,6 +18,24 @@ from EDXD.body_appraiser import appraise_body
 # paths (shared with other modules)
 # ---------------------------------------------------------------------------
 from EDXD.globals import CACHE_DIR
+from EDXD.globals import logging
+import inspect, functools
+
+def log_call(level=logging.INFO):
+    """Decorator that logs function name and bound arguments."""
+    def decorator(fn):
+        logger = logging.getLogger(fn.__module__)   # one logger per module
+        sig = inspect.signature(fn)                 # capture once, not on every call
+
+        @functools.wraps(fn)
+        def wrapper(*args, **kwargs):
+            bound = sig.bind_partial(*args, **kwargs)
+            arg_str = ", ".join(f"{k}={v!r}" for k, v in bound.arguments.items())
+            logger.log(level, "%s(%s)", fn.__name__, arg_str)
+            return fn(*args, **kwargs)
+
+        return wrapper
+    return decorator
 
 # ---------------------------------------------------------------------------
 # helpers
@@ -99,6 +117,7 @@ class Model:
             cb(name)
 
     # ----- mutators ----------------------------------------------------------
+    #@log_call()
     def reset_system(self, name: str, address: Optional[int]):
         """Clear all bodies and load cached system if available."""
         with self.lock:
@@ -108,12 +127,11 @@ class Model:
             self.target_body = None
 
             cached = _load(CACHE_DIR / f"{address}.json", {})
-
             # Current format: { "total_bodies": int,
             #                   "bodies": { name: {landable:…, biosignals:…, geosignals:…, materials:…}, … } }
             if isinstance(cached, dict):
                 # reload total count
-                self.total_bodies = cached.get("total_bodies", None)
+                #self.total_bodies = cached.get("total_bodies", None)
                 body_map = cached.get("bodies", {})
                 for n, e in body_map.items():
                     distance = e.get("distance", 0)
@@ -124,12 +142,8 @@ class Model:
                     bio_dict = e.get("bio_found", {})
                     geo_dict = e.get("geo_found", {})
                     estimated_value = e.get("estimated_value", 0)
-
                     self.bodies[n] = Body(name=n, distance=distance, landable=land, materials=mats, biosignals=bio, geosignals=geo, bio_found=bio_dict, geo_found=geo_dict, estimated_value=estimated_value)
-            elif isinstance(cached, list):
-                # legacy: plain list of names
-                for n in cached:
-                    self.bodies[n] = Body(name=n, landable=False,materials={})
+                logging.info(f"Cached instance: [{self.total_bodies}] {cached}")
 
     def update_body(self, name: str, distance: int, landable: bool, biosignals: int, geosignals: int, materials: Dict[str, float], scandata):
         with self.lock:
@@ -174,9 +188,11 @@ class Model:
             },
         }
         _save(CACHE_DIR / f"{self.system_addr}.json", data)
-
+    #@log_call()
     def snapshot_total(self) -> Optional[int]:
         with self.lock:
+            cached = _load(CACHE_DIR / f"{self.system_addr}.json", {})
+            self.total_bodies = cached.get("total_bodies", None)
             return self.total_bodies
 
 # ---------------------------------------------------------------------------
@@ -230,19 +246,15 @@ class Controller(threading.Thread):
 
             etype = evt.get("event")
             # ───── jump to a new system ───────────────────────────────
+            # In Controller.run()
             if etype == "FSDJump":
-                self.m.reset_system(evt.get("StarSystem"),
-                                    evt.get("SystemAddress"))
-                # keep going; there may be Scan events in the same tick
+                self.m.reset_system(evt.get("StarSystem"), evt.get("SystemAddress"))
 
-            if etype in ("FSSDiscoveryScan", "FSSAllBodiesFound"):
-                self.m.reset_system(evt.get("SystemName"), evt.get("SystemAddress"))
-                # immediately create a Body(name, False, {}) for every discovered bodyName
-                # so the table shows a row for every body (star, planet, moon, belt…)
+            elif etype in ("FSSDiscoveryScan", "FSSAllBodiesFound"):
+                # Now update bodies/count
                 for entry in evt.get("Bodies", []):
                     bn = entry.get("BodyName")
                     if bn and bn not in self.m.bodies:
-                        # create with default zero‐values; material % empty
                         self.m.bodies[bn] = Body(name=bn, landable=False, materials={})
                 self.m.total_bodies = evt.get("BodyCount")
 
