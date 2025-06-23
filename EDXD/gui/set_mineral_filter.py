@@ -28,7 +28,7 @@ class MineralsFilter(DynamicFrame):
         # 2. Apply geometry
         init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
 
-        #self.Bind(wx.EVT_CLOSE, self.on_close)
+        self.Bind(wx.EVT_CLOSE, self.on_close)
 
         self.grab_set()                     # modal
 
