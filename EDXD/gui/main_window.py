@@ -50,11 +50,16 @@ class MainFrame(DynamicFrame):
         self.prefs = prefs
         self._refresh_timer = None
 
-        # 2. add options panel (mineral filter, landable, and maybe more in the future
+        # Add options panel (mineral filter, landable, and maybe more in the future
         self.options = MainWindowOptions(parent=self)
         self.window_box.Add(self.options, 0, wx.EXPAND | wx.EAST | wx.WEST, RESIZE_MARGIN)
 
-        # 3. System table with body info
+        # System name and body count
+        self.lbl_sys = wx.StaticText(parent=self)
+        self._update_system()
+        self.window_box.Add(self.lbl_sys, 0, wx.EXPAND | wx.EAST | wx.WEST | wx.SOUTH, RESIZE_MARGIN)
+
+        #System table with body info
         self.table_view = BodiesTable(self, on_select=on_body_selected)
         init_widget(self.table_view)
         self.window_box.Add(self.table_view, 1, wx.EXPAND | wx.EAST | wx.WEST | wx.SOUTH, RESIZE_MARGIN)
@@ -70,14 +75,16 @@ class MainFrame(DynamicFrame):
         # listen for target changes
         self.model.register_target_listener(self._update_target)
 
+    def _update_system(self, title: str = ""):
+        init_widget(widget=self.lbl_sys, title=title)
+        font = self.lbl_sys.GetFont()
+        font.PointSize += 4
+        font.FontWeight = wx.FONTWEIGHT_BOLD
+        self.lbl_sys.SetFont(font)
+
     # ------------------------------------------------------------------
     # event handlers
     # ------------------------------------------------------------------
-    def _open_filters(self):
-        # open modal config window
-        # ConfigPanel(self, self.prefs, on_apply=self._refresh)
-        pass
-
     def _reload(self):
         # GUI-only refresh; real cache reload is handled by Model/Controller
         self._refresh()
@@ -126,7 +133,6 @@ class MainFrame(DynamicFrame):
             selected_name=self._selected,
             target_name=self.model.target_body
         )
-        #logging.info(f"Refreshed: {self.model.target_body}")
         # keep the auto-window live even if nothing else changes
         tgt = self.model.snapshot_target()
         if tgt:
@@ -141,7 +147,7 @@ class MainFrame(DynamicFrame):
         total = self.model.snapshot_total() or "?"  # raw DSS BodyCount
 
         name = self.model.system_name or "No system"
-        #self.lbl_sys.config(text=f"{name}   ({scanned}/{total})")
+        self._update_system(title=f"{name}   ({scanned}/{total})")
 
         # noinspection PyTypeChecker
         if self._refresh_timer:
