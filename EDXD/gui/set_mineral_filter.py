@@ -24,11 +24,11 @@ class MineralsFilter(DynamicFrame):
     def __init__(self, parent, prefs: Dict):
         # 1. Load saved properties (or use defaults)
         props = WindowProperties.load(WINID, default_height=DEFAULT_HEIGHT, default_width=DEFAULT_WIDTH, default_posx=DEFAULT_POS_X, default_posy=DEFAULT_POS_Y)
-        super().__init__(parent=parent, style=wx.NO_BORDER | wx.FRAME_SHAPED | wx.STAY_ON_TOP, title=TITLE)
+        super().__init__(parent=parent, style=wx.NO_BORDER | wx.FRAME_SHAPED | wx.STAY_ON_TOP, title=TITLE, win_id=WINID, show_minimize=False, show_maximize=False, show_close=True)
         # 2. Apply geometry
         init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
 
-        self.Bind(wx.EVT_CLOSE, self.on_close)
+        #self.Bind(wx.EVT_CLOSE, self.on_close)
 
         self.grab_set()                     # modal
 
