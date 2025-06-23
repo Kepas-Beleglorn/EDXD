@@ -191,9 +191,13 @@ class Model:
     #@log_call()
     def snapshot_total(self) -> Optional[int]:
         with self.lock:
-            cached = _load(CACHE_DIR / f"{self.system_addr}.json", {})
-            self.total_bodies = cached.get("total_bodies", None)
             return self.total_bodies
+
+    def load_cached_total_bodies(self, system_address: int = None):
+        if system_address is None:
+            pass
+        cached = _load(CACHE_DIR / f"{self.system_addr}.json", {})
+        self.total_bodies = cached.get("total_bodies", None)
 
 # ---------------------------------------------------------------------------
 # tailer thread – reads the newest Journal file
@@ -256,7 +260,8 @@ class Controller(threading.Thread):
                     bn = entry.get("BodyName")
                     if bn and bn not in self.m.bodies:
                         self.m.bodies[bn] = Body(name=bn, landable=False, materials={})
-                self.m.total_bodies = evt.get("BodyCount")
+                if evt.get("BodyCount") is not None:
+                    self.m.total_bodies = evt.get("BodyCount")
 
             # ── on-foot DNA sample or SRV organic scan ─────────────────────
             elif etype in ("ExobiologySample", "OrganicScan"):
