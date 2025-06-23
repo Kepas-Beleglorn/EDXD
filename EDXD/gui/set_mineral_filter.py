@@ -8,97 +8,75 @@ set_mineral_filter.py – filter & preferences window
 
 from __future__ import annotations
 import wx
+from EDXD.gui.helper.gui_dynamic_toggle_button import DynamicToggleButton
 from typing import Dict
-from EDXD.gui.custom_title_bar import CustomTitleBar
-from EDXD.gui.helper.dynamic_frame import DynamicFrame
+from EDXD.gui.helper.theme_handler import get_theme
+from EDXD.gui.helper.dynamic_dialog import DynamicDialog
+from EDXD.gui.helper.gui_dynamic_button import DynamicButton
 from EDXD.gui.helper.gui_handler import init_widget
 from EDXD.gui.helper.window_properties import WindowProperties
+from EDXD.globals import BTN_HEIGHT, BTN_WIDTH
 
 TITLE = "Minerals to show"
 WINID = "MINERALS_FILTER"
+MINERAL_BTN_WIDTH = 128
 
-from EDXD.globals import DEFAULT_HEIGHT, DEFAULT_WIDTH, DEFAULT_POS_Y, DEFAULT_POS_X, RESIZE_MARGIN, RAW_MATS
+from EDXD.globals import DEFAULT_HEIGHT, DEFAULT_WIDTH, DEFAULT_POS_Y, DEFAULT_POS_X, RAW_MATS
 
 # ---------------------------------------------------------------------------
-class MineralsFilter(DynamicFrame):
+class MineralsFilter(DynamicDialog):
     def __init__(self, parent, prefs: Dict):
         # 1. Load saved properties (or use defaults)
         props = WindowProperties.load(WINID, default_height=DEFAULT_HEIGHT, default_width=DEFAULT_WIDTH, default_posx=DEFAULT_POS_X, default_posy=DEFAULT_POS_Y)
-        super().__init__(parent=parent, style=wx.NO_BORDER | wx.FRAME_SHAPED | wx.STAY_ON_TOP, title=TITLE, win_id=WINID, show_minimize=False, show_maximize=False, show_close=True)
+        DynamicDialog.__init__(self, parent=parent, style=wx.NO_BORDER | wx.FRAME_SHAPED | wx.STAY_ON_TOP, title=TITLE, win_id=WINID, show_minimize=False, show_maximize=False, show_close=True)
         # 2. Apply geometry
         init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
 
-        self.Bind(wx.EVT_CLOSE, self.on_close)
+        self.theme = get_theme()
+        self.prefs = prefs
+        self.mat_buttons = {}  # mat_name: DynamicToggleButton
 
-        self.grab_set()                     # modal
+        # Mineral toggles grid
+        grid = wx.FlexGridSizer(cols=4, hgap=8, vgap=4)
+        for mat in RAW_MATS:
+            btn = DynamicToggleButton(
+                parent=self,
+                label=mat.title(),
+                is_toggled=self.prefs.get("mat_sel", {}).get(mat, True),
+                size=wx.Size(MINERAL_BTN_WIDTH, BTN_HEIGHT)
+            )
+            self.mat_buttons[mat] = btn
+            grid.Add(btn, 0, wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.BOTTOM, -4)
+        self.window_box.Add(grid, flag=wx.ALL, border=10)
 
-        self._on_apply = on_apply
+        # (De)select all and Apply buttons
+        hbox = wx.BoxSizer(wx.HORIZONTAL)
+        btn_toggle = DynamicButton(parent=self, label="(De-)select all", size=wx.Size(BTN_WIDTH + self.theme["button_border_width"], BTN_HEIGHT + self.theme["button_border_width"]), draw_border=True)
+        btn_apply = DynamicButton(parent=self, label="Apply filter", size=wx.Size(BTN_WIDTH + self.theme["button_border_width"], BTN_HEIGHT + self.theme["button_border_width"]), draw_border=True)
+        hbox.Add(btn_toggle, flag=wx.RIGHT, border=8)
+        hbox.Add(btn_apply)
+        self.window_box.Add(hbox, flag=wx.ALIGN_CENTER | wx.ALL, border=10)
 
-        self._build_widgets()
+        self.SetSizer(self.window_box)
 
-        # noinspection PyTypeChecker
-        self.after(ms=3000, func=self.loading_finished)
+        # Bindings
+        btn_toggle.Bind(wx.EVT_BUTTON, self.on_toggle_all)
+        btn_apply.Bind(wx.EVT_BUTTON, self.on_apply)
 
-    def loading_finished(self):
-        self._loading = False
+        self.Fit()
 
-    # ------------------------------------------------------------------
-    def _build_widgets(self):
-        frame = ttk.Frame(self, style="Dark.TFrame")
-        frame.pack(fill="both", expand=True, padx=8, pady=8)
+    def on_toggle_all(self, event):
+        # Toggle all buttons to the same value (all on or all off)
+        current = all(btn.GetValue() for btn in self.mat_buttons.values())
+        new_val = not current
+        for btn in self.mat_buttons.values():
+            btn.SetValue(new_val)
+            btn._is_toggled = new_val
+            btn.Refresh()
 
-        # ---- mineral check-boxes ------------------------------------
-        self.var_mat: Dict[str, tk.BooleanVar] = {}
-        cols = 4
-        rows = int(round(len(RAW_MATS) / cols ,0))
-        for idx, mat in enumerate(RAW_MATS):
-            var = tk.BooleanVar(value=self._prefs["mat_sel"].get(mat, True))
-            self.var_mat[mat] = var
-            cb = ttk.Checkbutton(frame, text=mat.title(), variable=var)
-            c, r = divmod(idx, rows)
-            cb.grid(row=r, column=c, sticky="w", padx=4, pady=2)
-
-        # ---- (De)select-all & Apply buttons --------------------------
-        btns = ttk.Frame(self, style="Dark.TFrame")
-        btns.pack(pady=(cols, cols*2))
-
-        def toggle_all():
-            new = not all(v.get() for v in self.var_mat.values())
-            for v in self.var_mat.values():
-                v.set(new)
-
-        ttk.Button(btns, text="(De)select all", style="Dark.TButton",
-                   command=toggle_all).pack(fill="x", pady=(0, 4))
-
-        ttk.Button(btns, text="Apply", style="Dark.TButton",
-                   command=self._apply).pack(fill="x")
-
-    # ------------------------------------------------------------------
-    def _apply(self):
-        # persist selections → prefs dict
-        self._prefs["mat_sel"] = {m: v.get() for m, v in self.var_mat.items()}
-        self._prefs["save"]()           # write config.json
-
-        # notify main window & close
-        if self._on_apply:
-            self._on_apply()
-        self.on_close(none)
-
-    def on_configure(self, event):  # move/resize
-        if self._ready and not self._loading:
-            self.props.height = event.height
-            self.props.width = event.width
-            self.props.posx = event.x
-            self.props.posy = event.y
-            self.props.save()
-
-    def on_close(self, event):
-        # Save geometry
-        x, y = self.GetPosition()
-        w, h = self.GetSize()
-        props = WindowProperties(window_id=WINID, height=h, width=w, posx=x, posy=y)
-        props.save()
-        # Now close all child windows as needed!
-        # for win in self.child_windows:
-        #     win.Destroy()
-        event.Skip()  # Let wx close the window
+    def on_apply(self, event):
+        # Save the selections back to prefs
+        self.prefs["mat_sel"] = {mat: btn.GetValue() for mat, btn in self.mat_buttons.items()}
+        if "save" in self.prefs and callable(self.prefs["save"]):
+            self.prefs["save"]()
+        self.Close()

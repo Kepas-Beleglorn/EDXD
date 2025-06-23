@@ -13,13 +13,11 @@ class DynamicToggleButton(buttons.GenToggleButton, DynamicControlsBase):
             draw_border = draw_border
         )
         self._is_toggled = is_toggled
+        self.SetValue(is_toggled)
         self.Bind(wx.EVT_BUTTON, self._on_toggle)
 
     def _on_toggle(self, evt):
-        print(f"_on_toggle-1: self._is_toggled = {self._is_toggled} | self.GetValue() = {self.GetValue()}")
         self._is_toggled = self.GetValue()
-        print(f"_on_toggle-2: self._is_toggled = {self._is_toggled} | self.GetValue() = {self.GetValue()}")
-
         self.Refresh()
         evt.Skip()
 

@@ -41,6 +41,9 @@ RESIZE_MARGIN = 5
 SIZE_CTRL_BUTTONS = 24
 SIZE_APP_ICON = 20
 
+BTN_HEIGHT = 32
+BTN_WIDTH = 192
+BTN_MARGIN = 1
 
 #-----------------------------------------------------------------------
 # symbol lookup for display in table_view.py

@@ -1,10 +1,12 @@
 import wx
 
-from EDXD.globals import logging
+from EDXD.globals import *
 from EDXD.gui.helper.theme_handler import get_theme
 import inspect, functools
 
+from EDXD.gui.helper.gui_dynamic_button import DynamicButton
 from EDXD.gui.helper.gui_dynamic_toggle_button import DynamicToggleButton
+from EDXD.gui.set_mineral_filter import MineralsFilter
 
 
 def log_call(level=logging.INFO):
@@ -35,15 +37,20 @@ class MainWindowOptions(wx.Panel):
         options_box = wx.BoxSizer(wx.HORIZONTAL)
 
         # Checkbox for "landable"
-        self.chk_landable = DynamicToggleButton(parent=self, label="Show only landable bodies", size=wx.Size(180 + self.theme["button_border_width"], 31 + self.theme["button_border_width"]), draw_border=True, is_toggled=self.parent.prefs["land"])
-
+        self.chk_landable = DynamicToggleButton(parent=self, label="Show only landable bodies", size=wx.Size(BTN_WIDTH + self.theme["button_border_width"], BTN_HEIGHT + self.theme["button_border_width"]), draw_border=True, is_toggled=self.parent.prefs["land"])
         margin = self.theme["button_border_margin"] + self.theme["button_border_width"]
         options_box.Add(self.chk_landable, 0, wx.ALIGN_CENTER_VERTICAL | wx.TOP | wx.BOTTOM, margin)
 
-        self.SetSizer(options_box)
-        self.Bind(wx.EVT_PAINT, self.on_paint)
+        # Call mineral filter
+        self.btn_set_mineral_filter = DynamicButton(parent=self, label="Set mineral filter", size=wx.Size(BTN_WIDTH + self.theme["button_border_width"], BTN_HEIGHT + self.theme["button_border_width"]), draw_border=True)
+        margin = self.theme["button_border_margin"] + self.theme["button_border_width"]
+        options_box.Add(self.btn_set_mineral_filter, 0, wx.ALIGN_CENTER_VERTICAL | wx.TOP | wx.BOTTOM, margin)
+        self.btn_set_mineral_filter.Bind(wx.EVT_BUTTON, self._show_mineral_filter)
 
-    def on_paint(self, event):
+        self.SetSizer(options_box)
+        self.Bind(wx.EVT_PAINT, self._on_paint)
+
+    def _on_paint(self, event):
 
         dc = wx.PaintDC(self)
         w, h = self.GetSize()
@@ -54,3 +61,7 @@ class MainWindowOptions(wx.Panel):
         # Bottom border
         dc.DrawLine(0, h - 1, w, h - 1)
         event.Skip()
+
+    def _show_mineral_filter(self, event):
+        mineral_filer = MineralsFilter(parent=self, prefs=self.parent.prefs)
+        mineral_filer.ShowModal()
