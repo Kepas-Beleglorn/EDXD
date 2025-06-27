@@ -153,7 +153,7 @@ jobs:
         run: |
           echo "${{ needs.check-version-commit.outputs.body }}" > RELEASE_NOTES.md
           echo "" >> RELEASE_NOTES.md
-          echo "**Full Changelog**: https://github.com/Kepas-Beleglorn/EDXD-test/compare/${{ steps.prev_tag.outputs.prev_tag }}...${{ needs.check-version-commit.outputs.tag }}" >> RELEASE_NOTES.md
+          echo "**Full Changelog**: https://github.com/Kepas-Beleglorn/EDXD/compare/${{ steps.prev_tag.outputs.prev_tag }}...${{ needs.check-version-commit.outputs.tag }}" >> RELEASE_NOTES.md
 
       - name: Download all build artifacts
         uses: actions/download-artifact@v4
