@@ -62,6 +62,8 @@ def apply_theme(widget):
         _apply_theme_to_panel(widget)
     elif widget.Name == "staticText":
         _apply_theme_to_static_text(widget)
+    elif widget.Name == "text":
+        _apply_theme_to_text(widget)
     elif widget.Name == "genbutton":
 
         _apply_theme_to_button(widget)
@@ -96,6 +98,12 @@ def _apply_theme_to_button(widget: buttons.GenButton):
     widget.style = wx.BORDER_NONE
 
 def _apply_theme_to_static_text(widget: wx.StaticText):
+    theme = get_theme()
+    widget.SetBackgroundColour(theme["background"])
+    widget.SetForegroundColour(theme["foreground"])
+    widget.SetFont(theme["font"])
+
+def _apply_theme_to_text(widget: wx.TextCtrl):
     theme = get_theme()
     widget.SetBackgroundColour(theme["background"])
     widget.SetForegroundColour(theme["foreground"])

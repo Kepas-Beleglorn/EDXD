@@ -7,111 +7,96 @@ A tiny wrapper around a Tk Text widget; MainWindow calls
 """
 
 from __future__ import annotations
-import tkinter as tk
-from tkinter import ttk
+import wx
+from EDXD.gui.helper.dynamic_dialog import DynamicDialog
+from EDXD.gui.helper.theme_handler import get_theme
+from EDXD.gui.helper.gui_handler import init_widget
 from typing import Optional, Dict
-from EDXD.gui.helper.theme_handler import apply_theme, apply_text_theme
-from EDXD.gui.helper.window_titlebar_handler import CustomTitlebar
 from EDXD.gui.helper.window_properties import WindowProperties
-
+from EDXD.globals import DEFAULT_HEIGHT, DEFAULT_WIDTH, DEFAULT_POS_Y, DEFAULT_POS_X, RESIZE_MARGIN
 from EDXD.model import Body
 
 TITLE = "Selected body"
 WINID = "DETAIL_SELECTED"
 
-class DetailSelected(tk.Toplevel):
-    """Always reflects the row the user clicked in the BodiesTable."""
+class DetailSelected(DynamicDialog):
+    def __init__(self, parent, prefs: Dict):
+        # 1. Load saved properties (or use defaults)
+        props = WindowProperties.load(WINID, default_height=DEFAULT_HEIGHT, default_width=DEFAULT_WIDTH, default_posx=DEFAULT_POS_X, default_posy=DEFAULT_POS_Y)
+        DynamicDialog.__init__(self, parent=parent, style=wx.NO_BORDER | wx.FRAME_SHAPED | wx.STAY_ON_TOP, title=TITLE, win_id=WINID, show_minimize=False, show_maximize=False, show_close=True)
+        # 2. Apply geometry
+        init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
 
-    def __init__(self, master):
-        super().__init__(master)
-        # ---- dark theme colours ----
-        apply_theme(self)
+        self.theme = get_theme()
+        self.prefs = prefs
 
-        self.title(TITLE)
-        # Load properties for this window (with defaults if not saved before)
-        self.props = WindowProperties.load(WINID)
-        self.geometry(f"{self.props.width}x{self.props.height}+{self.props.posx}+{self.props.posy}")
         self._ready = False  # not yet mapped
         self._loading = True  # during startup, we must not save, otherwise we'll get garbage!!
-        self.bind("<Map>", self.on_mapped)  # mapped == now visible
-        self.bind("<Configure>", self.on_configure)  # move / resize
-        self.attributes("-topmost", True)
+        self.Bind(wx.EVT_SHOW, self._on_show)
 
-        # In your window constructor:
-        self.titlebar = CustomTitlebar(self, title=TITLE, show_close=False)
-        self.titlebar.pack(fill="x")
+        # body name
+        self.lbl_body = wx.StaticText(parent=self)
+        self._update_body()
+        self.window_box.Add(self.lbl_body, 0, wx.EXPAND | wx.EAST | wx.WEST | wx.SOUTH, RESIZE_MARGIN)
 
-        self.lbl = ttk.Label(self, font=("Segoe UI", 11, "bold"))
-        self.lbl.pack(anchor="w", padx=6, pady=(4, 2))
+        # body details
+        self.txt_body_details = wx.TextCtrl(parent=self, style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE)
+        init_widget(self.txt_body_details, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
+        self.txt_body_details.SetEditable(False)
+        self.window_box.Add(self.txt_body_details, 1, wx.EXPAND | wx.EAST | wx.WEST | wx.SOUTH, RESIZE_MARGIN)
 
-        self.txt = tk.Text(self,
-                           width=40,
-                           height=15,
-                           state="disabled",
-                           font=("Segoe UI", 9))
-        self.txt.pack(fill=tk.BOTH, expand=True, padx=4, pady=(0, 6))
-        apply_text_theme(self.txt)
+        self.SetSizer(self.window_box)
 
         # noinspection PyTypeChecker
-        self.after(ms=3000, func=self.loading_finished)
+        wx.CallLater(millis=3000, callableObj=self._loading_finished)
 
-    def loading_finished(self):
+    def _loading_finished(self):
         self._loading = False
 
     # ------------------------------------------------------------------
     def render(self, body: Optional[Body], filters: Dict[str, bool]):
-        """
-        Update window contents.
-
-        Args
-        ----
-        body     : Body object (or None to clear)
-        filters  : {material → bool}; only True entries are shown
-        """
-        self.lbl.config(text=body.name if body else "")
-        self.txt.config(state="normal")
-        self.txt.delete("1.0", tk.END)
+        self.lbl_body.SetLabelText(text=body.name if body else "")
+        self.txt_body_details.Clear()
 
         if body:
             for mat, pct in sorted(body.materials.items(),
                                    key=lambda kv: kv[1],
                                    reverse=True):
                 if filters.get(mat, True):
-                    self.txt.insert(tk.END,
-                                    f"{mat.title():<12} {pct:5.1f}%\n")
+                    self.txt_body_details.AppendText(f"{mat.title():<12} {pct:5.1f}%\n")
 
             # ── Biosignals progress lines ───────────────────────────────
             if body.biosignals:
-                self.txt.insert(tk.END, "\nBio-signals:\n")
+                self.txt_body_details.AppendText("\nBio-signals:\n")
                 for species, done in body.bio_found.items():
                     if done >= 3:
-                        self.txt.insert(tk.END, f"  ✅  {species}\n")
+                        self.txt_body_details.AppendText(f"  ✅  {species}\n")
                     else:
-                        self.txt.insert(tk.END, f"  {species}  ({done}/3)\n")
+                        self.txt_body_details.AppendText(f"  {species}  ({done}/3)\n")
 
             # ── Geology progress lines ─────────────────────────────────
             if body.geosignals:
-                self.txt.insert(tk.END, "\nGeo-signals:\n")
+                self.txt_body_details.AppendText("\nGeo-signals:\n")
                 done = len(body.geo_found)
                 if done >= 1:
-                    self.txt.insert(tk.END, f"  ✅  {done}/{body.geosignals}\n")
+                    self.txt_body_details.AppendText(f"  ✅  {done}/{body.geosignals}\n")
                 else:
-                    self.txt.insert(tk.END, f"  🌋  (?)/{body.geosignals}\n")
+                    self.txt_body_details.AppendText(f"  🌋  (?)/{body.geosignals}\n")
 
-        if not self.txt.get("1.0", tk.END).strip():
-            self.txt.insert(tk.END, "—")
+        if not self.txt_body_details.GetValue().strip():
+            self.txt_body_details.SetValue("—")
 
-        self.txt.config(state="disabled")
+        if not self.IsShown():
+            self.Show()
 
     # --------------------------------------------------------------
-    def on_mapped(self, _):
+    def _on_show(self, event):
         """First time the window becomes visible."""
         self._ready = True
 
-    def on_configure(self, event):  # move/resize
-        if self._ready and not self._loading:
-            self.props.height = event.height
-            self.props.width = event.width
-            self.props.posx = event.x
-            self.props.posy = event.y
-            self.props.save()
+    def _update_body(self, title: str = ""):
+        init_widget(widget=self.lbl_body, title=title)
+        font = self.lbl_body.GetFont()
+        font.PointSize += 2
+        font.FontWeight = wx.FONTWEIGHT_BOLD
+        self.lbl_body.SetFont(font)

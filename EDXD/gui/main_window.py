@@ -9,6 +9,7 @@ from EDXD.gui.helper.gui_handler import init_widget
 from EDXD.gui.table_view import BodiesTable
 from EDXD.gui.helper.window_properties import WindowProperties
 from EDXD.gui.main_window_options import MainWindowOptions
+from EDXD.gui.detail_selected import DetailSelected
 from EDXD.globals import DEFAULT_HEIGHT, DEFAULT_WIDTH, DEFAULT_POS_Y, DEFAULT_POS_X, RESIZE_MARGIN
 
 from EDXD.globals import logging
@@ -72,6 +73,9 @@ class MainFrame(DynamicFrame):
         self.options.chk_landable.Bind(wx.EVT_BUTTON, self._toggle_land)
         self._selected = None  # currently clicked body name
 
+        self.win_sel = DetailSelected(self, self.prefs["mat_sel"])
+        self.win_sel.Show(True)
+
         # listen for target changes
         self.model.register_target_listener(self._update_target)
 
@@ -102,7 +106,7 @@ class MainFrame(DynamicFrame):
         self._selected = body_name
         body = self.model.snapshot_bodies().get(body_name)
         if body:
-            #self.win_sel.render(body, self.prefs["mat_sel"])
+            self.win_sel.render(body, self.prefs["mat_sel"])
             logging.info(f"Selected body: {body_name}")
 
     def _update_target(self, body_name: str):
@@ -154,3 +158,6 @@ class MainFrame(DynamicFrame):
             self._refresh_timer.Stop()
         self._refresh_timer = wx.CallLater(millis=1000, callableObj=self._refresh)  # schedule next update
 
+    def on_close(self, event):
+        self.win_sel.Close(True)
+        event.Skip()
