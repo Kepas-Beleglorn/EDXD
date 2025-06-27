@@ -10,6 +10,7 @@ from EDXD.gui.table_view import BodiesTable
 from EDXD.gui.helper.window_properties import WindowProperties
 from EDXD.gui.main_window_options import MainWindowOptions
 from EDXD.gui.detail_selected import DetailSelected
+from EDXD.gui.detail_target import DetailTargeted
 from EDXD.globals import DEFAULT_HEIGHT, DEFAULT_WIDTH, DEFAULT_POS_Y, DEFAULT_POS_X, RESIZE_MARGIN
 
 from EDXD.globals import logging
@@ -76,6 +77,9 @@ class MainFrame(DynamicFrame):
         self.win_sel = DetailSelected(self, self.prefs["mat_sel"])
         self.win_sel.Show(True)
 
+        self.win_tar = DetailTargeted(self, self.prefs["mat_sel"])
+        self.win_tar.Show(True)
+
         # listen for target changes
         self.model.register_target_listener(self._update_target)
 
@@ -119,7 +123,7 @@ class MainFrame(DynamicFrame):
             # from model import Body          # avoid circular import at top
             body = Body(name=body_name, landable=False, materials={})
 
-        #self.win_auto.render(body, self.prefs["mat_sel"])
+        self.win_tar.render(body, self.prefs["mat_sel"])
         logging.info(f"Targeted body: {body_name}")
 
         # trigger a table refresh so the status icon updates immediately
