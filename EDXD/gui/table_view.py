@@ -3,7 +3,7 @@ import wx.grid as gridlib
 from typing import Dict, Callable, Optional
 
 from EDXD.model import Body
-from EDXD.globals import SYMBOL, logging, RAW_MATS, TOOL_TIP_DELAY
+from EDXD.globals import SYMBOL, logging, RAW_MATS
 import inspect, functools
 
 TABLE_ICONS = {
@@ -90,19 +90,17 @@ class BodiesTable(gridlib.Grid):
         # Tooltips
         self._tip_win = None
         self._tip_col = None
-        #self.Bind(wx.EVT_MOTION, self._on_motion)
-        #self.Bind(wx.EVT_LEAVE_WINDOW, self._hide_tip)
         self.Bind(gridlib.EVT_GRID_RANGE_SELECT, self._on_range_select)
         self.Bind(wx.EVT_KEY_DOWN, self._on_key_down)
-        #self.GetGridColLabelWindow().GetChildren()
-        self.GetGridColLabelWindow().Bind(wx.EVT_MOTION, self._on_col_label_motion)
-        self.GetGridColLabelWindow().Bind(wx.EVT_LEAVE_WINDOW, self._hide_tip)
+        self.GetGridColLabelWindow().Bind(wx.EVT_MOTION, self._show_tip)
 
-    def _hide_tip(self, event=None):
-        if self._tip_win:
-            self._tip_win.Close()
-            self._tip_win = None
-            self._tip_col = None
+    def _show_tip(self, event):
+        x = event.GetX()
+        col = self.XToCol(x)
+        colname = self._display_cols[col] if hasattr(self, "_display_cols") else self._all_cols[col]
+        text = self._col2name.get(colname, colname)
+        tt = wx.ToolTip(text)
+        self.GetGridColLabelWindow().SetToolTip(tt)
 
     def _on_label_click(self, event):
         # Use the displayed columns for correct column mapping
@@ -254,34 +252,3 @@ class BodiesTable(gridlib.Grid):
             for c, colname in enumerate(self._display_cols):
                 self.SetCellValue(r, c, row.get(colname, ("", ""))[0])
 
-    def _on_motion(self, event):
-        x, y = event.GetPosition()
-        col = self.XToCol(x)
-        logging.info("Motion: x=%d, y=%d, col=%d", x, y, col)
-        if col < 0 or col >= self.GetNumberCols():
-            self._hide_tip(event)
-            return
-        colname = self.GetColLabelValue(col)
-        if self._tip_col == colname:
-            return
-        self._hide_tip(event)
-        text = self._col2name.get(self.sort_col, colname)
-        self.SetToolTipString(f"test: {text}")
-        if text:
-            self._tip_win = wx.TipWindow(self, text, maxLength=120)
-            self._tip_col = colname
-
-    def _on_col_label_motion(self, event):
-        x = event.GetX()
-        col = self.XToCol(x)
-        if col < 0 or col >= self.GetNumberCols():
-            self._hide_tip(event)
-            return
-        colname = self._display_cols[col] if hasattr(self, "_display_cols") else self._all_cols[col]
-        text = self._col2name.get(colname, colname)
-        if self._tip_col == colname:
-            return
-        self._hide_tip(event)
-        if text:
-            self._tip_win = wx.TipWindow(self, text, maxLength=120)
-            self._tip_col = colname

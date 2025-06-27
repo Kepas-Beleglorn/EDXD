@@ -45,8 +45,6 @@ BTN_HEIGHT = 32
 BTN_WIDTH = 192
 BTN_MARGIN = 1
 
-TOOL_TIP_DELAY = 250 # time in milliseconds after that a tooltip will be shown
-
 #-----------------------------------------------------------------------
 # symbol lookup for display in table_view.py
 SYMBOL = {
