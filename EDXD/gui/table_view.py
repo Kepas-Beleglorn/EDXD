@@ -3,7 +3,7 @@ import wx.grid as gridlib
 from typing import Dict, Callable, Optional
 
 from EDXD.model import Body
-from EDXD.globals import SYMBOL, logging, RAW_MATS
+from EDXD.globals import SYMBOL, logging, RAW_MATS, TOOL_TIP_DELAY
 import inspect, functools
 
 TABLE_ICONS = {
@@ -54,7 +54,7 @@ class BodiesTable(gridlib.Grid):
         self.SetSelectionMode(gridlib.Grid.SelectRows)
         self.DisableDragGridSize()  # Prevents grid line drag-resizing
         self.EnableDragRowSize(False)  # Disables row resizing
-        #self.EnableDragColSize(False)  # Disables column resizing
+        self.EnableDragColSize(False)  # Disables column resizing
         self.EnableEditing(False)  # Already in your code
         self.ClearSelection()  # To clear any selection if needed
         self._col2name = {mat: mat.title() for mat in RAW_MATS}
@@ -78,6 +78,8 @@ class BodiesTable(gridlib.Grid):
                 self.SetColSize(idx, 40)
             else:
                 self.SetColSize(idx, 60)
+
+
         # Sorting
         self.sort_col: Optional[str] = "body"
         self.sort_reverse: bool = False
@@ -88,10 +90,19 @@ class BodiesTable(gridlib.Grid):
         # Tooltips
         self._tip_win = None
         self._tip_col = None
-        self.Bind(wx.EVT_MOTION, self._on_motion)
-        self.Bind(wx.EVT_LEAVE_WINDOW, self._hide_tip)
+        #self.Bind(wx.EVT_MOTION, self._on_motion)
+        #self.Bind(wx.EVT_LEAVE_WINDOW, self._hide_tip)
         self.Bind(gridlib.EVT_GRID_RANGE_SELECT, self._on_range_select)
         self.Bind(wx.EVT_KEY_DOWN, self._on_key_down)
+        #self.GetGridColLabelWindow().GetChildren()
+        self.GetGridColLabelWindow().Bind(wx.EVT_MOTION, self._on_col_label_motion)
+        self.GetGridColLabelWindow().Bind(wx.EVT_LEAVE_WINDOW, self._hide_tip)
+
+    def _hide_tip(self, event=None):
+        if self._tip_win:
+            self._tip_win.Close()
+            self._tip_win = None
+            self._tip_col = None
 
     def _on_label_click(self, event):
         # Use the displayed columns for correct column mapping
@@ -162,6 +173,22 @@ class BodiesTable(gridlib.Grid):
             else:
                 self.SetColSize(i, 60)
 
+        # Align value and distance columns to right
+        for i, colname in enumerate(display_cols):
+            if colname == "body":
+                attr_left = gridlib.GridCellAttr()
+                attr_left.SetAlignment(wx.ALIGN_CENTER, wx.ALIGN_CENTER)
+                self.SetColAttr(i, attr_left)
+            elif colname in ("land", "bio", "geo", "status"):
+                attr_center = gridlib.GridCellAttr()
+                attr_center.SetAlignment(wx.ALIGN_CENTER, wx.ALIGN_CENTER)
+                self.SetColAttr(i, attr_center)
+            else:
+                attr_right = gridlib.GridCellAttr()
+                attr_right.SetAlignment(wx.ALIGN_RIGHT, wx.ALIGN_CENTER)
+                self.SetColAttr(i, attr_right)
+
+
         # 1. PREPARE ROW DATA AS LIST OF DICTS (column name -> (disp, raw) tuple)
         rows_data = []
         for name, body in bodies.items():
@@ -230,6 +257,7 @@ class BodiesTable(gridlib.Grid):
     def _on_motion(self, event):
         x, y = event.GetPosition()
         col = self.XToCol(x)
+        logging.info("Motion: x=%d, y=%d, col=%d", x, y, col)
         if col < 0 or col >= self.GetNumberCols():
             self._hide_tip(event)
             return
@@ -238,14 +266,22 @@ class BodiesTable(gridlib.Grid):
             return
         self._hide_tip(event)
         text = self._col2name.get(self.sort_col, colname)
+        self.SetToolTipString(f"test: {text}")
         if text:
             self._tip_win = wx.TipWindow(self, text, maxLength=120)
             self._tip_col = colname
 
-    def _hide_tip(self, event=None):
-        if self._tip_win:
-            self._tip_win.Close()
-            self._tip_win = None
-            self._tip_col = None
-
-
+    def _on_col_label_motion(self, event):
+        x = event.GetX()
+        col = self.XToCol(x)
+        if col < 0 or col >= self.GetNumberCols():
+            self._hide_tip(event)
+            return
+        colname = self._display_cols[col] if hasattr(self, "_display_cols") else self._all_cols[col]
+        text = self._col2name.get(colname, colname)
+        if self._tip_col == colname:
+            return
+        self._hide_tip(event)
+        if text:
+            self._tip_win = wx.TipWindow(self, text, maxLength=120)
+            self._tip_col = colname

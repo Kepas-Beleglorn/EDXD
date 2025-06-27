@@ -56,7 +56,6 @@ class DynamicFrame(wx.Frame):
         if y < margin: directions.append('top')
         if y > h - margin: directions.append('bottom')
 
-        logging.info(f"Margin: {margin}, Directions: {directions}, X: {x}, Y: {y}, W: {w}, H: {h}")
         return directions
 
     # @log_call()
