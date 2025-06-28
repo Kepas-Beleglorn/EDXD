@@ -38,10 +38,11 @@ class BodiesTable(gridlib.Grid):
     #@log_call()
     def __init__(self, parent, on_select: Callable[[str], None]):
         super().__init__(parent)
-        self._all_cols = ["status", "body", "distance", "land", "bio", "geo", "value"] + list(RAW_MATS)
+        self._all_cols = ["status", "body_type", "body", "distance", "land", "bio", "geo", "value"] + list(RAW_MATS)
         # At the top of your class, after self._all_cols:
         self._headers = {
             "status": TABLE_ICONS["status_header"],
+            "body_type": "Type",
             "body": "Body",
             "distance": "Distance",
             "land": TABLE_ICONS["landable"],
@@ -59,6 +60,9 @@ class BodiesTable(gridlib.Grid):
         self.ClearSelection()  # To clear any selection if needed
         self._col2name = {mat: mat.title() for mat in RAW_MATS}
         self._col2name.update({
+            "status": "Selected or targeted",
+            "body_type": "Type of body or star",
+            "body": "Bodies in current system",
             "distance": "Distance from entry point",
             "land": "Landable",
             "bio": "Bio-signals",
@@ -66,19 +70,7 @@ class BodiesTable(gridlib.Grid):
             "value": "Estimated value"
         })
 
-        for idx, col in enumerate(self._all_cols):
-            self.SetColLabelValue(idx, self._headers.get(col, SYMBOL.get(col, col[:2].title())))
-            if col == "status":
-                self.SetColSize(idx, 44)
-            elif col == "body":
-                self.SetColSize(idx, 250)
-            elif col == "distance" or col == "value":
-                self.SetColSize(idx, 80)
-            elif col in ("land", "bio", "geo"):
-                self.SetColSize(idx, 40)
-            else:
-                self.SetColSize(idx, 60)
-
+        self._prepare_columns(display_cols=self._all_cols)
 
         # Sorting
         self.sort_col: Optional[str] = "body"
@@ -106,6 +98,9 @@ class BodiesTable(gridlib.Grid):
         # Use the displayed columns for correct column mapping
         col = event.GetCol()
         colname = self._display_cols[col]
+        if colname in ["status", "body_type"]:
+            event.Skip()
+            return
         if self.sort_col == colname:
             self.sort_reverse = not self.sort_reverse
         else:
@@ -150,7 +145,7 @@ class BodiesTable(gridlib.Grid):
             target_name: str,
     ):
         visible_mats = [m for m, on in filters.items() if on]
-        display_cols = ["status", "body", "distance", "land", "bio", "geo", "value"] + visible_mats
+        display_cols = ["status", "body_type", "body", "distance", "land", "bio", "geo", "value"] + visible_mats
 
         needed_cols = len(display_cols)
         current_cols = self.GetNumberCols()
@@ -158,22 +153,11 @@ class BodiesTable(gridlib.Grid):
             self.AppendCols(needed_cols - current_cols)
         elif current_cols > needed_cols:
             self.DeleteCols(0, current_cols - needed_cols)
-        for i, colname in enumerate(display_cols):
-            self.SetColLabelValue(i, self._headers.get(colname, SYMBOL.get(colname, colname[:2].title())))
-            if colname == "status":
-                self.SetColSize(i, 44)
-            elif colname == "body":
-                self.SetColSize(i, 250)
-            elif colname in ("distance", "value"):
-                self.SetColSize(i, 80)
-            elif colname in ("land", "bio", "geo"):
-                self.SetColSize(i, 40)
-            else:
-                self.SetColSize(i, 60)
+        self._prepare_columns(display_cols=display_cols)
 
         # Align value and distance columns to right
         for i, colname in enumerate(display_cols):
-            if colname == "body":
+            if colname in ["body", "body_type"]:
                 attr_left = gridlib.GridCellAttr()
                 attr_left.SetAlignment(wx.ALIGN_CENTER, wx.ALIGN_CENTER)
                 self.SetColAttr(i, attr_left)
@@ -198,6 +182,7 @@ class BodiesTable(gridlib.Grid):
                            else TABLE_ICONS["status_target"] if name == target_name
                 else TABLE_ICONS["status_selected"] if name == selected_name
                 else "", 0),
+                "body_type": (f"{str(getattr(body, 'body_type', ''))}", str(getattr(body, 'body_type', '')).lower()),
                 "body": (name, name.lower()),
                 "distance": (f"{getattr(body, 'distance', 0):,.0f} Ls", getattr(body, 'distance', 0)),
                 "land": (f"{TABLE_ICONS['landable']}"                                   if getattr(body, "landable", False)    else "", (0 if getattr(body, "landable", False)  else 1)),
@@ -252,3 +237,19 @@ class BodiesTable(gridlib.Grid):
             for c, colname in enumerate(self._display_cols):
                 self.SetCellValue(r, c, row.get(colname, ("", ""))[0])
 
+
+    def _prepare_columns(self, display_cols):
+        for i, colname in enumerate(display_cols):
+            self.SetColLabelValue(i, self._headers.get(colname, SYMBOL.get(colname, colname[:2].title())))
+            if colname == "status":
+                self.SetColSize(i, 44)
+            elif colname == "body_type":
+                self.SetColSize(i, 200)
+            elif colname == "body":
+                self.SetColSize(i, 250)
+            elif colname in ("distance", "value"):
+                self.SetColSize(i, 80)
+            elif colname in ("land", "bio", "geo", "scoopable"):
+                self.SetColSize(i, 40)
+            else:
+                self.SetColSize(i, 60)
