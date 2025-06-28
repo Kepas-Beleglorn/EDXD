@@ -242,7 +242,7 @@ class BodiesTable(gridlib.Grid):
             if colname == "status":
                 self.SetColSize(i, 44)
             elif colname == "body_type":
-                self.SetColSize(i, 200)
+                self.SetColSize(i, 222)
             elif colname == "body":
                 self.SetColSize(i, 250)
             elif colname == "distance":
