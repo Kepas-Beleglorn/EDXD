@@ -3,18 +3,9 @@ import wx.grid as gridlib
 from typing import Dict, Callable, Optional
 
 from EDXD.model import Body
-from EDXD.globals import SYMBOL, logging, RAW_MATS
+from EDXD.globals import SYMBOL, logging, RAW_MATS, TABLE_ICONS
 import inspect, functools
 
-TABLE_ICONS = {
-    "status_header": "🎯🖱",
-    "status_target": "🎯",
-    "status_selected": "🖱",
-    "landable": "🛬",
-    "biosigns": "🌿",
-    "geosigns": "🌋",
-    "value": "🔍💲"
-}
 
 def log_call(level=logging.INFO):
     """Logs qualified name plus bound arguments, even for inner functions."""
@@ -38,11 +29,12 @@ class BodiesTable(gridlib.Grid):
     #@log_call()
     def __init__(self, parent, on_select: Callable[[str], None]):
         super().__init__(parent)
-        self._all_cols = ["status", "body_type", "body", "distance", "land", "bio", "geo", "value"] + list(RAW_MATS)
+        self._all_cols = ["status", "body_type", "scoopable", "body", "distance", "land", "bio", "geo", "value"] + list(RAW_MATS)
         # At the top of your class, after self._all_cols:
         self._headers = {
             "status": TABLE_ICONS["status_header"],
             "body_type": "Type",
+            "scoopable": TABLE_ICONS["scoopable"],
             "body": "Body",
             "distance": "Distance",
             "land": TABLE_ICONS["landable"],
@@ -62,6 +54,7 @@ class BodiesTable(gridlib.Grid):
         self._col2name.update({
             "status": "Selected or targeted",
             "body_type": "Type of body or star",
+            "scoopable": "Star is scoopable",
             "body": "Bodies in current system",
             "distance": "Distance from entry point",
             "land": "Landable",
@@ -85,6 +78,7 @@ class BodiesTable(gridlib.Grid):
         self.Bind(gridlib.EVT_GRID_RANGE_SELECT, self._on_range_select)
         self.Bind(wx.EVT_KEY_DOWN, self._on_key_down)
         self.GetGridColLabelWindow().Bind(wx.EVT_MOTION, self._show_tip)
+        self._loading = True
 
     def _show_tip(self, event):
         x = event.GetX()
@@ -98,7 +92,7 @@ class BodiesTable(gridlib.Grid):
         # Use the displayed columns for correct column mapping
         col = event.GetCol()
         colname = self._display_cols[col]
-        if colname in ["status", "body_type"]:
+        if colname in ["status", "body_type", "scoopable"]:
             event.Skip()
             return
         if self.sort_col == colname:
@@ -117,6 +111,7 @@ class BodiesTable(gridlib.Grid):
         if 0 <= row < self.GetNumberRows():
             body_name = self.GetCellValue(row, self._all_cols.index("body"))
             if body_name and self._on_select_cb:
+                self._loading = False
                 self._on_select_cb(body_name)
         event.Skip()
 
@@ -145,7 +140,7 @@ class BodiesTable(gridlib.Grid):
             target_name: str,
     ):
         visible_mats = [m for m, on in filters.items() if on]
-        display_cols = ["status", "body_type", "body", "distance", "land", "bio", "geo", "value"] + visible_mats
+        display_cols = ["status", "body_type", "scoopable", "body", "distance", "land", "bio", "geo", "value"] + visible_mats
 
         needed_cols = len(display_cols)
         current_cols = self.GetNumberCols()
@@ -161,7 +156,7 @@ class BodiesTable(gridlib.Grid):
                 attr_left = gridlib.GridCellAttr()
                 attr_left.SetAlignment(wx.ALIGN_CENTER, wx.ALIGN_CENTER)
                 self.SetColAttr(i, attr_left)
-            elif colname in ("land", "bio", "geo", "status"):
+            elif colname in ("land", "bio", "geo", "status", "scoopable"):
                 attr_center = gridlib.GridCellAttr()
                 attr_center.SetAlignment(wx.ALIGN_CENTER, wx.ALIGN_CENTER)
                 self.SetColAttr(i, attr_center)
@@ -183,6 +178,7 @@ class BodiesTable(gridlib.Grid):
                 else TABLE_ICONS["status_selected"] if name == selected_name
                 else "", 0),
                 "body_type": (f"{str(getattr(body, 'body_type', ''))}", str(getattr(body, 'body_type', '')).lower()),
+                "scoopable": (f"{TABLE_ICONS['scoopable']}" if getattr(body, "scoopable", False) else "", (0 if getattr(body, "scoopable", False) else 1)),
                 "body": (name, name.lower()),
                 "distance": (f"{getattr(body, 'distance', 0):,.0f} Ls", getattr(body, 'distance', 0)),
                 "land": (f"{TABLE_ICONS['landable']}"                                   if getattr(body, "landable", False)    else "", (0 if getattr(body, "landable", False)  else 1)),
@@ -217,6 +213,8 @@ class BodiesTable(gridlib.Grid):
 
         if hasattr(self, "_refresh_sort"):
             self._refresh_sort()
+        if self._loading:
+           self.ClearSelection()
 
     def _refresh_sort(self):
         if not self.sort_col:
@@ -247,8 +245,10 @@ class BodiesTable(gridlib.Grid):
                 self.SetColSize(i, 200)
             elif colname == "body":
                 self.SetColSize(i, 250)
-            elif colname in ("distance", "value"):
+            elif colname == "distance":
                 self.SetColSize(i, 80)
+            elif colname == "value":
+                self.SetColSize(i, 100)
             elif colname in ("land", "bio", "geo", "scoopable"):
                 self.SetColSize(i, 40)
             else:

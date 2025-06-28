@@ -95,7 +95,6 @@ class CustomTitleBar(wx.Panel):
 
     # ... (other code unchanged)
     def on_left_down(self, event):
-        logging.info(event.GetEventObject())
         self.dragging = False
         self.dragging = True
         # Get positions in screen coordinates
@@ -120,14 +119,12 @@ class CustomTitleBar(wx.Panel):
     # ... (other code unchanged)
     #@log_call()
     def on_maximize(self, event):
-        logging.info(event.GetEventObject())
         if getattr(self.parent, "_is_maximized", False):
             # Restore
             self.parent._is_maximized = False
             if self._prev_size and self._prev_pos:
                 self.parent.SetSize(self._prev_size)
                 wx.CallAfter(self.parent.Move, self._prev_pos)
-
         else:
             # Maximize manually to fill the screen
             self._prev_size = self.parent.GetSize()
@@ -146,13 +143,10 @@ class CustomTitleBar(wx.Panel):
     # horizontal taskbar offest must be read from the custom title bar, not from the parent!
     #@log_call()
     def _resize_if_required(self):
-        logging.info(f"Maximized parent pos and size: {self.parent.GetPosition()} - {self.parent.GetSize()}")
-        logging.info(f"Current pos: {self._current_pos}")
         pos_x, pos_y = self.parent.GetPosition()
         alt_pos_x, alt_pos_y = self._current_pos
 
         width, height = self.parent.GetSize()
-        logging.info(f"current size: {self.parent.GetSize()}")
 
         if pos_x != alt_pos_x:
             if pos_x > 0:

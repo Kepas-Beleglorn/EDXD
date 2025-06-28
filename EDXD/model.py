@@ -58,7 +58,7 @@ def latest_journal(folder: Path) -> Optional[Path]:
 # simple container
 # ---------------------------------------------------------------------------
 class Body:
-    __slots__ = ("name", "body_type", "landable", "biosignals", "geosignals",
+    __slots__ = ("name", "body_type", "scoopable", "landable", "biosignals", "geosignals",
                  "estimated_value", "materials",
                  "bio_found", "geo_found", "distance")
 
@@ -66,7 +66,8 @@ class Body:
                  materials:         Dict[str, float],
                  name:              str,
                  body_type:         str,
-                 landable:          bool,
+                 scoopable:         bool = False,
+                 landable:          bool = False,
                  distance:          int = 0,
                  bio_found:         Dict[str, int] | None = None,
                  geo_found:         Dict[str, bool] | None = None,
@@ -76,6 +77,7 @@ class Body:
 
         self.name               = name
         self.body_type          = body_type
+        self.scoopable          = scoopable
         self.distance           = distance
         self.landable           = landable
         self.biosignals         = biosignals
@@ -137,6 +139,7 @@ class Model:
                 body_map = cached.get("bodies", {})
                 for body_name, body_properties in body_map.items():
                     body_type = body_properties.get("body_type", "")
+                    scoopable = body_properties.get("scoopable", False)
                     distance = body_properties.get("distance", 0)
                     land = body_properties.get("landable", False)
                     bio = body_properties.get("biosignals", 0)
@@ -145,13 +148,13 @@ class Model:
                     bio_dict = body_properties.get("bio_found", {})
                     geo_dict = body_properties.get("geo_found", {})
                     estimated_value = body_properties.get("estimated_value", 0)
-                    self.bodies[body_name] = Body(name=body_name, body_type=body_type, distance=distance, landable=land, materials=mats, biosignals=bio, geosignals=geo, bio_found=bio_dict, geo_found=geo_dict, estimated_value=estimated_value)
-                logging.info(f"Cached instance: [{self.total_bodies}] {cached}")
+                    self.bodies[body_name] = Body(name=body_name, body_type=body_type, scoopable=scoopable, distance=distance, landable=land, materials=mats, biosignals=bio, geosignals=geo, bio_found=bio_dict, geo_found=geo_dict, estimated_value=estimated_value)
 
-    def update_body(self, name: str, body_type: str, distance: int, landable: bool, biosignals: int, geosignals: int, materials: Dict[str, float], scandata):
+    def update_body(self, name: str, body_type: str, scoopable: bool, distance: int, landable: bool, biosignals: int, geosignals: int, materials: Dict[str, float], scandata):
         with self.lock:
             body = self.bodies.get(name, Body(name=name, body_type=body_type, landable=landable, materials={}))
             body.body_type = body_type
+            body.scoopable = scoopable
             body.distance = body.distance or distance
             body.landable = body.landable or landable
             body.biosignals = body.biosignals or biosignals
@@ -180,6 +183,7 @@ class Model:
             "bodies": {
                 bodyname: {
                     "body_type": body.body_type,
+                    "scoopable": body.scoopable,
                     "landable": body.landable,
                     "distance": body.distance,
                     "biosignals": body.biosignals,
@@ -291,9 +295,10 @@ class Controller(threading.Thread):
                 body_name = evt.get("BodyName")
                 body_type = evt.get("PlanetClass") or evt.get("StarType")
                 if body_type is None and "Belt Cluster" in body_name:
-                    body_type = "belt Cluster"
+                    body_type = "Belt Cluster"
+                scoopable = body_type in ["K", "G", "B", "F", "O", "A", "M"]
                 mats = {m["Name"]: m["Percent"] for m in evt.get("Materials", [])}
-                self.m.update_body(name=body_name, body_type=body_type, landable=evt.get("Landable", False), biosignals=0, geosignals=0, materials=mats, scandata=evt, distance=distance)
+                self.m.update_body(name=body_name, body_type=body_type, scoopable=scoopable, landable=evt.get("Landable", False), biosignals=0, geosignals=0, materials=mats, scandata=evt, distance=distance)
 
             elif etype == "FSSBodySignals":
                 body_name = evt.get("BodyName")
@@ -306,12 +311,12 @@ class Controller(threading.Thread):
                     if signal.get("Type") == "$SAA_SignalType_Geological;":
                         cgeo = signal.get("Count")
                     if body_name in self.m.bodies.keys():
-                        self.m.update_body(name=body_name, landable=True, biosignals=cbio, geosignals=cgeo, distance=self.m.bodies[body_name].distance, materials=self.m.bodies[body_name].materials, scandata={
+                        self.m.update_body(name=body_name, body_type=body_type, scoopable=scoopable, landable=True, biosignals=cbio, geosignals=cgeo, distance=self.m.bodies[body_name].distance, materials=self.m.bodies[body_name].materials, scandata={
                             })
                     else:
                         self.m.update_body(name=body_name, landable=True, biosignals=cbio, geosignals=cgeo,
                                            distance=0,
-                                           materials={}, scandata=None)
+                                           materials={}, scandata=None, body_type=body_type, scoopable=scoopable, )
 
             elif etype == "SAAMaterialsFound":
                 body_name = evt.get("BodyName")

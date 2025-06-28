@@ -111,7 +111,6 @@ class MainFrame(DynamicFrame):
         body = self.model.snapshot_bodies().get(body_name)
         if body:
             self.win_sel.render(body, self.prefs["mat_sel"])
-            logging.info(f"Selected body: {body_name}")
 
     def _update_target(self, body_name: str):
         """Called by Model when the cockpit target changes."""
@@ -121,10 +120,9 @@ class MainFrame(DynamicFrame):
         if body is None:
             # target not scanned yet – show name, empty materials
             # from model import Body          # avoid circular import at top
-            body = Body(name=body_name, landable=False, materials={})
+            body = Body(name=body_name,body_type="", landable=False, materials={})
 
         self.win_tar.render(body, self.prefs["mat_sel"])
-        logging.info(f"Targeted body: {body_name}")
 
         # trigger a table refresh so the status icon updates immediately
         self._refresh()
@@ -144,8 +142,7 @@ class MainFrame(DynamicFrame):
         # keep the auto-window live even if nothing else changes
         tgt = self.model.snapshot_target()
         if tgt:
-            #self.win_auto.render(tgt, self.prefs["mat_sel"])
-            logging.info(f"Current target: {tgt}")
+            self.win_tar.render(tgt, self.prefs["mat_sel"])
             # ---- system label (belts excluded from *scanned* only) -------
         bodies = self.model.snapshot_bodies()
 

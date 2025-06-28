@@ -68,3 +68,16 @@ RAW_MATS: List[str] = sorted([
     "technetium","tellurium", "tin",    "tungsten",
     "vanadium",  "yttrium",   "zinc", "zirconium",
 ])
+
+#-----------------------------------------------------------------------
+# Icons for table in main window and detail panels
+TABLE_ICONS = {
+    "status_header":    "🎯🖱",
+    "status_target":    "🎯",
+    "status_selected":  "🖱",
+    "scoopable":        "⛽",
+    "landable":         "🛬",
+    "biosigns":         "🌿",
+    "geosigns":         "🌋",
+    "value":            "🔍💲"
+}
