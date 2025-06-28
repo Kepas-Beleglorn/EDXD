@@ -1,10 +1,3 @@
-"""
-detail_selected.py – “Selected body” pop-out window
-==================================================
-
-A tiny wrapper around a Tk Text widget; MainWindow calls
-`detail.render(body, filters)` whenever the table selection changes.
-"""
 
 from __future__ import annotations
 import wx

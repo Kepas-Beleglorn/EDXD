@@ -261,6 +261,7 @@ class Controller(threading.Thread):
             # ───── jump to a new system ───────────────────────────────
             # In Controller.run()
             if etype == "FSDJump":
+                self.m.total_bodies = None
                 self.m.reset_system(evt.get("StarSystem"), evt.get("SystemAddress"))
 
             elif etype in ("FSSDiscoveryScan", "FSSAllBodiesFound"):

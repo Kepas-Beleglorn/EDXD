@@ -81,7 +81,8 @@ class MainFrame(DynamicFrame):
         self.win_tar.Show(True)
 
         # listen for target changes
-        self.model.register_target_listener(self._update_target)
+        #self.model.register_target_listener(self._update_target)
+        self.model.register_target_listener(lambda name: wx.CallAfter(self._update_target, name))
 
     def _update_system(self, title: str = ""):
         init_widget(widget=self.lbl_sys, title=title)
