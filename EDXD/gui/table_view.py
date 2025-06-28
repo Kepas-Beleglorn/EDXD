@@ -78,7 +78,7 @@ class BodiesTable(gridlib.Grid):
         self.Bind(gridlib.EVT_GRID_RANGE_SELECT, self._on_range_select)
         self.Bind(wx.EVT_KEY_DOWN, self._on_key_down)
         self.GetGridColLabelWindow().Bind(wx.EVT_MOTION, self._show_tip)
-        self._loading = True
+        self.loading = True
 
     def _show_tip(self, event):
         x = event.GetX()
@@ -111,7 +111,7 @@ class BodiesTable(gridlib.Grid):
         if 0 <= row < self.GetNumberRows():
             body_name = self.GetCellValue(row, self._all_cols.index("body"))
             if body_name and self._on_select_cb:
-                self._loading = False
+                self.loading = False
                 self._on_select_cb(body_name)
         event.Skip()
 
@@ -138,6 +138,7 @@ class BodiesTable(gridlib.Grid):
             landable_only: bool,
             selected_name: str,
             target_name: str,
+            just_jumped: bool
     ):
         visible_mats = [m for m, on in filters.items() if on]
         display_cols = ["status", "body_type", "scoopable", "body", "distance", "land", "bio", "geo", "value"] + visible_mats
@@ -213,7 +214,7 @@ class BodiesTable(gridlib.Grid):
 
         if hasattr(self, "_refresh_sort"):
             self._refresh_sort()
-        if self._loading:
+        if self.loading or just_jumped:
            self.ClearSelection()
 
     def _refresh_sort(self):

@@ -138,7 +138,8 @@ class MainFrame(DynamicFrame):
             filters=self.prefs["mat_sel"],
             landable_only=self.prefs["land"],
             selected_name=self._selected,
-            target_name=self.model.target_body
+            target_name=self.model.target_body,
+            just_jumped=self.model.just_jumped
         )
         # keep the auto-window live even if nothing else changes
         tgt = self.model.snapshot_target()

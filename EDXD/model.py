@@ -101,6 +101,7 @@ class Model:
         self.target_body   : Optional[str]         = None
         self.total_bodies  : Optional[int]         = None
         self._target_cbs   : List = []             # listeners
+        self.just_jumped   : bool = True
 
     # ----- snapshot helpers --------------------------------------------------
     def snapshot_bodies(self) -> Dict[str, Body]:
@@ -259,8 +260,11 @@ class Controller(threading.Thread):
 
             etype = evt.get("event")
             # ───── jump to a new system ───────────────────────────────
+            if etype != "FSDJump":
+                self.m.just_jumped = False
             # In Controller.run()
             if etype == "FSDJump":
+                self.m.just_jumped = True
                 self.m.total_bodies = None
                 self.m.reset_system(evt.get("StarSystem"), evt.get("SystemAddress"))
 
