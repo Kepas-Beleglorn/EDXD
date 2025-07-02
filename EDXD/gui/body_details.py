@@ -7,7 +7,7 @@ from EDXD.gui.helper.gui_handler import init_widget
 from typing import Optional, Dict
 from EDXD.gui.helper.window_properties import WindowProperties
 from EDXD.globals import DEFAULT_HEIGHT, DEFAULT_WIDTH, DEFAULT_POS_Y, DEFAULT_POS_X, RESIZE_MARGIN
-from EDXD.model import Body
+from EDXD.data_handler.model import Body
 
 TITLE = "BODY DETAILS"
 WINID = "BODY_DETAILS"

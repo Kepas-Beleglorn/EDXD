@@ -7,6 +7,8 @@ import inspect, functools
 from EDXD.gui.helper.gui_dynamic_button import DynamicButton
 from EDXD.gui.helper.gui_dynamic_toggle_button import DynamicToggleButton
 from EDXD.gui.set_mineral_filter import MineralsFilter
+from EDXD.data_handler.journal_historian import JournalHistorian
+
 
 
 def log_call(level=logging.INFO):
@@ -27,7 +29,7 @@ def log_call(level=logging.INFO):
 
 
 class MainWindowOptions(wx.Panel):
-    def __init__(self, parent, title:str = ""):
+    def __init__(self, parent):
         super().__init__(parent)
         self.parent = parent
         self.theme = get_theme()
@@ -47,11 +49,22 @@ class MainWindowOptions(wx.Panel):
         options_box.Add(self.btn_set_mineral_filter, 0, wx.ALIGN_CENTER_VERTICAL | wx.TOP | wx.BOTTOM, margin)
         self.btn_set_mineral_filter.Bind(wx.EVT_BUTTON, self._show_mineral_filter)
 
+        # Load all journal files
+        self.btn_load_history = DynamicButton(parent=self, label="Load historical journals",
+                                                    size=wx.Size(BTN_WIDTH + self.theme["button_border_width"], BTN_HEIGHT + self.theme["button_border_width"]), draw_border=True)
+        margin = self.theme["button_border_margin"] + self.theme["button_border_width"]
+        options_box.Add(self.btn_load_history, 0, wx.ALIGN_CENTER_VERTICAL | wx.TOP | wx.BOTTOM, margin)
+        self.btn_load_history.Bind(wx.EVT_BUTTON, self._load_all_logs)
+
         self.SetSizer(options_box)
         self.Bind(wx.EVT_PAINT, self._on_paint)
 
-    def _on_paint(self, event):
+    def _load_all_logs(self, event):
+        historian = JournalHistorian(journal_reader=self.parent.journal_reader, journal_controller=self.parent.journal_controller, status_json_watcher=self.parent.status_watcher)
+        historian.process_all_journals()
 
+
+    def _on_paint(self, event):
         dc = wx.PaintDC(self)
         w, h = self.GetSize()
         pen = wx.Pen(self.theme["foreground"], self.theme["border_thickness"])

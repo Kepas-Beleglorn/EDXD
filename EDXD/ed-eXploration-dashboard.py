@@ -3,7 +3,10 @@ import wx
 
 from EDXD.gui.main_window import MainFrame
 from EDXD.globals import CFG_FILE, RAW_MATS
-from EDXD.model import Model, Tail, Controller, StatusWatcher
+from EDXD.data_handler.model import Model
+from EDXD.data_handler.journal_reader import JournalReader
+from EDXD.data_handler.journal_controller import JournalController
+from EDXD.data_handler.status_json_watcher import StatusWatcher
 from pathlib import Path
 import argparse, queue
 
@@ -28,8 +31,10 @@ def main():
 
     q = queue.Queue()
     model = Model()
-    Tail(journal_dir, q).start()
-    Controller(q, model).start()
+    journal_reader = JournalReader(journal_dir, q)
+    journal_reader.start()
+    journal_controller = JournalController(q, model)
+    journal_controller.start()
 
     cfg.setdefault("land", False)
     cfg.setdefault("mat_sel", {m: True for m in RAW_MATS})
@@ -41,9 +46,10 @@ def main():
     # ensure defaults even if file is old
     cfg["save"] = _save  # ← make the save-function available
 
-    StatusWatcher(journal_dir / "Status.json", model).start()
+    status_watcher = StatusWatcher(journal_dir / "Status.json", model)
+    status_watcher.start()
 
-    frame = MainFrame(model=model, prefs=cfg)
+    frame = MainFrame(model=model, prefs=cfg, journal_reader=journal_reader, journal_controller=journal_controller, status_watcher=status_watcher)
     frame.Show()
 
     app.MainLoop()

@@ -2,7 +2,7 @@ import wx
 import wx.grid as gridlib
 from typing import Dict, Callable, Optional
 
-from EDXD.model import Body
+from EDXD.data_handler.model import Body
 from EDXD.globals import SYMBOL, logging, RAW_MATS, TABLE_ICONS
 import inspect, functools
 
@@ -223,8 +223,8 @@ class BodiesTable(gridlib.Grid):
             return
 
         # Sort by the visible column (self.sort_col) using the raw value
-        def sort_key(row):
-            val = row.get(self.sort_col, ("", None))
+        def sort_key(sort_row):
+            val = sort_row.get(self.sort_col, ("", None))
             raw = val[1]
             if raw is None:
                 if self.sort_col in RAW_MATS:

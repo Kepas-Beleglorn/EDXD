@@ -3,7 +3,11 @@ from __future__ import annotations
 import wx
 from typing import Dict
 
-from EDXD.model import Model, Body
+from EDXD.data_handler.model import Model, Body
+from EDXD.data_handler.status_json_watcher import StatusWatcher
+from EDXD.data_handler.journal_reader import JournalReader
+from EDXD.data_handler.journal_controller import JournalController
+
 from EDXD.gui.helper.dynamic_frame import DynamicFrame
 from EDXD.gui.helper.gui_handler import init_widget
 from EDXD.gui.table_view import BodiesTable
@@ -36,12 +40,16 @@ TITLE = "ED eXploration Dashboard"
 WINID = "EDXD_MAIN_WINDOW"
 
 class MainFrame(DynamicFrame):
-    def __init__(self, model: Model, prefs: Dict):
+    def __init__(self, model: Model, prefs: Dict, journal_reader: JournalReader, journal_controller: JournalController, status_watcher: StatusWatcher):
         # 1. Load saved properties (or use defaults)
         props = WindowProperties.load(WINID, default_height=DEFAULT_HEIGHT, default_width=DEFAULT_WIDTH, default_posx=DEFAULT_POS_X, default_posy=DEFAULT_POS_Y)
         DynamicFrame.__init__(self, title=TITLE, win_id=WINID, parent=None, style=wx.NO_BORDER | wx.FRAME_SHAPED | wx.STAY_ON_TOP, show_minimize=True, show_maximize=True, show_close=True)
         # 2. Apply geometry
         init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
+
+        self.journal_reader = journal_reader
+        self.journal_controller = journal_controller
+        self.status_watcher = status_watcher
 
         # Define the handler as a method
         def on_body_selected(body_name: str) -> None:
@@ -81,7 +89,6 @@ class MainFrame(DynamicFrame):
         self.win_tar.Show(True)
 
         # listen for target changes
-        #self.model.register_target_listener(self._update_target)
         self.model.register_target_listener(lambda name: wx.CallAfter(self._update_target, name))
 
     def _update_system(self, title: str = ""):
@@ -95,7 +102,7 @@ class MainFrame(DynamicFrame):
     # event handlers
     # ------------------------------------------------------------------
     def _reload(self):
-        # GUI-only refresh; real cache reload is handled by Model/Controller
+        # GUI-only refresh; real cache reload is handled by Model/JournalController
         self._refresh()
 
     def _toggle_land(self, event):
