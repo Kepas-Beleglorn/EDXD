@@ -54,6 +54,7 @@ def _get_dark_theme():
     return ed_dark_theme
 
 def apply_theme(widget):
+    #logging.info(f"Applying theme... {widget.Name}")
     if widget.Name == "frame":
         _apply_theme_to_frame(widget)
     if widget.Name == "dialog":
@@ -65,8 +66,9 @@ def apply_theme(widget):
     elif widget.Name == "text":
         _apply_theme_to_text(widget)
     elif widget.Name == "genbutton":
-
         _apply_theme_to_button(widget)
+    elif widget.Name == "gauge":
+        _apply_theme_to_gauge(widget)
     elif widget.Name == "grid":
         _apply_theme_to_grid(widget)
     else:
@@ -89,6 +91,14 @@ def _apply_theme_to_panel(widget: wx.Panel):
     widget.SetBackgroundColour(theme["background"])
     widget.SetForegroundColour(theme["foreground"])
     widget.SetFont(theme["font_bold"])
+
+def _apply_theme_to_gauge(widget: wx.Gauge):
+    theme = get_theme()
+    #widget.SetBackgroundColour(theme["background"])
+    #widget.SetForegroundColour(theme["foreground"])
+
+
+    #widget.SetFont(theme["font_bold"])
 
 def _apply_theme_to_button(widget: buttons.GenButton):
     theme = get_theme()

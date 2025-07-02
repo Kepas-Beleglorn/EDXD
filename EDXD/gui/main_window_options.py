@@ -61,7 +61,7 @@ class MainWindowOptions(wx.Panel):
 
     def _load_all_logs(self, event):
         historian = JournalHistorian(journal_reader=self.parent.journal_reader, journal_controller=self.parent.journal_controller, status_json_watcher=self.parent.status_watcher)
-        historian.process_all_journals()
+        historian.Show()
 
 
     def _on_paint(self, event):
