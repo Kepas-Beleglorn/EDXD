@@ -109,7 +109,8 @@ class BodiesTable(gridlib.Grid):
         self.SelectRow(row)
         if 0 <= row < self.GetNumberRows():
             body_name = self.GetCellValue(row, self._all_cols.index("body"))
-            if body_name and self._on_select_cb:
+            #if body_name and self._on_select_cb:
+            if self._on_select_cb:
                 self.loading = False
                 self._on_select_cb(body_name)
         self.ClearSelection()
@@ -131,6 +132,7 @@ class BodiesTable(gridlib.Grid):
             return  # Ignore event
         event.Skip()
 
+    #@log_call()
     def refresh(
             self,
             bodies: Dict[str, Body],

@@ -66,7 +66,7 @@ class Body:
     def __init__(self,
                  materials:         Dict[str, float],
                  name:              str,
-                 body_type:         str,
+                 body_type:         str = "",
                  scoopable:         bool = False,
                  landable:          bool = False,
                  distance:          int = 0,
@@ -131,6 +131,7 @@ class Model:
             self.system_addr = address
             self.bodies.clear()
             self.target_body = None
+            self.just_jumped = True
 
             cached = _load(CACHE_DIR / f"{address}.json", {})
             # Current format: { "total_bodies": int,
@@ -152,8 +153,10 @@ class Model:
                     estimated_value = body_properties.get("estimated_value", 0)
                     self.bodies[body_name] = Body(name=body_name, body_type=body_type, scoopable=scoopable, distance=distance, landable=land, materials=mats, biosignals=bio, geosignals=geo, bio_found=bio_dict, geo_found=geo_dict, estimated_value=estimated_value)
 
-    def update_body(self, name: str, body_type: str, scoopable: bool, distance: int, landable: bool, biosignals: int, geosignals: int, materials: Dict[str, float], scandata):
+    def update_body(self, systemaddress: int, name: str, body_type: str = "", scoopable: bool = False, distance: int = 0, landable: bool = False, biosignals: int = 0, geosignals: int = 0, materials: Dict[str, float] = None, scandata = None, bio_found = None, geo_found = None):
         with self.lock:
+            if self.system_addr is None:
+                self.system_addr = systemaddress
             body = self.bodies.get(name, Body(name=name, body_type=body_type, landable=landable, materials={}))
             body.body_type = body_type
             body.scoopable = scoopable
@@ -161,7 +164,10 @@ class Model:
             body.landable = body.landable or landable
             body.biosignals = body.biosignals or biosignals
             body.geosignals = body.geosignals or geosignals
-            body.materials.update(materials)
+            body.bio_found = body.bio_found or bio_found
+            body.geo_found = body.geo_found or geo_found
+            if materials is not None:
+                body.materials.update(materials)
             if scandata is not None:
                 body.estimated_value = appraise_body(body_info=scandata, just_scanned_value=False)
             self.bodies[name] = body
@@ -254,12 +260,14 @@ class Controller(threading.Thread):
     def run(self):
         while True:
             # noinspection PyBroadException
+            evt = None
             try:
                 evt = json.loads(self.q.get())
             except Exception:
                 continue
 
             etype = evt.get("event")
+            systemaddress = evt.get("SystemAddress")
             # ───── jump to a new system ───────────────────────────────
             if etype != "FSDJump":
                 self.m.just_jumped = False
@@ -267,6 +275,8 @@ class Controller(threading.Thread):
             if etype == "FSDJump":
                 self.m.just_jumped = True
                 self.m.total_bodies = None
+                self.m.target_body = None
+                self.m.sel_target = None
                 self.m.reset_system(evt.get("StarSystem"), evt.get("SystemAddress"))
 
             elif etype in ("FSSDiscoveryScan", "FSSAllBodiesFound"):
@@ -304,31 +314,31 @@ class Controller(threading.Thread):
                     body_type = "Belt Cluster"
                 scoopable = body_type in ["K", "G", "B", "F", "O", "A", "M"]
                 mats = {m["Name"]: m["Percent"] for m in evt.get("Materials", [])}
-                self.m.update_body(name=body_name, body_type=body_type, scoopable=scoopable, landable=evt.get("Landable", False), biosignals=0, geosignals=0, materials=mats, scandata=evt, distance=distance)
+                self.m.update_body(systemaddress=systemaddress, name=body_name, body_type=body_type, scoopable=scoopable, landable=evt.get("Landable", False), materials=mats, scandata=evt, distance=distance)
 
-            elif etype == "FSSBodySignals":
+            elif etype in ("FSSBodySignals", "SAASignalsFound"):
                 body_name = evt.get("BodyName")
                 for signal in evt.get("Signals", []):
                     cbio = 0
                     cgeo = 0
+                    bio_found = None
+                    geo_found = None
+
                     if signal.get("Type") == "$SAA_SignalType_Biological;":
                         cbio = signal.get("Count")
-                        #self.m.bodies[body_name].biosignals = signal.get("Count")
+                        bio_found = {genus["Genus_Localised"]: 0 for genus in evt.get("Genuses", [])}
+
                     if signal.get("Type") == "$SAA_SignalType_Geological;":
                         cgeo = signal.get("Count")
-                    if body_name in self.m.bodies.keys():
-                        self.m.update_body(name=body_name, body_type=body_type, scoopable=scoopable, landable=True, biosignals=cbio, geosignals=cgeo, distance=self.m.bodies[body_name].distance, materials=self.m.bodies[body_name].materials, scandata={
-                            })
-                    else:
-                        self.m.update_body(name=body_name, landable=True, biosignals=cbio, geosignals=cgeo,
-                                           distance=0,
-                                           materials={}, scandata=None, body_type=body_type, scoopable=scoopable, )
+
+                    self.m.update_body(systemaddress=systemaddress, name=body_name, landable=evt.get("Landable", False), biosignals=cbio, geosignals=cgeo, bio_found=bio_found, geo_found=geo_found)
+
 
             elif etype == "SAAMaterialsFound":
                 body_name = evt.get("BodyName")
                 mats = {m["Name"]: m["Percent"] for m in evt.get("Materials", [])}
                 # noinspection PyArgumentList
-                self.m.update_body(name=body_name, landable=True, materials=mats)
+                self.m.update_body(systemaddress=systemaddress, name=body_name, landable=True, materials=mats)
                 self.m.set_target(body_name)
 
             # --- in-game target changed -----------------------------------

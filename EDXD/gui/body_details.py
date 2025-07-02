@@ -61,11 +61,12 @@ class BodyDetails(DynamicDialog):
             # ── Biosignals progress lines ───────────────────────────────
             if body.biosignals:
                 self.txt_body_details.AppendText("\nBio-signals:\n")
-                for species, done in body.bio_found.items():
-                    if done >= 3:
-                        self.txt_body_details.AppendText(f"  ✅  {species}\n")
-                    else:
-                        self.txt_body_details.AppendText(f"  {species}  ({done}/3)\n")
+                if body.bio_found:
+                    for species, done in body.bio_found.items():
+                        if done >= 3:
+                            self.txt_body_details.AppendText(f"  ✅  {species}\n")
+                        else:
+                            self.txt_body_details.AppendText(f"  {species}  ({done}/3)\n")
 
             # ── Geology progress lines ─────────────────────────────────
             if body.geosignals:
@@ -75,6 +76,8 @@ class BodyDetails(DynamicDialog):
                     self.txt_body_details.AppendText(f"  ✅  {done}/{body.geosignals}\n")
                 else:
                     self.txt_body_details.AppendText(f"  🌋  (?)/{body.geosignals}\n")
+        else:
+            self.txt_body_details.Clear()
 
         if not self.txt_body_details.GetValue().strip():
             self.txt_body_details.SetValue("—")
