@@ -28,6 +28,14 @@ CACHE_DIR  = APP_DIR/"system-data"
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
 ICON_PATH = APP_DIR/"resources/edxd_128.png"  # Normalize path for OS compatibility
 
+#-----------------------------------------------------------------------
+# DEBUGGING OPTIONS
+DEBUG_MODE = True
+DEBUG_PATH = APP_DIR/"debug"
+DEBUG_STATUS_JSON = DEBUG_MODE and True
+
+#-----------------------------------------------------------------------
+# DEBUGGING OPTIONS
 DEFAULT_HEIGHT = 500
 DEFAULT_WIDTH = 500
 

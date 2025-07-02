@@ -12,6 +12,7 @@ from __future__ import annotations
 import json, threading, time, queue
 from pathlib import Path
 from typing import Dict, List, Optional
+from EDXD.globals import DEBUG_STATUS_JSON, DEBUG_PATH
 from EDXD.body_appraiser import appraise_body
 
 # ---------------------------------------------------------------------------
@@ -345,7 +346,8 @@ class StatusWatcher(threading.Thread):
         self.path   = status_file
         self.model  = model
         self.poll   = poll
-        self.last   = None           # last Destination.Name we saw
+        self.last_name   = None           # last Destination.Name we saw
+        self.last_timestamp = None        # last timestamp, so we can log only new lines
 
     def run(self):
         while True:
@@ -354,9 +356,25 @@ class StatusWatcher(threading.Thread):
                 data = json.loads(self.path.read_text())
                 dest = data.get("Destination", {})
                 name = dest.get("Name")
-                if name and name != self.last:
-                    self.last = name
+                timestamp = data.get("timestamp")
+                if DEBUG_STATUS_JSON and timestamp and timestamp != self.last_timestamp:
+                    self.last_timestamp = timestamp
+                    self._write_debug_log(data)
+
+                if name and name != self.last_name:
+                    self.last_name = name
                     self.model.set_target(name)
             except Exception:
                 pass            # ignore read/JSON errors
             time.sleep(self.poll)
+
+    def _write_debug_log(self, data):
+        if not DEBUG_PATH.exists():
+            DEBUG_PATH.mkdir()
+        output_path = DEBUG_PATH / "DEBUG_Status.json"
+        # Serialize the data
+        serialized = json.dumps(data, separators=(',', ':'))
+        # Append to the file
+        with open(output_path, "a", encoding="utf-8") as f:
+            f.write(serialized + "\n")
+
