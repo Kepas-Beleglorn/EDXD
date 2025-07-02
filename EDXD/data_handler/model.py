@@ -115,30 +115,38 @@ class Model:
             self.target_body = None
             self.just_jumped = True
 
-            cached = dh.load(CACHE_DIR / f"{address}.json", {})
-            # Current format: { "total_bodies": int,
-            #                   "bodies": { name: {landable:…, biosignals:…, geosignals:…, materials:…}, … } }
-            if isinstance(cached, dict):
-                # reload total count
-                #self.total_bodies = cached.get("total_bodies", None)
-                body_map = cached.get("bodies", {})
-                for body_name, body_properties in body_map.items():
-                    body_type = body_properties.get("body_type", "")
-                    scoopable = body_properties.get("scoopable", False)
-                    distance = body_properties.get("distance", 0)
-                    land = body_properties.get("landable", False)
-                    bio = body_properties.get("biosignals", 0)
-                    geo = body_properties.get("geosignals", 0)
-                    mats = body_properties.get("materials", {})
-                    bio_dict = body_properties.get("bio_found", {})
-                    geo_dict = body_properties.get("geo_found", {})
-                    estimated_value = body_properties.get("estimated_value", 0)
-                    self.bodies[body_name] = Body(name=body_name, body_type=body_type, scoopable=scoopable, distance=distance, landable=land, materials=mats, biosignals=bio, geosignals=geo, bio_found=bio_dict, geo_found=geo_dict, estimated_value=estimated_value)
+            self.read_data_from_cache(name=name, address=address)
+
+    def read_data_from_cache(self, name: str, address: Optional[int]):
+        cached = dh.load(CACHE_DIR / f"{address}.json", {})
+        # Current format: { "total_bodies": int,
+        #                   "bodies": { name: {landable:…, biosignals:…, geosignals:…, materials:…}, … } }
+        if isinstance(cached, dict):
+            # reload total count
+            self.total_bodies = cached.get("total_bodies", None)
+            body_map = cached.get("bodies", {})
+            for body_name, body_properties in body_map.items():
+                body_type = body_properties.get("body_type", "")
+                scoopable = body_properties.get("scoopable", False)
+                distance = body_properties.get("distance", 0)
+                land = body_properties.get("landable", False)
+                bio = body_properties.get("biosignals", 0)
+                geo = body_properties.get("geosignals", 0)
+                mats = body_properties.get("materials", {})
+                bio_dict = body_properties.get("bio_found", {})
+                geo_dict = body_properties.get("geo_found", {})
+                estimated_value = body_properties.get("estimated_value", 0)
+                self.bodies[body_name] = Body(name=body_name, body_type=body_type, scoopable=scoopable, distance=distance, landable=land, materials=mats, biosignals=bio, geosignals=geo,
+                                              bio_found=bio_dict, geo_found=geo_dict, estimated_value=estimated_value)
 
     def update_body(self, systemaddress: int, name: str, body_type: str = "", scoopable: bool = False, distance: int = 0, landable: bool = False, biosignals: int = 0, geosignals: int = 0, materials: Dict[str, float] = None, scandata = None, bio_found = None, geo_found = None):
         with self.lock:
             #if self.system_addr is None:
             self.system_addr = systemaddress
+            tmp_total_bodies = self.total_bodies
+            self.read_data_from_cache(name=self.system_name, address=self.system_addr)
+            if self.total_bodies is None:
+                self.total_bodies = tmp_total_bodies
             body = self.bodies.get(name, Body(name=name, body_type=body_type, landable=landable, materials={}))
             body.body_type = body_type
             body.scoopable = scoopable
