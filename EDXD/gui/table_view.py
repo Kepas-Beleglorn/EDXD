@@ -106,13 +106,13 @@ class BodiesTable(gridlib.Grid):
     def _on_select(self, event):
         row = event.GetRow()
         # Always clear any multi-selection, then select only this row
-        self.ClearSelection()
         self.SelectRow(row)
         if 0 <= row < self.GetNumberRows():
             body_name = self.GetCellValue(row, self._all_cols.index("body"))
             if body_name and self._on_select_cb:
                 self.loading = False
                 self._on_select_cb(body_name)
+        self.ClearSelection()
         event.Skip()
 
     def _on_range_select(self, event):
@@ -214,8 +214,7 @@ class BodiesTable(gridlib.Grid):
 
         if hasattr(self, "_refresh_sort"):
             self._refresh_sort()
-        if self.loading or just_jumped:
-           self.ClearSelection()
+        self.ClearSelection()
 
     def _refresh_sort(self):
         if not self.sort_col:
