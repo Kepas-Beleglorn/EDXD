@@ -13,6 +13,7 @@ import threading
 import EDXD.data_handler.helper.data_helper as dh
 from typing import Dict, List, Optional
 from EDXD.body_appraiser import appraise_body
+from EDXD.globals import BODY_ID_PREFIX as bip
 
 # ---------------------------------------------------------------------------
 # paths (shared with other modules)
@@ -115,7 +116,7 @@ class Model:
         self._target_cbs.append(cb)
 
     def _fire_target(self, body_id: str):
-        if body_id == -1:
+        if body_id is None:
             return
         for cb in self._target_cbs:
             cb(body_id)
@@ -156,8 +157,8 @@ class Model:
                 estimated_value = body_properties.get("estimated_value", 0)
                 rings           = body_properties.get("rings", {})
 
-                self.bodies[str(body_id)] = Body(
-                    body_id=str(body_id),
+                self.bodies[body_id] = Body(
+                    body_id=body_id,
                     body_name=body_name,
                     body_type=body_type,
                     scoopable=scoopable,
@@ -172,7 +173,7 @@ class Model:
                     rings=rings
                 )
 
-    @log_call(logging.DEBUG)
+    #@log_call(logging.DEBUG)
     def update_body(self, systemaddress: int, body_id: str, body_name: str = None, body_type: str = None, scoopable: bool = None, distance: int = None, landable: bool = None,
                     biosignals: int = None, geosignals: int = None, materials: Dict[str, float] = None, scandata = None,
                     bio_found = None, geo_found = None, rings: Dict[str, int] = None):
@@ -186,7 +187,7 @@ class Model:
             body.body_name = body.body_name or body_name or ""
             body.body_type = body.body_type or body_type or ""
             body.scoopable = body.scoopable or scoopable or False
-            body.distance = body.distance or distance or -1
+            body.distance = body.distance or distance
             body.landable = body.landable or landable or False
             body.biosignals = body.biosignals or biosignals or 0
             body.geosignals = body.geosignals or geosignals or 0
@@ -197,6 +198,14 @@ class Model:
                 body.materials.update(materials)
             if scandata is not None:
                 body.estimated_value = appraise_body(body_info=scandata, just_scanned_value=False)
+
+            if self.system_addr == 3032875945459 and body_id == bip + "13":
+                frame = inspect.currentframe()
+                func_name = frame.f_code.co_name
+                arg_info = inspect.getargvalues(frame)
+                logging.debug(f"{'_' * 10}")
+                logging.debug(f"Body update in {func_name} with arguments {arg_info.locals}")
+                pass
             self.bodies[body_id] = body
             self._save_cache()
 
@@ -225,6 +234,7 @@ class Model:
         # Current format: { "total_bodies": int,
         #                   "bodies": { name: {landable:…, biosignals:…, geosignals:…, materials:…}, … } }
         data = {
+            "system_addr"   : self.system_addr,
             "system_name"   : self.system_name,
             "total_bodies"  : self.total_bodies,
             "bodies"        : {

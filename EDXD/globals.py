@@ -14,7 +14,7 @@ def get_app_dir():
 
 import logging
 
-LOG_LEVEL = logging.INFO
+LOG_LEVEL = logging.WARNING
 
 # 1️⃣ Configure the root logger once, ideally at program start
 logging.basicConfig(
@@ -51,7 +51,7 @@ ICON_PATH = APP_DIR/"resources/edxd_128.png"  # Normalize path for OS compatibil
 # DEBUGGING OPTIONS
 DEBUG_MODE = False
 DEBUG_PATH = APP_DIR/"debug"
-DEBUG_STATUS_JSON = DEBUG_MODE and True
+DEBUG_STATUS_JSON = DEBUG_MODE and False
 
 #-----------------------------------------------------------------------
 # DEBUGGING OPTIONS
@@ -71,6 +71,10 @@ SIZE_APP_ICON = 20
 BTN_HEIGHT = 32
 BTN_WIDTH = 192
 BTN_MARGIN = 1
+
+#-----------------------------------------------------------------------
+# prefix to stringify body_id
+BODY_ID_PREFIX = "body_"
 
 #-----------------------------------------------------------------------
 # symbol lookup for display in table_view.py

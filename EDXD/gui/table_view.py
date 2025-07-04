@@ -3,7 +3,7 @@ import wx.grid as gridlib
 from typing import Dict, Callable, Optional
 
 from EDXD.data_handler.model import Body
-from EDXD.globals import SYMBOL, logging, RAW_MATS, TABLE_ICONS, log_call
+from EDXD.globals import SYMBOL, logging, RAW_MATS, TABLE_ICONS, log_call, DEBUG_MODE
 import inspect
 
 
@@ -119,7 +119,7 @@ class BodiesTable(gridlib.Grid):
             return  # Ignore event
         event.Skip()
 
-    @log_call(logging.DEBUG)
+    #@log_call(logging.DEBUG)
     def refresh(
             self,
             bodies: Dict[str, Body],
@@ -161,26 +161,36 @@ class BodiesTable(gridlib.Grid):
         for body_id, body in bodies.items():
             if landable_only and not getattr(body, "landable", False):
                 continue
-
-            row = {
-                "body_id": (str(body_id), int(body_id) if body_id is not None else -1),
-                "status": (TABLE_ICONS["status_header"] if body.body_name == target_name == selected_name
-                           else TABLE_ICONS["status_target"] if body.body_name == target_name
-                           else TABLE_ICONS["status_selected"] if body.body_name == selected_name
-                           else "", 0),
-                "body_type": (f"{str(getattr(body, 'body_type', ''))}", str(getattr(body, 'body_type', '')).lower()),
-                "scoopable": (f"{TABLE_ICONS['scoopable']}" if getattr(body, "scoopable", False) else "", (0 if getattr(body, "scoopable", False) else 1)),
-                "body": (body.body_name, body.body_name.lower()),
-                "distance": (f"{getattr(body, 'distance', 0):,.0f} Ls", getattr(body, 'distance', 0)),
-                "land": (f"{TABLE_ICONS['landable']}"                                   if getattr(body, "landable", False)    else "", (0 if getattr(body, "landable", False)  else 1)),
-                "bio": (f"{TABLE_ICONS['biosigns']} {getattr(body, 'biosignals', 0)}"   if getattr(body, "biosignals", 0) > 0  else "", getattr(body, "biosignals", 0)),
-                "geo": (f"{TABLE_ICONS['geosigns']} {getattr(body, 'geosignals', 0)}"   if getattr(body, "geosignals", 0) > 0  else "", getattr(body, "geosignals", 0)),
-                "value": (f"{getattr(body, 'estimated_value', 0):,} Cr"                 if getattr(body, "estimated_value", 0) else "", getattr(body, "estimated_value", 0)),
-            }
-            for m in visible_mats:
-                matval = body.materials.get(m, None)
-                row[m] = (f"{matval:.1f} %" if matval is not None else "", matval if matval is not None else -1.0)
-            rows_data.append(row)
+            try:
+                row = {
+                    "body_id": (body_id, body_id if body_id is not None else ""),
+                    "status": (TABLE_ICONS["status_header"] if body.body_name == target_name == selected_name
+                               else TABLE_ICONS["status_target"] if body.body_name == target_name
+                               else TABLE_ICONS["status_selected"] if body.body_name == selected_name
+                               else "", 0),
+                    "body_type": (f"{str(getattr(body, 'body_type', ''))}", str(getattr(body, 'body_type', '')).lower()),
+                    "scoopable": (f"{TABLE_ICONS['scoopable']}" if getattr(body, "scoopable", False) else "", (0 if getattr(body, "scoopable", False) else 1)),
+                    "body": (body.body_name, body.body_name.lower()),
+                    "distance": (f"{getattr(body, 'distance', 0):,.0f} Ls" if getattr(body, 'distance', 0) is not None else "", getattr(body, 'distance', 0)),
+                    "land": (f"{TABLE_ICONS['landable']}"                                   if getattr(body, "landable", False)    else "", (0 if getattr(body, "landable", False)  else 1)),
+                    "bio": (f"{TABLE_ICONS['biosigns']} {getattr(body, 'biosignals', 0)}"   if getattr(body, "biosignals", 0) > 0  else "", getattr(body, "biosignals", 0)),
+                    "geo": (f"{TABLE_ICONS['geosigns']} {getattr(body, 'geosignals', 0)}"   if getattr(body, "geosignals", 0) > 0  else "", getattr(body, "geosignals", 0)),
+                    "value": (f"{getattr(body, 'estimated_value', 0):,} Cr"                 if getattr(body, "estimated_value", 0) else "", getattr(body, "estimated_value", 0)),
+                }
+                for m in visible_mats:
+                    matval = body.materials.get(m, None)
+                    row[m] = (f"{matval:.1f} %" if matval is not None else "", matval if matval is not None else -1.0)
+                rows_data.append(row)
+            except Exception as e:
+                frame = inspect.currentframe()
+                func_name = frame.f_code.co_name
+                arg_info = inspect.getargvalues(frame)
+                logging.error(f"{'_' * 10}")
+                logging.error(f"Exception in {func_name} with arguments {arg_info.locals}")
+                logging.error(f"{getattr(body, 'distance', 0)} Ls")
+                logging.error(f"Exception type: {type(e).__name__}")
+                logging.error(f"Exception args: {e.args}")
+                logging.error(f"Exception str: {str(e)}")
 
         needed_rows = len(rows_data)
         current_rows = self.GetNumberRows()
@@ -267,6 +277,6 @@ class BodiesTable(gridlib.Grid):
             elif colname in ("land", "bio", "geo", "scoopable"):
                 self.SetColSize(i, 40)
             elif colname == "body_id":
-                self.SetColSize(i, 50)
+                self.SetColSize(i, 50 if DEBUG_MODE else 0)
             else:
                 self.SetColSize(i, 60)
