@@ -74,9 +74,18 @@ class BodyDetails(DynamicDialog):
 
                 done = len(body.geo_found) if body.geo_found is not None else 0
                 if done >= 1:
-                    self.txt_body_details.AppendText(f"  ✅  {done}/{body.geosignals}\n")
+                    self.txt_body_details.AppendText(f"{' '*2}♻️  {done}/{body.geosignals}\n")
+                elif done == body.geosignals:
+                    self.txt_body_details.AppendText(f"{' '*2}✅  {done}/{body.geosignals}\n")
                 else:
-                    self.txt_body_details.AppendText(f"  🌋  (?)/{body.geosignals}\n")
+                    self.txt_body_details.AppendText(f"{' '*2}🌋  (?)/{body.geosignals}\n")
+
+                for geo in body.geo_found.items():
+                    if geo[1]:
+                        self.txt_body_details.AppendText(f"{'🚩':>10}{'🌋':>4}{' '*4}{geo[0]}\n")
+                    else:
+                        self.txt_body_details.AppendText(f"{'🌋':>19}{' '*4}{geo[0]}\n")
+
         else:
             self.txt_body_details.Clear()
 

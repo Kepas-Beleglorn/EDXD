@@ -119,12 +119,7 @@ class JournalController(PausableThread, threading.Thread):
                         geo_name = evt.get("Name_Localised")
                         if geo_name is not None and geo_name != "":
                             geo_found[geo_name] = geo_is_new  # Add/update entry
-                        #if self.m.bodies[body_id].geo_found:
-                        #    debug_hint = "if"
-                        #    geo_found = {{evt.get("Name_Localised"): geo_is_new}, self.m.bodies[body_id].geo_found.items()}
-                        #else:
-                        #    debug_hint = "else"
-                        #    geo_found = {evt.get("Name_Localised"): geo_is_new}
+
                     except Exception as e:
                         frame = inspect.currentframe()
                         func_name = frame.f_code.co_name
