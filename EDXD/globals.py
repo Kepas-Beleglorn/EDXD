@@ -1,6 +1,7 @@
 import sys
 from typing import List
 from pathlib import Path
+import inspect, functools
 
 def get_app_dir():
     is_frozen = getattr(sys, 'frozen', False)
@@ -13,12 +14,30 @@ def get_app_dir():
 
 import logging
 
+LOG_LEVEL = logging.INFO
+
 # 1️⃣ Configure the root logger once, ideally at program start
 logging.basicConfig(
-    level=logging.INFO,
+    level=LOG_LEVEL,
     format="%(asctime)s.%(msecs)03d | %(levelname)s | %(name)s | %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",  # No .%f here!
 )
+
+def log_call(level=logging.INFO):
+    """Logs qualified name plus bound arguments, even for inner functions."""
+    def deco(fn):
+        logger = logging.getLogger(fn.__module__)
+        sig = inspect.signature(fn)
+
+        @functools.wraps(fn)
+        def wrapper(*args, **kwargs):
+            bound = sig.bind_partial(*args, **kwargs)
+            arglist = ", ".join(f"{k}={v!r}" for k, v in bound.arguments.items())
+            qualname = fn.__qualname__           # includes outer.<locals>.inner
+            logger.log(level, "%s(%s)", qualname, arglist)
+            return fn(*args, **kwargs)
+        return wrapper
+    return deco
 
 #-----------------------------------------------------------------------
 # general paths for storing data

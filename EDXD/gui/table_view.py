@@ -3,25 +3,11 @@ import wx.grid as gridlib
 from typing import Dict, Callable, Optional
 
 from EDXD.data_handler.model import Body
-from EDXD.globals import SYMBOL, logging, RAW_MATS, TABLE_ICONS
-import inspect, functools
+from EDXD.globals import SYMBOL, logging, RAW_MATS, TABLE_ICONS, log_call
+import inspect
 
 
-def log_call(level=logging.INFO):
-    """Logs qualified name plus bound arguments, even for inner functions."""
-    def deco(fn):
-        logger = logging.getLogger(fn.__module__)
-        sig = inspect.signature(fn)
 
-        @functools.wraps(fn)
-        def wrapper(*args, **kwargs):
-            bound = sig.bind_partial(*args, **kwargs)
-            arglist = ", ".join(f"{k}={v!r}" for k, v in bound.arguments.items())
-            qualname = fn.__qualname__           # includes outer.<locals>.inner
-            logger.log(level, "%s(%s)", qualname, arglist)
-            return fn(*args, **kwargs)
-        return wrapper
-    return deco
 
 
 class BodiesTable(gridlib.Grid):
@@ -29,9 +15,10 @@ class BodiesTable(gridlib.Grid):
     #@log_call()
     def __init__(self, parent, on_select: Callable[[str], None]):
         super().__init__(parent)
-        self._all_cols = ["status", "body_type", "scoopable", "body", "distance", "land", "bio", "geo", "value"] + list(RAW_MATS)
+        self._all_cols = ["body_id", "status", "body_type", "scoopable", "body", "distance", "land", "bio", "geo", "value"] + list(RAW_MATS)
         # At the top of your class, after self._all_cols:
         self._headers = {
+            "body_id" : "BodyID",
             "status": TABLE_ICONS["status_header"],
             "body_type": "Type",
             "scoopable": TABLE_ICONS["scoopable"],
@@ -52,6 +39,7 @@ class BodiesTable(gridlib.Grid):
         self.ClearSelection()  # To clear any selection if needed
         self._col2name = {mat: mat.title() for mat in RAW_MATS}
         self._col2name.update({
+            "body_id": "BodyID",
             "status": "Selected or targeted",
             "body_type": "Type of body or star",
             "scoopable": "Star is scoopable",
@@ -92,7 +80,7 @@ class BodiesTable(gridlib.Grid):
         # Use the displayed columns for correct column mapping
         col = event.GetCol()
         colname = self._display_cols[col]
-        if colname in ["status", "body_type", "scoopable"]:
+        if colname in ["status", "body_type", "scoopable", "body_id"]:
             event.Skip()
             return
         if self.sort_col == colname:
@@ -108,11 +96,10 @@ class BodiesTable(gridlib.Grid):
         # Always clear any multi-selection, then select only this row
         self.SelectRow(row)
         if 0 <= row < self.GetNumberRows():
-            body_name = self.GetCellValue(row, self._all_cols.index("body"))
-            #if body_name and self._on_select_cb:
+            body_id = self.GetCellValue(row, self._all_cols.index("body_id"))
             if self._on_select_cb:
                 self.loading = False
-                self._on_select_cb(body_name)
+                self._on_select_cb(body_id)
         self.ClearSelection()
         event.Skip()
 
@@ -132,7 +119,7 @@ class BodiesTable(gridlib.Grid):
             return  # Ignore event
         event.Skip()
 
-    #@log_call()
+    @log_call(logging.DEBUG)
     def refresh(
             self,
             bodies: Dict[str, Body],
@@ -143,7 +130,7 @@ class BodiesTable(gridlib.Grid):
             just_jumped: bool
     ):
         visible_mats = [m for m, on in filters.items() if on]
-        display_cols = ["status", "body_type", "scoopable", "body", "distance", "land", "bio", "geo", "value"] + visible_mats
+        display_cols = ["body_id", "status", "body_type", "scoopable", "body", "distance", "land", "bio", "geo", "value"] + visible_mats
 
         needed_cols = len(display_cols)
         current_cols = self.GetNumberCols()
@@ -171,18 +158,19 @@ class BodiesTable(gridlib.Grid):
 
         # 1. PREPARE ROW DATA AS LIST OF DICTS (column name -> (disp, raw) tuple)
         rows_data = []
-        for name, body in bodies.items():
+        for body_id, body in bodies.items():
             if landable_only and not getattr(body, "landable", False):
                 continue
 
             row = {
-                "status": (TABLE_ICONS["status_header"] if name == target_name == selected_name
-                           else TABLE_ICONS["status_target"] if name == target_name
-                else TABLE_ICONS["status_selected"] if name == selected_name
-                else "", 0),
+                "body_id": (str(body_id), int(body_id) if body_id is not None else -1),
+                "status": (TABLE_ICONS["status_header"] if body.body_name == target_name == selected_name
+                           else TABLE_ICONS["status_target"] if body.body_name == target_name
+                           else TABLE_ICONS["status_selected"] if body.body_name == selected_name
+                           else "", 0),
                 "body_type": (f"{str(getattr(body, 'body_type', ''))}", str(getattr(body, 'body_type', '')).lower()),
                 "scoopable": (f"{TABLE_ICONS['scoopable']}" if getattr(body, "scoopable", False) else "", (0 if getattr(body, "scoopable", False) else 1)),
-                "body": (name, name.lower()),
+                "body": (body.body_name, body.body_name.lower()),
                 "distance": (f"{getattr(body, 'distance', 0):,.0f} Ls", getattr(body, 'distance', 0)),
                 "land": (f"{TABLE_ICONS['landable']}"                                   if getattr(body, "landable", False)    else "", (0 if getattr(body, "landable", False)  else 1)),
                 "bio": (f"{TABLE_ICONS['biosigns']} {getattr(body, 'biosignals', 0)}"   if getattr(body, "biosignals", 0) > 0  else "", getattr(body, "biosignals", 0)),
@@ -208,7 +196,19 @@ class BodiesTable(gridlib.Grid):
         # 3. FILL VISIBLE DATA
         for r, row in enumerate(rows_data):
             for c, colname in enumerate(display_cols):
-                self.SetCellValue(r, c, row.get(colname, ("", ""))[0])
+                # todo: remove try... col handling needs to be fixed
+                try:
+                    self.SetCellValue(r, c, row.get(colname, ("", ""))[0])
+                except Exception as e:
+                    frame = inspect.currentframe()
+                    func_name = frame.f_code.co_name
+                    arg_info = inspect.getargvalues(frame)
+                    logging.error(f"{'_' * 10}")
+                    logging.error(f"Exception in {func_name} with arguments {arg_info.locals}")
+                    logging.error(f"Failed to set value to {colname}(row[{r}]:col[{c}])")
+                    logging.error(f"Exception type: {type(e).__name__}")
+                    logging.error(f"Exception args: {e.args}")
+                    logging.error(f"Exception str: {str(e)}")
 
         for r in range(len(rows_data), self.GetNumberRows()):
             for c in range(self.GetNumberCols()):
@@ -235,7 +235,20 @@ class BodiesTable(gridlib.Grid):
         sorted_rows = sorted(self._rows_data, key=sort_key, reverse=self.sort_reverse)
         for r, row in enumerate(sorted_rows):
             for c, colname in enumerate(self._display_cols):
-                self.SetCellValue(r, c, row.get(colname, ("", ""))[0])
+                # todo: remove try... col handling needs to be fixed
+                try:
+                    self.SetCellValue(r, c, row.get(colname, ("", ""))[0])
+                except Exception as e:
+                    frame = inspect.currentframe()
+                    func_name = frame.f_code.co_name
+                    arg_info = inspect.getargvalues(frame)
+                    logging.error(f"{'_'*10}")
+                    logging.error(f"Exception in {func_name} with arguments {arg_info.locals}")
+                    logging.error(f"Failed to set value to {colname}(row[{r}]:col[{c}])")
+                    logging.error(f"Exception type: {type(e).__name__}")
+                    logging.error(f"Exception args: {e.args}")
+                    logging.error(f"Exception str: {str(e)}")
+
 
 
     def _prepare_columns(self, display_cols):
@@ -253,5 +266,7 @@ class BodiesTable(gridlib.Grid):
                 self.SetColSize(i, 100)
             elif colname in ("land", "bio", "geo", "scoopable"):
                 self.SetColSize(i, 40)
+            elif colname == "body_id":
+                self.SetColSize(i, 50)
             else:
                 self.SetColSize(i, 60)

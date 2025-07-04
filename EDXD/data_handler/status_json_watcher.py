@@ -29,7 +29,7 @@ class StatusWatcher(PausableThread, threading.Thread):
 
             if name and name != self.last_name:
                 self.last_name = name
-                self.model.set_target(name)
+                self.model.set_target_by_name(name)
         except Exception:
             pass  # ignore read/JSON errors
         time.sleep(self.poll)

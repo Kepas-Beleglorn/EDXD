@@ -48,7 +48,7 @@ class BodyDetails(DynamicDialog):
 
     # ------------------------------------------------------------------
     def render(self, body: Optional[Body], filters: Dict[str, bool]):
-        self.lbl_body.SetLabelText(text=body.name if body else "")
+        self.lbl_body.SetLabelText(text=body.body_name if body else "")
         self.txt_body_details.Clear()
 
         if body:
@@ -71,7 +71,8 @@ class BodyDetails(DynamicDialog):
             # ── Geology progress lines ─────────────────────────────────
             if body.geosignals:
                 self.txt_body_details.AppendText("\nGeo-signals:\n")
-                done = len(body.geo_found)
+
+                done = len(body.geo_found) if body.geo_found is not None else 0
                 if done >= 1:
                     self.txt_body_details.AppendText(f"  ✅  {done}/{body.geosignals}\n")
                 else:

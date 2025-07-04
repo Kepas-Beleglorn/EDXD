@@ -114,21 +114,21 @@ class MainFrame(DynamicFrame):
         self._refresh()
         pass
 
-    def _row_clicked(self, body_name: str):
-        self._selected = body_name
-        body = self.model.snapshot_bodies().get(body_name)
+    def _row_clicked(self, body_id: str):
+        self._selected = body_id
+        body = self.model.snapshot_bodies().get(body_id)
         if body:
             self.win_sel.render(body, self.prefs["mat_sel"])
 
-    def _update_target(self, body_name: str):
+    def _update_target(self, body_id: str):
         """Called by Model when the cockpit target changes."""
         bodies = self.model.snapshot_bodies()
-        body = bodies.get(body_name)
+        body = bodies.get(body_id)
 
         if body is None:
             # target not scanned yet – show name, empty materials
             # from model import Body          # avoid circular import at top
-            body = Body(name=body_name,body_type="", landable=False, materials={})
+            body = Body(body_id=body_id)
 
         self.win_tar.render(body, self.prefs["mat_sel"])
 
@@ -145,7 +145,7 @@ class MainFrame(DynamicFrame):
             filters=self.prefs["mat_sel"],
             landable_only=self.prefs["land"],
             selected_name=self._selected,
-            target_name=self.model.target_body,
+            target_name=str(self.model.target_body_id),
             just_jumped=self.model.just_jumped
         )
         # keep the auto-window live even if nothing else changes
@@ -156,7 +156,7 @@ class MainFrame(DynamicFrame):
         bodies = self.model.snapshot_bodies()
 
         scanned = sum(1 for b in bodies.values()
-                      if "Belt Cluster" not in b.name)
+                      if "Belt Cluster" not in b.body_name)
 
         total = self.model.snapshot_total() or "?"  # raw DSS BodyCount
 
