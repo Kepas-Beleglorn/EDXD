@@ -114,6 +114,10 @@ class DynamicFrame(wx.Frame):
         evt.Skip()
 
     def on_close(self, event):
+        self.save_geometry()
+        event.Skip()
+
+    def save_geometry(self):
         # Save geometry
         x, y = self.GetPosition()
         w, h = self.GetSize()
@@ -121,4 +125,3 @@ class DynamicFrame(wx.Frame):
         props.save()
         if hasattr(self, '_refresh_timer') and getattr(self, '_refresh_timer') is not None:
             getattr(self, '_refresh_timer').Stop()
-        event.Skip()

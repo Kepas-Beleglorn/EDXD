@@ -170,4 +170,5 @@ class MainFrame(DynamicFrame):
     def on_close(self, event):
         self.win_sel.Close(True)
         self.win_tar.Close(True)
+        self.save_geometry()
         event.Skip()
