@@ -3,9 +3,8 @@ import json, threading, queue
 from EDXD.data_handler.model import Model
 from EDXD.data_handler.helper.pausable_thread import PausableThread
 import inspect
-from EDXD.globals import logging, BODY_ID_PREFIX as bip
-
-
+from EDXD.globals import logging, BODY_ID_PREFIX, log_context
+bip = BODY_ID_PREFIX
 
 # ---------------------------------------------------------------------------
 # controller thread – turns Journal lines into Model updates
@@ -20,14 +19,7 @@ class JournalController(PausableThread, threading.Thread):
         try:
             evt = json.loads(self.q.get())
         except Exception as e:
-            frame = inspect.currentframe()
-            func_name = frame.f_code.co_name
-            arg_info = inspect.getargvalues(frame)
-            logging.error(f"{'_' * 10}")
-            logging.error(f"Exception in {func_name} with arguments {arg_info.locals}")
-            logging.error(f"Exception type: {type(e).__name__}")
-            logging.error(f"Exception args: {e.args}")
-            logging.error(f"Exception str: {str(e)}")
+            log_context(level=logging.ERROR, frame=inspect.currentframe(), e=e)
             return
 
         self.process_event(evt=evt, update_gui=True)
@@ -121,15 +113,8 @@ class JournalController(PausableThread, threading.Thread):
                             geo_found[geo_name] = geo_is_new  # Add/update entry
 
                     except Exception as e:
-                        frame = inspect.currentframe()
-                        func_name = frame.f_code.co_name
-                        arg_info = inspect.getargvalues(frame)
-                        logging.error(f"{'_' * 10}")
-                        logging.error(f"Exception in {func_name} with arguments {arg_info.locals}")
+                        log_context(level=logging.ERROR, frame=inspect.currentframe(), e=e)
                         logging.error(f"debug_hint[{debug_hint}] {self.m.bodies[body_id].geo_found} vs. {geo_found}")
-                        logging.error(f"Exception type: {type(e).__name__}")
-                        logging.error(f"Exception args: {e.args}")
-                        logging.error(f"Exception str: {str(e)}")
 
         # save/update data
         if body_id is not None:

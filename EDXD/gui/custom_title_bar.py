@@ -103,6 +103,7 @@ class CustomTitleBar(wx.Panel):
         self._drag_offset = (mouse_screen_pos.x - win_pos.x, mouse_screen_pos.y - win_pos.y)
         if not self.HasCapture():
             self.CaptureMouse()
+        event.Skip()
 
     def on_mouse_move(self, event):
         self.SetCursor(wx.Cursor(wx.CURSOR_ARROW))
@@ -117,7 +118,7 @@ class CustomTitleBar(wx.Panel):
                 self.ReleaseMouse()
 
     # ... (other code unchanged)
-    #@log_call()
+    @log_call(logging.DEBUG)
     def on_maximize(self, event):
         if getattr(self.parent, "_is_maximized", False):
             # Restore
@@ -139,6 +140,7 @@ class CustomTitleBar(wx.Panel):
                 self.parent._is_maximized = True
                 self._current_pos = self.parent.GetPosition()
                 wx.CallLater(millis=100, callableObj=self._resize_if_required)
+        event.Skip()
 
     # horizontal taskbar offest must be read from the custom title bar, not from the parent!
     #@log_call()

@@ -13,7 +13,8 @@ import threading
 import EDXD.data_handler.helper.data_helper as dh
 from typing import Dict, List, Optional
 from EDXD.body_appraiser import appraise_body
-from EDXD.globals import BODY_ID_PREFIX as bip
+from EDXD.globals import BODY_ID_PREFIX
+bip = BODY_ID_PREFIX
 
 # ---------------------------------------------------------------------------
 # paths (shared with other modules)
@@ -213,17 +214,6 @@ class Model:
         with self.lock:
             self.target_body_id = body_id
         self._fire_target(body_id)
-
-    def set_target_by_name(self, target_name: str):
-        body_id = -1
-        with self.lock:
-            # get body ID by name
-            for body, body_data in self.bodies.items():
-                if body_data.body_name == target_name:
-                    body_id = str(body)
-
-        self._fire_target(body_id)
-
 
     # ----- cache -------------------------------------------------------------
     def _save_cache(self):

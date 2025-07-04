@@ -1,11 +1,11 @@
 import wx
-import time, threading
+import time, threading, inspect
 import shutil, json
 from pathlib import Path
 from EDXD.data_handler.journal_reader import JournalReader
 from EDXD.data_handler.journal_controller import JournalController
 from EDXD.data_handler.status_json_watcher import StatusWatcher
-from EDXD.globals import CACHE_DIR
+from EDXD.globals import CACHE_DIR, logging, log_context
 from EDXD.gui.helper.dynamic_frame import DynamicFrame
 from EDXD.gui.helper.gui_dynamic_button import DynamicButton
 from EDXD.gui.helper.gui_handler import init_widget
@@ -101,7 +101,8 @@ class JournalHistorian(DynamicFrame):
                     try:
                         evt = json.loads(line)
                         self.journal_controller.process_event(evt=evt, update_gui=False)
-                    except Exception:
+                    except Exception as e:
+                        log_context(level=logging.ERROR, frame=inspect.currentframe(), e=e)
                         continue
                     wx.CallAfter(self._update_ui, idx, file_path)
 
@@ -109,14 +110,16 @@ class JournalHistorian(DynamicFrame):
         wx.CallAfter(self._finish)
         self._resume_threads()
 
-    def _empty_directory(self, directory: Path):
+    @staticmethod
+    def _empty_directory(directory: Path):
         for item in directory.iterdir():
             if item.is_file() or item.is_symlink():
                 item.unlink()
             elif item.is_dir():
                 shutil.rmtree(item)
 
-    def _get_sorted_journal_files(self, journal_dir: Path):
+    @staticmethod
+    def _get_sorted_journal_files(journal_dir: Path):
         journal_files = list(journal_dir.glob("Journal.*.log"))
         # Sort by last modified time (or use 'stat().st_ctime' for creation time on some systems)
         return sorted(journal_files, key=lambda f: f.stat().st_mtime)

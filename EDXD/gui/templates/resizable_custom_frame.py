@@ -3,7 +3,7 @@ import wx
 class CustomFrame(wx.Frame):
     RESIZE_MARGIN = 8  # px area at edge/corner for resizing
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self):
         super().__init__(None, style=wx.NO_BORDER)
         self._resizing = False
         self._resize_dir = None

@@ -7,6 +7,7 @@ class DynamicControlsBaseHint(Protocol):
     def SetForegroundColour(self, colour): ...
     def Refresh(self): ...
     def Bind(self, event, handler): ...
+    def GetName(self): ...
     def _on_enter(self, event): ...
     def _on_leave(self, event): ...
     def _on_press(self, event): ...
@@ -55,9 +56,7 @@ class DynamicControlsBase:
             border_button_dark  = border_button_dark    or theme["border_button_dark"],
             debug_color         = debug_color           or theme["color_debug"],
             draw_border         = draw_border,
-            draw_background     = draw_background,
-            *args,
-            **kwargs
+            draw_background     = draw_background
         )
 
     def _init_dynamic_controls(
@@ -76,9 +75,7 @@ class DynamicControlsBase:
             border_button_dark,
             debug_color,
             draw_border,
-            draw_background,
-            *args,
-            **kwargs):
+            draw_background):
 
         self._themed_colors = {
             "normal_bg":            normal_bg,
@@ -112,8 +109,7 @@ class DynamicControlsBase:
             self.Bind(wx.EVT_BUTTON, self.on_toggle)
 
 
-    def on_toggle(self, evt):
-        print("event toggle")
+    def on_toggle(self: "DynamicControlsBaseHint", evt):
         self.Refresh()
         evt.Skip()
 

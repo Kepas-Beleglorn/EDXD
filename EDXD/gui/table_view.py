@@ -3,7 +3,7 @@ import wx.grid as gridlib
 from typing import Dict, Callable, Optional
 
 from EDXD.data_handler.model import Body
-from EDXD.globals import SYMBOL, logging, RAW_MATS, TABLE_ICONS, log_call, DEBUG_MODE
+from EDXD.globals import SYMBOL, logging, RAW_MATS, TABLE_ICONS, log_call, DEBUG_MODE, log_context
 import inspect
 
 
@@ -29,6 +29,10 @@ class BodiesTable(gridlib.Grid):
             "geo": TABLE_ICONS["geosigns"],
             "value": TABLE_ICONS["value"]
         }
+
+        self._display_cols = None
+        self._rows_data = None
+
         self.CreateGrid(0, len(self._all_cols))
         self.SetRowLabelSize(0)
         self.SetSelectionMode(gridlib.Grid.SelectRows)
@@ -113,21 +117,21 @@ class BodiesTable(gridlib.Grid):
         else:
             event.Skip()
 
-    def _on_key_down(self, event):
+    @staticmethod
+    def _on_key_down(event):
         if event.ShiftDown() or event.ControlDown():
             # Block shift/ctrl multi-select
             return  # Ignore event
         event.Skip()
 
-    #@log_call(logging.DEBUG)
+    @log_call(logging.DEBUG)
     def refresh(
             self,
             bodies: Dict[str, Body],
             filters: Dict[str, bool],
             landable_only: bool,
-            selected_name: str,
-            target_name: str,
-            just_jumped: bool
+            selected_body_id: str,
+            target_body_id: str
     ):
         visible_mats = [m for m, on in filters.items() if on]
         display_cols = ["body_id", "status", "body_type", "scoopable", "body", "distance", "land", "bio", "geo", "value"] + visible_mats
@@ -164,9 +168,9 @@ class BodiesTable(gridlib.Grid):
             try:
                 row = {
                     "body_id": (body_id, body_id if body_id is not None else ""),
-                    "status": (TABLE_ICONS["status_header"] if body.body_name == target_name == selected_name
-                               else TABLE_ICONS["status_target"] if body.body_name == target_name
-                               else TABLE_ICONS["status_selected"] if body.body_name == selected_name
+                    "status": (TABLE_ICONS["status_header"] if body.body_id == target_body_id == selected_body_id
+                               else TABLE_ICONS["status_target"] if body.body_id == target_body_id
+                               else TABLE_ICONS["status_selected"] if body.body_id == selected_body_id
                                else "", 0),
                     "body_type": (f"{str(getattr(body, 'body_type', ''))}", str(getattr(body, 'body_type', '')).lower()),
                     "scoopable": (f"{TABLE_ICONS['scoopable']}" if getattr(body, "scoopable", False) else "", (0 if getattr(body, "scoopable", False) else 1)),
@@ -182,15 +186,9 @@ class BodiesTable(gridlib.Grid):
                     row[m] = (f"{matval:.1f} %" if matval is not None else "", matval if matval is not None else -1.0)
                 rows_data.append(row)
             except Exception as e:
-                frame = inspect.currentframe()
-                func_name = frame.f_code.co_name
-                arg_info = inspect.getargvalues(frame)
-                logging.error(f"{'_' * 10}")
-                logging.error(f"Exception in {func_name} with arguments {arg_info.locals}")
+                log_context(level=logging.ERROR, frame=inspect.currentframe(), e=e)
                 logging.error(f"{getattr(body, 'distance', 0)} Ls")
-                logging.error(f"Exception type: {type(e).__name__}")
-                logging.error(f"Exception args: {e.args}")
-                logging.error(f"Exception str: {str(e)}")
+
 
         needed_rows = len(rows_data)
         current_rows = self.GetNumberRows()
@@ -210,15 +208,9 @@ class BodiesTable(gridlib.Grid):
                 try:
                     self.SetCellValue(r, c, row.get(colname, ("", ""))[0])
                 except Exception as e:
-                    frame = inspect.currentframe()
-                    func_name = frame.f_code.co_name
-                    arg_info = inspect.getargvalues(frame)
-                    logging.error(f"{'_' * 10}")
-                    logging.error(f"Exception in {func_name} with arguments {arg_info.locals}")
+                    log_context(level=logging.ERROR, frame=inspect.currentframe(), e=e)
                     logging.error(f"Failed to set value to {colname}(row[{r}]:col[{c}])")
-                    logging.error(f"Exception type: {type(e).__name__}")
-                    logging.error(f"Exception args: {e.args}")
-                    logging.error(f"Exception str: {str(e)}")
+
 
         for r in range(len(rows_data), self.GetNumberRows()):
             for c in range(self.GetNumberCols()):
@@ -249,17 +241,8 @@ class BodiesTable(gridlib.Grid):
                 try:
                     self.SetCellValue(r, c, row.get(colname, ("", ""))[0])
                 except Exception as e:
-                    frame = inspect.currentframe()
-                    func_name = frame.f_code.co_name
-                    arg_info = inspect.getargvalues(frame)
-                    logging.error(f"{'_'*10}")
-                    logging.error(f"Exception in {func_name} with arguments {arg_info.locals}")
+                    log_context(level=logging.ERROR, frame=inspect.currentframe(), e=e)
                     logging.error(f"Failed to set value to {colname}(row[{r}]:col[{c}])")
-                    logging.error(f"Exception type: {type(e).__name__}")
-                    logging.error(f"Exception args: {e.args}")
-                    logging.error(f"Exception str: {str(e)}")
-
-
 
     def _prepare_columns(self, display_cols):
         for i, colname in enumerate(display_cols):

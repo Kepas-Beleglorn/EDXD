@@ -11,5 +11,4 @@ WINID = "DETAIL_SELECTED"
 class DetailSelected(BodyDetails):
     def __init__(self, parent, prefs: Dict):
         # 1. Load saved properties (or use defaults)
-        props = WindowProperties.load(WINID, default_height=DEFAULT_HEIGHT, default_width=DEFAULT_WIDTH, default_posx=DEFAULT_POS_X, default_posy=DEFAULT_POS_Y)
         BodyDetails.__init__(self, parent=parent, title=TITLE, win_id=WINID, prefs=prefs)

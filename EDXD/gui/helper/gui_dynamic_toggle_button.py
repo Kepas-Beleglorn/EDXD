@@ -1,6 +1,5 @@
 import wx
 import wx.lib.buttons as buttons
-from EDXD.gui.helper.theme_handler import get_theme
 from EDXD.gui.helper.base_dynamic_controls import DynamicControlsBase
 
 class DynamicToggleButton(buttons.GenToggleButton, DynamicControlsBase):

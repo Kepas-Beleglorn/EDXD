@@ -39,6 +39,16 @@ def log_call(level=logging.INFO):
         return wrapper
     return deco
 
+def log_context(frame, e, level=logging.DEBUG):
+    func_name = frame.f_code.co_name
+    arg_info = inspect.getargvalues(frame)
+    logging.log(level, f"{'_' * 10}")
+    logging.log(level, f"Exception in {func_name} with arguments {arg_info.locals}")
+    logging.log(level, f"Exception type: {type(e).__name__}")
+    logging.log(level, f"Exception args: {e.args}")
+    logging.log(level, f"Exception str: {str(e)}")
+
+
 #-----------------------------------------------------------------------
 # general paths for storing data
 APP_DIR = get_app_dir()

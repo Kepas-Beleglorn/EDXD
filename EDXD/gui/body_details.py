@@ -99,6 +99,7 @@ class BodyDetails(DynamicDialog):
     def _on_show(self, event):
         """First time the window becomes visible."""
         self._ready = True
+        event.Skip()
 
     def _update_body(self, title: str = ""):
         init_widget(widget=self.lbl_body, title=title)
