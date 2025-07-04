@@ -142,7 +142,8 @@ class Model:
         if isinstance(cached, dict):
             # reload total count
             #self.system_name = cached.get("system_name", "")
-            self.total_bodies = cached.get("total_bodies", None)
+            if self.total_bodies is None:
+                self.total_bodies = cached.get("total_bodies", None)
             body_map = cached.get("bodies", {})
             for body_id, body_properties in body_map.items():
                 body_name       = body_properties.get("body_name", "")
@@ -177,36 +178,30 @@ class Model:
     #@log_call(logging.DEBUG)
     def update_body(self, systemaddress: int, body_id: str, body_name: str = None, body_type: str = None, scoopable: bool = None, distance: int = None, landable: bool = None,
                     biosignals: int = None, geosignals: int = None, materials: Dict[str, float] = None, scandata = None,
-                    bio_found = None, geo_found = None, rings: Dict[str, int] = None):
+                    bio_found = None, geo_found = None, rings: Dict[str, int] = None, total_bodies: int = None):
         with self.lock:
             self.system_addr = systemaddress
-            tmp_total_bodies = self.total_bodies
-            self.read_data_from_cache(address=self.system_addr)
+            tmp_total_bodies = total_bodies or self.total_bodies
+            #self.read_data_from_cache(address=self.system_addr)
             if self.total_bodies is None:
                 self.total_bodies = tmp_total_bodies
-            body = self.bodies.get(body_id, Body(body_id=body_id))
-            body.body_name = body.body_name or body_name or ""
-            body.body_type = body.body_type or body_type or ""
-            body.scoopable = body.scoopable or scoopable or False
-            body.distance = body.distance or distance
-            body.landable = body.landable or landable or False
-            body.biosignals = body.biosignals or biosignals or 0
-            body.geosignals = body.geosignals or geosignals or 0
-            body.bio_found = body.bio_found or bio_found or {}
-            body.geo_found = body.geo_found or geo_found or {}
-            body.rings = body.rings or rings
-            if materials is not None:
-                body.materials.update(materials)
-            if scandata is not None:
-                body.estimated_value = appraise_body(body_info=scandata, just_scanned_value=False)
+            if body_id is not None:
+                body = self.bodies.get(body_id, Body(body_id=body_id))
+                body.body_name  = body_name     or body.body_name   or ""
+                body.body_type  = body_type     or body.body_type   or ""
+                body.scoopable  = scoopable     or body.scoopable   or False
+                body.distance   = distance      or body.distance    or 0
+                body.landable   = landable      or body.landable    or False
+                body.biosignals = biosignals    or body.biosignals  or 0
+                body.geosignals = geosignals    or body.geosignals  or 0
+                body.bio_found  = bio_found     or body.bio_found   or {}
+                body.geo_found  = geo_found     or body.geo_found   or {}
+                body.rings      = rings         or body.rings
+                if materials is not None:
+                    body.materials.update(materials)
+                if scandata is not None:
+                    body.estimated_value = appraise_body(body_info=scandata, just_scanned_value=False)
 
-            if self.system_addr == 3032875945459 and body_id == bip + "13":
-                frame = inspect.currentframe()
-                func_name = frame.f_code.co_name
-                arg_info = inspect.getargvalues(frame)
-                logging.debug(f"{'_' * 10}")
-                logging.debug(f"Body update in {func_name} with arguments {arg_info.locals}")
-                pass
             self.bodies[body_id] = body
             self._save_cache()
 

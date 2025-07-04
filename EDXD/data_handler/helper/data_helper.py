@@ -9,7 +9,7 @@ def load(path: Path, default):
     try:
         return json.loads(path.read_text())
     except Exception as e:
-        log_context(level=logging.ERROR, frame=inspect.currentframe(), e=e)
+        log_context(level=logging.WARN, frame=inspect.currentframe(), e=e)
         return default
 
 def save(path: Path, data):

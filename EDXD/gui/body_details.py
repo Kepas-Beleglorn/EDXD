@@ -73,7 +73,7 @@ class BodyDetails(DynamicDialog):
                 self.txt_body_details.AppendText("\nGeo-signals:\n")
 
                 done = len(body.geo_found) if body.geo_found is not None else 0
-                if done >= 1:
+                if done >= 1 and done < body.geosignals:
                     self.txt_body_details.AppendText(f"{' '*2}♻️  {done}/{body.geosignals}\n")
                 elif done == body.geosignals:
                     self.txt_body_details.AppendText(f"{' '*2}✅  {done}/{body.geosignals}\n")

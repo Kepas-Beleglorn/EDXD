@@ -14,7 +14,7 @@ def get_app_dir():
 
 import logging
 
-LOG_LEVEL = logging.WARNING
+LOG_LEVEL = logging.ERROR
 
 # 1️⃣ Configure the root logger once, ideally at program start
 logging.basicConfig(

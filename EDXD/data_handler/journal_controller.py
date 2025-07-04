@@ -26,6 +26,8 @@ class JournalController(PausableThread, threading.Thread):
 
     def process_event(self, evt, update_gui: bool):
         etype = evt.get("event")
+        total_bodies = None
+        bodyid_int = None
 
         # ───── jump to a new system ───────────────────────────────
         if etype != "FSDJump":
@@ -37,13 +39,13 @@ class JournalController(PausableThread, threading.Thread):
             self.m.sel_target = None
             self.m.reset_system(evt.get("StarSystem"), evt.get("SystemAddress"))
 
-        elif etype in ("FSSDiscoveryScan", "FSSAllBodiesFound"):
-            if evt.get("BodyCount") is not None:
-                self.m.total_bodies = evt.get("BodyCount")
+        #elif etype in ("FSSDiscoveryScan", "FSSAllBodiesFound"):
+        if evt.get("BodyCount") is not None:
+            self.m.total_bodies = evt.get("BodyCount")
+            total_bodies = self.m.total_bodies
 
         # initialize all parameters fomr update_body
         systemaddress   = evt.get("SystemAddress")
-        bodyid_int      = None
         body_id         = None
         body_name       = None
         body_type       = None
@@ -57,6 +59,8 @@ class JournalController(PausableThread, threading.Thread):
         bio_found       = {}
         geo_found       = {}
         rings           = {}
+
+        self.m.read_data_from_cache(systemaddress)
 
         if etype == "Scan":
             if self.m.system_name is None:  # first scan in a fresh session
@@ -117,6 +121,7 @@ class JournalController(PausableThread, threading.Thread):
                         logging.error(f"debug_hint[{debug_hint}] {self.m.bodies[body_id].geo_found} vs. {geo_found}")
 
         # save/update data
+        self.m.total_bodies = total_bodies or self.m.total_bodies
         if body_id is not None:
             self.m.update_body(
                 systemaddress=systemaddress,
@@ -133,9 +138,16 @@ class JournalController(PausableThread, threading.Thread):
                 bio_found=bio_found,
                 geo_found=geo_found,
                 rings=rings,
+                total_bodies=total_bodies,
             )
 
-        if update_gui and body_name:
-            self.m.set_target(body_name)
+        # nothing to safe here, just update the target
+        if etype == "Location":
+            bodyid_int = evt.get("BodyID")
+            body_id = bip + str(bodyid_int)
+            self.m.target_body_id = body_id
+
+        if update_gui and self.m.target_body_id :
+            self.m.set_target(self.m.target_body_id )
 
 
