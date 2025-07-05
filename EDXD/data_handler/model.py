@@ -86,6 +86,14 @@ class Ring:
         self.body_name = body_name
         self.signals = signals or {}
 
+    def to_dict(self):
+        data = {
+            "body_id": self.body_id,
+            "body_name": self.body_name,
+            "signals": self.signals
+        }
+        return data
+
 """
 {
 	"timestamp": "2025-06-12T16:56:11Z",
@@ -232,7 +240,13 @@ class Model:
                 bio_dict        = body_properties.get("bio_found", {})
                 geo_dict        = body_properties.get("geo_found", {})
                 estimated_value = body_properties.get("estimated_value", 0)
-                rings           = body_properties.get("rings", {})
+                rings_dict      = body_properties.get("rings", {})
+
+                # Convert all dicts to their respective objects
+                bio_found = {k: Genus(**v) if isinstance(v, dict) else v for k, v in bio_dict.items()}
+                geo_found = {k: CodexEntry(**v) if isinstance(v, dict) else v for k, v in geo_dict.items()}
+                rings_found = {k: Ring(**v) if isinstance(v, dict) else v for k, v in rings_dict.items()}
+
 
                 self.bodies[body_id] = Body(
                     body_id=body_id,
@@ -244,10 +258,10 @@ class Model:
                     materials=mats,
                     biosignals=bio_count,
                     geosignals=geo_count,
-                    bio_found=bio_dict,
-                    geo_found=geo_dict,
+                    bio_found=bio_found,
+                    geo_found=geo_found,
                     estimated_value=estimated_value,
-                    rings=rings
+                    rings=rings_found
                 )
 
     #@log_call(logging.DEBUG)
@@ -269,9 +283,9 @@ class Model:
                 body.landable   = landable      or body.landable    or False
                 body.biosignals = biosignals    or body.biosignals  or 0
                 body.geosignals = geosignals    or body.geosignals  or 0
-                body.bio_found  = bio_found     or body.bio_found   or None
-                body.geo_found  = geo_found     or body.geo_found   or None
-                body.rings      = rings         or body.rings       or None
+                body.bio_found  = bio_found     or body.bio_found   or {}
+                body.geo_found  = geo_found     or body.geo_found   or {}
+                body.rings      = rings         or body.rings       or {}
                 if materials is not None:
                     body.materials.update(materials)
                 if scandata is not None:
@@ -309,7 +323,7 @@ class Model:
                     "materials"         : body.materials,
                     "bio_found"         : {
                         genusid:
-                            genus.to_dict() if isinstance(genus, Genus) else None
+                            genus.to_dict()
                         for genusid, genus in body.bio_found.items()
                     },
                     "geo_found"         : {
@@ -318,7 +332,11 @@ class Model:
                         for geoid, geo in body.geo_found.items()
                     },
                     "estimated_value"   : body.estimated_value,
-                    "rings"             : body.rings,
+                    "rings"             : {
+                        ringid:
+                            ring.to_dict()
+                        for ringid, ring in body.rings.items()
+                    },
                 }
                 for body_id, body in self.bodies.items()
             },

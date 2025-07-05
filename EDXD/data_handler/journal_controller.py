@@ -1,8 +1,10 @@
 import json, threading, queue
-
-from EDXD.data_handler.model import Model, Genus, CodexEntry
-from EDXD.data_handler.helper.pausable_thread import PausableThread
 import inspect
+
+from typing import Dict
+
+from EDXD.data_handler.model import Model, Genus, CodexEntry, Ring
+from EDXD.data_handler.helper.pausable_thread import PausableThread
 from EDXD.globals import logging, BODY_ID_PREFIX, log_context
 bip = BODY_ID_PREFIX
 
@@ -27,7 +29,6 @@ class JournalController(PausableThread, threading.Thread):
     def process_event(self, evt, update_gui: bool):
         etype = evt.get("event")
         total_bodies = None
-        bodyid_int = None
 
         # ───── jump to a new system ───────────────────────────────
         if etype != "FSDJump":
@@ -56,9 +57,10 @@ class JournalController(PausableThread, threading.Thread):
         geosignals      = None
         materials       = {}
         scandata        = evt
-        bio_found       = {}
-        geo_found       = {}
-        rings           = {}
+
+        bio_found:      Dict[str, Genus]        = {}
+        geo_found:      Dict[str, CodexEntry]   = {}
+        rings_found:    Dict[str, Ring]         = {}
 
         self.m.read_data_from_cache(systemaddress)
 
@@ -81,8 +83,8 @@ class JournalController(PausableThread, threading.Thread):
                 scoopable = body_type in ["K", "G", "B", "F", "O", "A", "M"]
                 materials = {m["Name"]: m["Percent"] for m in evt.get("Materials", [])}
 
-        # DSS - mapping of bodies and rings
-        if etype in ("FSSBodySignals", "SAASignalsFound"):
+        # FSS - scanning of bodies
+        if etype == "FSSBodySignals":
             body_name = evt.get("BodyName")
             # todo: process rings properly
             if body_name.endswith("Ring"):
@@ -91,24 +93,48 @@ class JournalController(PausableThread, threading.Thread):
                 bodyid_int = evt.get("BodyID")
                 body_id = bip + str(bodyid_int)
                 for signal in evt.get("Signals", []):
-                    biosignals = 0
-                    geosignals = 0
-                    bio_found = None
-                    geo_found = None
-
                     if signal.get("Type") == "$SAA_SignalType_Biological;":
                         biosignals = signal.get("Count")
-                        bio_found = self.m.bodies[body_id].bio_found if body_id in self.m.bodies else None
+
+                    if signal.get("Type") == "$SAA_SignalType_Geological;":
+                        geosignals = signal.get("Count")
+
+        # DSS - mapping of bodies
+        if etype == "SAASignalsFound":
+            body_name = evt.get("BodyName")
+            # todo: process rings properly
+            if body_name.endswith("Ring"):
+                pass  # skip for now
+            else:
+                bodyid_int = evt.get("BodyID")
+                body_id = bip + str(bodyid_int)
+                for signal in evt.get("Signals", []):
+                    if signal.get("Type") == "$SAA_SignalType_Biological;":
+                        biosignals = signal.get("Count")
+                        bio_dict = self.m.bodies[body_id].bio_found if body_id in self.m.bodies else {}
+                        bio_found = {k: Genus(**v) if isinstance(v, dict) else v for k, v in bio_dict.items()}
+
                         for genus in evt.get("Genuses", []):
                             genus_id = genus.get("Genus")
                             genus_localised = genus.get("Genus_Localised")
-                            if bio_found and genus_id in bio_found:
-                                # nothing to do, as the entry is already known
-                                pass
+                            genus_found_dict = {}
+                            if body_id in self.m.bodies and genus_id in self.m.bodies[body_id].bio_found:
+                                genus_found_dict = self.m.bodies[body_id].bio_found[genus_id]
+
+                            if genus_found_dict == {}:
+                                genus_found = Genus(genusid=genus_id, localised=genus_localised, scanned_count=0)
                             else:
-                                # todo: add min distance for diversity
-                                genus_found = Genus(genusid=genus_id, localised=genus_localised)
-                                bio_found[genus_id] = genus_found
+                                genus_found = Genus(
+                                    genusid=genus_found_dict.get("genus_id"),
+                                    localised=genus_found_dict.get("localised"),
+                                    variant_localised=genus_found_dict.get("variant_localised"),
+                                    species_localised=genus_found_dict.get("species_localised"),
+                                    # todo: add min distance for diversity"""
+                                    min_distance=genus_found_dict.get("min_distance"),
+                                    scanned_count=genus_found_dict.get("scanned_count")
+                                )
+
+                            bio_found[genus_id] = genus_found
 
                     if signal.get("Type") == "$SAA_SignalType_Geological;":
                         geosignals = signal.get("Count")
@@ -123,15 +149,24 @@ class JournalController(PausableThread, threading.Thread):
                     geo_id = evt.get("Name")
                     geo_localised = evt.get("Name_Localised")
                     geo_is_new = (evt.get("IsNewEntry") == "true")
-                    geo_codex_found = self.m.bodies[body_id].geo_found[geo_id] if body_id in self.m.bodies and geo_id in self.m.bodies[body_id].geo_found else None
-                    if geo_codex_found is None:
+                    geo_dict = self.m.bodies[body_id].geo_found if body_id in self.m.bodies else {}
+                    geo_found = {k: CodexEntry(**v) if isinstance(v, dict) else v for k, v in geo_dict.items()}
+                    geo_codex_dict = {}
+                    if body_id in self.m.bodies and geo_id in self.m.bodies[body_id].geo_found:
+                        geo_codex_dict = self.m.bodies[body_id].geo_found[geo_id]
+
+                    if geo_codex_dict == {}:
                         geo_codex_found = CodexEntry(codexid=geo_id, localised=geo_localised, is_new=geo_is_new, body_id=body_id)
                     else:
-                        if isinstance(geo_codex_found, CodexEntry):
-                            geo_codex_found.codexid = geo_id
-                            geo_codex_found.localised = geo_localised
-                            geo_codex_found.is_new = geo_is_new
-                            geo_codex_found.body_id = body_id
+                        if isinstance(geo_codex_dict, CodexEntry):
+                            geo_codex_found = geo_codex_dict
+                        else:
+                            geo_codex_found = CodexEntry(
+                                codexid = geo_codex_dict.get("codexid"),
+                                localised = geo_codex_dict.get("localised"),
+                                is_new = geo_codex_dict.get("is_new"),
+                                body_id=body_id
+                            )
                     geo_found[geo_id] = geo_codex_found
 
         if etype == "ScanOrganic":
@@ -141,19 +176,27 @@ class JournalController(PausableThread, threading.Thread):
             genus_localised = evt.get("Genus_Localised")
             species_localised = evt.get("Species_Localised")
             variant_localised = evt.get("Variant_Localised")
-            genus_found = self.m.bodies[body_id].bio_found[genus_id] if body_id in self.m.bodies and genus_id in self.m.bodies[body_id].bio_found else None
-            if genus_found is None:
+            bio_dict = self.m.bodies[body_id].bio_found if body_id in self.m.bodies else {}
+            bio_found = {k: Genus(**v) if isinstance(v, dict) else v for k, v in bio_dict.items()}
+
+            genus_found_dict = {}
+            if body_id in self.m.bodies and genus_id in self.m.bodies[body_id].bio_found:
+                genus_found_dict = self.m.bodies[body_id].bio_found[genus_id]
+
+            if genus_found_dict == {}:
                 genus_found = Genus(genusid=genus_id, localised=genus_localised, species_localised=species_localised, variant_localised=variant_localised, scanned_count=1)
             else:
-                genus_found.genusid = genus_id
-                genus_found.localised = genus_localised
-                genus_found.species_localised = species_localised
-                genus_found.variant_localised = variant_localised
-                genus_found.scanned_count += 1
-                # todo: add min distance for diversity
+                genus_found = Genus(
+                    genusid=genus_found_dict.get("genus_id"),
+                    localised=genus_found_dict.get("localised"),
+                    variant_localised=genus_found_dict.get("variant_localised"),
+                    species_localised=genus_found_dict.get("species_localised"),
+                    # todo: add min distance for diversity"""
+                    min_distance=genus_found_dict.get("min_distance"),
+                    scanned_count=genus_found_dict.get("scanned_count")
+                )
 
             bio_found[genus_id] = genus_found
-            biosignals = self.m.bodies[body_id].biosignals or biosignals or (len(self.m.bodies[body_id].bio_found) if self.m.bodies[body_id].bio_found else 0)
 
         # save/update data
         self.m.total_bodies = total_bodies or self.m.total_bodies
@@ -173,7 +216,7 @@ class JournalController(PausableThread, threading.Thread):
                 bio_found=bio_found,
                 geo_found=geo_found,
                 # todo: implement rings
-                #  rings=rings,
+                rings=rings_found,
                 total_bodies=total_bodies,
             )
 

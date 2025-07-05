@@ -60,17 +60,17 @@ class BodyDetails(DynamicDialog):
 
             # ── Biosignals progress lines ───────────────────────────────
             if body.biosignals:
-                self.txt_body_details.AppendText(f"\n{ICONS['biosigns']}{' '*2}Bio-signals:\n")
+                self.txt_body_details.AppendText(f"\n{ICONS['biosigns']}{' '*2}Bio-signals ({body.biosignals}):\n")
                 if body.bio_found:
                     for species, genus in body.bio_found.items():
-                        done = int(genus.get("scanned_count") if genus.get("scanned_count") else 0)
-                        bio_name = genus.get("variant_localised") or genus.get("species_localised") or genus.get("localised")
+                        done = int(genus.scanned_count if genus.scanned_count else 0)
+                        bio_name = genus.variant_localised or genus.species_localised or genus.localised
                         if done >= 3:
                             self.txt_body_details.AppendText(f"{' '*2}{ICONS['checked']}{' '*2}{bio_name}\n")
                         elif 0 < done < 3:
-                            self.txt_body_details.AppendText(f"{' ' * 2}{ICONS['in_progress']}{' ' * 2}{bio_name}{' '*2}({done}/3)\n")
+                            self.txt_body_details.AppendText(f"{' '*2}{ICONS['in_progress']}{' '*2}{bio_name}{' '*2}({done}/3)\n")
                         else:
-                            self.txt_body_details.AppendText(f"{' ' * 2}{ICONS['unknown']}{' '*2}{bio_name}\n")
+                            self.txt_body_details.AppendText(f"{' '*2}{ICONS['unknown']}{' '*2}{bio_name}\n")
 
             # ── Geology progress lines ─────────────────────────────────
             if body.geosignals:
@@ -84,11 +84,12 @@ class BodyDetails(DynamicDialog):
                 else:
                     self.txt_body_details.AppendText(f"{' '*2}(?)/{body.geosignals}{' '*2}{ICONS['geosigns']}\n")
 
-                for geo in body.geo_found.items():
-                    if geo.get("is_new"):
-                        self.txt_body_details.AppendText(f"{ICONS['new_entry']:>4}{ICONS['geosigns']:>4}{' '*4}{geo.get('localised')}\n")
+                for signal, geo in body.geo_found.items():
+                    geo_name = geo.localised
+                    if geo.is_new:
+                        self.txt_body_details.AppendText(f"{ICONS['new_entry']:>4}{ICONS['geosigns']:>4}{' '*4}{geo_name}\n")
                     else:
-                        self.txt_body_details.AppendText(f"{ICONS['geosigns']:>13}{' '*4}{geo.get('localised')}\n")
+                        self.txt_body_details.AppendText(f"{ICONS['geosigns']:>13}{' '*4}{geo_name}\n")
 
         else:
             self.txt_body_details.Clear()
