@@ -53,12 +53,13 @@ class Body:
                  landable:          bool = False,
                  distance:          int = 0,
                  materials:         Dict[str, float] | None = None,
-                 bio_found:         Dict[str, int] | None = None,
-                 geo_found:         Dict[str, bool] | None = None,
+                 bio_found:         Dict[str, Genus] | None = None,
+                 geo_found:         Dict[str, CodexEntry] | None = None,
                  biosignals:        int = 0,
                  geosignals:        int = 0,
                  estimated_value:   int = 0,
-                 rings:             Ring = None):
+                 rings:             Dict[str, Ring] | None = None
+                 ):
 
         self.body_id            = body_id
         self.body_name          = body_name
@@ -72,7 +73,7 @@ class Body:
         self.materials          = materials or {}
         self.bio_found          = bio_found or {}    # { biosign name -> scans_done }         e.g. {"Bacterium Bullaris":2}
         self.geo_found          = geo_found or {}    # { "volcanism-01": True … }             True once SRV scanned
-        self.rings              = rings
+        self.rings              = rings     or {}
 
 class Ring:
     __slots__ = ("body_id", "body_name", "signals")
@@ -84,6 +85,80 @@ class Ring:
         self.body_id = body_id
         self.body_name = body_name
         self.signals = signals or {}
+
+"""
+{
+	"timestamp": "2025-06-12T16:56:11Z",
+	"event": "ScanOrganic",
+	"ScanType": "Log",
+	"Genus": "$Codex_Ent_Fonticulus_Genus_Name;",
+	"Genus_Localised": "Fonticulua",
+	"Species": "$Codex_Ent_Fonticulus_02_Name;",
+	"Species_Localised": "Fonticulua Campestris",
+	"Variant": "$Codex_Ent_Fonticulus_02_M_Name;",
+	"Variant_Localised": "Fonticulua Campestris - Amethyst",
+	"SystemAddress": 40181431154417,
+	"Body": 17
+}
+"""
+class Genus:
+    __slots__ = ("genusid", "localised", "species_localised", "variant_localised", "scanned_count", "min_distance")
+    def __init__(self,
+                 genusid            : str = None,
+                 localised          : str = None,
+                 species_localised  : str = None,
+                 variant_localised  : str = None,
+                 scanned_count      : int = None,
+                 min_distance       : int = None
+                 ):
+        self.genusid            = genusid
+        self.localised          = localised
+        self.species_localised  = species_localised
+        self.variant_localised  = variant_localised
+        self.scanned_count      = scanned_count
+        self.min_distance       = min_distance
+
+    def to_dict(self):
+        data = {
+            "genusid"           : self.genusid,
+            "localised"         : self.localised,
+            "species_localised" : self.species_localised,
+            "variant_localised" : self.variant_localised,
+            "scanned_count"     : self.scanned_count,
+            "min_distance"      : self.min_distance
+        }
+        return data
+
+"""
+{ "timestamp":"2025-06-12T18:37:58Z", "event":"CodexEntry", "EntryID":1400158, 
+"Name":"$Codex_Ent_IceFumarole_WaterGeysers_Name;", "Name_Localised":"Water Ice Fumarole", 
+"SubCategory":"$Codex_SubCategory_Geology_and_Anomalies;", "SubCategory_Localised":"Geology and anomalies", 
+"Category":"$Codex_Category_Biology;", "Category_Localised":"Biological and Geological", 
+"Region":"$Codex_RegionName_9;", "Region_Localised":"Inner Scutum-Centaurus Arm", "System":"Prua Phoe FX-H b28-18", 
+"SystemAddress":40181431154417, "BodyID":15, "Latitude":-66.832031, "Longitude":42.411892, "IsNewEntry":true }
+"""
+class CodexEntry:
+    __slots__ = ("codexid", "localised", "is_new", "body_id")
+    def __init__(self,
+                 codexid    : str = None,
+                 localised  : str = None,
+                 is_new     : bool = None,
+                 body_id    : str = None
+                 ):
+        self.codexid    = codexid
+        self.localised  = localised
+        self.is_new     = is_new
+        self.body_id    = body_id
+
+    def to_dict(self):
+        data = {
+            "codexid"   : self.codexid,
+            "localised" : self.localised,
+            "is_new"    : self.is_new,
+            "body_id"   : self.body_id
+        }
+        return data
+
 
 
 # ---------------------------------------------------------------------------
@@ -178,11 +253,11 @@ class Model:
     #@log_call(logging.DEBUG)
     def update_body(self, systemaddress: int, body_id: str, body_name: str = None, body_type: str = None, scoopable: bool = None, distance: int = None, landable: bool = None,
                     biosignals: int = None, geosignals: int = None, materials: Dict[str, float] = None, scandata = None,
-                    bio_found = None, geo_found = None, rings: Dict[str, int] = None, total_bodies: int = None):
+                    bio_found: Dict[str, Genus] = None, geo_found: Dict[str, CodexEntry] = None, rings: Dict[str, Ring] = None, total_bodies: int = None):
         with self.lock:
             self.system_addr = systemaddress
             tmp_total_bodies = total_bodies or self.total_bodies
-            #self.read_data_from_cache(address=self.system_addr)
+
             if self.total_bodies is None:
                 self.total_bodies = tmp_total_bodies
             if body_id is not None:
@@ -194,9 +269,9 @@ class Model:
                 body.landable   = landable      or body.landable    or False
                 body.biosignals = biosignals    or body.biosignals  or 0
                 body.geosignals = geosignals    or body.geosignals  or 0
-                body.bio_found  = bio_found     or body.bio_found   or {}
-                body.geo_found  = geo_found     or body.geo_found   or {}
-                body.rings      = rings         or body.rings
+                body.bio_found  = bio_found     or body.bio_found   or None
+                body.geo_found  = geo_found     or body.geo_found   or None
+                body.rings      = rings         or body.rings       or None
                 if materials is not None:
                     body.materials.update(materials)
                 if scandata is not None:
@@ -223,7 +298,7 @@ class Model:
             "system_name"   : self.system_name,
             "total_bodies"  : self.total_bodies,
             "bodies"        : {
-                str(body_id): {
+                body_id: {
                     "body_name"         : body.body_name,
                     "body_type"         : body.body_type,
                     "scoopable"         : body.scoopable,
@@ -232,8 +307,16 @@ class Model:
                     "biosignals"        : body.biosignals,
                     "geosignals"        : body.geosignals,
                     "materials"         : body.materials,
-                    "bio_found"         : body.bio_found,
-                    "geo_found"         : body.geo_found,
+                    "bio_found"         : {
+                        genusid:
+                            genus.to_dict() if isinstance(genus, Genus) else None
+                        for genusid, genus in body.bio_found.items()
+                    },
+                    "geo_found"         : {
+                        geoid:
+                            geo.to_dict()
+                        for geoid, geo in body.geo_found.items()
+                    },
                     "estimated_value"   : body.estimated_value,
                     "rings"             : body.rings,
                 }

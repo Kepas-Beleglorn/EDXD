@@ -14,6 +14,7 @@ def load(path: Path, default):
 
 def save(path: Path, data):
     try:
+        logging.debug(f"{data}\n{json.dumps(data, indent=4)}")
         path.write_text(json.dumps(data, indent=2))
     except Exception as e:
         log_context(level=logging.ERROR, frame=inspect.currentframe(), e=e)

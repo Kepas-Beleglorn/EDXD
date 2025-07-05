@@ -6,7 +6,7 @@ from EDXD.gui.helper.theme_handler import get_theme
 from EDXD.gui.helper.gui_handler import init_widget
 from typing import Optional, Dict
 from EDXD.gui.helper.window_properties import WindowProperties
-from EDXD.globals import DEFAULT_HEIGHT, DEFAULT_WIDTH, DEFAULT_POS_Y, DEFAULT_POS_X, RESIZE_MARGIN
+from EDXD.globals import DEFAULT_HEIGHT, DEFAULT_WIDTH, DEFAULT_POS_Y, DEFAULT_POS_X, RESIZE_MARGIN, ICONS
 from EDXD.data_handler.model import Body
 
 TITLE = "BODY DETAILS"
@@ -60,31 +60,35 @@ class BodyDetails(DynamicDialog):
 
             # ── Biosignals progress lines ───────────────────────────────
             if body.biosignals:
-                self.txt_body_details.AppendText("\nBio-signals:\n")
+                self.txt_body_details.AppendText(f"\n{ICONS['biosigns']}{' '*2}Bio-signals:\n")
                 if body.bio_found:
-                    for species, done in body.bio_found.items():
+                    for species, genus in body.bio_found.items():
+                        done = int(genus.get("scanned_count") if genus.get("scanned_count") else 0)
+                        bio_name = genus.get("variant_localised") or genus.get("species_localised") or genus.get("localised")
                         if done >= 3:
-                            self.txt_body_details.AppendText(f"  ✅  {species}\n")
+                            self.txt_body_details.AppendText(f"{' '*2}{ICONS['checked']}{' '*2}{bio_name}\n")
+                        elif 0 < done < 3:
+                            self.txt_body_details.AppendText(f"{' ' * 2}{ICONS['in_progress']}{' ' * 2}{bio_name}{' '*2}({done}/3)\n")
                         else:
-                            self.txt_body_details.AppendText(f"  {species}  ({done}/3)\n")
+                            self.txt_body_details.AppendText(f"{' ' * 2}{ICONS['unknown']}{' '*2}{bio_name}\n")
 
             # ── Geology progress lines ─────────────────────────────────
             if body.geosignals:
-                self.txt_body_details.AppendText("\nGeo-signals:\n")
+                self.txt_body_details.AppendText(f"\n{ICONS['geosigns']}{' '*2}Geo-signals:")
 
                 done = len(body.geo_found) if body.geo_found is not None else 0
-                if done >= 1 and done < body.geosignals:
-                    self.txt_body_details.AppendText(f"{' '*2}♻️  {done}/{body.geosignals}\n")
+                if 0 < done < body.geosignals:
+                    self.txt_body_details.AppendText(f"{' '*2}{done}/{body.geosignals}{' '*2}{ICONS['in_progress']}\n")
                 elif done == body.geosignals:
-                    self.txt_body_details.AppendText(f"{' '*2}✅  {done}/{body.geosignals}\n")
+                    self.txt_body_details.AppendText(f"{' '*2}{done}/{body.geosignals}{' '*2}{ICONS['checked']}\n")
                 else:
-                    self.txt_body_details.AppendText(f"{' '*2}🌋  (?)/{body.geosignals}\n")
+                    self.txt_body_details.AppendText(f"{' '*2}(?)/{body.geosignals}{' '*2}{ICONS['geosigns']}\n")
 
                 for geo in body.geo_found.items():
-                    if geo[1]:
-                        self.txt_body_details.AppendText(f"{'🚩':>10}{'🌋':>4}{' '*4}{geo[0]}\n")
+                    if geo.get("is_new"):
+                        self.txt_body_details.AppendText(f"{ICONS['new_entry']:>4}{ICONS['geosigns']:>4}{' '*4}{geo.get('localised')}\n")
                     else:
-                        self.txt_body_details.AppendText(f"{'🌋':>19}{' '*4}{geo[0]}\n")
+                        self.txt_body_details.AppendText(f"{ICONS['geosigns']:>13}{' '*4}{geo.get('localised')}\n")
 
         else:
             self.txt_body_details.Clear()

@@ -102,7 +102,7 @@ class JournalHistorian(DynamicFrame):
                         evt = json.loads(line)
                         self.journal_controller.process_event(evt=evt, update_gui=False)
                     except Exception as e:
-                        log_context(level=logging.ERROR, frame=inspect.currentframe(), e=e)
+                        log_context(level=logging.WARN, frame=inspect.currentframe(), e=e)
                         continue
                     wx.CallAfter(self._update_ui, idx, file_path)
 

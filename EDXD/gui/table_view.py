@@ -3,7 +3,7 @@ import wx.grid as gridlib
 from typing import Dict, Callable, Optional
 
 from EDXD.data_handler.model import Body
-from EDXD.globals import SYMBOL, logging, RAW_MATS, TABLE_ICONS, log_call, DEBUG_MODE, log_context
+from EDXD.globals import SYMBOL, logging, RAW_MATS, ICONS, log_call, DEBUG_MODE, log_context
 import inspect
 
 
@@ -19,15 +19,15 @@ class BodiesTable(gridlib.Grid):
         # At the top of your class, after self._all_cols:
         self._headers = {
             "body_id" : "BodyID",
-            "status": TABLE_ICONS["status_header"],
+            "status": ICONS["status_header"],
             "body_type": "Type",
-            "scoopable": TABLE_ICONS["scoopable"],
+            "scoopable": ICONS["scoopable"],
             "body": "Body",
             "distance": "Distance",
-            "land": TABLE_ICONS["landable"],
-            "bio": TABLE_ICONS["biosigns"],
-            "geo": TABLE_ICONS["geosigns"],
-            "value": TABLE_ICONS["value"]
+            "land": ICONS["landable"],
+            "bio": ICONS["biosigns"],
+            "geo": ICONS["geosigns"],
+            "value": ICONS["value"]
         }
 
         self._display_cols = None
@@ -168,17 +168,17 @@ class BodiesTable(gridlib.Grid):
             try:
                 row = {
                     "body_id": (body_id, body_id if body_id is not None else ""),
-                    "status": (TABLE_ICONS["status_header"] if body.body_id == target_body_id == selected_body_id
-                               else TABLE_ICONS["status_target"] if body.body_id == target_body_id
-                               else TABLE_ICONS["status_selected"] if body.body_id == selected_body_id
+                    "status": (ICONS["status_header"] if body.body_id == target_body_id == selected_body_id
+                               else ICONS["status_target"] if body.body_id == target_body_id
+                               else ICONS["status_selected"] if body.body_id == selected_body_id
                                else "", 0),
                     "body_type": (f"{str(getattr(body, 'body_type', ''))}", str(getattr(body, 'body_type', '')).lower()),
-                    "scoopable": (f"{TABLE_ICONS['scoopable']}" if getattr(body, "scoopable", False) else "", (0 if getattr(body, "scoopable", False) else 1)),
+                    "scoopable": (f"{ICONS['scoopable']}" if getattr(body, "scoopable", False) else "", (0 if getattr(body, "scoopable", False) else 1)),
                     "body": (body.body_name, body.body_name.lower()),
                     "distance": (f"{getattr(body, 'distance', 0):,.0f} Ls" if getattr(body, 'distance', 0) is not None else "", getattr(body, 'distance', 0)),
-                    "land": (f"{TABLE_ICONS['landable']}"                                   if getattr(body, "landable", False)    else "", (0 if getattr(body, "landable", False)  else 1)),
-                    "bio": (f"{TABLE_ICONS['biosigns']} {getattr(body, 'biosignals', 0)}"   if getattr(body, "biosignals", 0) > 0  else "", getattr(body, "biosignals", 0)),
-                    "geo": (f"{TABLE_ICONS['geosigns']} {getattr(body, 'geosignals', 0)}"   if getattr(body, "geosignals", 0) > 0  else "", getattr(body, "geosignals", 0)),
+                    "land": (f"{ICONS['landable']}"                                   if getattr(body, "landable", False)    else "", (0 if getattr(body, "landable", False)  else 1)),
+                    "bio": (f"{ICONS['biosigns']} {getattr(body, 'biosignals', 0)}"   if getattr(body, "biosignals", 0) > 0  else "", getattr(body, "biosignals", 0)),
+                    "geo": (f"{ICONS['geosigns']} {getattr(body, 'geosignals', 0)}"   if getattr(body, "geosignals", 0) > 0  else "", getattr(body, "geosignals", 0)),
                     "value": (f"{getattr(body, 'estimated_value', 0):,} Cr"                 if getattr(body, "estimated_value", 0) else "", getattr(body, "estimated_value", 0)),
                 }
                 for m in visible_mats:

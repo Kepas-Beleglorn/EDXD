@@ -40,10 +40,11 @@ def log_call(level=logging.INFO):
     return deco
 
 def log_context(frame, e, level=logging.DEBUG):
+    class_name = inspect.getmodule(frame).__name__
     func_name = frame.f_code.co_name
     arg_info = inspect.getargvalues(frame)
     logging.log(level, f"{'_' * 10}")
-    logging.log(level, f"Exception in {func_name} with arguments {arg_info.locals}")
+    logging.log(level, f"Exception in {class_name}.{func_name} with arguments {arg_info.locals}")
     logging.log(level, f"Exception type: {type(e).__name__}")
     logging.log(level, f"Exception args: {e.args}")
     logging.log(level, f"Exception str: {str(e)}")
@@ -112,7 +113,7 @@ RAW_MATS: List[str] = sorted([
 
 #-----------------------------------------------------------------------
 # Icons for table in main window and detail panels
-TABLE_ICONS = {
+ICONS = {
     "status_header":    "🎯🖱",
     "status_target":    "🎯",
     "status_selected":  "🖱",
@@ -120,5 +121,9 @@ TABLE_ICONS = {
     "landable":         "🛬",
     "biosigns":         "🌿",
     "geosigns":         "🌋",
-    "value":            "🔍💲"
+    "value":            "💲",
+    "checked":          "✅",
+    "in_progress":      "♻️",
+    "unknown":          "❓",
+    "new_entry":        "🚩"
 }
