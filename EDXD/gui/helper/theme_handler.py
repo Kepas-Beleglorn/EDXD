@@ -47,8 +47,8 @@ def _get_dark_theme():
         border_thickness        = 1,
         button_border_width     = 3,
         button_border_margin    = 1,
-        font                    = wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL),
-        font_bold               = wx.Font(10, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD),
+        font                    = wx.Font(11, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL),
+        font_bold               = wx.Font(11, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD),
         color_debug             = wx.Colour("#00ff00")
     )
     return ed_dark_theme
