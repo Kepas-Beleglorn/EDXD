@@ -12,7 +12,7 @@ from __future__ import annotations
 import threading
 import EDXD.data_handler.helper.data_helper as dh
 from typing import Dict, List, Optional
-from EDXD.body_appraiser import appraise_body
+from EDXD.data_handler.helper.body_appraiser import appraise_body
 from EDXD.globals import BODY_ID_PREFIX
 bip = BODY_ID_PREFIX
 
