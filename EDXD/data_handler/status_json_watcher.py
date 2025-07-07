@@ -37,7 +37,7 @@ class StatusWatcher(PausableThread, threading.Thread):
                         body_id = cached_body_id
                         break
 
-            if body_id and body_id != "body_None" and body_id != self.last_body:
+            if body_id and body_id != "body_None":
                 self.last_body = body_id
                 self.model.set_target(body_id)
 

@@ -62,7 +62,7 @@ ICON_PATH = APP_DIR/"resources/edxd_128.png"  # Normalize path for OS compatibil
 # DEBUGGING OPTIONS
 DEBUG_MODE = False
 DEBUG_PATH = APP_DIR/"debug"
-DEBUG_STATUS_JSON = DEBUG_MODE and False
+DEBUG_STATUS_JSON = DEBUG_MODE and True
 
 #-----------------------------------------------------------------------
 # DEBUGGING OPTIONS

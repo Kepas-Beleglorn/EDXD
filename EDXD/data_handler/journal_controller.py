@@ -1,4 +1,4 @@
-import json, threading, queue
+import json, threading, queue, re
 import inspect
 
 from typing import Dict
@@ -125,13 +125,13 @@ class JournalController(PausableThread, threading.Thread):
                                 genus_found = Genus(genusid=genus_id, localised=genus_localised, scanned_count=0)
                             else:
                                 genus_found = Genus(
-                                    genusid=genus_found_dict.get("genus_id"),
-                                    localised=genus_found_dict.get("localised"),
-                                    variant_localised=genus_found_dict.get("variant_localised"),
-                                    species_localised=genus_found_dict.get("species_localised"),
+                                    genusid=genus_found_dict.genusid,
+                                    localised=genus_found_dict.localised or genus_found_dict.localised,
+                                    variant_localised=genus_found_dict.variant_localised,
+                                    species_localised=genus_found_dict.species_localised,
                                     # todo: add min distance for diversity"""
-                                    min_distance=genus_found_dict.get("min_distance"),
-                                    scanned_count=genus_found_dict.get("scanned_count")
+                                    min_distance=genus_found_dict.min_distance,
+                                    scanned_count=genus_found_dict.scanned_count or 0
                                 )
 
                             bio_found[genus_id] = genus_found
@@ -148,7 +148,7 @@ class JournalController(PausableThread, threading.Thread):
                 if evt.get("NearestDestination") != "$Fixed_Event_Life_Cloud;":
                     geo_id = evt.get("Name")
                     geo_localised = evt.get("Name_Localised")
-                    geo_is_new = (evt.get("IsNewEntry") == "true")
+                    geo_is_new = evt.get("IsNewEntry") or evt.get("IsNewEntry") == "true"
                     geo_dict = self.m.bodies[body_id].geo_found if body_id in self.m.bodies else {}
                     geo_found = {k: CodexEntry(**v) if isinstance(v, dict) else v for k, v in geo_dict.items()}
                     geo_codex_dict = {}
@@ -160,6 +160,7 @@ class JournalController(PausableThread, threading.Thread):
                     else:
                         if isinstance(geo_codex_dict, CodexEntry):
                             geo_codex_found = geo_codex_dict
+                            geo_codex_found.is_new = geo_is_new or geo_codex_found.is_new
                         else:
                             geo_codex_found = CodexEntry(
                                 codexid = geo_codex_dict.get("codexid"),
@@ -168,6 +169,36 @@ class JournalController(PausableThread, threading.Thread):
                                 body_id=body_id
                             )
                     geo_found[geo_id] = geo_codex_found
+
+            if subcategory == "$Codex_SubCategory_Organic_Structures;":
+                body_int = evt.get("BodyID")
+                body_id = bip + str(body_int)
+                genus_id = evt.get("Name")
+                # generalize genus ID
+                genus_id = re.sub(r'_\d+_G(?=_Name;)', '_Genus', genus_id)
+                genus_localised = evt.get("Genus_Localised")
+                variant_localised = evt.get("Name_Localised")
+                bio_dict = self.m.bodies[body_id].bio_found if body_id in self.m.bodies else {}
+                bio_found = {k: Genus(**v) if isinstance(v, dict) else v for k, v in bio_dict.items()}
+
+                genus_found_dict = {}
+                if body_id in self.m.bodies and genus_id in self.m.bodies[body_id].bio_found:
+                    genus_found_dict = self.m.bodies[body_id].bio_found[genus_id]
+
+                if genus_found_dict == {}:
+                    genus_found = Genus(genusid=genus_id, localised=genus_localised, variant_localised=variant_localised, scanned_count=1)
+                else:
+                    genus_found = Genus(
+                        genusid=genus_found_dict.genusid,
+                        localised=genus_found_dict.localised or genus_found_dict.localised,
+                        species_localised=genus_found_dict.species_localised,
+                        variant_localised=genus_found_dict.variant_localised or variant_localised,
+                        # todo: add min distance for diversity"""
+                        min_distance=genus_found_dict.min_distance,
+                        scanned_count=genus_found_dict.scanned_count
+                    )
+
+                bio_found[genus_id] = genus_found
 
         if etype == "ScanOrganic":
             body_int = evt.get("Body")
@@ -186,14 +217,18 @@ class JournalController(PausableThread, threading.Thread):
             if genus_found_dict == {}:
                 genus_found = Genus(genusid=genus_id, localised=genus_localised, species_localised=species_localised, variant_localised=variant_localised, scanned_count=1)
             else:
+                genus_scanned = 0
+                if genus_found_dict.scanned_count < 3:
+                    genus_scanned = genus_found_dict.scanned_count + 1
+
                 genus_found = Genus(
-                    genusid=genus_found_dict.get("genus_id"),
-                    localised=genus_found_dict.get("localised"),
-                    variant_localised=genus_found_dict.get("variant_localised"),
-                    species_localised=genus_found_dict.get("species_localised"),
+                    genusid=genus_found_dict.genusid,
+                    localised=genus_found_dict.localised or genus_found_dict.localised,
+                    species_localised=genus_found_dict.species_localised or species_localised,
+                    variant_localised=genus_found_dict.variant_localised or variant_localised,
                     # todo: add min distance for diversity"""
-                    min_distance=genus_found_dict.get("min_distance"),
-                    scanned_count=genus_found_dict.get("scanned_count")
+                    min_distance=genus_found_dict.min_distance,
+                    scanned_count=genus_scanned
                 )
 
             bio_found[genus_id] = genus_found
