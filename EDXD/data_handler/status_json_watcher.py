@@ -18,8 +18,10 @@ class StatusWatcher(PausableThread, threading.Thread):
         self.last_timestamp = None        # last timestamp, so we can log only new lines
 
     def _process_data(self):
+        raw_data = None
         try:
-            data = json.loads(self.path.read_text())
+            raw_data = self.path.read_text()
+            data = json.loads(raw_data)
             dest = data.get("Destination", {})
             body_id = bip + str(dest.get("Body"))
             timestamp = data.get("timestamp")
@@ -32,7 +34,8 @@ class StatusWatcher(PausableThread, threading.Thread):
                 self.model.set_target(body_id)
 
         except Exception as e:
-            log_context(level=logging.ERROR, frame=inspect.currentframe(), e=e)
+            log_context(level=logging.WARN, frame=inspect.currentframe(), e=e)
+            logging.log(logging.WARN, f"raw_data(is None?): {raw_data is None}:{raw_data}")
             pass  # ignore read/JSON errors
         time.sleep(self.poll)
 
