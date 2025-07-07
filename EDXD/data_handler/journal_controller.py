@@ -186,7 +186,7 @@ class JournalController(PausableThread, threading.Thread):
                     genus_found_dict = self.m.bodies[body_id].bio_found[genus_id]
 
                 if genus_found_dict == {}:
-                    genus_found = Genus(genusid=genus_id, localised=genus_localised, variant_localised=variant_localised, scanned_count=1)
+                    genus_found = Genus(genusid=genus_id, localised=genus_localised, variant_localised=variant_localised, scanned_count=0)
                 else:
                     genus_found = Genus(
                         genusid=genus_found_dict.genusid,
@@ -201,6 +201,7 @@ class JournalController(PausableThread, threading.Thread):
                 bio_found[genus_id] = genus_found
 
         if etype == "ScanOrganic":
+            scantype = evt.get("ScanType")
             body_int = evt.get("Body")
             body_id = bip + str(body_int)
             genus_id = evt.get("Genus")
@@ -214,11 +215,17 @@ class JournalController(PausableThread, threading.Thread):
             if body_id in self.m.bodies and genus_id in self.m.bodies[body_id].bio_found:
                 genus_found_dict = self.m.bodies[body_id].bio_found[genus_id]
 
-            if genus_found_dict == {}:
-                genus_found = Genus(genusid=genus_id, localised=genus_localised, species_localised=species_localised, variant_localised=variant_localised, scanned_count=1)
+            if  scantype == "Analyze":
+                genus_scanned = 3
             else:
-                genus_scanned = 0
-                if genus_found_dict.scanned_count < 3:
+                genus_scanned = 1
+
+            if genus_found_dict == {}:
+                genus_found = Genus(genusid=genus_id, localised=genus_localised, species_localised=species_localised, variant_localised=variant_localised, scanned_count=genus_scanned)
+            else:
+                if genus_found_dict.scanned_count == 3:
+                    genus_scanned = genus_found_dict.scanned_count
+                else:
                     genus_scanned = genus_found_dict.scanned_count + 1
 
                 genus_found = Genus(
