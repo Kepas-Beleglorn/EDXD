@@ -1,5 +1,5 @@
 import json, threading, time, inspect
-from EDXD.data_handler.model import Model
+from EDXD.data_handler.model import Model, Body
 from EDXD.data_handler.helper.pausable_thread import PausableThread
 from pathlib import Path
 from EDXD.globals import DEBUG_STATUS_JSON, DEBUG_PATH, BODY_ID_PREFIX, logging, log_context
@@ -22,14 +22,22 @@ class StatusWatcher(PausableThread, threading.Thread):
         try:
             raw_data = self.path.read_text()
             data = json.loads(raw_data)
-            dest = data.get("Destination", {})
-            body_id = bip + str(dest.get("Body"))
             timestamp = data.get("timestamp")
             if DEBUG_STATUS_JSON and timestamp and timestamp != self.last_timestamp:
                 self.last_timestamp = timestamp
                 self._write_debug_log(data)
 
-            if body_id and body_id != self.last_body:
+            dest = data.get("Destination", {})
+            body_id = bip + str(dest.get("Body"))
+
+            if body_id == "body_None":
+                body_name = data.get("BodyName")
+                for cached_body_id, body in self.model.bodies.items():
+                    if body.body_name == body_name:
+                        body_id = cached_body_id
+                        break
+
+            if body_id and body_id != "body_None" and body_id != self.last_body:
                 self.last_body = body_id
                 self.model.set_target(body_id)
 
@@ -38,6 +46,7 @@ class StatusWatcher(PausableThread, threading.Thread):
             logging.log(logging.WARN, f"raw_data(is None?): {raw_data is None}:{raw_data}")
             pass  # ignore read/JSON errors
         time.sleep(self.poll)
+
 
     @staticmethod
     def _write_debug_log(data):
