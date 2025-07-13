@@ -175,7 +175,7 @@ class JournalController(PausableThread, threading.Thread):
                 body_id = bip + str(body_int)
                 genus_id = evt.get("Name")
                 # generalize genus ID
-                genus_id = re.sub(r'_\d+_G(?=_Name;)', '_Genus', genus_id)
+                genus_id = re.sub(r'_\d+_[A-Za-z](?=_Name;)', '_Genus', genus_id)
                 genus_localised = evt.get("Genus_Localised")
                 variant_localised = evt.get("Name_Localised")
                 bio_dict = self.m.bodies[body_id].bio_found if body_id in self.m.bodies else {}

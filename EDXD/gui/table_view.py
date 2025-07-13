@@ -131,7 +131,8 @@ class BodiesTable(gridlib.Grid):
             filters: Dict[str, bool],
             landable_only: bool,
             selected_body_id: str,
-            target_body_id: str
+            target_body_id: str,
+            last_fss_body_id: str = ""
     ):
         visible_mats = [m for m, on in filters.items() if on]
         display_cols = ["body_id", "status", "body_type", "scoopable", "body", "distance", "land", "bio", "geo", "value"] + visible_mats
