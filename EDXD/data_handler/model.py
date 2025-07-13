@@ -11,6 +11,7 @@ model.py – core logic for ED Mineral Viewer
 from __future__ import annotations
 import threading
 import EDXD.data_handler.helper.data_helper as dh
+from EDXD.data_handler.planetary_surface_positioning_system import PSPSCoordinates
 from typing import Dict, List, Optional
 from EDXD.data_handler.helper.body_appraiser import appraise_body
 from EDXD.globals import BODY_ID_PREFIX
@@ -43,7 +44,7 @@ def log_call(level=LOG_LEVEL):
 # simple container
 # ---------------------------------------------------------------------------
 class Body:
-    __slots__ = ("body_id", "body_name", "body_type", "scoopable", "landable", "biosignals", "geosignals", "estimated_value", "materials", "bio_found", "geo_found", "distance", "rings")
+    __slots__ = ("body_id", "body_name", "body_type", "scoopable", "landable", "biosignals", "geosignals", "estimated_value", "materials", "bio_found", "geo_found", "distance", "rings", "radius")
 
     def __init__(self,
                  body_id:           str,
@@ -58,7 +59,8 @@ class Body:
                  biosignals:        int = 0,
                  geosignals:        int = 0,
                  estimated_value:   int = 0,
-                 rings:             Dict[str, Ring] | None = None
+                 rings:             Dict[str, Ring] | None = None,
+                 radius:            float = 0.0
                  ):
 
         self.body_id            = body_id
@@ -74,6 +76,7 @@ class Body:
         self.bio_found          = bio_found or {}    # { biosign name -> scans_done }         e.g. {"Bacterium Bullaris":2}
         self.geo_found          = geo_found or {}    # { "volcanism-01": True … }             True once SRV scanned
         self.rings              = rings     or {}
+        self.radius             = radius
 
 class Ring:
     __slots__ = ("body_id", "body_name", "signals")
@@ -176,14 +179,15 @@ class Model:
     """Keeps the bodies of the *current* system; notifies target listeners."""
 
     def __init__(self):
-        self.lock          = threading.Lock()
-        self.system_name   : Optional[str]         = None
-        self.system_addr   : Optional[int]         = None
-        self.bodies        : Dict[str, Body]       = {}
-        self.target_body_id: Optional[str]         = None
-        self.total_bodies  : Optional[int]         = None
-        self._target_cbs   : List = []             # listeners
-        self.just_jumped   : bool = True
+        self.lock               = threading.Lock()
+        self.system_name        : Optional[str]         = None
+        self.system_addr        : Optional[int]         = None
+        self.bodies             : Dict[str, Body]       = {}
+        self.target_body_id     : Optional[str]         = None
+        self.total_bodies       : Optional[int]         = None
+        self._target_cbs        : List = []             # listeners
+        self.just_jumped        : bool = True
+        self.current_position   : Optional[PSPSCoordinates] = None
 
     # ----- snapshot helpers --------------------------------------------------
     def snapshot_bodies(self) -> Dict[str, Body]:
@@ -193,6 +197,10 @@ class Model:
     def snapshot_target(self) -> Optional[Body]:
         with self.lock:
             return self.bodies.get(self.target_body_id)
+
+    def snapshot_position(self) -> PSPSCoordinates:
+        with self.lock:
+            return self.current_position
 
     # ----- listeners ---------------------------------------------------------
     def register_target_listener(self, cb):
@@ -220,11 +228,9 @@ class Model:
 
     def read_data_from_cache(self, address: int):
         cached = dh.load(CACHE_DIR / f"{address}.json", {})
-        # Current format: { "total_bodies": int,
-        #                   "bodies": { name: {landable:…, biosignals:…, geosignals:…, materials:…}, … } }
+
         if isinstance(cached, dict):
             # reload total count
-            #self.system_name = cached.get("system_name", "")
             if self.total_bodies is None:
                 self.total_bodies = cached.get("total_bodies", None)
             body_map = cached.get("bodies", {})
@@ -241,6 +247,7 @@ class Model:
                 geo_dict        = body_properties.get("geo_found", {})
                 estimated_value = body_properties.get("estimated_value", 0)
                 rings_dict      = body_properties.get("rings", {})
+                radius          = body_properties.get("radius", 0.0)
 
                 # Convert all dicts to their respective objects
                 bio_found = {k: Genus(**v) if isinstance(v, dict) else v for k, v in bio_dict.items()}
@@ -261,13 +268,14 @@ class Model:
                     bio_found=bio_found,
                     geo_found=geo_found,
                     estimated_value=estimated_value,
-                    rings=rings_found
+                    rings=rings_found,
+                    radius=radius
                 )
 
     #@log_call(logging.DEBUG)
     def update_body(self, systemaddress: int, body_id: str, body_name: str = None, body_type: str = None, scoopable: bool = None, distance: int = None, landable: bool = None,
                     biosignals: int = None, geosignals: int = None, materials: Dict[str, float] = None, scandata = None,
-                    bio_found: Dict[str, Genus] = None, geo_found: Dict[str, CodexEntry] = None, rings: Dict[str, Ring] = None, total_bodies: int = None):
+                    bio_found: Dict[str, Genus] = None, geo_found: Dict[str, CodexEntry] = None, rings: Dict[str, Ring] = None, total_bodies: int = None, radius: float = 0.0):
         with self.lock:
             self.system_addr = systemaddress
             tmp_total_bodies = total_bodies or self.total_bodies
@@ -286,6 +294,7 @@ class Model:
                 body.bio_found  = bio_found     or body.bio_found   or {}
                 body.geo_found  = geo_found     or body.geo_found   or {}
                 body.rings      = rings         or body.rings       or {}
+                body.radius     = radius        or body.radius
                 if materials is not None:
                     body.materials.update(materials)
                 if scandata is not None:
@@ -298,6 +307,10 @@ class Model:
         with self.lock:
             self.target_body_id = body_id
         self._fire_target(body_id)
+
+    def set_position(self, latitude: float, longitude: float):
+        with self.lock:
+            self.current_position = PSPSCoordinates(latitude, longitude)
 
     # ----- cache -------------------------------------------------------------
     def _save_cache(self):
@@ -317,6 +330,7 @@ class Model:
                     "body_type"         : body.body_type,
                     "scoopable"         : body.scoopable,
                     "landable"          : body.landable,
+                    "radius"            : body.radius,
                     "distance"          : body.distance,
                     "biosignals"        : body.biosignals,
                     "geosignals"        : body.geosignals,

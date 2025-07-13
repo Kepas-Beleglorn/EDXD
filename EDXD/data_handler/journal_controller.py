@@ -50,6 +50,7 @@ class JournalController(PausableThread, threading.Thread):
         body_id         = None
         body_name       = None
         body_type       = None
+        radius          = None
         scoopable       = None
         distance        = None
         landable        = None
@@ -78,6 +79,7 @@ class JournalController(PausableThread, threading.Thread):
                 landable = evt.get("Landable")
                 body_id = bip + str(bodyid_int)
                 body_type = evt.get("PlanetClass") or evt.get("StarType")
+                radius = evt.get("Radius")
                 if body_type is None and "Belt Cluster" in body_name:
                     body_type = "Belt Cluster"
                 scoopable = body_type in ["K", "G", "B", "F", "O", "A", "M"]
@@ -260,6 +262,7 @@ class JournalController(PausableThread, threading.Thread):
                 # todo: implement rings
                 rings=rings_found,
                 total_bodies=total_bodies,
+                radius=radius
             )
 
         # nothing to safe here, just update the target

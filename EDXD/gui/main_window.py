@@ -15,6 +15,7 @@ from EDXD.gui.helper.window_properties import WindowProperties
 from EDXD.gui.main_window_options import MainWindowOptions
 from EDXD.gui.detail_selected import DetailSelected
 from EDXD.gui.detail_target import DetailTargeted
+from EDXD.gui.psps_gui import PositionTracker
 from EDXD.globals import DEFAULT_HEIGHT, DEFAULT_WIDTH, DEFAULT_POS_Y, DEFAULT_POS_X, RESIZE_MARGIN
 
 from EDXD.globals import logging
@@ -82,11 +83,14 @@ class MainFrame(DynamicFrame):
         self.options.chk_landable.Bind(wx.EVT_BUTTON, self._toggle_land)
         self._selected = None  # currently clicked body name
 
-        self.win_sel = DetailSelected(self, self.prefs["mat_sel"])
+        self.win_sel = DetailSelected(self) #, self.prefs["mat_sel"])
         self.win_sel.Show(True)
 
-        self.win_tar = DetailTargeted(self, self.prefs["mat_sel"])
+        self.win_tar = DetailTargeted(self) #, self.prefs["mat_sel"])
         self.win_tar.Show(True)
+
+        self.win_psps = PositionTracker(self)
+        self.win_psps.Show(True)
 
         # listen for target changes
         self.model.register_target_listener(lambda name: wx.CallAfter(self._update_target, name))
@@ -124,13 +128,15 @@ class MainFrame(DynamicFrame):
         """Called by Model when the cockpit target changes."""
         bodies = self.model.snapshot_bodies()
         body = bodies.get(body_id)
+        current_position = self.model.snapshot_position()
 
         if body is None:
             # target not scanned yet – show name, empty materials
             # from model import Body          # avoid circular import at top
             body = Body(body_id=body_id)
 
-        self.win_tar.render(body, self.prefs["mat_sel"])
+        self.win_tar.render(body=body, filters=self.prefs["mat_sel"])
+        self.win_psps.render(body=body, current_position=current_position)
 
         # trigger a table refresh so the status icon updates immediately
         self._refresh()
@@ -151,11 +157,18 @@ class MainFrame(DynamicFrame):
         tgt = self.model.snapshot_target()
         if tgt:
             self.win_tar.render(tgt, self.prefs["mat_sel"])
+
+        current_position = self.model.snapshot_position()
+        if current_position:
+            self.win_psps.render(body=tgt, current_position=current_position)
+
             # ---- system label (belts excluded from *scanned* only) -------
         bodies = self.model.snapshot_bodies()
 
         if self._selected != '':
             self.win_sel.render(body=bodies[self._selected], filters=self.prefs["mat_sel"])
+
+
 
         scanned = sum(1 for b in bodies.values()
                       if "Belt Cluster" not in b.body_name)
@@ -173,5 +186,6 @@ class MainFrame(DynamicFrame):
     def on_close(self, event):
         self.win_sel.Close(True)
         self.win_tar.Close(True)
+        self.win_psps.Close(True)
         self.save_geometry()
         event.Skip()

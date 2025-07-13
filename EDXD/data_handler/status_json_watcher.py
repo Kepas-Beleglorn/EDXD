@@ -39,6 +39,9 @@ class StatusWatcher(PausableThread, threading.Thread):
 
             if body_id and body_id != "body_None":
                 self.last_body = body_id
+                latitude = data.get("Latitude")
+                longitude = data.get("Longitude")
+                self.model.set_position(latitude=latitude, longitude=longitude)
                 self.model.set_target(body_id)
 
         except Exception as e:
