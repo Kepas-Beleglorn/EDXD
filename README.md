@@ -34,7 +34,7 @@ ed-eXploration-dashboard --journals "/path/to/your/EDJournals/Saved Games/Fronti
 
 If you like this project, consider supporting me:
 
-👉 [Send a PayPal Donation (Friends & Family preferred)](https://www.paypal.com/donate/?hosted_button_id=B684XS4ENR4YL)
+👉 [Send a PayPal Donation](https://www.paypal.com/donate/?hosted_button_id=B684XS4ENR4YL)
 
 Thanks for your support! ❤️
 
