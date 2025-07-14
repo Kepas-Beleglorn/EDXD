@@ -129,6 +129,7 @@ class MainFrame(DynamicFrame):
         bodies = self.model.snapshot_bodies()
         body = bodies.get(body_id)
         current_position = self.model.snapshot_position()
+        current_heading = self.model.current_heading
 
         if body is None:
             # target not scanned yet – show name, empty materials
@@ -136,7 +137,7 @@ class MainFrame(DynamicFrame):
             body = Body(body_id=body_id)
 
         self.win_tar.render(body=body, filters=self.prefs["mat_sel"])
-        self.win_psps.render(body=body, current_position=current_position)
+        self.win_psps.render(body=body, current_position=current_position, current_heading=current_heading)
 
         # trigger a table refresh so the status icon updates immediately
         self._refresh()
@@ -159,8 +160,9 @@ class MainFrame(DynamicFrame):
             self.win_tar.render(tgt, self.prefs["mat_sel"])
 
         current_position = self.model.snapshot_position()
+        current_heading = self.model.current_heading
         if current_position:
-            self.win_psps.render(body=tgt, current_position=current_position)
+            self.win_psps.render(body=tgt, current_position=current_position, current_heading=current_heading)
 
             # ---- system label (belts excluded from *scanned* only) -------
         bodies = self.model.snapshot_bodies()

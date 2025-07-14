@@ -125,5 +125,22 @@ ICONS = {
     "checked":          "✅",
     "in_progress":      "♻️",
     "unknown":          "❓",
-    "new_entry":        "🚩"
+    "new_entry":        "🚩",
+    "pinned":           "📍"
 }
+
+#-----------------------------------------------------------------------
+# Icons for bearing indicator
+def direction_indicator(relative_bearing: float) -> str:
+    arrows = [
+        "⇑",    # 0°
+        "⇗",    # 45°
+        "⇒",    # 90°
+        "⇘",    # 135°
+        "⇓",    # 180°
+        "⇙",    # 225°
+        "⇐",    # 270°
+        "⇖",    # 315°
+    ]
+    index = int((relative_bearing + 22.5) % 360 // 45)
+    return arrows[index]

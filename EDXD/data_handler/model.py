@@ -188,19 +188,8 @@ class Model:
         self._target_cbs        : List = []             # listeners
         self.just_jumped        : bool = True
         self.current_position   : Optional[PSPSCoordinates] = None
+        self.current_heading    : Optional[int] = None
 
-    # ----- snapshot helpers --------------------------------------------------
-    def snapshot_bodies(self) -> Dict[str, Body]:
-        with self.lock:
-            return dict(self.bodies)
-
-    def snapshot_target(self) -> Optional[Body]:
-        with self.lock:
-            return self.bodies.get(self.target_body_id)
-
-    def snapshot_position(self) -> PSPSCoordinates:
-        with self.lock:
-            return self.current_position
 
     # ----- listeners ---------------------------------------------------------
     def register_target_listener(self, cb):
@@ -308,9 +297,10 @@ class Model:
             self.target_body_id = body_id
         self._fire_target(body_id)
 
-    def set_position(self, latitude: float, longitude: float):
+    def set_position(self, latitude: float, longitude: float, heading: int):
         with self.lock:
             self.current_position = PSPSCoordinates(latitude, longitude)
+            self.current_heading = heading
 
     # ----- cache -------------------------------------------------------------
     def _save_cache(self):
@@ -356,13 +346,27 @@ class Model:
             },
         }
         dh.save(CACHE_DIR / f"{self.system_addr}.json", data)
-    #@log_call()
-    def snapshot_total(self) -> Optional[int]:
-        with self.lock:
-            return self.total_bodies
 
     def load_cached_total_bodies(self, system_address: int = None):
         if system_address is None:
             pass
         cached = dh.load(CACHE_DIR / f"{self.system_addr}.json", {})
         self.total_bodies = cached.get("total_bodies", None)
+
+    # ----- snapshot helpers --------------------------------------------------
+
+    def snapshot_bodies(self) -> Dict[str, Body]:
+        with self.lock:
+            return dict(self.bodies)
+
+    def snapshot_target(self) -> Optional[Body]:
+        with self.lock:
+            return self.bodies.get(self.target_body_id)
+
+    def snapshot_position(self) -> PSPSCoordinates:
+        with self.lock:
+            return self.current_position
+
+    def snapshot_total(self) -> Optional[int]:
+        with self.lock:
+            return self.total_bodies

@@ -69,7 +69,7 @@ class PositionTracker(DynamicDialog):
         self._loading = False
 
     # ------------------------------------------------------------------
-    def render(self, body: Optional[Body], current_position: Optional[PSPSCoordinates]):
+    def render(self, body: Optional[Body], current_position: Optional[PSPSCoordinates], current_heading: Optional[int]) -> None:
         self.lbl_body.SetLabelText(text=body.body_name if body else "")
         self.txt_pinned_position.Clear()
         self.txt_current_position.Clear()
@@ -91,10 +91,12 @@ class PositionTracker(DynamicDialog):
                 self.txt_distance_to_target.Clear()
 
             if current_ok and self.pinned_position and self.pinned_position.latitude and self.pinned_position.longitude:
-                self.txt_pinned_position.SetValue(f"{ICONS['new_entry']} Lat: {self.pinned_position.latitude:.5f}° :: Long: {self.pinned_position.longitude:.5f}°")
+                self.txt_pinned_position.SetValue(f"{ICONS['pinned']} Lat: {self.pinned_position.latitude:.5f}° :: Long: {self.pinned_position.longitude:.5f}°")
                 pinned_ok = True
             if current_ok and pinned_ok:
-                self.txt_distance_to_target.SetValue(self.psps.get_distance(current_coordinates=self.current_position, target_coordinates=self.pinned_position))
+                formatted_distance = self.psps.get_distance(current_coordinates=self.current_position, target_coordinates=self.pinned_position)
+                bearing_indicator = self.psps.get_relative_bearing(self.current_position, current_heading=current_heading)
+                self.txt_distance_to_target.SetValue(f"Distance: {bearing_indicator} {formatted_distance}")
         else:
             self.txt_pinned_position.Clear()
             self.txt_current_position.Clear()

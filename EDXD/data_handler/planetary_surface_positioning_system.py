@@ -1,7 +1,9 @@
 import math
+from EDXD.globals import direction_indicator
 
 class PSPSCoordinates:
     __slots__ = ("latitude", "longitude")
+
     def __init__(self
                  , latitude: float
                  , longitude: float):
@@ -23,12 +25,11 @@ class PSPS:
 
         # determine if we shall return meters or kilometers
         if raw_discance_km < 1:
-            distance = f"{raw_discance_km*1000.0:.0f} m"
+            distance = f"{raw_discance_km * 1000.0:.0f} m"
         else:
             distance = f"{raw_discance_km:.2f} km"
 
         return distance
-
 
     def _calc_distance(self, current_coordinates: PSPSCoordinates, target_coordinates: PSPSCoordinates = None):
         if target_coordinates is None:
@@ -55,3 +56,21 @@ class PSPS:
         distance = self.planet_radius * c
         return distance
 
+    def get_relative_bearing(self, current_coordinates: PSPSCoordinates, current_heading: float):
+        if self.planet_radius == 0.0:
+            return None
+
+        bearing = self._calculate_bearing(current_coordinates, self.target_coordinates)
+        relative_bearing = (bearing - current_heading + 360) % 360
+        return direction_indicator(relative_bearing)
+
+    def _calculate_bearing(self, from_pos: PSPSCoordinates, to_pos: PSPSCoordinates):
+        lat1 = math.radians(from_pos.latitude)
+        lat2 = math.radians(to_pos.latitude)
+        delta_lon = math.radians(to_pos.longitude - from_pos.longitude)
+
+        y = math.sin(delta_lon) * math.cos(lat2)
+        x = math.cos(lat1) * math.sin(lat2) - math.sin(lat1) * math.cos(lat2) * math.cos(delta_lon)
+        bearing_rad = math.atan2(y, x)
+        bearing_deg = (math.degrees(bearing_rad) + 360) % 360
+        return bearing_deg
