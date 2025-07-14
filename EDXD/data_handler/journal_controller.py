@@ -45,6 +45,10 @@ class JournalController(PausableThread, threading.Thread):
             self.m.total_bodies = evt.get("BodyCount")
             total_bodies = self.m.total_bodies
 
+        if evt.get("FSSAllBodiesFound") is not None:
+            self.m.total_bodies = evt.get("Count")
+            total_bodies = self.m.total_bodies
+
         # initialize all parameters fomr update_body
         systemaddress   = evt.get("SystemAddress")
         body_id         = None
