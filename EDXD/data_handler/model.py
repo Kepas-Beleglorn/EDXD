@@ -141,8 +141,8 @@ class Genus:
             "variant_localised" : self.variant_localised,
             "scanned_count"     : self.scanned_count,
             "min_distance"      : self.min_distance,
-            "pos_first"         : self.pos_first,
-            "pos_second"        : self.pos_second
+            "pos_first"         : self.pos_first.to_dict() if self.pos_first else None,
+            "pos_second"        : self.pos_second.to_dict() if self.pos_second else None
         }
         return data
 
@@ -335,7 +335,6 @@ class Model:
                         genusid:
                             genus.to_dict()
                         for genusid, genus in body.bio_found.items()
-                        # todo: serialize PSPSCoordinates per genus
                     },
                     "geo_found"         : {
                         geoid:
