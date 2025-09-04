@@ -10,6 +10,13 @@ class PSPSCoordinates:
         self.latitude = latitude
         self.longitude = longitude
 
+    def to_dict(self):
+        data = {
+            "latitude": self.latitude,
+            "longitude": self.longitude
+        }
+        return data
+
 class PSPS:
     def __init__(self,
                  target_coordinates: PSPSCoordinates,

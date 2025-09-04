@@ -1,6 +1,8 @@
 
 from __future__ import annotations
 import wx
+
+from EDXD.data_handler.planetary_surface_positioning_system import PSPSCoordinates, PSPS
 from EDXD.gui.helper.dynamic_dialog import DynamicDialog
 from EDXD.gui.helper.theme_handler import get_theme
 from EDXD.gui.helper.gui_handler import init_widget
@@ -46,11 +48,13 @@ class BodyDetails(DynamicDialog):
         self._loading = False
 
     # ------------------------------------------------------------------
-    def render(self, body: Optional[Body], filters: Dict[str, bool]):
+    def render(self, body: Optional[Body], filters: Dict[str, bool], current_position: PSPSCoordinates):
         self.lbl_body.SetLabelText(text=body.body_name if body else "")
         self.txt_body_details.Clear()
 
         if body:
+            psps = PSPS(current_position, body.radius)
+
             for mat, pct in sorted(body.materials.items(),
                                    key=lambda kv: kv[1],
                                    reverse=True):
@@ -64,10 +68,26 @@ class BodyDetails(DynamicDialog):
                     for species, genus in body.bio_found.items():
                         done = int(genus.scanned_count if genus.scanned_count else 0)
                         bio_name = genus.variant_localised or genus.species_localised or genus.localised
+                        bio_range = genus.min_distance
+
+                        range_one = None
+                        range_two = None
+
+                        if done in [1, 2]:
+                            range_one = psps.get_distance(current_coordinates=current_position, target_coordinates=genus.pos_first)
+
+                        if done == 2:
+                            range_two = psps.get_distance(current_coordinates=current_position, target_coordinates=genus.pos_first)
+
                         if done >= 3:
                             self.txt_body_details.AppendText(f"{' '*2}{ICONS['checked']}{' '*2}{bio_name}\n")
                         elif 0 < done < 3:
-                            self.txt_body_details.AppendText(f"{' '*2}{ICONS['in_progress']}{' '*2}{bio_name}{' '*2}({done}/3)\n")
+                            self.txt_body_details.AppendText(f"{' '*2}{ICONS['in_progress']}{' '*2}{bio_name}{' '*2}({done}/3){' '*2}({bio_range}m)")
+                            if done == 1:
+                                self.txt_body_details.AppendText(f"{' '*2}{range_one}")
+                            if done == 2:
+                                self.txt_body_details.AppendText(f"{' '*2}{range_two}")
+                            self.txt_body_details.AppendText(f"\n")
                         else:
                             self.txt_body_details.AppendText(f"{' '*2}{ICONS['unknown']}{' '*2}{bio_name}\n")
 

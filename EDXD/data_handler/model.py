@@ -113,14 +113,16 @@ class Ring:
 }
 """
 class Genus:
-    __slots__ = ("genusid", "localised", "species_localised", "variant_localised", "scanned_count", "min_distance")
+    __slots__ = ("genusid", "localised", "species_localised", "variant_localised", "scanned_count", "min_distance", "pos_first", "pos_second")
     def __init__(self,
                  genusid            : str = None,
                  localised          : str = None,
                  species_localised  : str = None,
                  variant_localised  : str = None,
                  scanned_count      : int = None,
-                 min_distance       : int = None
+                 min_distance       : int = None,
+                 pos_first          : PSPSCoordinates = None,
+                 pos_second         : PSPSCoordinates = None,
                  ):
         self.genusid            = genusid
         self.localised          = localised
@@ -128,6 +130,8 @@ class Genus:
         self.variant_localised  = variant_localised
         self.scanned_count      = scanned_count
         self.min_distance       = min_distance
+        self.pos_first          = pos_first
+        self.pos_second         = pos_second
 
     def to_dict(self):
         data = {
@@ -136,7 +140,9 @@ class Genus:
             "species_localised" : self.species_localised,
             "variant_localised" : self.variant_localised,
             "scanned_count"     : self.scanned_count,
-            "min_distance"      : self.min_distance
+            "min_distance"      : self.min_distance,
+            "pos_first"         : self.pos_first,
+            "pos_second"        : self.pos_second
         }
         return data
 
@@ -329,6 +335,7 @@ class Model:
                         genusid:
                             genus.to_dict()
                         for genusid, genus in body.bio_found.items()
+                        # todo: serialize PSPSCoordinates per genus
                     },
                     "geo_found"         : {
                         geoid:

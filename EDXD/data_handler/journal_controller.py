@@ -1,5 +1,6 @@
 import json, threading, queue, re
 import inspect
+import EDXD.data_handler.helper.bio_helper as bio_helper
 
 from typing import Dict
 
@@ -135,8 +136,7 @@ class JournalController(PausableThread, threading.Thread):
                                     localised=genus_found_dict.localised or genus_found_dict.localised,
                                     variant_localised=genus_found_dict.variant_localised,
                                     species_localised=genus_found_dict.species_localised,
-                                    # todo: add min distance for diversity"""
-                                    min_distance=genus_found_dict.min_distance,
+                                    min_distance=genus_found_dict.min_distance or bio_helper.bioGetRange(genus_id),
                                     scanned_count=genus_found_dict.scanned_count or 0
                                 )
 
@@ -199,8 +199,7 @@ class JournalController(PausableThread, threading.Thread):
                         localised=genus_found_dict.localised or genus_found_dict.localised,
                         species_localised=genus_found_dict.species_localised,
                         variant_localised=genus_found_dict.variant_localised or variant_localised,
-                        # todo: add min distance for diversity"""
-                        min_distance=genus_found_dict.min_distance,
+                        min_distance=genus_found_dict.min_distance or bio_helper.bioGetRange(genus_id),
                         scanned_count=genus_found_dict.scanned_count
                     )
 
@@ -211,6 +210,8 @@ class JournalController(PausableThread, threading.Thread):
             body_int = evt.get("Body")
             body_id = bip + str(body_int)
             genus_id = evt.get("Genus")
+            # generalize genus ID
+            genus_id = re.sub(r'_\d+_[A-Za-z](?=_Name;)', '_Genus', genus_id)
             genus_localised = evt.get("Genus_Localised")
             species_localised = evt.get("Species_Localised")
             variant_localised = evt.get("Variant_Localised")
@@ -226,8 +227,22 @@ class JournalController(PausableThread, threading.Thread):
             else:
                 genus_scanned = 1
 
+            pos_first = None
+            pos_second = None
+
+            if genus_scanned == 1:
+                pos_first = self.m.current_position
+
+            if genus_scanned == 2:
+                pos_first = genus_found_dict.pos_first
+                pos_second = self.m.current_position
+
+            if genus_scanned == 3:
+                pos_first = None
+                pos_second = None
+
             if genus_found_dict == {}:
-                genus_found = Genus(genusid=genus_id, localised=genus_localised, species_localised=species_localised, variant_localised=variant_localised, scanned_count=genus_scanned)
+                genus_found = Genus(genusid=genus_id, localised=genus_localised, species_localised=species_localised, variant_localised=variant_localised, scanned_count=genus_scanned, min_distance=bio_helper.bioGetRange(genus_id), pos_first=pos_first, pos_second=pos_second)
             else:
                 if genus_found_dict.scanned_count == 3:
                     genus_scanned = genus_found_dict.scanned_count
@@ -239,9 +254,10 @@ class JournalController(PausableThread, threading.Thread):
                     localised=genus_found_dict.localised or genus_found_dict.localised,
                     species_localised=genus_found_dict.species_localised or species_localised,
                     variant_localised=genus_found_dict.variant_localised or variant_localised,
-                    # todo: add min distance for diversity"""
-                    min_distance=genus_found_dict.min_distance,
-                    scanned_count=genus_scanned
+                    min_distance=genus_found_dict.min_distance or bio_helper.bioGetRange(genus_id),
+                    scanned_count=genus_scanned,
+                    pos_first=pos_first,
+                    pos_second=pos_second
                 )
 
             bio_found[genus_id] = genus_found
