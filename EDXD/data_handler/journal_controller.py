@@ -4,6 +4,7 @@ import EDXD.data_handler.helper.bio_helper as bio_helper
 
 from typing import Dict
 
+from EDXD.data_handler.planetary_surface_positioning_system import PSPSCoordinates
 from EDXD.data_handler.model import Model, Genus, CodexEntry, Ring
 from EDXD.data_handler.helper.pausable_thread import PausableThread
 from EDXD.globals import logging, BODY_ID_PREFIX, log_context
@@ -49,8 +50,8 @@ class JournalController(PausableThread, threading.Thread):
         if evt.get("FSSAllBodiesFound") is not None:
             self.m.total_bodies = evt.get("Count")
             total_bodies = self.m.total_bodies
-
-        # initialize all parameters fomr update_body
+        # todo: #113 - prevent dataloss on app restart
+        # initialize all parameters for update_body
         systemaddress   = evt.get("SystemAddress")
         body_id         = None
         body_name       = None
@@ -216,6 +217,13 @@ class JournalController(PausableThread, threading.Thread):
             species_localised = evt.get("Species_Localised")
             variant_localised = evt.get("Variant_Localised")
             bio_dict = self.m.bodies[body_id].bio_found if body_id in self.m.bodies else {}
+            def genus_from_dict(data):
+                # Replace these field names with your actual property names
+                if "pos_first" in data and isinstance(data["pos_first"], dict):
+                    data["pos_first"] = PSPSCoordinates.from_dict(data["pos_first"])
+                if "pos_second" in data and isinstance(data["pos_second"], dict):
+                    data["pos_second"] = PSPSCoordinates.from_dict(data["pos_second"])
+                return Genus(**data)
             bio_found = {k: Genus(**v) if isinstance(v, dict) else v for k, v in bio_dict.items()}
 
             genus_found_dict = {}
@@ -225,16 +233,17 @@ class JournalController(PausableThread, threading.Thread):
             if  scantype == "Analyze":
                 genus_scanned = 3
             else:
-                genus_scanned = 1
+                genus_scanned = genus_found_dict.scanned_count or 0
 
             pos_first = None
             pos_second = None
 
-            if genus_scanned == 1:
+            # read coordinates before scan count incrementation
+            if genus_scanned == 0:
                 pos_first = self.m.current_position
 
-            if genus_scanned == 2:
-                pos_first = genus_found_dict.pos_first
+            if genus_scanned == 1 and genus_found_dict.pos_first is not None:
+                pos_first = PSPSCoordinates.from_dict(genus_found_dict.pos_first)
                 pos_second = self.m.current_position
 
             if genus_scanned == 3:
@@ -251,7 +260,7 @@ class JournalController(PausableThread, threading.Thread):
 
                 genus_found = Genus(
                     genusid=genus_found_dict.genusid,
-                    localised=genus_found_dict.localised or genus_found_dict.localised,
+                    localised=genus_found_dict.localised or genus_localised,
                     species_localised=genus_found_dict.species_localised or species_localised,
                     variant_localised=genus_found_dict.variant_localised or variant_localised,
                     min_distance=genus_found_dict.min_distance or bio_helper.bioGetRange(genus_id),

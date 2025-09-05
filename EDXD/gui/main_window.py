@@ -122,7 +122,9 @@ class MainFrame(DynamicFrame):
         self._selected = body_id
         body = self.model.snapshot_bodies().get(body_id)
         if body:
-            self.win_sel.render(body, self.prefs["mat_sel"])
+            current_position = self.model.snapshot_position()
+            current_heading = self.model.current_heading
+            self.win_sel.render(body, self.prefs["mat_sel"], current_position=current_position, current_heading=current_heading)
 
     def _update_target(self, body_id: str):
         """Called by Model when the cockpit target changes."""
@@ -136,7 +138,9 @@ class MainFrame(DynamicFrame):
             # from model import Body          # avoid circular import at top
             body = Body(body_id=body_id)
 
-        self.win_tar.render(body=body, filters=self.prefs["mat_sel"], current_position=current_position)
+        self.win_tar.render(body=body, filters=self.prefs["mat_sel"], current_position=current_position, current_heading=current_heading)
+        if self.win_sel.lbl_body.GetLabelText() == self.win_tar.lbl_body.GetLabelText():
+            self.win_sel.render(body=body, filters=self.prefs["mat_sel"], current_position=current_position, current_heading=current_heading)
         self.win_psps.render(body=body, current_position=current_position, current_heading=current_heading)
 
         # trigger a table refresh so the status icon updates immediately
@@ -163,13 +167,13 @@ class MainFrame(DynamicFrame):
             self.win_psps.render(body=tgt, current_position=current_position, current_heading=current_heading)
 
         if tgt:
-            self.win_tar.render(body=tgt, filters=self.prefs["mat_sel"],  current_position=current_position)
+            self.win_tar.render(body=tgt, filters=self.prefs["mat_sel"],  current_position=current_position, current_heading=current_heading)
         # ---- system label (belts excluded from *scanned* only) -------
 
         bodies = self.model.snapshot_bodies()
 
         if self._selected != '':
-            self.win_sel.render(body=bodies[self._selected], filters=self.prefs["mat_sel"], current_position=current_position)
+            self.win_sel.render(body=bodies[self._selected], filters=self.prefs["mat_sel"], current_position=current_position, current_heading=current_heading)
 
 
 

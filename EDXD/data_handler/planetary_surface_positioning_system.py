@@ -17,6 +17,14 @@ class PSPSCoordinates:
         }
         return data
 
+    @classmethod
+    def from_dict(cls, d):
+        if d is None:
+            return None
+        if isinstance(d, PSPSCoordinates):
+            return d
+        return cls(**d)
+
 class PSPS:
     def __init__(self,
                  target_coordinates: PSPSCoordinates,
@@ -24,11 +32,14 @@ class PSPS:
         self.target_coordinates = target_coordinates
         self.planet_radius = planet_radius_m / 1000.0
 
-    def get_distance(self, current_coordinates: PSPSCoordinates = None, target_coordinates: PSPSCoordinates = None):
+    def get_distance(self, current_coordinates: PSPSCoordinates = None, target_coordinates: PSPSCoordinates = None, raw: bool = False):
         if current_coordinates is None or target_coordinates is None or self.planet_radius == 0.0:
             return "N/A"
 
         raw_discance_km = self._calc_distance(current_coordinates, target_coordinates)
+
+        if raw:
+            return raw_discance_km
 
         # determine if we shall return meters or kilometers
         if raw_discance_km < 1:
@@ -63,11 +74,13 @@ class PSPS:
         distance = self.planet_radius * c
         return distance
 
-    def get_relative_bearing(self, current_coordinates: PSPSCoordinates, current_heading: float):
+    def get_relative_bearing(self, current_coordinates: PSPSCoordinates, current_heading: float, target_coordinates: PSPSCoordinates = None):
         if self.planet_radius == 0.0:
             return None
 
-        bearing = self._calculate_bearing(current_coordinates, self.target_coordinates)
+        use_target = target_coordinates or self.target_coordinates
+
+        bearing = self._calculate_bearing(current_coordinates, use_target)
         relative_bearing = (bearing - current_heading + 360) % 360
         return direction_indicator(relative_bearing)
 

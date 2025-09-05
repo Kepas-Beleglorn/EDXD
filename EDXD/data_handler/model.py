@@ -245,6 +245,13 @@ class Model:
                 radius          = body_properties.get("radius", 0.0)
 
                 # Convert all dicts to their respective objects
+                def genus_from_dict(data):
+                    # Replace these field names with your actual property names
+                    if "pos_first" in data and isinstance(data["pos_first"], dict):
+                        data["pos_first"] = PSPSCoordinates.from_dict(data["pos_first"])
+                    if "pos_second" in data and isinstance(data["pos_second"], dict):
+                        data["pos_second"] = PSPSCoordinates.from_dict(data["pos_second"])
+                    return Genus(**data)
                 bio_found = {k: Genus(**v) if isinstance(v, dict) else v for k, v in bio_dict.items()}
                 geo_found = {k: CodexEntry(**v) if isinstance(v, dict) else v for k, v in geo_dict.items()}
                 rings_found = {k: Ring(**v) if isinstance(v, dict) else v for k, v in rings_dict.items()}

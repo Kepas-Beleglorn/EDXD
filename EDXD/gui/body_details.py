@@ -48,7 +48,7 @@ class BodyDetails(DynamicDialog):
         self._loading = False
 
     # ------------------------------------------------------------------
-    def render(self, body: Optional[Body], filters: Dict[str, bool], current_position: PSPSCoordinates):
+    def render(self, body: Optional[Body], filters: Dict[str, bool], current_position: PSPSCoordinates, current_heading: float):
         self.lbl_body.SetLabelText(text=body.body_name if body else "")
         self.txt_body_details.Clear()
 
@@ -72,21 +72,34 @@ class BodyDetails(DynamicDialog):
 
                         range_one = None
                         range_two = None
+                        bearing_one = None
+                        bearing_two = None
+                        pos_first = PSPSCoordinates.from_dict(genus.pos_first)
+                        pos_second = PSPSCoordinates.from_dict(genus.pos_second)
 
-                        if done in [1, 2]:
-                            range_one = psps.get_distance(current_coordinates=current_position, target_coordinates=genus.pos_first)
-
-                        if done == 2:
-                            range_two = psps.get_distance(current_coordinates=current_position, target_coordinates=genus.pos_first)
+                        if done in [1, 2] and pos_first is not None:
+                            range_raw = psps.get_distance(current_coordinates=current_position, target_coordinates=pos_first, raw=True)
+                            range_one = psps.get_distance(current_coordinates=current_position, target_coordinates=pos_first)
+                            if (range_raw*1000) < bio_range:
+                                bearing_one = psps.get_relative_bearing(current_coordinates=current_position, target_coordinates=pos_first, current_heading=current_heading)
+                            else:
+                                bearing_one = ICONS['checked']
+                        if done == 2 and pos_first is not None and pos_second is not None:
+                            range_raw = psps.get_distance(current_coordinates=current_position, target_coordinates=pos_first, raw=True)
+                            range_two = psps.get_distance(current_coordinates=current_position, target_coordinates=pos_second)
+                            if (range_raw*1000) < bio_range:
+                                bearing_two = psps.get_relative_bearing(current_coordinates=current_position, target_coordinates=pos_second, current_heading=current_heading)
+                            else:
+                                bearing_two = ICONS['checked']
 
                         if done >= 3:
                             self.txt_body_details.AppendText(f"{' '*2}{ICONS['checked']}{' '*2}{bio_name}\n")
                         elif 0 < done < 3:
                             self.txt_body_details.AppendText(f"{' '*2}{ICONS['in_progress']}{' '*2}{bio_name}{' '*2}({done}/3){' '*2}({bio_range}m)")
-                            if done == 1:
-                                self.txt_body_details.AppendText(f"{' '*2}{range_one}")
+                            if done in [1, 2]:
+                                self.txt_body_details.AppendText(f"{' '*2}{bearing_one} {range_one}")
                             if done == 2:
-                                self.txt_body_details.AppendText(f"{' '*2}{range_two}")
+                                self.txt_body_details.AppendText(f"{' '*2}{bearing_two} {range_two}")
                             self.txt_body_details.AppendText(f"\n")
                         else:
                             self.txt_body_details.AppendText(f"{' '*2}{ICONS['unknown']}{' '*2}{bio_name}\n")
