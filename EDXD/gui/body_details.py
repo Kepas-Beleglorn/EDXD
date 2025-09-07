@@ -85,7 +85,7 @@ class BodyDetails(DynamicDialog):
                             else:
                                 bearing_one = ICONS['checked']
                         if done == 2 and pos_first is not None and pos_second is not None:
-                            range_raw = psps.get_distance(current_coordinates=current_position, target_coordinates=pos_first, raw=True)
+                            range_raw = psps.get_distance(current_coordinates=current_position, target_coordinates=pos_second, raw=True)
                             range_two = psps.get_distance(current_coordinates=current_position, target_coordinates=pos_second)
                             if (range_raw*1000) < bio_range:
                                 bearing_two = psps.get_relative_bearing(current_coordinates=current_position, target_coordinates=pos_second, current_heading=current_heading)
