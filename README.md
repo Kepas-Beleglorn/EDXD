@@ -12,6 +12,8 @@
 * **System progress** – live counter of scanned / total bodies (belt clusters ignored).
 * **Dark “ED” theme** – looks at home next to EDMC / EDSM.
 
+#### A more detailed description will be maintained here: [EDXD on edcodex.info](https://edcodex.info/?m=tools&entry=608)
+
 ### Planned:
 * show first discovered (EDSM)
 * show potential types of biosigns, if any; update on DSS and on foot sampling
@@ -27,6 +29,7 @@ Just download the zip for your platform, unpack the contents anywhere you like a
 `
 ed-eXploration-dashboard --journals "/path/to/your/EDJournals/Saved Games/Frontier Developments/Elite Dangerous"
 `
+On first run you should start the "Journal Historian" to process all of your available journal files.
 
 ---
 
