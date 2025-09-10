@@ -5,7 +5,7 @@ from pathlib import Path
 from EDXD.data_handler.journal_reader import JournalReader
 from EDXD.data_handler.journal_controller import JournalController
 from EDXD.data_handler.status_json_watcher import StatusWatcher
-from EDXD.globals import CACHE_DIR, logging, log_context
+from EDXD.globals import CACHE_DIR, logging, log_context, JOURNAL_TIMESTAMP_FILE
 from EDXD.gui.helper.dynamic_frame import DynamicFrame
 from EDXD.gui.helper.gui_dynamic_button import DynamicButton
 from EDXD.gui.helper.gui_handler import init_widget
@@ -93,6 +93,11 @@ class JournalHistorian(DynamicFrame):
     def process_all_journals(self):
         self._pause_threads()
         self._empty_directory(CACHE_DIR)
+        #113: delete timestamp, otherwise no data will be shown, as the timestamp would match the very last/recent journal line
+        try:
+            JOURNAL_TIMESTAMP_FILE.unlink()
+        except FileNotFoundError:
+            pass
 
         journal_files = self._get_sorted_journal_files(self.journal_dir)
         for idx, file_path in enumerate(journal_files, 1):
@@ -100,7 +105,7 @@ class JournalHistorian(DynamicFrame):
                 for line in f:
                     try:
                         evt = json.loads(line)
-                        self.journal_controller.process_event(evt=evt, update_gui=False)
+                        self.journal_controller.process_event(evt=evt, update_gui=False, set_timestamp=False)
                     except Exception as e:
                         log_context(level=logging.WARN, frame=inspect.currentframe(), e=e)
                         continue

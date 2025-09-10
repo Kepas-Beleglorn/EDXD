@@ -57,6 +57,7 @@ CFG_FILE = APP_DIR/"config.json"
 CACHE_DIR  = APP_DIR/"system-data"
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
 ICON_PATH = APP_DIR/"resources/edxd_128.png"  # Normalize path for OS compatibility
+JOURNAL_TIMESTAMP_FILE = APP_DIR/"edxd_timestamp.json"
 
 #-----------------------------------------------------------------------
 # DEBUGGING OPTIONS

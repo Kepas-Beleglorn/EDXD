@@ -172,10 +172,11 @@ class MainFrame(DynamicFrame):
 
         bodies = self.model.snapshot_bodies()
 
-        if self._selected != '':
-            self.win_sel.render(body=bodies[self._selected], filters=self.prefs["mat_sel"], current_position=current_position, current_heading=current_heading)
-
-
+        if self._selected is not None and self._selected != '':
+            try:
+                self.win_sel.render(body=bodies[self._selected], filters=self.prefs["mat_sel"], current_position=current_position, current_heading=current_heading)
+            except KeyError:
+                pass
 
         scanned = sum(1 for b in bodies.values()
                       if "Belt Cluster" not in b.body_name)

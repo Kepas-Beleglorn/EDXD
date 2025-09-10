@@ -1,13 +1,15 @@
 import json, threading, queue, re
 import inspect
 import EDXD.data_handler.helper.bio_helper as bio_helper
+import EDXD.data_handler.helper.data_helper as dh
 
 from typing import Dict
 
 from EDXD.data_handler.planetary_surface_positioning_system import PSPSCoordinates
 from EDXD.data_handler.model import Model, Genus, CodexEntry, Ring
 from EDXD.data_handler.helper.pausable_thread import PausableThread
-from EDXD.globals import logging, BODY_ID_PREFIX, log_context
+from EDXD.globals import logging, BODY_ID_PREFIX, log_context, JOURNAL_TIMESTAMP_FILE
+
 bip = BODY_ID_PREFIX
 
 # ---------------------------------------------------------------------------
@@ -28,9 +30,27 @@ class JournalController(PausableThread, threading.Thread):
 
         self.process_event(evt=evt, update_gui=True)
 
-    def process_event(self, evt, update_gui: bool):
+    def process_event(self, evt, update_gui: bool, set_timestamp: bool = True):
         etype = evt.get("event")
         total_bodies = None
+
+        #113:   after app-start, load only current SYSTEM.json
+        #       store last read journal line (timestamp) and process only newer lines
+        if set_timestamp:
+            current_timestamp_str = evt.get("timestamp")
+            last_read_timestamp_str = dh.read_last_timestamp(JOURNAL_TIMESTAMP_FILE, current_timestamp_str)
+
+            last_read_timestamp_date = dh.parse_utc_isoformat(last_read_timestamp_str)
+            current_timestamp_date = dh.parse_utc_isoformat(current_timestamp_str)
+
+            if last_read_timestamp_date >= current_timestamp_date:
+                if evt.get("SystemAddress") is not None:
+                    self.m.total_bodies = None
+                    self.m.reset_system(evt.get("StarSystem"), evt.get("SystemAddress"))
+                return
+
+            if last_read_timestamp_date < current_timestamp_date:
+                dh.update_last_timestamp(JOURNAL_TIMESTAMP_FILE, current_timestamp_str)
 
         # ───── jump to a new system ───────────────────────────────
         if etype != "FSDJump":
@@ -50,7 +70,6 @@ class JournalController(PausableThread, threading.Thread):
         if evt.get("FSSAllBodiesFound") is not None:
             self.m.total_bodies = evt.get("Count")
             total_bodies = self.m.total_bodies
-        # todo: #113 - prevent dataloss on app restart
         # initialize all parameters for update_body
         systemaddress   = evt.get("SystemAddress")
         body_id         = None
