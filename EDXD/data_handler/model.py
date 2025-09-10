@@ -302,7 +302,16 @@ class Model:
                 if scandata is not None:
                     body.estimated_value = appraise_body(body_info=scandata, just_scanned_value=False)
 
-            self.bodies[body_id] = body
+                self.bodies[body_id] = body
+            self._save_cache()
+
+    def update_body_count(self, systemaddress: int, total_bodies: int = None):
+        with self.lock:
+            self.system_addr = systemaddress
+            tmp_total_bodies = total_bodies or self.total_bodies
+
+            if self.total_bodies is None:
+                self.total_bodies = tmp_total_bodies
             self._save_cache()
 
     def set_target(self, body_id: str):

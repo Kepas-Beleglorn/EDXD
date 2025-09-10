@@ -20,6 +20,7 @@ class JournalController(PausableThread, threading.Thread):
         super().__init__()
         self.q = q
         self.m = model
+        self.last_event = None
 
     def _process_data(self):
         try:
@@ -32,25 +33,36 @@ class JournalController(PausableThread, threading.Thread):
 
     def process_event(self, evt, update_gui: bool, set_timestamp: bool = True):
         etype = evt.get("event")
+        systemaddress = evt.get("SystemAddress")
         total_bodies = None
 
         #113:   after app-start, load only current SYSTEM.json
         #       store last read journal line (timestamp) and process only newer lines
         if set_timestamp:
+            if etype != "FSDTarget" and systemaddress is not None:
+                self.m.total_bodies = None
+                self.m.reset_system(evt.get("StarSystem") or evt.get("Name") or self.m.system_name, systemaddress)
+
             current_timestamp_str = evt.get("timestamp")
             last_read_timestamp_str = dh.read_last_timestamp(JOURNAL_TIMESTAMP_FILE, current_timestamp_str)
 
             last_read_timestamp_date = dh.parse_utc_isoformat(last_read_timestamp_str)
             current_timestamp_date = dh.parse_utc_isoformat(current_timestamp_str)
 
-            if last_read_timestamp_date >= current_timestamp_date:
-                if evt.get("SystemAddress") is not None:
-                    self.m.total_bodies = None
-                    self.m.reset_system(evt.get("StarSystem"), evt.get("SystemAddress"))
+            if last_read_timestamp_date > current_timestamp_date or (
+                    last_read_timestamp_date == current_timestamp_date and (self.last_event == etype and evt.get("ScanType") != "AutoScan")
+            ):
+                self.last_event = etype
                 return
 
             if last_read_timestamp_date < current_timestamp_date:
+                self.last_event = etype
                 dh.update_last_timestamp(JOURNAL_TIMESTAMP_FILE, current_timestamp_str)
+
+        else: # read data when run via journal historian
+            if systemaddress is not None:
+                self.m.total_bodies = None
+                self.m.reset_system(evt.get("StarSystem") or evt.get("Name") or self.m.system_name, systemaddress)
 
         # ───── jump to a new system ───────────────────────────────
         if etype != "FSDJump":
@@ -60,18 +72,20 @@ class JournalController(PausableThread, threading.Thread):
             self.m.total_bodies = None
             self.m.target_body = None
             self.m.sel_target = None
-            self.m.reset_system(evt.get("StarSystem"), evt.get("SystemAddress"))
+            self.m.reset_system(evt.get("StarSystem") or evt.get("Name") or self.m.system_name, systemaddress)
 
-        #elif etype in ("FSSDiscoveryScan", "FSSAllBodiesFound"):
         if evt.get("BodyCount") is not None:
             self.m.total_bodies = evt.get("BodyCount")
             total_bodies = self.m.total_bodies
+            self.m.update_body_count(
+                systemaddress=systemaddress,
+                total_bodies=total_bodies
+            )
 
         if evt.get("FSSAllBodiesFound") is not None:
             self.m.total_bodies = evt.get("Count")
             total_bodies = self.m.total_bodies
         # initialize all parameters for update_body
-        systemaddress   = evt.get("SystemAddress")
         body_id         = None
         body_name       = None
         body_type       = None
@@ -90,10 +104,11 @@ class JournalController(PausableThread, threading.Thread):
 
         self.m.read_data_from_cache(systemaddress)
 
+        if etype == "StartJump":
+            self.m.reset_system(system_name=evt.get("StarSystem"), address=systemaddress)
+
         # FSS - body scan in system
         if etype == "Scan":
-            if self.m.system_name is None:  # first scan in a fresh session
-                self.m.reset_system(evt.get("StarSystem"), evt.get("SystemAddress"))
             body_name = evt.get("BodyName")
             # todo: process ring data properly
             if body_name.endswith("Ring"):
