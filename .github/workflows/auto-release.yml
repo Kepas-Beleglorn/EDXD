@@ -104,13 +104,85 @@ jobs:
         run: |
           powershell Compress-Archive -Path release\* -DestinationPath edxd-dashboard-${{ runner.os }}.zip
 
+      - name: Rename Ubuntu/Mint artifact for clarity
+        run: mv edxd-dashboard-Linux.tar.gz edxd-dashboard-Linux_ubuntu_mint.tar.gz
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: edxd-dashboard-${{ runner.os }}
           path: |
+            edxd-dashboard-${{ runner.os }}_ubuntu_mint.tar.gz
             edxd-dashboard-${{ runner.os }}.tar.gz
             edxd-dashboard-${{ runner.os }}.zip
+
+  build-debian:
+    name: Build on Debian (via Docker)
+    needs: check-version-commit
+    if: needs.check-version-commit.outputs.matched == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build in Debian Docker container
+        uses: addnab/docker-run-action@v3
+        with:
+          image: debian:stable
+          options: -v ${{ github.workspace }}:/workspace
+          run: |
+            apt-get update
+            apt-get install -y python3 python3-pip build-essential libgtk-3-dev libglib2.0-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
+            pip3 install pyinstaller
+            pip3 install -r /workspace/requirements.txt
+            cd /workspace
+            pyinstaller --onefile --add-data "EDXD/resources:resources" EDXD/ed-eXploration-dashboard.py
+            mkdir /workspace/release
+            cp /workspace/dist/ed-eXploration-dashboard* /workspace/release/
+            mkdir -p /workspace/release/resources
+            cp /workspace/EDXD/resources/edxd_128.png /workspace/release/resources/
+            tar -czvf /workspace/edxd-dashboard-debian.tar.gz -C /workspace/release .
+      - name: Upload Debian build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: edxd-dashboard-debian
+          path: edxd-dashboard-debian.tar.gz
+
+  build-arch:
+    name: Build on Arch (via Docker)
+    needs: check-version-commit
+    if: needs.check-version-commit.outputs.matched == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build in Arch Docker container
+        uses: addnab/docker-run-action@v3
+        with:
+          image: archlinux:latest
+          options: -v ${{ github.workspace }}:/workspace
+          run: |
+            pacman -Syu --noconfirm
+            pacman -S --noconfirm python python-pip gtk3 glib2 gstreamer gst-plugins-base base-devel
+            pip install pyinstaller
+            pip install -r /workspace/requirements.txt
+            cd /workspace
+            pyinstaller --onefile --add-data "EDXD/resources:resources" EDXD/ed-eXploration-dashboard.py
+            mkdir /workspace/release
+            cp /workspace/dist/ed-eXploration-dashboard* /workspace/release/
+            mkdir -p /workspace/release/resources
+            cp /workspace/EDXD/resources/edxd_128.png /workspace/release/resources/
+            tar -czvf /workspace/edxd-dashboard-arch.tar.gz -C /workspace/release .
+      - name: Upload Arch build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: edxd-dashboard-arch
+          path: edxd-dashboard-arch.tar.gz
 
   tag-and-release:
     name: Tag & Create GitHub Release
