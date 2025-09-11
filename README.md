@@ -37,7 +37,7 @@ On first run you should start the "Journal Historian" to process all of your ava
 ## Contribute
 
 As I don't have every single OS on my machine, I'd appreciate any help testing EDXD on several OS. 
-If you want to help, please see #120 and linked issues. 
+If you want to help, please see [#120](https://github.com/Kepas-Beleglorn/EDXD/issues/120) and linked issues. 
 
 ---
 
