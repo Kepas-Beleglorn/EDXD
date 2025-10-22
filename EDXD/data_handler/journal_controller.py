@@ -65,14 +65,13 @@ class JournalController(PausableThread, threading.Thread):
                 self.m.reset_system(evt.get("StarSystem") or evt.get("Name") or self.m.system_name, systemaddress)
 
         # ───── jump to a new system ───────────────────────────────
-        if etype != "FSDJump":
-            self.m.just_jumped = False
-        if etype == "FSDJump":
-            self.m.just_jumped = True
+        #124: system/selection is no longer reset when entering super cruise
+        #130: details of selected body reset on hyper space jump
+        if etype == "StartJump" and evt.get("JumpType") == "Hyperspace":
             self.m.total_bodies = None
-            self.m.target_body = None
-            self.m.sel_target = None
-            self.m.reset_system(evt.get("StarSystem") or evt.get("Name") or self.m.system_name, systemaddress)
+            self.m.target_body_id = None
+            self.m.selected_body_id = None
+            self.m.reset_system(system_name=evt.get("StarSystem"), address=systemaddress)
 
         if evt.get("BodyCount") is not None:
             self.m.total_bodies = evt.get("BodyCount")
@@ -103,10 +102,6 @@ class JournalController(PausableThread, threading.Thread):
         rings_found:    Dict[str, Ring]         = {}
 
         self.m.read_data_from_cache(systemaddress)
-
-        #124: system/selection is no longer reset when entering super cruise
-        if etype == "StartJump" and evt.get("JumpType") != "Supercruise":
-            self.m.reset_system(system_name=evt.get("StarSystem"), address=systemaddress)
 
         # FSS - body scan in system
         if etype == "Scan":

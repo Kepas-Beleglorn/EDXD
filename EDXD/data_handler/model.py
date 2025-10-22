@@ -190,9 +190,9 @@ class Model:
         self.system_addr        : Optional[int]         = None
         self.bodies             : Dict[str, Body]       = {}
         self.target_body_id     : Optional[str]         = None
+        self.selected_body_id   : Optional[str]         = None
         self.total_bodies       : Optional[int]         = None
         self._target_cbs        : List = []             # listeners
-        self.just_jumped        : bool = True
         self.current_position   : Optional[PSPSCoordinates] = None
         self.current_heading    : Optional[int] = None
 
@@ -211,15 +211,18 @@ class Model:
     # ----- mutators ----------------------------------------------------------
     #@log_call()
     def reset_system(self, system_name: str, address: Optional[int]):
+        tmp_selected_body_id = self.selected_body_id
         """Clear all bodies and load cached system if available."""
         with self.lock:
             self.system_name = system_name
             self.system_addr = address
             self.bodies.clear()
             self.target_body_id = None
-            self.just_jumped = True
+            self.selected_body_id = None
 
             self.read_data_from_cache(address=address)
+
+            self.selected_body_id = tmp_selected_body_id
 
     def read_data_from_cache(self, address: int):
         cached = dh.load(CACHE_DIR / f"{address}.json", {})

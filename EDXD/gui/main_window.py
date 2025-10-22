@@ -120,7 +120,9 @@ class MainFrame(DynamicFrame):
 
     def _row_clicked(self, body_id: str):
         self._selected = body_id
+        self.model.selected_body_id = body_id
         body = self.model.snapshot_bodies().get(body_id)
+
         if body:
             current_position = self.model.snapshot_position()
             current_heading = self.model.current_heading
@@ -172,11 +174,17 @@ class MainFrame(DynamicFrame):
 
         bodies = self.model.snapshot_bodies()
 
-        if self._selected is not None and self._selected != '':
-            try:
-                self.win_sel.render(body=bodies[self._selected], filters=self.prefs["mat_sel"], current_position=current_position, current_heading=current_heading)
-            except KeyError:
-                pass
+        if self.model.selected_body_id is None:
+            self._selected = ""
+
+        try:
+            sel_body = None
+            if self._selected != "":
+                sel_body = bodies[self._selected]
+
+            self.win_sel.render(body=sel_body, filters=self.prefs["mat_sel"], current_position=current_position, current_heading=current_heading)
+        except KeyError:
+            pass
 
         scanned = sum(1 for b in bodies.values()
                       if "Belt Cluster" not in b.body_name)
