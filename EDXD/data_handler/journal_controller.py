@@ -43,21 +43,21 @@ class JournalController(PausableThread, threading.Thread):
                 self.m.total_bodies = None
                 self.m.reset_system(evt.get("StarSystem") or evt.get("Name") or self.m.system_name, systemaddress)
 
-            current_timestamp_str = evt.get("timestamp")
-            last_read_timestamp_str = dh.read_last_timestamp(JOURNAL_TIMESTAMP_FILE, current_timestamp_str)
+            current_evt_timestamp_str = evt.get("timestamp")
+            last_processed_timestamp_str = dh.read_last_timestamp(JOURNAL_TIMESTAMP_FILE, current_evt_timestamp_str)
 
-            last_read_timestamp_date = dh.parse_utc_isoformat(last_read_timestamp_str)
-            current_timestamp_date = dh.parse_utc_isoformat(current_timestamp_str)
+            last_processed_timestamp_date = dh.parse_utc_isoformat(last_processed_timestamp_str)
+            current_evt_timestamp_date = dh.parse_utc_isoformat(current_evt_timestamp_str)
 
-            if last_read_timestamp_date > current_timestamp_date or (
-                    last_read_timestamp_date == current_timestamp_date and (self.last_event == etype and evt.get("ScanType") != "AutoScan")
+            if last_processed_timestamp_date > current_evt_timestamp_date or (
+                    last_processed_timestamp_date == current_evt_timestamp_date and self.last_event == evt
             ):
-                self.last_event = etype
+                self.last_event = evt
                 return
 
-            if last_read_timestamp_date < current_timestamp_date:
-                self.last_event = etype
-                dh.update_last_timestamp(JOURNAL_TIMESTAMP_FILE, current_timestamp_str)
+            if last_processed_timestamp_date < current_evt_timestamp_date:
+                self.last_event = evt
+                dh.update_last_timestamp(JOURNAL_TIMESTAMP_FILE, current_evt_timestamp_str)
 
         else: # read data when run via journal historian
             if systemaddress is not None:
@@ -104,7 +104,8 @@ class JournalController(PausableThread, threading.Thread):
 
         self.m.read_data_from_cache(systemaddress)
 
-        if etype == "StartJump":
+        #124: system/selection is no longer reset when entering super cruise
+        if etype == "StartJump" and evt.get("JumpType") != "Supercruise":
             self.m.reset_system(system_name=evt.get("StarSystem"), address=systemaddress)
 
         # FSS - body scan in system
