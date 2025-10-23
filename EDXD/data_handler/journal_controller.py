@@ -241,6 +241,7 @@ class JournalController(PausableThread, threading.Thread):
             body_int = evt.get("Body")
             body_id = bip + str(body_int)
             genus_id = evt.get("Genus")
+            species_id = evt.get("Species")
             # generalize genus ID
             genus_id = re.sub(r'_\d+_[A-Za-z](?=_Name;)', '_Genus', genus_id)
             genus_localised = evt.get("Genus_Localised")
@@ -294,8 +295,12 @@ class JournalController(PausableThread, threading.Thread):
 
             bio_found[genus_id] = genus_found
 
-            #111: reset unfinished genus if scan hasn't been completed yet
+            #132: remove codex doublet
+            if species_id is not None and species_id in bio_found:
+                bio_found.pop(species_id)
+
             for bf, bfg in bio_found.items():
+                #111: reset unfinished genus if scan hasn't been completed yet
                 if bfg.genusid != genus_id:
                     if bfg.scanned_count < 3:
                         bio_found[bfg.genusid].scanned_count = 0
