@@ -141,10 +141,32 @@ class Genus:
             "variant_localised" : self.variant_localised,
             "scanned_count"     : self.scanned_count,
             "min_distance"      : self.min_distance,
-            "pos_first"         : self.pos_first.to_dict() if self.pos_first else None,
-            "pos_second"        : self.pos_second.to_dict() if self.pos_second else None
+            "pos_first"         : (self.pos_first.to_dict() if hasattr(self.pos_first, "to_dict") else self.pos_first) if self.pos_first else None,
+            "pos_second"        : (self.pos_second.to_dict() if hasattr(self.pos_second, "to_dict") else self.pos_second) if self.pos_second else None
         }
         return data
+
+    @classmethod
+    def from_dict(cls, data: dict):
+        """
+        Convert a dict (as loaded from disk / cache) into a Genus instance.
+
+        This implements the same logic as the `genus_from_dict` helper you had
+        in journal_controller.py: if pos_first/pos_second are dicts, turn them
+        into PSPSCoordinates objects first, then pass everything to Genus().
+        """
+        if not data:
+            return None
+
+        # make a shallow copy to avoid mutating the caller's dict
+        d = dict(data)
+
+        if "pos_first" in d and isinstance(d["pos_first"], dict):
+            d["pos_first"] = PSPSCoordinates.from_dict(d["pos_first"])
+        if "pos_second" in d and isinstance(d["pos_second"], dict):
+            d["pos_second"] = PSPSCoordinates.from_dict(d["pos_second"])
+
+        return cls(**d)
 
 """
 { "timestamp":"2025-06-12T18:37:58Z", "event":"CodexEntry", "EntryID":1400158, 
@@ -247,18 +269,9 @@ class Model:
                 rings_dict      = body_properties.get("rings", {})
                 radius          = body_properties.get("radius", 0.0)
 
-                # Convert all dicts to their respective objects
-                def genus_from_dict(data):
-                    # Replace these field names with your actual property names
-                    if "pos_first" in data and isinstance(data["pos_first"], dict):
-                        data["pos_first"] = PSPSCoordinates.from_dict(data["pos_first"])
-                    if "pos_second" in data and isinstance(data["pos_second"], dict):
-                        data["pos_second"] = PSPSCoordinates.from_dict(data["pos_second"])
-                    return Genus(**data)
-                bio_found = {k: Genus(**v) if isinstance(v, dict) else v for k, v in bio_dict.items()}
+                bio_found = {k: Genus.from_dict(v) if isinstance(v, dict) else v for k, v in bio_dict.items()}
                 geo_found = {k: CodexEntry(**v) if isinstance(v, dict) else v for k, v in geo_dict.items()}
                 rings_found = {k: Ring(**v) if isinstance(v, dict) else v for k, v in rings_dict.items()}
-
 
                 self.bodies[body_id] = Body(
                     body_id=body_id,

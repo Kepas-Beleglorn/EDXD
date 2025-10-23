@@ -247,14 +247,7 @@ class JournalController(PausableThread, threading.Thread):
             species_localised = evt.get("Species_Localised")
             variant_localised = evt.get("Variant_Localised")
             bio_dict = self.m.bodies[body_id].bio_found if body_id in self.m.bodies else {}
-            def genus_from_dict(data):
-                # Replace these field names with your actual property names
-                if "pos_first" in data and isinstance(data["pos_first"], dict):
-                    data["pos_first"] = PSPSCoordinates.from_dict(data["pos_first"])
-                if "pos_second" in data and isinstance(data["pos_second"], dict):
-                    data["pos_second"] = PSPSCoordinates.from_dict(data["pos_second"])
-                return Genus(**data)
-            bio_found = {k: Genus(**v) if isinstance(v, dict) else v for k, v in bio_dict.items()}
+            bio_found = {k: Genus.from_dict(v) if isinstance(v, dict) else v for k, v in bio_dict.items()}
 
             genus_found_dict = {}
             if body_id in self.m.bodies and genus_id in self.m.bodies[body_id].bio_found:
@@ -300,6 +293,15 @@ class JournalController(PausableThread, threading.Thread):
                 )
 
             bio_found[genus_id] = genus_found
+
+            #111: reset unfinished genus if scan hasn't been completed yet
+            for bf, bfg in bio_found.items():
+                if bfg.genusid != genus_id:
+                    if bfg.scanned_count < 3:
+                        bio_found[bfg.genusid].scanned_count = 0
+                        bio_found[bfg.genusid].pos_first = None
+                        bio_found[bfg.genusid].pos_second = None
+
 
         # save/update data
         self.m.total_bodies = total_bodies or self.m.total_bodies
