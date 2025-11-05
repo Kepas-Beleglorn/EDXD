@@ -12,8 +12,6 @@ set -Eeuo pipefail
 
 # ----- adjust this to your real location -----
 DIR="/mnt/games/ED/journals/Frontier Developments/Elite Dangerous"
-# Example:
-# DIR="/home/kepas/EDData/EDGameData/Saved Games/Frontier Developments/Elite Dangerous"
 
 JOUR_PAT='Journal.*.log'
 STATUS_FILE="Status.json"
