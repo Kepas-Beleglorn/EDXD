@@ -44,7 +44,8 @@ class StatusWatcher(PausableThread, threading.Thread):
                 heading = data.get("Heading")
                 self.model.set_position(latitude=latitude, longitude=longitude, heading=heading)
                 self.model.set_target(body_id)
-
+        except FileNotFoundError:
+            pass
         except Exception as e:
             log_context(level=logging.WARN, frame=inspect.currentframe(), e=e)
             logging.log(logging.WARN, f"raw_data(is None?): {raw_data is None}:{raw_data}")

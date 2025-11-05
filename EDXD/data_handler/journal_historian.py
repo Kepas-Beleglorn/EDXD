@@ -101,6 +101,7 @@ class JournalHistorian(DynamicFrame):
 
         journal_files = self._get_sorted_journal_files(self.journal_dir)
         for idx, file_path in enumerate(journal_files, 1):
+            logging.debug(f"Processing {file_path}")
             with open(file_path, encoding="utf-8") as f:
                 for line in f:
                     try:
