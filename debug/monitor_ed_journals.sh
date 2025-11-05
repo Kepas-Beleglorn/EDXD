@@ -55,13 +55,15 @@ if [[ -t 1 && "${NO_COLOR:-}" != "1" ]]; then
   C_ERR=$'\e[31m'    # red
   C_HL=$'\e[33m'   # yellow for highlighting (Fuel)
   # 256-color orange + light blue (falls back to no color when NO_COLOR=1 or not a TTY)
-  C_ORANGE=$'\e[38;5;208m'
-  C_LBLUE=$'\e[38;5;45m'
-  C_PURPLE=$'\e[38;5;141m'
+  C_ORANGE=$'\e[38;2;255;150;150m'
+  C_LBLUE=$'\e[38;2;150;255;255m'
+  C_PURPLE=$'\e[38;2;200;100;255m'
+  C_BASE1=$'\e[38;2;220;220;50m'   # light yellow
+  C_BASE2=$'\e[38;2;240;240;240m'   # light grey
   # make colors visible to awk via ENVIRON[]
-  export RESET C_JOUR C_STATUS C_INFO C_ERR C_HL C_ORANGE C_LBLUE C_PURPLE
+  export RESET C_JOUR C_STATUS C_INFO C_ERR C_HL C_ORANGE C_LBLUE C_PURPLE C_BASE1 C_BASE2
 else
-  RESET=; BOLD=; DIM=; C_JOUR=; C_STATUS=; C_INFO=; C_ERR=; C_HL=; C_ORANGE=; C_LBLUE=; C_PURPLE=
+  RESET=; BOLD=; DIM=; C_JOUR=; C_STATUS=; C_INFO=; C_ERR=; C_HL=; C_ORANGE=; C_LBLUE=; C_PURPLE=; C_BASE1=; C_BASE2=
 fi
 
 info() { printf '%s[info]%s %s\n' "$C_INFO" "$RESET" "$*" >&2; }
@@ -113,26 +115,32 @@ start_tail_journal() {
   fi
 
   bash -c '
-    tail -n +1 -F -- "$0" \
-    | awk -W interactive "
+     tail -n +1 -F -- "$0" \
+     | awk -W interactive "
         BEGIN{
-          orange=\"'"$C_ORANGE"'\";
-          lblue =\"'"$C_LBLUE"'\";
-          purple=\"'"$C_PURPLE"'\";
-          reset =\"'"$RESET"'\";
-          pref  =\"'"$C_JOUR"'[journal] '"$RESET"'\";
+          orange = \"'"$C_ORANGE"'\";
+          lblue  = \"'"$C_LBLUE"'\";
+          purple = \"'"$C_PURPLE"'\";
+          base1  = \"'"$C_BASE1"'\";
+          base2  = \"'"$C_BASE2"'\";
+          reset  = \"'"$RESET"'\";
+          pref   = \"'"$C_JOUR"'[journal] '"$RESET"'\";
         }
         {
-          line=\$0
-          gsub(/\"BodyName\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/,       purple \"&\" reset, line)
-          gsub(/\"StarSystem\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/,     orange \"&\" reset, line)
-          gsub(/\"SystemAddress\"[[:space:]]*:[[:space:]]*[0-9]+/,      orange \"&\" reset, line)
+          # alternate base color per line (zebra)
+          base = (NR % 2 == 1) ? base1 : base2;
 
-          gsub(/\"WasDiscovered\"[[:space:]]*:[[:space:]]*(true|false)/, lblue  \"&\" reset, line)
-          gsub(/\"WasMapped\"[[:space:]]*:[[:space:]]*(true|false)/,     lblue  \"&\" reset, line)
-          gsub(/\"WasFootfalled\"[[:space:]]*:[[:space:]]*(true|false)/, lblue  \"&\" reset, line)
+          line = \$0
+          # highlight fields, then *return to base* so the rest of the text keeps the zebra color
+          gsub(/\"BodyName\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/,       purple \"&\" reset base, line)
+          gsub(/\"StarSystem\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/,     orange \"&\" reset base, line)
+          gsub(/\"SystemAddress\"[[:space:]]*:[[:space:]]*[0-9]+/,      orange \"&\" reset base, line)
 
-          print pref line; fflush()
+          gsub(/\"WasDiscovered\"[[:space:]]*:[[:space:]]*(true|false)/, lblue  \"&\" reset base, line)
+          gsub(/\"WasMapped\"[[:space:]]*:[[:space:]]*(true|false)/,     lblue  \"&\" reset base, line)
+          gsub(/\"WasFootfalled\"[[:space:]]*:[[:space:]]*(true|false)/, lblue  \"&\" reset base, line)
+
+          print pref base line reset; fflush()
         }"
   ' "$file" &
 
