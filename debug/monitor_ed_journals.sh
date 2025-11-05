@@ -57,10 +57,11 @@ if [[ -t 1 && "${NO_COLOR:-}" != "1" ]]; then
   # 256-color orange + light blue (falls back to no color when NO_COLOR=1 or not a TTY)
   C_ORANGE=$'\e[38;5;208m'
   C_LBLUE=$'\e[38;5;45m'
+  C_PURPLE=$'\e[38;5;141m'
   # make colors visible to awk via ENVIRON[]
-  export RESET C_JOUR C_STATUS C_INFO C_ERR C_HL C_ORANGE C_LBLUE
+  export RESET C_JOUR C_STATUS C_INFO C_ERR C_HL C_ORANGE C_LBLUE C_PURPLE
 else
-  RESET=; BOLD=; DIM=; C_JOUR=; C_STATUS=; C_INFO=; C_ERR=; C_HL=; C_ORANGE=; C_LBLUE=
+  RESET=; BOLD=; DIM=; C_JOUR=; C_STATUS=; C_INFO=; C_ERR=; C_HL=; C_ORANGE=; C_LBLUE=; C_PURPLE=
 fi
 
 info() { printf '%s[info]%s %s\n' "$C_INFO" "$RESET" "$*" >&2; }
@@ -117,19 +118,24 @@ start_tail_journal() {
         BEGIN{
           orange=\"'"$C_ORANGE"'\";
           lblue =\"'"$C_LBLUE"'\";
+          purple=\"'"$C_PURPLE"'\";
           reset =\"'"$RESET"'\";
           pref  =\"'"$C_JOUR"'[journal] '"$RESET"'\";
         }
         {
           line=\$0
-          gsub(/\"StarSystem\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/, orange \"&\" reset, line)
-          gsub(/\"SystemAddress\"[[:space:]]*:[[:space:]]*[0-9]+/,         orange \"&\" reset, line)
-          gsub(/\"WasDiscovered\"[[:space:]]*:[[:space:]]*(true|false)/,    lblue  \"&\" reset, line)
-          gsub(/\"WasMapped\"[[:space:]]*:[[:space:]]*(true|false)/,        lblue  \"&\" reset, line)
-          gsub(/\"WasFootfalled\"[[:space:]]*:[[:space:]]*(true|false)/,    lblue  \"&\" reset, line)
+          gsub(/\"BodyName\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/,       purple \"&\" reset, line)
+          gsub(/\"StarSystem\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/,     orange \"&\" reset, line)
+          gsub(/\"SystemAddress\"[[:space:]]*:[[:space:]]*[0-9]+/,      orange \"&\" reset, line)
+
+          gsub(/\"WasDiscovered\"[[:space:]]*:[[:space:]]*(true|false)/, lblue  \"&\" reset, line)
+          gsub(/\"WasMapped\"[[:space:]]*:[[:space:]]*(true|false)/,     lblue  \"&\" reset, line)
+          gsub(/\"WasFootfalled\"[[:space:]]*:[[:space:]]*(true|false)/, lblue  \"&\" reset, line)
+
           print pref line; fflush()
         }"
   ' "$file" &
+
   tail_pid=$!
 }
 
