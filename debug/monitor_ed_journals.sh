@@ -11,6 +11,7 @@ set -Eeuo pipefail
 DIR="${DIR_OVERRIDE:-/mnt/games/ED/journals/Frontier Developments/Elite Dangerous}"
 JOUR_PATTERN='Journal.*.log'
 POLL_SECS=1
+last_started_file=""
 
 # ---------- CLI ----------
 usage() {
@@ -74,79 +75,77 @@ latest_journal() {
 # ---------- pipeline control (no symlink) ----------
 pipe_launcher_pid=""; pipe_pgid=""; current_file=""; printed_first=0
 
+# ----- clean stop: kill one child and wait -----
 stop_pipeline() {
-  # Kill whole process group (tail + awk) if we have it
-  if [[ -n "${pipe_pgid}" ]]; then
-    kill -TERM "-${pipe_pgid}" 2>/dev/null || true
-    for _ in 1 2 3 4 5; do
-      pgrep -g "${pipe_pgid}" >/dev/null 2>&1 || break
-      sleep 0.1
-    done
-    pipe_pgid=""
-  fi
-  if [[ -n "${pipe_launcher_pid}" ]] && kill -0 "${pipe_launcher_pid}" 2>/dev/null; then
+  if [[ -n "${pipe_launcher_pid:-}" ]] && kill -0 "${pipe_launcher_pid}" 2>/dev/null; then
     kill -TERM "${pipe_launcher_pid}" 2>/dev/null || true
     wait "${pipe_launcher_pid}" 2>/dev/null || true
   fi
   pipe_launcher_pid=""
 }
 
+# ----- simple, robust start: one child that does feed+awk -----
 start_pipeline() {
   local file="$1"
+
   # already on this file and alive? do nothing
-  if [[ "$current_file" == "$file" ]] && [[ -n "${pipe_launcher_pid}" ]] && kill -0 "${pipe_launcher_pid}" 2>/dev/null; then
+  if [[ "$current_file" == "$file" ]] && [[ -n "${pipe_launcher_pid:-}" ]] && kill -0 "${pipe_launcher_pid}" 2>/dev/null; then
     return 0
   fi
 
+  # stop previous pipeline (if any)
   stop_pipeline
+
   current_file="$file"
   info "Following: $file"
   if (( printed_first == 0 )); then printf '\n'; printed_first=1; fi
 
-  # Use a fresh session so we can kill the whole pipeline by PGID safely
-  if have_setsid; then
-    # --- in start_pipeline(), setsid branch ---
-    setsid bash -c '
-      tail -n +1 -F -- "$1" |
-      awk -W interactive \
-        -v pref="$2" -v base1="$3" -v base2="$4" -v reset="$5" \
-        -v c_body="$6" -v c_sys="$7" -v c_disc="$8" "
-        {
-          base = (NR % 2 == 1) ? base1 : base2;
-          line = \$0;
-          gsub(/\"BodyName\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/,           c_body \"&\" reset base, line);
-          gsub(/\"StarSystem\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/,         c_sys  \"&\" reset base, line);
-          gsub(/\"SystemAddress\"[[:space:]]*:[[:space:]]*[0-9]+/,         c_sys  \"&\" reset base, line);
-          gsub(/\"WasDiscovered\"[[:space:]]*:[[:space:]]*(true|false)/,   c_disc \"&\" reset base, line);
-          gsub(/\"WasMapped\"[[:space:]]*:[[:space:]]*(true|false)/,       c_disc \"&\" reset base, line);
-          gsub(/\"WasFootfalled\"[[:space:]]*:[[:space:]]*(true|false)/,   c_disc \"&\" reset base, line);
-          print pref base line reset; fflush();
-        }"
-    ' bash "$file" "${C_JOUR}[journal] ${RESET}" "$C_BASE1" "$C_BASE2" "$RESET" "$C_BODYNAME" "$C_SYSTEMS" "$C_DISC" &
-  else
-    # Fallback without setsid: still works, just slightly less isolated
-    # --- fallback (no setsid) branch ---
-    bash -c '
-      tail -n +1 -F -- "$1" |
-      awk -W interactive \
-        -v pref="$2" -v base1="$3" -v base2="$4" -v reset="$5" \
-        -v c_body="$6" -v c_sys="$7" -v c_disc="$8" "
-        {
-          base = (NR % 2 == 1) ? base1 : base2;
-          line = \$0;
-          gsub(/\"BodyName\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/,           c_body \"&\" reset base, line);
-          gsub(/\"StarSystem\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/,         c_sys  \"&\" reset base, line);
-          gsub(/\"SystemAddress\"[[:space:]]*:[[:space:]]*[0-9]+/,         c_sys  \"&\" reset base, line);
-          gsub(/\"WasDiscovered\"[[:space:]]*:[[:space:]]*(true|false)/,   c_disc \"&\" reset base, line);
-          gsub(/\"WasMapped\"[[:space:]]*:[[:space:]]*(true|false)/,       c_disc \"&\" reset base, line);
-          gsub(/\"WasFootfalled\"[[:space:]]*:[[:space:]]*(true|false)/,   c_disc \"&\" reset base, line);
-          print pref base line reset; fflush();
-        }"
-    ' bash "$file" "${C_JOUR}[journal] ${RESET}" "$C_BASE1" "$C_BASE2" "$RESET" "$C_BODYNAME" "$C_SYSTEMS" "$C_DISC" &
-  fi
+  # one child process: append-only reader piped to awk IN THE SAME SHELL
+  bash -c '
+    set -Eeuo pipefail
+    f="$1"
+
+    # For a NEW file we want a full dump once:
+    last=0
+    # If you prefer to attach at EOF instead, uncomment the next line:
+    # last=$(stat -c %s -- "$f" 2>/dev/null || echo 0)
+
+    feed() {
+      local new
+      while :; do
+        new=$(stat -c %s -- "$f" 2>/dev/null || echo 0)
+        if (( new > last )); then
+          # print only newly appended bytes
+          tail -c +$((last+1)) -- "$f"
+          last=$new
+        elif (( new < last )); then
+          # truncated/replaced -> move cursor but do not replay old data
+          last=$new
+        fi
+        inotifywait -qq -e close_write -- "$f" >/dev/null 2>&1 || sleep 0.2
+      done
+    }
+
+    feed | awk -W interactive \
+      -v pref="$2" -v base1="$3" -v base2="$4" -v reset="$5" \
+      -v c_body="$6" -v c_sys="$7" -v c_disc="$8" "
+      {
+        base = (NR % 2 == 1) ? base1 : base2;
+        line = \$0;
+        gsub(/\"BodyName\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/,           c_body \"&\" reset base, line);
+        gsub(/\"StarSystem\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/,         c_sys  \"&\" reset base, line);
+        gsub(/\"SystemAddress\"[[:space:]]*:[[:space:]]*[0-9]+/,         c_sys  \"&\" reset base, line);
+        gsub(/\"WasDiscovered\"[[:space:]]*:[[:space:]]*(true|false)/,   c_disc \"&\" reset base, line);
+        gsub(/\"WasMapped\"[[:space:]]*:[[:space:]]*(true|false)/,       c_disc \"&\" reset base, line);
+        gsub(/\"WasFootfalled\"[[:space:]]*:[[:space:]]*(true|false)/,   c_disc \"&\" reset base, line);
+        print pref base line reset;
+        fflush();
+      }"
+  ' bash "$file" \
+     "${C_JOUR}[journal] ${RESET}" "$C_BASE1" "$C_BASE2" "$RESET" \
+     "$C_BODYNAME" "$C_SYSTEMS" "$C_DISC" &
 
   pipe_launcher_pid=$!
-  pipe_pgid="$(ps -o pgid= "${pipe_launcher_pid}" | tr -d ' ')"
 }
 
 # ---------- watcher loops ----------
