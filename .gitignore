@@ -20,3 +20,4 @@ config.json
 
 /EDXD/debug/
 /EDXD/edxd_timestamp.json
+/debug/statistics/
