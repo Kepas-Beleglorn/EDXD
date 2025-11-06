@@ -1,254 +1,190 @@
 #!/usr/bin/env bash
-# monitor_ed_journals.sh
-# - Follow newest Journal.*.log (auto-switch on new files)
-# - Reprint Status.json whenever it updates
-# - Colorized output + one empty line before the first [journal]
-# - Flags:
-#     -j : show [info] + [journal] only
-#     -s : show [info] + [status]  only
-#     -h : help
+# monitor_ed_journals.sh (symlink-free, setsid-stable)
+# - Follows newest Journal.*.log directly
+# - On rollover: kill old tail|awk session group and start a new one
+# - Truecolor (RGB), zebra per line, requested highlights
+# - inotify when available, else polling
 
 set -Eeuo pipefail
 
-# ----- adjust this to your real location -----
-DIR="/mnt/games/ED/journals/Frontier Developments/Elite Dangerous"
-
-JOUR_PAT='Journal.*.log'
-STATUS_FILE="Status.json"
-TAIL_N=1
+# ---------- defaults ----------
+DIR="${DIR_OVERRIDE:-/home/kepas/EDData/EDGameData/Saved Games/Frontier Developments/Elite Dangerous}"
+JOUR_PATTERN='Journal.*.log'
 POLL_SECS=1
-USE_JQ=1
-current_file=""
 
-
-# --- mode handling ---
-MODE="both"   # "both" | "journal" | "status"
-
+# ---------- CLI ----------
 usage() {
-  cat <<'USAGE'
-Usage: monitor_ed_journals.sh [-j|-s] [-h]
-  -j   Print only [info] and [journal] lines (disable Status watcher)
-  -s   Print only [info] and [status]  lines (disable Journal tail)
-  -h   Show this help and exit
+  cat <<USAGE
+Usage: $(basename "$0") [-d DIR] [-p SECS] [--no-color] [-h]
+  -d DIR       Directory containing Journal.*.log
+  -p SECS      Poll interval when inotify is unavailable (default: 1)
+  --no-color   Disable colors
+  -h           Help
 USAGE
 }
-
-while getopts ":jsh" opt; do
-  case "$opt" in
-    j) MODE="journal" ;;
-    s) MODE="status" ;;
-    h) usage; exit 0 ;;
-    \?) echo "Unknown option: -$OPTARG" >&2; usage; exit 2 ;;
+NO_COLOR_MODE=0
+while (( $# )); do
+  case "$1" in
+    -d) DIR="$2"; shift 2 ;;
+    -p) POLL_SECS="$2"; shift 2 ;;
+    --no-color) NO_COLOR_MODE=1; shift ;;
+    -h|--help) usage; exit 0 ;;
+    *) echo "Unknown option: $1" >&2; usage; exit 2 ;;
   esac
 done
 
-tail_pid=""
-status_pid=""
-printed_first_journal=0
+# ---------- helpers ----------
+have_inotify() { command -v inotifywait >/dev/null 2>&1; }
+have_setsid()  { command -v setsid >/dev/null 2>&1; }
+rgb()          { printf '\e[38;2;%d;%d;%dm' "$1" "$2" "$3"; }
 
-# ---------- colors ----------
-if [[ -t 1 && "${NO_COLOR:-}" != "1" ]]; then
-  RESET=$'\e[0m'; BOLD=$'\e[1m'; DIM=$'\e[2m'
-  C_JOUR=$'\e[32m'   # green
-  C_STATUS=$'\e[36m' # cyan
-  C_INFO=$'\e[33m'   # yellow
-  C_ERR=$'\e[31m'    # red
-  C_HL=$'\e[33m'   # yellow for highlighting (Fuel)
-  # 256-color orange + light blue (falls back to no color when NO_COLOR=1 or not a TTY)
-  C_ORANGE=$'\e[38;2;255;150;150m'
-  C_LBLUE=$'\e[38;2;150;255;255m'
-  C_PURPLE=$'\e[38;2;200;100;255m'
-  C_BASE1=$'\e[38;2;220;220;50m'   # light yellow
-  C_BASE2=$'\e[38;2;240;240;240m'   # light grey
-  # make colors visible to awk via ENVIRON[]
-  export RESET C_JOUR C_STATUS C_INFO C_ERR C_HL C_ORANGE C_LBLUE C_PURPLE C_BASE1 C_BASE2
+# ---------- colors (truecolor) ----------
+if [[ -t 1 && "$NO_COLOR_MODE" -eq 0 && -z "${NO_COLOR:-}" ]]; then
+  RESET=$'\e[0m'
+  C_JOUR="$(rgb 0 220 120)"        # [journal]
+  C_BASE1="$(rgb 220 220 50)"      # zebra base 1
+  C_BASE2="$(rgb 190 190 190)"     # zebra base 2
+  C_BODYNAME="$(rgb 200 100 255)"  # BodyName
+  C_SYSTEMS="$(rgb 255 150 150)"   # StarSystem + SystemAddress
+  C_DISC="$(rgb 150 255 255)"      # discovery flags
+  C_INFO="$(rgb 255 200 0)"
+  C_ERR="$(rgb 255 80 80)"
 else
-  RESET=; BOLD=; DIM=; C_JOUR=; C_STATUS=; C_INFO=; C_ERR=; C_HL=; C_ORANGE=; C_LBLUE=; C_PURPLE=; C_BASE1=; C_BASE2=
+  RESET=""; C_JOUR=""; C_BASE1=""; C_BASE2="";
+  C_BODYNAME=""; C_SYSTEMS=""; C_DISC=""; C_INFO=""; C_ERR="";
 fi
 
-info() { printf '%s[info]%s %s\n' "$C_INFO" "$RESET" "$*" >&2; }
-err()  { printf '%s[error]%s %s\n' "$C_ERR" "$RESET" "$*" >&2; }
+info(){ printf '%s[info]%s %s\n'  "$C_INFO" "$RESET" "$*" >&2; }
+err(){  printf '%s[error]%s %s\n' "$C_ERR"  "$RESET" "$*" >&2; }
 
-have_inotify() { command -v inotifywait >/dev/null 2>&1; }
-have_jq() { [[ "${USE_JQ}" -eq 1 ]] && command -v jq >/dev/null 2>&1; }
-
+# ---------- newest file picker ----------
 latest_journal() {
   shopt -s nullglob
-  local newest=""
-  local newest_mtime=-1
-  local f mtime
-  for f in "$DIR"/$JOUR_PAT; do
+  local f newest="" newest_mtime=-1 m
+  for f in "$DIR"/$JOUR_PATTERN; do
     [[ -e "$f" ]] || continue
-    mtime="$(stat -c %Y -- "$f" 2>/dev/null || echo 0)"
-    if (( mtime > newest_mtime )); then
-      newest="$f"; newest_mtime="$mtime"
-    elif (( mtime == newest_mtime )) && [[ -n "$newest" && "$f" > "$newest" ]]; then
-      newest="$f"
+    m="$(stat -c %Y -- "$f" 2>/dev/null || echo 0)"
+    if (( m > newest_mtime )) || { (( m == newest_mtime )) && [[ "$f" > "$newest" ]]; }; then
+      newest="$f"; newest_mtime="$m"
     fi
   done
   [[ -n "$newest" ]] && printf '%s\n' "$newest"
 }
 
-# Kill the entire journal pipeline (tail + filter) if it exists
-stop_tail_journal() {
-  if [[ -n "${tail_pid}" ]] && kill -0 "${tail_pid}" 2>/dev/null; then
-    # kill whole process group started by bash -c (negative PGID)
-    kill -TERM -- "-${tail_pid}" 2>/dev/null || kill -TERM "${tail_pid}" 2>/dev/null || true
-    wait "${tail_pid}" 2>/dev/null || true
+# ---------- pipeline control (no symlink) ----------
+pipe_launcher_pid=""; pipe_pgid=""; current_file=""; printed_first=0
+
+stop_pipeline() {
+  # Kill whole process group (tail + awk) if we have it
+  if [[ -n "${pipe_pgid}" ]]; then
+    kill -TERM "-${pipe_pgid}" 2>/dev/null || true
+    for _ in 1 2 3 4 5; do
+      pgrep -g "${pipe_pgid}" >/dev/null 2>&1 || break
+      sleep 0.1
+    done
+    pipe_pgid=""
   fi
-  tail_pid=""
+  if [[ -n "${pipe_launcher_pid}" ]] && kill -0 "${pipe_launcher_pid}" 2>/dev/null; then
+    kill -TERM "${pipe_launcher_pid}" 2>/dev/null || true
+    wait "${pipe_launcher_pid}" 2>/dev/null || true
+  fi
+  pipe_launcher_pid=""
 }
 
-# Start exactly one pipeline for the given file (deduped + colored)
-start_tail_journal() {
+start_pipeline() {
   local file="$1"
-  if [[ "$current_file" == "$file" ]] && [[ -n "${tail_pid}" ]] && kill -0 "${tail_pid}" 2>/dev/null; then
+  # already on this file and alive? do nothing
+  if [[ "$current_file" == "$file" ]] && [[ -n "${pipe_launcher_pid}" ]] && kill -0 "${pipe_launcher_pid}" 2>/dev/null; then
     return 0
   fi
-  stop_tail_journal
+
+  stop_pipeline
   current_file="$file"
-
   info "Following: $file"
-  if [[ $printed_first_journal -eq 0 ]]; then
-    printf '\n'
-    printed_first_journal=1
-  fi
+  if (( printed_first == 0 )); then printf '\n'; printed_first=1; fi
 
-  bash -c '
-     tail -n +1 -F -- "$0" \
-     | awk -W interactive "
-        BEGIN{
-          orange = \"'"$C_ORANGE"'\";
-          lblue  = \"'"$C_LBLUE"'\";
-          purple = \"'"$C_PURPLE"'\";
-          base1  = \"'"$C_BASE1"'\";
-          base2  = \"'"$C_BASE2"'\";
-          reset  = \"'"$RESET"'\";
-          pref   = \"'"$C_JOUR"'[journal] '"$RESET"'\";
-        }
+  # Use a fresh session so we can kill the whole pipeline by PGID safely
+  if have_setsid; then
+    setsid bash -c '
+      tail -n +1 -F -- "$0" |
+      awk -W interactive \
+        -v pref="$1" -v base1="$2" -v base2="$3" -v reset="$4" \
+        -v c_body="$5" -v c_sys="$6" -v c_disc="$7" "
         {
-          # alternate base color per line (zebra)
           base = (NR % 2 == 1) ? base1 : base2;
-
-          line = \$0
-          # highlight fields, then *return to base* so the rest of the text keeps the zebra color
-          gsub(/\"BodyName\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/,       purple \"&\" reset base, line)
-          gsub(/\"StarSystem\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/,     orange \"&\" reset base, line)
-          gsub(/\"SystemAddress\"[[:space:]]*:[[:space:]]*[0-9]+/,      orange \"&\" reset base, line)
-
-          gsub(/\"WasDiscovered\"[[:space:]]*:[[:space:]]*(true|false)/, lblue  \"&\" reset base, line)
-          gsub(/\"WasMapped\"[[:space:]]*:[[:space:]]*(true|false)/,     lblue  \"&\" reset base, line)
-          gsub(/\"WasFootfalled\"[[:space:]]*:[[:space:]]*(true|false)/, lblue  \"&\" reset base, line)
-
-          print pref base line reset; fflush()
+          line = \$0;
+          gsub(/\"BodyName\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/,           c_body \"&\" reset base, line);
+          gsub(/\"StarSystem\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/,         c_sys  \"&\" reset base, line);
+          gsub(/\"SystemAddress\"[[:space:]]*:[[:space:]]*[0-9]+/,         c_sys  \"&\" reset base, line);
+          gsub(/\"WasDiscovered\"[[:space:]]*:[[:space:]]*(true|false)/,   c_disc \"&\" reset base, line);
+          gsub(/\"WasMapped\"[[:space:]]*:[[:space:]]*(true|false)/,       c_disc \"&\" reset base, line);
+          gsub(/\"WasFootfalled\"[[:space:]]*:[[:space:]]*(true|false)/,   c_disc \"&\" reset base, line);
+          print pref base line reset; fflush();
         }"
-  ' "$file" &
-
-  tail_pid=$!
-}
-
-print_status_once() {
-  local path="$DIR/$STATUS_FILE"
-  [[ -f "$path" ]] || { info "(status missing: $path)"; return 0; }
-
-  if have_jq; then
-    # Compact JSON, then colorize the Fuel object, then prefix with [status]
-    jq -c . -- "$path" 2>/dev/null \
-      | sed -u -E "s/\"Fuel\":\{[^}]*\}/${C_HL}&${RESET}/" \
-      | sed -u "s/^/${C_STATUS}[status] ${RESET}/"
+    ' bash "$file" "${C_JOUR}[journal] ${RESET}" "$C_BASE1" "$C_BASE2" "$RESET" "$C_BODYNAME" "$C_SYSTEMS" "$C_DISC" &
   else
-    # No jq: work on the raw line, same highlighting + prefix
-    sed -u -E "s/\"Fuel\":\{[^}]*\}/${C_HL}&${RESET}/" -- "$path" \
-      | sed -u "s/^/${C_STATUS}[status] ${RESET}/"
+    # Fallback without setsid: still works, just slightly less isolated
+    bash -c '
+      tail -n +1 -F -- "$0" |
+      awk -W interactive \
+        -v pref="$1" -v base1="$2" -v base2="$3" -v reset="$4" \
+        -v c_body="$5" -v c_sys="$6" -v c_disc="$7" "
+        {
+          base = (NR % 2 == 1) ? base1 : base2;
+          line = \$0;
+          gsub(/\"BodyName\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/,           c_body \"&\" reset base, line);
+          gsub(/\"StarSystem\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/,         c_sys  \"&\" reset base, line);
+          gsub(/\"SystemAddress\"[[:space:]]*:[[:space:]]*[0-9]+/,         c_sys  \"&\" reset base, line);
+          gsub(/\"WasDiscovered\"[[:space:]]*:[[:space:]]*(true|false)/,   c_disc \"&\" reset base, line);
+          gsub(/\"WasMapped\"[[:space:]]*:[[:space:]]*(true|false)/,       c_disc \"&\" reset base, line);
+          gsub(/\"WasFootfalled\"[[:space:]]*:[[:space:]]*(true|false)/,   c_disc \"&\" reset base, line);
+          print pref base line reset; fflush();
+        }"
+    ' bash "$file" "${C_JOUR}[journal] ${RESET}" "$C_BASE1" "$C_BASE2" "$RESET" "$C_BODYNAME" "$C_SYSTEMS" "$C_DISC" &
   fi
+
+  pipe_launcher_pid=$!
+  pipe_pgid="$(ps -o pgid= "${pipe_launcher_pid}" | tr -d ' ')"
 }
 
-status_watcher_inotify() {
-  local path="$DIR/$STATUS_FILE"
-  print_status_once
-  while inotifywait -qq -e close_write -e create -e moved_to -- "$DIR" >/dev/null; do
-    [[ -f "$path" ]] && print_status_once
+# ---------- watcher loops ----------
+watch_inotify() {
+  while inotifywait -qq -e create -e moved_to -e close_write -- "$DIR" >/dev/null; do
+    sleep 0.1  # debounce
+    local next; next="$(latest_journal || true)"
+    if [[ -n "$next" && "$next" != "$current_file" ]]; then
+      info "Switching journal -> $next"
+      start_pipeline "$next"
+    fi
   done
 }
-
-status_watcher_poll() {
-  local path="$DIR/$STATUS_FILE"
-  local last_mtime=""
+watch_poll() {
   while true; do
-    if [[ -f "$path" ]]; then
-      mtime="$(stat -c %Y -- "$path" 2>/dev/null || echo "")"
-      if [[ "$mtime" != "$last_mtime" ]]; then
-        print_status_once
-        last_mtime="$mtime"
-      fi
-    else
-      info "(status missing: $path)"
-      last_mtime=""
+    local next; next="$(latest_journal || true)"
+    if [[ -n "$next" && "$next" != "$current_file" ]]; then
+      info "Switching journal -> $next"
+      start_pipeline "$next"
     fi
     sleep "$POLL_SECS"
   done
 }
 
-start_status_watcher() {
-  if have_inotify; then
-    status_watcher_inotify &
-  else
-    status_watcher_poll &
-  fi
-  status_pid=$!
-}
+# ---------- main ----------
+cleanup_and_exit() { stop_pipeline; exit 0; }
+trap cleanup_and_exit INT TERM
 
-stop_status_watcher() {
-  if [[ -n "${status_pid}" ]] && kill -0 "${status_pid}" 2>/dev/null; then
-    kill "${status_pid}" 2>/dev/null || true
-    wait "${status_pid}" 2>/dev/null || true
-  fi
-  status_pid=""
-}
-
-# ------------------ MAIN ------------------
-trap 'stop_tail_journal; stop_status_watcher' EXIT INT TERM
-
-info "Mode   : $MODE"
-info "Log dir: $DIR"
-info "Pattern: $JOUR_PAT"
-info "Status : $STATUS_FILE"
+info "Dir    : $DIR"
+info "Pattern: $JOUR_PATTERN"
 info "inotify: $(have_inotify && echo yes || echo no)"
 
-# Start watchers depending on mode
-if [[ "$MODE" != "journal" ]]; then
-  start_status_watcher
-fi
-
-current=""
-if [[ "$MODE" != "status" ]]; then
-  # try to start on the current newest journal (if any)
-  if next="$(latest_journal)"; then
-    current="$next"
-    start_tail_journal "$current"
-  else
-    info "No matching journals yet; waiting for one to appear…"
-  fi
-fi
-
-# event loop
-if [[ "$MODE" == "status" ]]; then
-  # Just wait on the status watcher to keep the script alive
-  wait "$status_pid"
+if next="$(latest_journal)"; then
+  start_pipeline "$next"
 else
-  while true; do
-    if have_inotify; then
-      inotifywait -qq -e create -e moved_to -e close_write -- "$DIR" >/dev/null
-      sleep 0.1   # tiny debounce so latest_journal sees the new file
-    else
-      sleep "$POLL_SECS"
-    fi
+  info "No matching journals yet; waiting for one to appear…"
+fi
 
-    next="$(latest_journal || true)"
-    if [[ -n "$next" && "$next" != "$current_file" ]]; then
-      info "Switching journal -> $next"
-      start_tail_journal "$next"
-    fi
-
-  done
+if have_inotify; then
+  watch_inotify
+else
+  watch_poll
 fi

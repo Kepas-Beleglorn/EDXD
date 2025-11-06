@@ -18,7 +18,7 @@
 set -Eeuo pipefail
 
 # ------------ defaults (tweak to your setup) ------------
-DIR="${DIR_OVERRIDE:-/mnt/games/ED/journals/Frontier Developments/Elite Dangerous/}"
+DIR="${DIR_OVERRIDE:-/mnt/games/ED/journals/Frontier Developments/Elite Dangerous}"
 STATUS_FILE="Status.json"
 POLL_SECS=1
 STATUS_LINE_NR=0
