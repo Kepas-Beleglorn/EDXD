@@ -47,11 +47,11 @@ if [[ -t 1 && "$NO_COLOR_MODE" -eq 0 && -z "${NO_COLOR:-}" ]]; then
   C_BODYNAME="$(rgb 200 100 255)"  # BodyName
   C_SYSTEMS="$(rgb 255 150 150)"   # StarSystem + SystemAddress
   C_DISC="$(rgb 150 255 255)"      # discovery flags
+  C_RINGS="$(rgb 255 150 100)"       # Rings
   C_INFO="$(rgb 255 200 0)"
   C_ERR="$(rgb 255 80 80)"
 else
-  RESET=""; C_JOUR=""; C_BASE1=""; C_BASE2="";
-  C_BODYNAME=""; C_SYSTEMS=""; C_DISC=""; C_INFO=""; C_ERR="";
+  RESET=""; C_JOUR=""; C_BASE1=""; C_BASE2=""; C_BODYNAME=""; C_SYSTEMS=""; C_DISC=""; C_INFO=""; C_ERR=""; C_RINGS="";
 fi
 
 info(){ printf '%s[info]%s %s\n'  "$C_INFO" "$RESET" "$*" >&2; }
@@ -127,7 +127,7 @@ start_pipeline() {
 
     feed | awk -W interactive \
       -v pref="$2" -v base1="$3" -v base2="$4" -v reset="$5" \
-      -v c_body="$6" -v c_sys="$7" -v c_disc="$8" "
+      -v c_body="$6" -v c_sys="$7" -v c_disc="$8" -v c_rings="$9" "
       {
         base = (NR % 2 == 1) ? base1 : base2;
         line = \$0;
@@ -137,12 +137,13 @@ start_pipeline() {
         gsub(/\"WasDiscovered\"[[:space:]]*:[[:space:]]*(true|false)/,   c_disc \"&\" reset base, line);
         gsub(/\"WasMapped\"[[:space:]]*:[[:space:]]*(true|false)/,       c_disc \"&\" reset base, line);
         gsub(/\"WasFootfalled\"[[:space:]]*:[[:space:]]*(true|false)/,   c_disc \"&\" reset base, line);
+        gsub(/\"Rings\"[[:space:]]*:[[:space:]]*\[[^\]]*\"/,             c_rings \"&\" reset base, line);
         print pref base line reset;
         fflush();
       }"
   ' bash "$file" \
      "${C_JOUR}[journal] ${RESET}" "$C_BASE1" "$C_BASE2" "$RESET" \
-     "$C_BODYNAME" "$C_SYSTEMS" "$C_DISC" &
+     "$C_BODYNAME" "$C_SYSTEMS" "$C_DISC" "$C_RINGS" &
 
   pipe_launcher_pid=$!
 }
