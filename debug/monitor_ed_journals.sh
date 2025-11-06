@@ -11,7 +11,6 @@ set -Eeuo pipefail
 DIR="${DIR_OVERRIDE:-/mnt/games/ED/journals/Frontier Developments/Elite Dangerous}"
 JOUR_PATTERN='Journal.*.log'
 POLL_SECS=1
-last_started_file=""
 
 # ---------- CLI ----------
 usage() {
@@ -73,7 +72,7 @@ latest_journal() {
 }
 
 # ---------- pipeline control (no symlink) ----------
-pipe_launcher_pid=""; pipe_pgid=""; current_file=""; printed_first=0
+pipe_launcher_pid=""; current_file=""; printed_first=0
 
 # ----- clean stop: kill one child and wait -----
 stop_pipeline() {
