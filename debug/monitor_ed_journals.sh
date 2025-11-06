@@ -8,7 +8,7 @@
 set -Eeuo pipefail
 
 # ---------- defaults ----------
-DIR="${DIR_OVERRIDE:-/home/kepas/EDData/EDGameData/Saved Games/Frontier Developments/Elite Dangerous}"
+DIR="${DIR_OVERRIDE:-/mnt/games/ED/journals/Frontier Developments/Elite Dangerous}"
 JOUR_PATTERN='Journal.*.log'
 POLL_SECS=1
 
@@ -105,11 +105,12 @@ start_pipeline() {
 
   # Use a fresh session so we can kill the whole pipeline by PGID safely
   if have_setsid; then
+    # --- in start_pipeline(), setsid branch ---
     setsid bash -c '
-      tail -n +1 -F -- "$0" |
+      tail -n +1 -F -- "$1" |
       awk -W interactive \
-        -v pref="$1" -v base1="$2" -v base2="$3" -v reset="$4" \
-        -v c_body="$5" -v c_sys="$6" -v c_disc="$7" "
+        -v pref="$2" -v base1="$3" -v base2="$4" -v reset="$5" \
+        -v c_body="$6" -v c_sys="$7" -v c_disc="$8" "
         {
           base = (NR % 2 == 1) ? base1 : base2;
           line = \$0;
@@ -124,11 +125,12 @@ start_pipeline() {
     ' bash "$file" "${C_JOUR}[journal] ${RESET}" "$C_BASE1" "$C_BASE2" "$RESET" "$C_BODYNAME" "$C_SYSTEMS" "$C_DISC" &
   else
     # Fallback without setsid: still works, just slightly less isolated
+    # --- fallback (no setsid) branch ---
     bash -c '
-      tail -n +1 -F -- "$0" |
+      tail -n +1 -F -- "$1" |
       awk -W interactive \
-        -v pref="$1" -v base1="$2" -v base2="$3" -v reset="$4" \
-        -v c_body="$5" -v c_sys="$6" -v c_disc="$7" "
+        -v pref="$2" -v base1="$3" -v base2="$4" -v reset="$5" \
+        -v c_body="$6" -v c_sys="$7" -v c_disc="$8" "
         {
           base = (NR % 2 == 1) ? base1 : base2;
           line = \$0;
