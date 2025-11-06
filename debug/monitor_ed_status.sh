@@ -21,6 +21,8 @@ set -Eeuo pipefail
 DIR="${DIR_OVERRIDE:-/mnt/games/ED/journals/Frontier Developments/Elite Dangerous/}"
 STATUS_FILE="Status.json"
 POLL_SECS=1
+STATUS_LINE_NR=0
+
 
 # ------------ CLI ------------
 usage() {
@@ -58,16 +60,21 @@ if [[ -t 1 && "$NO_COLOR_MODE" -eq 0 && -z "${NO_COLOR:-}" ]]; then
 
   # Highlight for the whole Fuel object (RGB) — tweak to taste
   # (golden yellow)
-  C_FUEL="$(rgb 255 215 0)"
+  C_FUEL="$(rgb 255 100 100)"
 
   # Optional accents (unused right now, but set as RGB in case you expand later)
   C_INFO="$(rgb 255 200 0)"
   C_ERR="$(rgb 255 80 80)"
+
+  # Base colors (truecolor / RGB) for zebra lines
+  C_BASE1="$(rgb 220 220 50)"    # light yellow
+  C_BASE2="$(rgb 190 190 190)"   # light grey
+
 else
-  RESET=""; C_STATUS=""; C_FUEL=""; C_INFO=""; C_ERR=""
+  RESET=""; C_STATUS=""; C_FUEL=""; C_INFO=""; C_ERR=""; C_BASE1=""; C_BASE2=""
 fi
 
-export RESET C_STATUS C_FUEL
+export RESET C_STATUS C_FUEL C_BASE1 C_BASE2
 
 have_inotify() { command -v inotifywait >/dev/null 2>&1; }
 have_jq() { command -v jq >/dev/null 2>&1; }
@@ -82,15 +89,22 @@ print_status_once() {
   local path; path="$(path_status)"
   [[ -f "$path" ]] || { info "(missing: $path)"; return 0; }
 
+  # pick base color for this line (zebra)
+  STATUS_LINE_NR=$((STATUS_LINE_NR + 1))
+  local BASE
+  if (( STATUS_LINE_NR % 2 )); then BASE="$C_BASE1"; else BASE="$C_BASE2"; fi
+
   if have_jq; then
-    # Compact with jq, then highlight the Fuel object, then prefix with [status]
+    # Compact JSON, then highlight Fuel, then prefix and apply zebra base
     jq -c . -- "$path" 2>/dev/null \
-      | sed -u -E "s/\"Fuel\":\{[^}]*\}/${C_FUEL}&${RESET}/" \
-      | sed -u "s/^/${C_STATUS}[status] ${RESET}/"
+      | sed -u -E "s/\"Fuel\":\{[^}]*\}/${C_FUEL}&${RESET}${BASE}/" \
+      | sed -u "s/^/${C_STATUS}[status] ${RESET}${BASE}/" \
+      | sed -u -e "s/$/${RESET}/"
   else
-    # No jq: read raw line, same highlight + prefix
-    sed -u -E "s/\"Fuel\":\{[^}]*\}/${C_FUEL}&${RESET}/" -- "$path" \
-      | sed -u "s/^/${C_STATUS}[status] ${RESET}/"
+    # Raw line path, same highlight + prefix
+    sed -u -E "s/\"Fuel\":\{[^}]*\}/${C_FUEL}&${RESET}${BASE}/" -- "$path" \
+      | sed -u "s/^/${C_STATUS}[status] ${RESET}${BASE}/" \
+      | sed -u -e "s/$/${RESET}/"
   fi
 }
 
