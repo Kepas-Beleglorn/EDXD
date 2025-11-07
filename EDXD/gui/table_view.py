@@ -189,7 +189,7 @@ class BodiesTable(gridlib.Grid):
                             else "", getattr(body, "geosignals", 0)),
                     "value": (f"{getattr(body, 'estimated_value', 0):,} Cr"             if getattr(body, "estimated_value", 0) else "",             getattr(body, "estimated_value", 0)),
                     "worthwhile": (f"{ICONS["worthwhile"]}"                             if getattr(body, "estimated_value", 0) >= self.Parent.prefs.get("worthwhile_threshold", DEFAULT_WORTHWHILE_THRESHOLD) else "",  getattr(body, "estimated_value", 0)),
-                    "mapped": (f"{ICONS['mapped']}"                                     if getattr(body, "mapped", False) else "",                  (0 if getattr(body, "mapped", False) else 1)),
+                    "mapped": (f"{ICONS['mapped']}"                                     if getattr(body, "mapped", False) else "",                  (1 if getattr(body, "mapped", False) else 0)),
 
                 }
                 for m in visible_mats:
