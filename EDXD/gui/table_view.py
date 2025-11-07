@@ -95,7 +95,7 @@ class BodiesTable(gridlib.Grid):
             self.sort_reverse = not self.sort_reverse
         else:
             self.sort_col = colname
-            self.sort_reverse = (colname in RAW_MATS or colname in ("value", "bio", "geo", "worthwhile"))
+            self.sort_reverse = (colname in RAW_MATS or colname in ("value", "bio", "geo", "worthwhile", "mapped"))
         self._refresh_sort()
         event.Skip()
 
@@ -185,6 +185,8 @@ class BodiesTable(gridlib.Grid):
                     "geo": (f"{ICONS['geosigns']} {getattr(body, 'geosignals', 0)}"     if getattr(body, "geosignals", 0) > 0  else "",             getattr(body, "geosignals", 0)),
                     "value": (f"{getattr(body, 'estimated_value', 0):,} Cr"             if getattr(body, "estimated_value", 0) else "",             getattr(body, "estimated_value", 0)),
                     "worthwhile": (f"{ICONS["worthwhile"]}"                             if getattr(body, "estimated_value", 0) >= 1000000 else "",  getattr(body, "estimated_value", 0)),
+                    "mapped": (f"{ICONS['mapped']}"                                     if getattr(body, "mapped", False) else "",                  (0 if getattr(body, "mapped", False) else 1)),
+
                 }
                 for m in visible_mats:
                     matval = body.materials.get(m, None)

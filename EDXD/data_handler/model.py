@@ -44,7 +44,7 @@ def log_call(level=LOG_LEVEL):
 # simple container
 # ---------------------------------------------------------------------------
 class Body:
-    __slots__ = ("body_id", "body_name", "body_type", "scoopable", "landable", "biosignals", "geosignals", "estimated_value", "materials", "bio_found", "geo_found", "distance", "rings", "radius")
+    __slots__ = ("body_id", "body_name", "body_type", "scoopable", "landable", "biosignals", "geosignals", "estimated_value", "materials", "bio_found", "geo_found", "distance", "rings", "radius", "mapped")
 
     def __init__(self,
                  body_id:           str,
@@ -60,7 +60,8 @@ class Body:
                  geosignals:        int = 0,
                  estimated_value:   int = 0,
                  rings:             Dict[str, Ring] | None = None,
-                 radius:            float = 0.0
+                 radius:            float = 0.0,
+                 mapped:            bool = False
                  ):
 
         self.body_id            = body_id
@@ -77,6 +78,7 @@ class Body:
         self.geo_found          = geo_found or {}    # { "volcanism-01": True … }             True once SRV scanned
         self.rings              = rings     or {}
         self.radius             = radius
+        self.mapped             = mapped
 
 class Ring:
     __slots__ = ("body_id", "body_name", "signals")
@@ -268,6 +270,7 @@ class Model:
                 estimated_value = body_properties.get("estimated_value", 0)
                 rings_dict      = body_properties.get("rings", {})
                 radius          = body_properties.get("radius", 0.0)
+                mapped          = body_properties.get("mapped", False)
 
                 bio_found = {k: Genus.from_dict(v) if isinstance(v, dict) else v for k, v in bio_dict.items()}
                 geo_found = {k: CodexEntry(**v) if isinstance(v, dict) else v for k, v in geo_dict.items()}
@@ -287,13 +290,14 @@ class Model:
                     geo_found=geo_found,
                     estimated_value=estimated_value,
                     rings=rings_found,
-                    radius=radius
+                    radius=radius,
+                    mapped=mapped
                 )
 
     #@log_call(logging.DEBUG)
     def update_body(self, systemaddress: int, body_id: str, body_name: str = None, body_type: str = None, scoopable: bool = None, distance: int = None, landable: bool = None,
                     biosignals: int = None, geosignals: int = None, materials: Dict[str, float] = None, scandata = None,
-                    bio_found: Dict[str, Genus] = None, geo_found: Dict[str, CodexEntry] = None, rings: Dict[str, Ring] = None, total_bodies: int = None, radius: float = 0.0):
+                    bio_found: Dict[str, Genus] = None, geo_found: Dict[str, CodexEntry] = None, rings: Dict[str, Ring] = None, total_bodies: int = None, radius: float = 0.0, mapped: bool = False):
         with self.lock:
             self.system_addr = systemaddress
             tmp_total_bodies = total_bodies or self.total_bodies
@@ -313,6 +317,7 @@ class Model:
                 body.geo_found  = geo_found     or body.geo_found   or {}
                 body.rings      = rings         or body.rings       or {}
                 body.radius     = radius        or body.radius
+                body.mapped     = mapped        or body.mapped
                 if materials is not None:
                     body.materials.update(materials)
                 if scandata is not None:
@@ -359,6 +364,7 @@ class Model:
                     "scoopable"         : body.scoopable,
                     "landable"          : body.landable,
                     "radius"            : body.radius,
+                    "mapped"            : body.mapped,
                     "distance"          : body.distance,
                     "biosignals"        : body.biosignals,
                     "geosignals"        : body.geosignals,

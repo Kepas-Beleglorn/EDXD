@@ -94,6 +94,7 @@ class JournalController(PausableThread, threading.Thread):
         landable        = None
         biosignals      = None
         geosignals      = None
+        mapped          =None
         materials       = {}
         scandata        = evt
 
@@ -120,6 +121,16 @@ class JournalController(PausableThread, threading.Thread):
                     body_type = "Belt Cluster"
                 scoopable = body_type in ["K", "G", "B", "F", "O", "A", "M"]
                 materials = {m["Name"]: m["Percent"] for m in evt.get("Materials", [])}
+
+        if etype == "SAAScanComplete":
+            body_name = evt.get("BodyName")
+            # todo: process ring data properly
+            if body_name.endswith("Ring"):
+                pass  # skip for now
+            else:
+                bodyid_int = evt.get("BodyID")
+                body_id = bip + str(bodyid_int)
+                mapped = True
 
         # FSS - scanning of bodies
         if etype == "FSSBodySignals":
@@ -328,7 +339,8 @@ class JournalController(PausableThread, threading.Thread):
                 # todo: implement rings
                 rings=rings_found,
                 total_bodies=total_bodies,
-                radius=radius
+                radius=radius,
+                mapped=mapped
             )
 
         # nothing to safe here, just update the target
