@@ -16,3 +16,4 @@ edxd = "EDXD.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["EDXD"]
+
