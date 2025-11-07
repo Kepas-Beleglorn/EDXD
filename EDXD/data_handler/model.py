@@ -44,7 +44,8 @@ def log_call(level=LOG_LEVEL):
 # simple container
 # ---------------------------------------------------------------------------
 class Body:
-    __slots__ = ("body_id", "body_name", "body_type", "scoopable", "landable", "biosignals", "geosignals", "estimated_value", "materials", "bio_found", "geo_found", "distance", "rings", "radius", "mapped")
+    __slots__ = ("body_id", "body_name", "body_type", "scoopable", "landable", "biosignals", "geosignals", "estimated_value", "materials",
+                 "bio_found", "geo_found", "distance", "rings", "radius", "mapped", "geo_complete", "geo_scanned", "bio_complete", "bio_scanned")
 
     def __init__(self,
                  body_id:           str,
@@ -61,7 +62,11 @@ class Body:
                  estimated_value:   int = 0,
                  rings:             Dict[str, Ring] | None = None,
                  radius:            float = 0.0,
-                 mapped:            bool = False
+                 mapped:            bool = False,
+                 geo_complete:      bool = False,
+                 geo_scanned:       int = 0,
+                 bio_complete:      bool = False,
+                 bio_scanned:       int = 0
                  ):
 
         self.body_id            = body_id
@@ -79,6 +84,10 @@ class Body:
         self.rings              = rings     or {}
         self.radius             = radius
         self.mapped             = mapped
+        self.geo_complete       = geo_complete
+        self.geo_scanned        = geo_scanned
+        self.bio_complete       = bio_complete
+        self.bio_scanned        = bio_scanned
 
 class Ring:
     __slots__ = ("body_id", "body_name", "signals")
@@ -271,6 +280,10 @@ class Model:
                 rings_dict      = body_properties.get("rings", {})
                 radius          = body_properties.get("radius", 0.0)
                 mapped          = body_properties.get("mapped", False)
+                geo_complete    = body_properties.get("geo_complete", False)
+                geo_scanned     = body_properties.get("geo_scanned", 0)
+                bio_complete    = body_properties.get("bio_complete", False)
+                bio_scanned     = body_properties.get("bio_scanned", 0)
 
                 bio_found = {k: Genus.from_dict(v) if isinstance(v, dict) else v for k, v in bio_dict.items()}
                 geo_found = {k: CodexEntry(**v) if isinstance(v, dict) else v for k, v in geo_dict.items()}
@@ -291,13 +304,18 @@ class Model:
                     estimated_value=estimated_value,
                     rings=rings_found,
                     radius=radius,
-                    mapped=mapped
+                    mapped=mapped,
+                    geo_complete=geo_complete,
+                    geo_scanned=geo_scanned,
+                    bio_complete=bio_complete,
+                    bio_scanned=bio_scanned
                 )
 
     #@log_call(logging.DEBUG)
     def update_body(self, systemaddress: int, body_id: str, body_name: str = None, body_type: str = None, scoopable: bool = None, distance: int = None, landable: bool = None,
                     biosignals: int = None, geosignals: int = None, materials: Dict[str, float] = None, scandata = None,
-                    bio_found: Dict[str, Genus] = None, geo_found: Dict[str, CodexEntry] = None, rings: Dict[str, Ring] = None, total_bodies: int = None, radius: float = 0.0, mapped: bool = False):
+                    bio_found: Dict[str, Genus] = None, geo_found: Dict[str, CodexEntry] = None, rings: Dict[str, Ring] = None, total_bodies: int = None, radius: float = 0.0, mapped: bool = False,
+                    geo_complete: bool = False, geo_scanned: int = 0, bio_complete: bool = False, bio_scanned: int = 0):
         with self.lock:
             self.system_addr = systemaddress
             tmp_total_bodies = total_bodies or self.total_bodies
@@ -306,18 +324,22 @@ class Model:
                 self.total_bodies = tmp_total_bodies
             if body_id is not None:
                 body = self.bodies.get(body_id, Body(body_id=body_id))
-                body.body_name  = body_name     or body.body_name   or ""
-                body.body_type  = body_type     or body.body_type   or ""
-                body.scoopable  = scoopable     or body.scoopable   or False
-                body.distance   = distance      or body.distance    or 0
-                body.landable   = landable      or body.landable    or False
-                body.biosignals = biosignals    or body.biosignals  or 0
-                body.geosignals = geosignals    or body.geosignals  or 0
-                body.bio_found  = bio_found     or body.bio_found   or {}
-                body.geo_found  = geo_found     or body.geo_found   or {}
-                body.rings      = rings         or body.rings       or {}
-                body.radius     = radius        or body.radius
-                body.mapped     = mapped        or body.mapped
+                body.body_name      = body_name     or body.body_name       or ""
+                body.body_type      = body_type     or body.body_type       or ""
+                body.scoopable      = scoopable     or body.scoopable       or False
+                body.distance       = distance      or body.distance        or 0
+                body.landable       = landable      or body.landable        or False
+                body.biosignals     = biosignals    or body.biosignals      or 0
+                body.geosignals     = geosignals    or body.geosignals      or 0
+                body.bio_found      = bio_found     or body.bio_found       or {}
+                body.geo_found      = geo_found     or body.geo_found       or {}
+                body.rings          = rings         or body.rings           or {}
+                body.radius         = radius        or body.radius          or 0
+                body.mapped         = mapped        or body.mapped          or False
+                body.geo_complete   = geo_complete  or body.geo_complete    or False
+                body.geo_scanned    = geo_scanned   or body.geo_scanned     or 0
+                body.bio_complete   = bio_complete  or body.bio_complete    or False
+                body.bio_scanned    = bio_scanned   or body.bio_scanned     or 0
                 if materials is not None:
                     body.materials.update(materials)
                 if scandata is not None:
@@ -367,7 +389,11 @@ class Model:
                     "mapped"            : body.mapped,
                     "distance"          : body.distance,
                     "biosignals"        : body.biosignals,
+                    "bio_scanned"       : body.bio_scanned,
+                    "bio_complete"      : body.bio_complete,
                     "geosignals"        : body.geosignals,
+                    "geo_scanned"       : body.geo_scanned,
+                    "geo_complete"      : body.geo_complete,
                     "materials"         : body.materials,
                     "bio_found"         : {
                         genusid:

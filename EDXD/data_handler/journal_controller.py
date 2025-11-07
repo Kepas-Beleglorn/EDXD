@@ -94,7 +94,11 @@ class JournalController(PausableThread, threading.Thread):
         landable        = None
         biosignals      = None
         geosignals      = None
-        mapped          =None
+        mapped          = None
+        geo_complete    = None
+        geo_scanned     = None
+        bio_complete    = None
+        bio_scanned     = None
         materials       = {}
         scandata        = evt
 
@@ -200,6 +204,10 @@ class JournalController(PausableThread, threading.Thread):
                     geo_dict = self.m.bodies[body_id].geo_found if body_id in self.m.bodies else {}
                     geo_found = {k: CodexEntry(**v) if isinstance(v, dict) else v for k, v in geo_dict.items()}
                     geo_codex_dict = {}
+
+                    geosignals_total = self.m.bodies[body_id].geosignals if body_id in self.m.bodies else 0
+                    geo_scanned = self.m.bodies[body_id].geo_scanned if body_id in self.m.bodies else 0
+
                     if body_id in self.m.bodies and geo_id in self.m.bodies[body_id].geo_found:
                         geo_codex_dict = self.m.bodies[body_id].geo_found[geo_id]
 
@@ -217,6 +225,11 @@ class JournalController(PausableThread, threading.Thread):
                                 body_id=body_id
                             )
                     geo_found[geo_id] = geo_codex_found
+                    if geo_found is not None:
+                        geo_scanned = len(geo_found)
+
+                    if geo_scanned == geosignals_total:
+                        geo_complete = True
 
             if subcategory == "$Codex_SubCategory_Organic_Structures;":
                 body_int = evt.get("BodyID")
@@ -260,6 +273,8 @@ class JournalController(PausableThread, threading.Thread):
             variant_localised = evt.get("Variant_Localised")
             bio_dict = self.m.bodies[body_id].bio_found if body_id in self.m.bodies else {}
             bio_found = {k: Genus.from_dict(v) if isinstance(v, dict) else v for k, v in bio_dict.items()}
+            bio_scanned = self.m.bodies[body_id].bio_scanned if body_id in self.m.bodies else 0
+            biosignals_present = self.m.bodies[body_id].biosignals if body_id in self.m.bodies else 0
 
             genus_found_dict = {}
             if body_id in self.m.bodies and genus_id in self.m.bodies[body_id].bio_found:
@@ -269,6 +284,7 @@ class JournalController(PausableThread, threading.Thread):
                 genus_scanned = 3
             else:
                 genus_scanned = genus_found_dict.scanned_count or 0
+
 
             pos_first = None
             pos_second = None
@@ -284,6 +300,10 @@ class JournalController(PausableThread, threading.Thread):
             if genus_scanned == 3:
                 pos_first = None
                 pos_second = None
+                bio_scanned += 1
+
+            if biosignals_present > 0 and bio_scanned == biosignals_present:
+                bio_complete = True
 
             if genus_found_dict == {}:
                 genus_found = Genus(genusid=genus_id, localised=genus_localised, species_localised=species_localised, variant_localised=variant_localised, scanned_count=genus_scanned, min_distance=bio_helper.bioGetRange(genus_id), pos_first=pos_first, pos_second=pos_second)
@@ -340,7 +360,11 @@ class JournalController(PausableThread, threading.Thread):
                 rings=rings_found,
                 total_bodies=total_bodies,
                 radius=radius,
-                mapped=mapped
+                mapped=mapped,
+                geo_complete=geo_complete,
+                geo_scanned=geo_scanned,
+                bio_complete=bio_complete,
+                bio_scanned=bio_scanned
             )
 
         # nothing to safe here, just update the target

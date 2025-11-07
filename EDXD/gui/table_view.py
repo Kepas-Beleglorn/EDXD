@@ -181,8 +181,12 @@ class BodiesTable(gridlib.Grid):
                     "body": (body.body_name, body.body_name.lower()),
                     "distance": (f"{getattr(body, 'distance', 0):,.0f} Ls"              if getattr(body, 'distance', 0) is not None else "",        getattr(body, 'distance', 0)),
                     "land": (f"{ICONS['landable']}"                                     if getattr(body, "landable", False)    else "",             (0 if getattr(body, "landable", False)  else 1)),
-                    "bio": (f"{ICONS['biosigns']} {getattr(body, 'biosignals', 0)}"     if getattr(body, "biosignals", 0) > 0  else "",             getattr(body, "biosignals", 0)),
-                    "geo": (f"{ICONS['geosigns']} {getattr(body, 'geosignals', 0)}"     if getattr(body, "geosignals", 0) > 0  else "",             getattr(body, "geosignals", 0)),
+                    "bio":  (f"{ICONS['biosigns']}{ICONS['checked']}" if getattr(body, "bio_complete", False)
+                            else f"{ICONS['biosigns']} {getattr(body, 'bio_scanned', 0)}/{getattr(body, 'biosignals', 0)}" if getattr(body, "biosignals", 0) > 0
+                            else "", getattr(body, "biosignals", 0)),
+                    "geo":  (f"{ICONS['geosigns']}{ICONS['checked']}" if getattr(body, "geo_complete", False)
+                            else f"{ICONS['geosigns']} {getattr(body, 'geo_scanned', 0)}/{getattr(body, 'geosignals', 0)}" if getattr(body, "geosignals", 0) > 0
+                            else "", getattr(body, "geosignals", 0)),
                     "value": (f"{getattr(body, 'estimated_value', 0):,} Cr"             if getattr(body, "estimated_value", 0) else "",             getattr(body, "estimated_value", 0)),
                     "worthwhile": (f"{ICONS["worthwhile"]}"                             if getattr(body, "estimated_value", 0) >= 1000000 else "",  getattr(body, "estimated_value", 0)),
                     "mapped": (f"{ICONS['mapped']}"                                     if getattr(body, "mapped", False) else "",                  (0 if getattr(body, "mapped", False) else 1)),
@@ -260,11 +264,13 @@ class BodiesTable(gridlib.Grid):
                 self.SetColSize(i, 222)
             elif colname == "body":
                 self.SetColSize(i, 275)
-            elif colname == "distance":
+            elif colname in ("distance"):
                 self.SetColSize(i, 80)
+            elif colname in ("bio", "geo"):
+                self.SetColSize(i, 60)
             elif colname == "value":
                 self.SetColSize(i, 100)
-            elif colname in ("land", "bio", "geo", "scoopable", "worthwhile", "mapped"):
+            elif colname in ("land", "scoopable", "worthwhile", "mapped"):
                 self.SetColSize(i, 40)
             elif colname == "body_id":
                 self.SetColSize(i, 50 if DEBUG_MODE else 0)
