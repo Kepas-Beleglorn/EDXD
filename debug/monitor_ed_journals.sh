@@ -129,11 +129,11 @@ start_pipeline() {
 
     feed | awk -W interactive \
       -v pref="$2" -v base1="$3" -v base2="$4" -v reset="$5" \
-      -v c_body="$6" -v c_sys="$7" -v c_disc="$8" -v c_rings="$9" -v c_event="${10}"
+      -v c_body="$6" -v c_sys="$7" -v c_disc="$8" -v c_rings="$9" -v c_event="$10"
       {
         base = (NR % 2 == 1) ? base1 : base2;
         line = \$0;
-        gsub(/\"event\"[[:space:]]*:[[:space:]]*\"[^"]*\"[[:space:]]*,?/,  c_event \"&\" reset, line);
+        gsub(/\"event\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/,               c_event \"&\" reset base, line);
         gsub(/\"BodyName\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/,            c_body  \"&\" reset base, line);
         gsub(/\"StarSystem\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/,          c_sys   \"&\" reset base, line);
         gsub(/\"SystemAddress\"[[:space:]]*:[[:space:]]*[0-9]+/,           c_sys   \"&\" reset base, line);
@@ -143,7 +143,7 @@ start_pipeline() {
         gsub(/\"Rings\"[[:space:]]*:[[:space:]]*\[[^\]]*\][[:space:]]*,?/, c_rings \"&\" reset base, line);
         print pref base line reset;
         fflush();
-      }"
+      }
   ' bash "$file" \
      "${C_JOUR}[journal] ${RESET}" "$C_BASE1" "$C_BASE2" "$RESET" \
      "$C_BODYNAME" "$C_SYSTEMS" "$C_DISC" "$C_RING" "$C_EVENT" &
