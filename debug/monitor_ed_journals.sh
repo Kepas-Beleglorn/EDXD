@@ -48,7 +48,7 @@ if [[ -t 1 && "$NO_COLOR_MODE" -eq 0 && -z "${NO_COLOR:-}" ]]; then
   C_SYSTEMS="$(rgb 255 150 150)"   # StarSystem + SystemAddress
   C_DISC="$(rgb 150 255 255)"      # discovery flags
   C_RING="$(rgb 255 100 200)"      # rings
-  C_EVENT="$(rgb 100 255 100)"     # event
+  C_EVENT="$(rgb 50 222 50)"     # event
   C_INFO="$(rgb 255 200 0)"
   C_ERR="$(rgb 255 80 80)"
 else
