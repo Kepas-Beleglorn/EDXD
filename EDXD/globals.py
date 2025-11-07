@@ -84,6 +84,9 @@ BTN_HEIGHT = 32
 BTN_WIDTH = 192
 BTN_MARGIN = 1
 
+DEFAULT_WORTHWHILE_THRESHOLD = 1000000
+WORTHWHILE_THRESHOLD = 1;
+
 #-----------------------------------------------------------------------
 # prefix to stringify body_id
 BODY_ID_PREFIX = "body_"

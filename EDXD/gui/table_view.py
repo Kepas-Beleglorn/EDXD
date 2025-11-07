@@ -3,7 +3,7 @@ import wx.grid as gridlib
 from typing import Dict, Callable, Optional
 
 from EDXD.data_handler.model import Body
-from EDXD.globals import SYMBOL, logging, RAW_MATS, ICONS, log_call, DEBUG_MODE, log_context
+from EDXD.globals import SYMBOL, logging, RAW_MATS, ICONS, log_call, DEBUG_MODE, log_context, DEFAULT_WORTHWHILE_THRESHOLD
 import inspect
 
 
@@ -188,7 +188,7 @@ class BodiesTable(gridlib.Grid):
                             else f"{ICONS['geosigns']} {getattr(body, 'geo_scanned', 0)}/{getattr(body, 'geosignals', 0)}" if getattr(body, "geosignals", 0) > 0
                             else "", getattr(body, "geosignals", 0)),
                     "value": (f"{getattr(body, 'estimated_value', 0):,} Cr"             if getattr(body, "estimated_value", 0) else "",             getattr(body, "estimated_value", 0)),
-                    "worthwhile": (f"{ICONS["worthwhile"]}"                             if getattr(body, "estimated_value", 0) >= 1000000 else "",  getattr(body, "estimated_value", 0)),
+                    "worthwhile": (f"{ICONS["worthwhile"]}"                             if getattr(body, "estimated_value", 0) >= self.Parent.prefs.get("worthwhile_threshold", DEFAULT_WORTHWHILE_THRESHOLD) else "",  getattr(body, "estimated_value", 0)),
                     "mapped": (f"{ICONS['mapped']}"                                     if getattr(body, "mapped", False) else "",                  (0 if getattr(body, "mapped", False) else 1)),
 
                 }
@@ -271,7 +271,7 @@ class BodiesTable(gridlib.Grid):
             elif colname == "value":
                 self.SetColSize(i, 100)
             elif colname in ("land", "scoopable", "worthwhile", "mapped"):
-                self.SetColSize(i, 40)
+                self.SetColSize(i, 30)
             elif colname == "body_id":
                 self.SetColSize(i, 50 if DEBUG_MODE else 0)
             else:
