@@ -1,7 +1,7 @@
 # EDXD · Elite Dangerous eXploration Dashboard
 
 ### A cross-platform, real-time dashboard for explorers:
-* **100 % Python** – runs on Linux, macOS and Windows (no .NET, no exe).
+* **100 % Python** – runs on Linux, macOS and Windows.
 
 ### Features
 * **Show estimated scanned/mapped value** - is it worth firing up the SCO?
