@@ -15,7 +15,7 @@ class BodiesTable(gridlib.Grid):
     #@log_call()
     def __init__(self, parent, on_select: Callable[[str], None]):
         super().__init__(parent)
-        self._all_cols = ["body_id", "status", "body_type", "scoopable", "body", "distance", "land", "bio", "geo", "value"] + list(RAW_MATS)
+        self._all_cols = ["body_id", "status", "body_type", "scoopable", "body", "distance", "land", "bio", "geo", "value", "worthwhile", "mapped"] + list(RAW_MATS)
         # At the top of your class, after self._all_cols:
         self._headers = {
             "body_id" : "BodyID",
@@ -27,7 +27,9 @@ class BodiesTable(gridlib.Grid):
             "land": ICONS["landable"],
             "bio": ICONS["biosigns"],
             "geo": ICONS["geosigns"],
-            "value": ICONS["value"]
+            "value": ICONS["value"],
+            "worthwhile": ICONS["worthwhile"],
+            "mapped": ICONS["mapped"]
         }
 
         self._display_cols = None
@@ -52,7 +54,9 @@ class BodiesTable(gridlib.Grid):
             "land": "Landable",
             "bio": "Bio-signals",
             "geo": "Geo-signals",
-            "value": "Estimated value"
+            "value": "Estimated value",
+            "worthwhile": "Worthwhile mapping data",
+            "mapped": "Body was mapped"
         })
 
         self._prepare_columns(display_cols=self._all_cols)
@@ -91,7 +95,7 @@ class BodiesTable(gridlib.Grid):
             self.sort_reverse = not self.sort_reverse
         else:
             self.sort_col = colname
-            self.sort_reverse = (colname in RAW_MATS or colname in ("value", "bio", "geo"))
+            self.sort_reverse = (colname in RAW_MATS or colname in ("value", "bio", "geo", "worthwhile"))
         self._refresh_sort()
         event.Skip()
 
@@ -134,7 +138,7 @@ class BodiesTable(gridlib.Grid):
             target_body_id: str
     ):
         visible_mats = [m for m, on in filters.items() if on]
-        display_cols = ["body_id", "status", "body_type", "scoopable", "body", "distance", "land", "bio", "geo", "value"] + visible_mats
+        display_cols = ["body_id", "status", "body_type", "scoopable", "body", "distance", "land", "bio", "geo", "value", "worthwhile", "mapped"] + visible_mats
 
         needed_cols = len(display_cols)
         current_cols = self.GetNumberCols()
@@ -150,7 +154,7 @@ class BodiesTable(gridlib.Grid):
                 attr_left = gridlib.GridCellAttr()
                 attr_left.SetAlignment(wx.ALIGN_CENTER, wx.ALIGN_CENTER)
                 self.SetColAttr(i, attr_left)
-            elif colname in ("land", "bio", "geo", "status", "scoopable"):
+            elif colname in ("land", "bio", "geo", "status", "scoopable", "worthwhile", "mapped"):
                 attr_center = gridlib.GridCellAttr()
                 attr_center.SetAlignment(wx.ALIGN_CENTER, wx.ALIGN_CENTER)
                 self.SetColAttr(i, attr_center)
@@ -167,19 +171,20 @@ class BodiesTable(gridlib.Grid):
                 continue
             try:
                 row = {
-                    "body_id": (body_id, body_id if body_id is not None else ""),
-                    "status": (ICONS["status_header"] if body.body_id == target_body_id == selected_body_id
-                               else ICONS["status_target"] if body.body_id == target_body_id
-                               else ICONS["status_selected"] if body.body_id == selected_body_id
-                               else "", 0),
+                    "body_id":  (body_id, body_id if body_id is not None else ""),
+                    "status":   (ICONS["status_header"] if body.body_id == target_body_id == selected_body_id
+                                else ICONS["status_target"] if body.body_id == target_body_id
+                                else ICONS["status_selected"] if body.body_id == selected_body_id
+                                else "", 0),
                     "body_type": (f"{str(getattr(body, 'body_type', ''))}", str(getattr(body, 'body_type', '')).lower()),
-                    "scoopable": (f"{ICONS['scoopable']}" if getattr(body, "scoopable", False) else "", (0 if getattr(body, "scoopable", False) else 1)),
+                    "scoopable": (f"{ICONS['scoopable']}"                               if getattr(body, "scoopable", False) else "",               (0 if getattr(body, "scoopable", False) else 1)),
                     "body": (body.body_name, body.body_name.lower()),
-                    "distance": (f"{getattr(body, 'distance', 0):,.0f} Ls" if getattr(body, 'distance', 0) is not None else "", getattr(body, 'distance', 0)),
-                    "land": (f"{ICONS['landable']}"                                   if getattr(body, "landable", False)    else "", (0 if getattr(body, "landable", False)  else 1)),
-                    "bio": (f"{ICONS['biosigns']} {getattr(body, 'biosignals', 0)}"   if getattr(body, "biosignals", 0) > 0  else "", getattr(body, "biosignals", 0)),
-                    "geo": (f"{ICONS['geosigns']} {getattr(body, 'geosignals', 0)}"   if getattr(body, "geosignals", 0) > 0  else "", getattr(body, "geosignals", 0)),
-                    "value": (f"{getattr(body, 'estimated_value', 0):,} Cr"                 if getattr(body, "estimated_value", 0) else "", getattr(body, "estimated_value", 0)),
+                    "distance": (f"{getattr(body, 'distance', 0):,.0f} Ls"              if getattr(body, 'distance', 0) is not None else "",        getattr(body, 'distance', 0)),
+                    "land": (f"{ICONS['landable']}"                                     if getattr(body, "landable", False)    else "",             (0 if getattr(body, "landable", False)  else 1)),
+                    "bio": (f"{ICONS['biosigns']} {getattr(body, 'biosignals', 0)}"     if getattr(body, "biosignals", 0) > 0  else "",             getattr(body, "biosignals", 0)),
+                    "geo": (f"{ICONS['geosigns']} {getattr(body, 'geosignals', 0)}"     if getattr(body, "geosignals", 0) > 0  else "",             getattr(body, "geosignals", 0)),
+                    "value": (f"{getattr(body, 'estimated_value', 0):,} Cr"             if getattr(body, "estimated_value", 0) else "",             getattr(body, "estimated_value", 0)),
+                    "worthwhile": (f"{ICONS["worthwhile"]}"                             if getattr(body, "estimated_value", 0) >= 1000000 else "",  getattr(body, "estimated_value", 0)),
                 }
                 for m in visible_mats:
                     matval = body.materials.get(m, None)
@@ -257,7 +262,7 @@ class BodiesTable(gridlib.Grid):
                 self.SetColSize(i, 80)
             elif colname == "value":
                 self.SetColSize(i, 100)
-            elif colname in ("land", "bio", "geo", "scoopable"):
+            elif colname in ("land", "bio", "geo", "scoopable", "worthwhile", "mapped"):
                 self.SetColSize(i, 40)
             elif colname == "body_id":
                 self.SetColSize(i, 50 if DEBUG_MODE else 0)
