@@ -3,6 +3,7 @@ from EDXD.gui.helper.window_properties import WindowProperties
 from EDXD.gui.custom_title_bar import CustomTitleBar
 from EDXD.globals import logging
 import inspect, functools
+from EDXD.gui.helper.icon_loader import make_icon_bundle
 
 def log_call(level=logging.INFO):
     """Decorator that logs function name and bound arguments."""
@@ -24,6 +25,12 @@ class DynamicDialog(wx.Dialog):
     from EDXD.globals import RESIZE_MARGIN  # px area at edge/corner for resizing
     def __init__(self, parent, style, title, win_id, show_minimize: bool = False, show_maximize: bool = False, show_close: bool = False):
         super().__init__(parent=parent, title=title, style=style)
+
+        try:
+            self.SetIcons(make_icon_bundle())  # <— plural: SetIcons uses wx.IconBundle
+        except Exception as e:
+            # optional logging
+            pass
 
         self.win_id = win_id
         self._resizing = False

@@ -9,7 +9,6 @@ from io import BytesIO
 
 from EDXD.gui.helper.gui_dynamic_button import DynamicButton
 
-
 def log_call(level=logging.INFO):
     """Decorator that logs function name and bound arguments."""
     def decorator(fn):
