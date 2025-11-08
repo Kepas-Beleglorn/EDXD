@@ -5,9 +5,6 @@ from EDXD.gui.helper.theme_handler import get_theme
 import inspect, functools
 
 from EDXD.gui.helper.gui_dynamic_button import DynamicButton
-from EDXD.gui.set_mineral_filter import MineralsFilter
-from EDXD.data_handler.journal_historian import JournalHistorian
-
 
 
 def log_call(level=logging.INFO):

@@ -69,10 +69,18 @@ DEBUG_PATH = APP_DIR/"debug"
 DEBUG_STATUS_JSON = DEBUG_MODE and True
 
 #-----------------------------------------------------------------------
+# ABOUT INFO
+APP_TITLE = "EDXD - ED eXploration Dashboard"
+GIT_OWNER = "Kepas-Beleglorn"
+GIT_REPO = "EDXD"
+
+#-----------------------------------------------------------------------
 # DEBUGGING OPTIONS
 DEFAULT_HEIGHT = 500
 DEFAULT_HEIGHT_JH = 250
 DEFAULT_WIDTH = 500
+DEFAULT_HEIGHT_ABOUT = 250
+DEFAULT_WIDTH_ABOUT = 500
 
 MIN_HEIGHT = 100
 MIN_WIDTH = 200

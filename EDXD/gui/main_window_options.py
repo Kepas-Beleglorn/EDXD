@@ -7,9 +7,8 @@ import inspect, functools
 from EDXD.gui.helper.gui_dynamic_button import DynamicButton
 from EDXD.gui.helper.gui_dynamic_toggle_button import DynamicToggleButton
 from EDXD.gui.set_mineral_filter import MineralsFilter
-from EDXD.data_handler.journal_historian import JournalHistorian
-
-
+from EDXD.gui.journal_historian import JournalHistorian
+from EDXD.gui.about_info import AboutInfo
 
 def log_call(level=logging.INFO):
     """Decorator that logs function name and bound arguments."""
@@ -27,12 +26,19 @@ def log_call(level=logging.INFO):
         return wrapper
     return decorator
 
+# current version
+try:
+    from EDXD._version import VERSION as __version__
+except Exception:
+    __version__ = "0.0.0.0"
 
 class MainWindowOptions(wx.Panel):
     def __init__(self, parent):
         super().__init__(parent)
         self.parent = parent
         self.theme = get_theme()
+
+        self._check_version()
 
         self.SetCursor(wx.Cursor(wx.CURSOR_ARROW))
         # Layout
@@ -56,6 +62,15 @@ class MainWindowOptions(wx.Panel):
         options_box.Add(self.btn_load_history, 0, wx.ALIGN_CENTER_VERTICAL | wx.TOP | wx.BOTTOM, margin)
         self.btn_load_history.Bind(wx.EVT_BUTTON, self._load_all_logs)
 
+        # Call about info
+        self.btn_about_info = DynamicButton(parent=self, label="About EDXD",
+                                                    size=wx.Size(BTN_WIDTH + self.theme["button_border_width"],
+                                                                 BTN_HEIGHT + self.theme["button_border_width"]),
+                                                    draw_border=True)
+        margin = self.theme["button_border_margin"] + self.theme["button_border_width"]
+        options_box.Add(self.btn_about_info, 0, wx.ALIGN_CENTER_VERTICAL | wx.TOP | wx.BOTTOM, margin)
+        self.btn_about_info.Bind(wx.EVT_BUTTON, self._show_about_info)
+
         self.SetSizer(options_box)
         self.Bind(wx.EVT_PAINT, self._on_paint)
 
@@ -78,3 +93,15 @@ class MainWindowOptions(wx.Panel):
     def _show_mineral_filter(self, event):
         mineral_filer = MineralsFilter(parent=self, prefs=self.parent.prefs)
         mineral_filer.ShowModal()
+
+    def _show_about_info(self, event):
+        about_info = AboutInfo(parent=self, prefs=self.parent.prefs)
+        about_info.ShowModal()
+
+    def _check_version(self):
+        # latest release on git
+        from EDXD.data_handler.helper.version_check import check_github_for_update
+
+        update, latest = check_github_for_update(__version__, GIT_OWNER, GIT_REPO, include_prereleases=False)
+        if update:
+            self._show_about_info(None)
