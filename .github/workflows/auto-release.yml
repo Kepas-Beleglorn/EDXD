@@ -82,15 +82,13 @@ jobs:
 
       - name: Build with PyInstaller
         run: |
-          pyinstaller --onefile --add-data "EDXD/resources:resources" EDXD/ed-eXploration-dashboard.py
+          pyinstaller --onefile --add-data EDXD/ed-eXploration-dashboard.py
         shell: bash
 
       - name: Prepare release directory
         run: |
           mkdir release
           cp dist/ed-eXploration-dashboard* release/
-          mkdir -p release/resources
-          cp EDXD/resources/edxd_128.png release/resources/
         shell: bash
 
       - name: Archive release for Linux/macOS
@@ -139,11 +137,9 @@ jobs:
             pip3 install pyinstaller
             pip3 install -r /workspace/requirements.txt
             cd /workspace
-            pyinstaller --onefile --add-data "EDXD/resources:resources" EDXD/ed-eXploration-dashboard.py
+            pyinstaller --onefile --add-data EDXD/ed-eXploration-dashboard.py
             mkdir /workspace/release
             cp /workspace/dist/ed-eXploration-dashboard* /workspace/release/
-            mkdir -p /workspace/release/resources
-            cp /workspace/EDXD/resources/edxd_128.png /workspace/release/resources/
             tar -czvf /workspace/edxd-dashboard-debian.tar.gz -C /workspace/release .
       - name: Upload Debian build artifact
         uses: actions/upload-artifact@v4
@@ -173,11 +169,9 @@ jobs:
             pip install pyinstaller
             pip install -r /workspace/requirements.txt
             cd /workspace
-            pyinstaller --onefile --add-data "EDXD/resources:resources" EDXD/ed-eXploration-dashboard.py
+            pyinstaller --onefile --add-data EDXD/ed-eXploration-dashboard.py
             mkdir /workspace/release
             cp /workspace/dist/ed-eXploration-dashboard* /workspace/release/
-            mkdir -p /workspace/release/resources
-            cp /workspace/EDXD/resources/edxd_128.png /workspace/release/resources/
             tar -czvf /workspace/edxd-dashboard-arch.tar.gz -C /workspace/release .
       - name: Upload Arch build artifact
         uses: actions/upload-artifact@v4

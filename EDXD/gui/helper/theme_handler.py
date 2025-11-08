@@ -2,7 +2,7 @@ import wx
 import wx.grid as gridlib
 import wx.lib.buttons as buttons
 
-from EDXD.globals import ICON_PATH
+#from EDXD.globals import ICON_PATH
 
 from EDXD.globals import logging
 import inspect, functools
@@ -78,13 +78,13 @@ def _apply_theme_to_frame(widget: wx.Frame):
     theme = get_theme()
     widget.SetBackgroundColour(theme["background"])
     widget.SetForegroundColour(theme["foreground"])
-    widget.SetIcon(wx.Icon(ICON_PATH.as_posix(), wx.BITMAP_TYPE_ICO))
+    #widget.SetIcon(wx.Icon(ICON_PATH.as_posix(), wx.BITMAP_TYPE_ICO))
 
 def _apply_theme_to_dialog(widget: wx.Dialog):
     theme = get_theme()
     widget.SetBackgroundColour(theme["background"])
     widget.SetForegroundColour(theme["foreground"])
-    widget.SetIcon(wx.Icon(ICON_PATH.as_posix(), wx.BITMAP_TYPE_ICO))
+    #widget.SetIcon(wx.Icon(ICON_PATH.as_posix(), wx.BITMAP_TYPE_ICO))
 
 def _apply_theme_to_panel(widget: wx.Panel):
     theme = get_theme()

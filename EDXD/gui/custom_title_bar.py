@@ -2,8 +2,10 @@ import wx
 
 from EDXD.gui.helper.gui_handler import init_widget
 
-from EDXD.globals import logging, SIZE_CTRL_BUTTONS, SIZE_APP_ICON, ICON_PATH
+from EDXD.globals import logging, SIZE_CTRL_BUTTONS, SIZE_APP_ICON, ICON_PNG_B64
 import inspect, functools
+import base64
+from io import BytesIO
 
 from EDXD.gui.helper.gui_dynamic_button import DynamicButton
 
@@ -81,17 +83,18 @@ class CustomTitleBar(wx.Panel):
         self.dragging = False
         self._drag_pos = None
 
-    def set_icon(self) ->wx.StaticBitmap:
-        # Load the original image as a wx.Image
-        image = wx.Image(ICON_PATH.as_posix(), wx.BITMAP_TYPE_PNG)
-        # Scale it to the desired size (e.g., 30x30), using high-quality scaling
-        scaled_image = image.Scale(SIZE_APP_ICON, SIZE_APP_ICON, wx.IMAGE_QUALITY_HIGH)
-        # Convert the scaled wx.Image back to a wx.Bitmap for use in widgets
-        scaled_bmp = wx.Bitmap(scaled_image)
-        # Wrap in wx.BitmapBundle for DPI awareness (recommended in wxPython 4.1+)
-        icon_bundle = wx.BitmapBundle.FromBitmap(scaled_bmp)
-        # Use in your StaticBitmap
-        return wx.StaticBitmap(self, -1, icon_bundle)
+    def set_icon(self) -> wx.StaticBitmap:
+        # Decode base64 -> bytes and load as wx.Image from memory
+        raw = base64.b64decode(ICON_PNG_B64)
+        stream = BytesIO(raw)
+        image = wx.Image(stream, wx.BITMAP_TYPE_PNG)
+
+        # Scale and convert to Bitmap
+        scaled = image.Scale(SIZE_APP_ICON, SIZE_APP_ICON, wx.IMAGE_QUALITY_HIGH)
+        bmp = wx.Bitmap(scaled)
+
+        # StaticBitmap expects a wx.Bitmap (not a BitmapBundle)
+        return wx.StaticBitmap(self, -1, bmp)
 
     # ... (other code unchanged)
     def on_left_down(self, event):
