@@ -66,6 +66,34 @@ jobs:
           libgstreamer-plugins-base1.0-dev libgtk-3-0
         if: runner.os == 'Linux'
 
+      - name: Extract version & bake into EDXD/_version.py
+        id: ver
+        shell: bash
+        run: |
+          python - <<'PY'
+          import os, pathlib
+          # tomllib on 3.11+, fall back to tomli if needed
+          try:
+            import tomllib
+          except ModuleNotFoundError:
+            import tomli as tomllib
+    
+          root = pathlib.Path(".")
+          data = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))
+          ver = data["project"]["version"]
+    
+          # Write the version file where your code imports it FROM EDXD._version
+          out = root / "EDXD" / "_version.py"
+          out.parent.mkdir(parents=True, exist_ok=True)
+          out.write_text(f'VERSION = "{ver}"\n', encoding="utf-8")
+    
+          # Expose version to later steps (for artifact names, etc.)
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
+            f.write(f"ver={ver}\n")
+    
+          print("Baked VERSION:", ver)
+          PY
+
       - name: Cache pip
         uses: actions/cache@v4
         with:
@@ -102,86 +130,17 @@ jobs:
         run: |
           powershell Compress-Archive -Path release\* -DestinationPath edxd-dashboard-${{ runner.os }}.zip
 
-      - name: Rename Ubuntu/Mint artifact for clarity
-        if: runner.os == 'Linux'
-        run: mv edxd-dashboard-Linux.tar.gz edxd-dashboard-Linux_ubuntu_mint.tar.gz
-
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: edxd-dashboard-${{ runner.os }}
           path: |
-            edxd-dashboard-${{ runner.os }}_ubuntu_mint.tar.gz
             edxd-dashboard-${{ runner.os }}.tar.gz
             edxd-dashboard-${{ runner.os }}.zip
 
-  build-debian:
-    name: Build on Debian (via Docker)
-    needs: check-version-commit
-    if: needs.check-version-commit.outputs.matched == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Build in Debian Docker container
-        uses: addnab/docker-run-action@v3
-        with:
-          image: debian:stable
-          options: -v ${{ github.workspace }}:/workspace
-          run: |
-            apt-get update
-            apt-get install -y python3 python3-pip build-essential libgtk-3-dev libglib2.0-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
-            pip3 install pyinstaller
-            pip3 install -r /workspace/requirements.txt
-            cd /workspace
-            pyinstaller --onefile EDXD/ed-eXploration-dashboard.py
-            mkdir /workspace/release
-            cp /workspace/dist/ed-eXploration-dashboard* /workspace/release/
-            tar -czvf /workspace/edxd-dashboard-debian.tar.gz -C /workspace/release .
-      - name: Upload Debian build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: edxd-dashboard-debian
-          path: edxd-dashboard-debian.tar.gz
-
-  build-arch:
-    name: Build on Arch (via Docker)
-    needs: check-version-commit
-    if: needs.check-version-commit.outputs.matched == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Build in Arch Docker container
-        uses: addnab/docker-run-action@v3
-        with:
-          image: archlinux:latest
-          options: -v ${{ github.workspace }}:/workspace
-          run: |
-            pacman -Syu --noconfirm
-            pacman -S --noconfirm python python-pip gtk3 glib2 gstreamer gst-plugins-base base-devel
-            pip install pyinstaller
-            pip install -r /workspace/requirements.txt
-            cd /workspace
-            pyinstaller --onefile EDXD/ed-eXploration-dashboard.py
-            mkdir /workspace/release
-            cp /workspace/dist/ed-eXploration-dashboard* /workspace/release/
-            tar -czvf /workspace/edxd-dashboard-arch.tar.gz -C /workspace/release .
-      - name: Upload Arch build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: edxd-dashboard-arch
-          path: edxd-dashboard-arch.tar.gz
-
   tag-and-release:
     name: Tag & Create GitHub Release
-    needs: [build, build-debian, build-arch, check-version-commit]
+    needs: [build, check-version-commit]
     runs-on: ubuntu-latest
     if: needs.check-version-commit.outputs.matched == 'true'
     steps:
@@ -220,7 +179,7 @@ jobs:
         run: |
           echo "${{ needs.check-version-commit.outputs.body }}" > RELEASE_NOTES.md
           echo "" >> RELEASE_NOTES.md
-          echo "**Full Changelog**: https://github.com/Kepas-Beleglorn/EDXD-test/compare/${{ steps.prev_tag.outputs.prev_tag }}...${{ needs.check-version-commit.outputs.tag }}" >> RELEASE_NOTES.md
+          echo "**Full Changelog**: https://github.com/Kepas-Beleglorn/EDXD/compare/${{ steps.prev_tag.outputs.prev_tag }}...${{ needs.check-version-commit.outputs.tag }}" >> RELEASE_NOTES.md
 
       - name: Download all build artifacts
         uses: actions/download-artifact@v4

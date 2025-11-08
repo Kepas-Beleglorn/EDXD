@@ -9,9 +9,34 @@ from EDXD.data_handler.journal_controller import JournalController
 from EDXD.data_handler.status_json_watcher import StatusWatcher
 from pathlib import Path
 import argparse, queue
+# version handling
+import sys
 
+from pathlib import Path
+
+def _from_pyproject() -> str | None:
+    try:
+        try:
+            import tomllib  # py311+
+        except ModuleNotFoundError:
+            import tomli as tomllib
+        pyproj = Path(__file__).resolve().parent.parent / "pyproject.toml"
+        if not pyproj.exists():
+            return None
+        data = tomllib.loads(pyproj.read_text(encoding="utf-8"))
+        return data.get("project", {}).get("version")
+    except Exception:
+        return None
+try:
+    from EDXD._version import VERSION as __version__
+except Exception:
+    __version__ = "0.0.0.0"
 
 def main():
+    if "--version" in sys.argv:
+        print(__version__)
+        return
+
     import json, sys
     app = wx.App(False)
 
