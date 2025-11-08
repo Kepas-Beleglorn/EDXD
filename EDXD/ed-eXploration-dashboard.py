@@ -2,7 +2,7 @@
 import wx
 
 from EDXD.gui.main_window import MainFrame
-from EDXD.globals import CFG_FILE, RAW_MATS, DEFAULT_WORTHWHILE_THRESHOLD, WORTHWHILE_THRESHOLD
+from EDXD.globals import CFG_FILE, RAW_MATS, DEFAULT_WORTHWHILE_THRESHOLD
 from EDXD.data_handler.model import Model
 from EDXD.data_handler.journal_reader import JournalReader
 from EDXD.data_handler.journal_controller import JournalController
@@ -11,8 +11,6 @@ from pathlib import Path
 import argparse, queue
 # version handling
 import sys
-
-from pathlib import Path
 
 def _from_pyproject() -> str | None:
     try:
@@ -37,7 +35,7 @@ def main():
         print(__version__)
         return
 
-    import json, sys
+    import json
     app = wx.App(False)
 
     cfg = json.loads(CFG_FILE.read_text()) if CFG_FILE.exists() else {}

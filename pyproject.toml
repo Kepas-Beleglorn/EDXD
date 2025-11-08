@@ -9,6 +9,7 @@ requires-python = ">=3.9"
 dependencies = [
     "watchdog>=3.0.0",
     "wxPython~=4.2.3",
+    "tomli"
 ]
 
 [project.scripts]
