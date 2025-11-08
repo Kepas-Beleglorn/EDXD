@@ -37,6 +37,8 @@ def main():
 
     import json
     app = wx.App(False)
+    app.SetAppName("EDXD")
+    app.SetVendorName("EDXD")  # optional, but helps consistency
 
     cfg = json.loads(CFG_FILE.read_text()) if CFG_FILE.exists() else {}
     ap = argparse.ArgumentParser()
