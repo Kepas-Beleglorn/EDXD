@@ -32,9 +32,6 @@ class DynamicFrame(wx.Frame):
             # optional logging
             pass
 
-        self.SetName("EDXD")  # window name
-        self.SetTitle("EDXD")  # you probably do this already
-
         self.win_id = win_id
         self._resizing = False
         self._resize_dir = None
