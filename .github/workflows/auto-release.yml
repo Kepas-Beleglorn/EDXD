@@ -82,7 +82,7 @@ jobs:
 
       - name: Build with PyInstaller
         run: |
-          pyinstaller --onefile --add-data EDXD/ed-eXploration-dashboard.py
+          pyinstaller --onefile EDXD/ed-eXploration-dashboard.py
         shell: bash
 
       - name: Prepare release directory
@@ -137,7 +137,7 @@ jobs:
             pip3 install pyinstaller
             pip3 install -r /workspace/requirements.txt
             cd /workspace
-            pyinstaller --onefile --add-data EDXD/ed-eXploration-dashboard.py
+            pyinstaller --onefile EDXD/ed-eXploration-dashboard.py
             mkdir /workspace/release
             cp /workspace/dist/ed-eXploration-dashboard* /workspace/release/
             tar -czvf /workspace/edxd-dashboard-debian.tar.gz -C /workspace/release .
@@ -169,7 +169,7 @@ jobs:
             pip install pyinstaller
             pip install -r /workspace/requirements.txt
             cd /workspace
-            pyinstaller --onefile --add-data EDXD/ed-eXploration-dashboard.py
+            pyinstaller --onefile EDXD/ed-eXploration-dashboard.py
             mkdir /workspace/release
             cp /workspace/dist/ed-eXploration-dashboard* /workspace/release/
             tar -czvf /workspace/edxd-dashboard-arch.tar.gz -C /workspace/release .
