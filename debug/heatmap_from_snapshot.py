@@ -31,13 +31,14 @@ Dependencies:
 This script uses the Agg backend so it runs headless (no X required).
 """
 from __future__ import annotations
-import os
-import sys
-import json
+
 import argparse
+import json
+import os
 from glob import glob
-from datetime import datetime
+
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -57,6 +58,7 @@ DEFAULT_ASSET_MAP: dict[str, str] = {
     "EDXD-0.3.0.tar.gz": "ubuntu/mint",
 }
 
+
 def load_snapshots_from_dir(dirpath: str):
     files = sorted(glob(os.path.join(dirpath, "*.json")))
     if not files:
@@ -69,6 +71,7 @@ def load_snapshots_from_dir(dirpath: str):
         snaps.append((t, data))
     snaps.sort(key=lambda x: x[0])
     return snaps
+
 
 def load_snapshots_from_file(path: str):
     with open(path, "r", encoding="utf-8") as fh:
@@ -95,6 +98,7 @@ def load_snapshots_from_file(path: str):
         return [(t, data)]
     raise SystemExit("Input JSON not recognized. Expecting a snapshot object, list, or {'snapshots': [...]}")
 
+
 def flatten_snapshot_counts(snap: dict):
     """
     Return dict mapping "release_tag :: asset_name" -> cumulative_download_count
@@ -106,6 +110,7 @@ def flatten_snapshot_counts(snap: dict):
             key = f"{tag} :: {a.get('name')}"
             out[key] = int(a.get("download_count", 0))
     return out
+
 
 def compute_delta_dataframe(snaps: list[tuple[str, dict]]):
     """
@@ -139,6 +144,7 @@ def compute_delta_dataframe(snaps: list[tuple[str, dict]]):
     df = df.fillna(0).astype(int)
     return df
 
+
 def group_columns(df: pd.DataFrame, group_by: str, asset_map: dict[str, str]):
     """
     group_by in {"release","asset"}
@@ -161,6 +167,7 @@ def group_columns(df: pd.DataFrame, group_by: str, asset_map: dict[str, str]):
         df_grouped[k] = df[cols].sum(axis=1)
     return df_grouped
 
+
 def plot_heatmap(df_grouped: pd.DataFrame, out_png: str, top_n: int = 30, title: str | None = None):
     if df_grouped.empty:
         raise SystemExit("No data to plot")
@@ -177,7 +184,7 @@ def plot_heatmap(df_grouped: pd.DataFrame, out_png: str, top_n: int = 30, title:
         # bar chart across groups for that date
         date_label = str(df_top.index[0])
         vals = df_top.iloc[0].sort_values(ascending=False)
-        plt.figure(figsize=(10, max(4, len(vals)*0.15)))
+        plt.figure(figsize=(10, max(4, len(vals) * 0.15)))
         vals.plot(kind="bar")
         plt.ylabel("downloads")
         plt.title(title_with_total + f" — {date_label}")
@@ -189,7 +196,7 @@ def plot_heatmap(df_grouped: pd.DataFrame, out_png: str, top_n: int = 30, title:
         print(f"Wrote CSV to {csv_out}")
         return
     # heatmap: rows = groups, cols = dates
-    plt.figure(figsize=(max(8, df_top.shape[1]*0.5), max(4, df_top.shape[0]*0.25)))
+    plt.figure(figsize=(max(8, df_top.shape[1] * 0.5), max(4, df_top.shape[0] * 0.25)))
     sns.heatmap(df_top.T, cmap="YlGnBu", linewidths=0.3, cbar_kws={"label": "downloads"})
     plt.xlabel("date")
     plt.ylabel("group")
@@ -201,11 +208,13 @@ def plot_heatmap(df_grouped: pd.DataFrame, out_png: str, top_n: int = 30, title:
     df_top.to_csv(csv_out)
     print(f"Wrote CSV to {csv_out}")
 
+
 def main():
     p = argparse.ArgumentParser(description="Generate a downloads heatmap from snapshot JSON(s).")
     p.add_argument("input", help="Directory of snapshot JSONs or a single JSON file")
     p.add_argument("out_png", help="Output PNG path")
-    p.add_argument("--group-by", choices=["release", "asset"], default="release", help="Group heatmap rows by release tag or asset name")
+    p.add_argument("--group-by", choices=["release", "asset"], default="release",
+                   help="Group heatmap rows by release tag or asset name")
     p.add_argument("--top", type=int, default=30, help="Number of top groups to show")
     p.add_argument("--map-file", help="Optional JSON file mapping asset filenames to friendly group names")
     args = p.parse_args()
@@ -239,12 +248,14 @@ def main():
             return pd.to_datetime(k)
         except Exception:
             return pd.NaT
+
     snaps.sort(key=parse_key)
 
     if len(snaps) >= 2:
         df = compute_delta_dataframe(snaps)
         if df.empty:
-            raise SystemExit("Could not compute deltas — need at least two snapshots with recognizable snapshot_at timestamps")
+            raise SystemExit(
+                "Could not compute deltas — need at least two snapshots with recognizable snapshot_at timestamps")
         df_grouped = group_columns(df, args.group_by, asset_map)
         title = f"{os.path.basename(args.input)} — grouped by {args.group_by}"
         plot_heatmap(df_grouped, args.out_png, top_n=args.top, title=title)
@@ -264,6 +275,7 @@ def main():
         df_one = pd.DataFrame([grouped], index=[pd.to_datetime(snaps[0][0]).date() if snaps[0][0] else "snapshot"])
         title = f"{snaps[0][0]} — Downloads by {args.group_by}"
         plot_heatmap(df_one, args.out_png, top_n=args.top, title=title)
+
 
 if __name__ == "__main__":
     main()
