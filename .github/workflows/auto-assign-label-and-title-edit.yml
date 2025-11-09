@@ -72,5 +72,5 @@ jobs:
       - name: Add issue to project board
         uses: actions/add-to-project@v1.0.2
         with:
-          project-url: https://github.com/users/Kepas-Beleglorn/projects/13
+          project-url: https://github.com/users/Kepas-Beleglorn/projects/9
           github-token: ${{ secrets.PERSONAL_TOKEN }}

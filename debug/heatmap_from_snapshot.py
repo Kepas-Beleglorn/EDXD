@@ -20,7 +20,7 @@ Usage examples:
 Custom map-file format (JSON):
 {
   "edxd-dashboard-Windows.zip": "Windows",
-  "edxd-dashboard-Linux.tar.gz": "ubuntu/mint",
+  "edxd-dashboard-Linux.tar.gz": "Linux",
   ...
 }
 
@@ -47,15 +47,15 @@ import pandas as pd
 # Default mapping as requested by user
 DEFAULT_ASSET_MAP: dict[str, str] = {
     "edxd-dashboard-Windows.zip": "Windows",
-    "edxd-dashboard-Linux.tar.gz": "ubuntu/mint",
-    "edxd-dashboard-Linux_ubuntu_mint.tar.gz": "ubuntu/mint",
+    "edxd-dashboard-Linux.tar.gz": "Linux",
+    "edxd-dashboard-Linux_ubuntu_mint.tar.gz": "Linux",
     "edxd-dashboard-arch.tar.gz": "arch",
-    "EDXD_0.3.1.tar.gz": "ubuntu/mint",
+    "EDXD_0.3.1.tar.gz": "Linux",
     "edxd-dashboard-macOS.tar.gz": "macOS",
     "edxd-dashboard-debian.tar.gz": "debian",
-    "edxd-dashboard-Linux.zip": "ubuntu/mint",
+    "edxd-dashboard-Linux.zip": "Linux",
     "edxd-dashboard-macOS.zip": "macOS",
-    "EDXD-0.3.0.tar.gz": "ubuntu/mint",
+    "EDXD-0.3.0.tar.gz": "Linux",
 }
 
 
