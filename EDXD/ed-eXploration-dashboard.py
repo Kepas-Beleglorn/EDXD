@@ -2,11 +2,12 @@
 import wx
 
 from EDXD.gui.main_window import MainFrame
-from EDXD.globals import CFG_FILE, RAW_MATS, DEFAULT_WORTHWHILE_THRESHOLD
+from EDXD.globals import CFG_FILE, RAW_MATS, DEFAULT_WORTHWHILE_THRESHOLD, GIT_REPO, GIT_OWNER
 from EDXD.data_handler.model import Model
 from EDXD.data_handler.journal_reader import JournalReader
 from EDXD.data_handler.journal_controller import JournalController
 from EDXD.data_handler.status_json_watcher import StatusWatcher
+from EDXD.gui.about_info import AboutInfo
 from pathlib import Path
 import argparse, queue
 # version handling
@@ -30,21 +31,35 @@ try:
 except Exception:
     __version__ = "0.0.0.0"
 
+
+def _check_version(self, parent, prefs):
+    # latest release on git
+    from EDXD.data_handler.helper.version_check import check_github_for_update
+
+    update, latest = check_github_for_update(__version__, GIT_OWNER, GIT_REPO, include_prereleases=False)
+    if update:
+        about_info = AboutInfo(parent=parent, prefs=prefs)
+        about_info.ShowModal()
+
+
 def main():
     if "--version" in sys.argv:
         print(__version__)
         return
 
+
     import json
     app = wx.App(False)
     app.SetAppName("EDXD")
-    app.SetVendorName("EDXD")  # optional, but helps consistency
+    app.SetVendorName("EDXD")
 
     cfg = json.loads(CFG_FILE.read_text()) if CFG_FILE.exists() else {}
     ap = argparse.ArgumentParser()
     ap.add_argument("--journals", type=Path,
                     help="Path to Saved Games/Frontier Developments/Elite Dangerous")
     args = ap.parse_args()
+
+    _check_version(None, parent=None, prefs=cfg)
 
     if args.journals:
         cfg["journal_dir"] = str(args.journals.expanduser())

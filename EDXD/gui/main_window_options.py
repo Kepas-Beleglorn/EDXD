@@ -38,8 +38,6 @@ class MainWindowOptions(wx.Panel):
         self.parent = parent
         self.theme = get_theme()
 
-        self._check_version()
-
         self.SetCursor(wx.Cursor(wx.CURSOR_ARROW))
         # Layout
         options_box = wx.BoxSizer(wx.HORIZONTAL)
@@ -98,10 +96,3 @@ class MainWindowOptions(wx.Panel):
         about_info = AboutInfo(parent=self, prefs=self.parent.prefs)
         about_info.ShowModal()
 
-    def _check_version(self):
-        # latest release on git
-        from EDXD.data_handler.helper.version_check import check_github_for_update
-
-        update, latest = check_github_for_update(__version__, GIT_OWNER, GIT_REPO, include_prereleases=False)
-        if update:
-            self._show_about_info(None)
