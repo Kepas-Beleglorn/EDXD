@@ -12,14 +12,17 @@ Usage:
 Token can also be provided via the GITHUB_TOKEN environment variable.
 """
 from __future__ import annotations
+
+import argparse
+import json
 import os
 import sys
-import argparse
-import requests
-import json
 from datetime import datetime, timezone
 
+import requests
+
 API_ACCEPT = "application/vnd.github+json"
+
 
 def get_releases(owner: str, repo: str, token: str | None = None):
     headers = {"Accept": API_ACCEPT}
@@ -37,6 +40,7 @@ def get_releases(owner: str, repo: str, token: str | None = None):
         releases.extend(batch)
         url = resp.links.get("next", {}).get("url")
     return releases
+
 
 def build_snapshot(owner: str, repo: str, releases: list):
     """
@@ -90,6 +94,7 @@ def build_snapshot(owner: str, repo: str, releases: list):
         snap["releases"].append(release_entry)
     return snap
 
+
 def summarize(snapshot: dict, include_per_release: bool = False):
     total = 0
     per_release = []
@@ -107,6 +112,7 @@ def summarize(snapshot: dict, include_per_release: bool = False):
     if include_per_release:
         return total, per_release
     return total, None
+
 
 def print_detailed(snapshot: dict):
     # Print per-asset rows with release info and dates
@@ -128,7 +134,9 @@ def print_detailed(snapshot: dict):
     # sort most recent releases first by published_at (None last)
     rows.sort(key=lambda r: (r["release_published_at"] is None, r["release_published_at"] or ""), reverse=True)
     for r in rows:
-        print(f"{r['release_tag']}\t{r['release_published_at']}\t{r['asset_name']}\t{r['asset_created_at']}\t{r['download_count']}\t{r['url']}")
+        print(
+            f"{r['release_tag']}\t{r['release_published_at']}\t{r['asset_name']}\t{r['asset_created_at']}\t{r['download_count']}\t{r['url']}")
+
 
 def main():
     p = argparse.ArgumentParser(description="Sum GitHub release asset downloads for a repository.")
@@ -167,10 +175,13 @@ def main():
         if args.per_release:
             print("\nPer-release totals (most recent first):")
             for r in per_release:
-                print(f"- {r['tag_name'] or r['name'] or r['id']}: {r['total_downloads']} downloads ({r['assets_count']} assets)")
+                print(
+                    f"- {r['tag_name'] or r['name'] or r['id']}: {r['total_downloads']} downloads ({r['assets_count']} assets)")
         if args.detailed:
-            print("\nPer-asset detail (release_tag, release_published_at, asset_name, asset_created_at, download_count, url):")
+            print(
+                "\nPer-asset detail (release_tag, release_published_at, asset_name, asset_created_at, download_count, url):")
             print_detailed(snap)
+
 
 if __name__ == "__main__":
     main()
