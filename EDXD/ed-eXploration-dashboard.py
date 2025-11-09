@@ -31,22 +31,10 @@ try:
 except Exception:
     __version__ = "0.0.0.0"
 
-
-def _check_version(self, parent, prefs):
-    # latest release on git
-    from EDXD.data_handler.helper.version_check import check_github_for_update
-
-    update, latest = check_github_for_update(__version__, GIT_OWNER, GIT_REPO, include_prereleases=False)
-    if update:
-        about_info = AboutInfo(parent=parent, prefs=prefs)
-        about_info.ShowModal()
-
-
 def main():
     if "--version" in sys.argv:
         print(__version__)
         return
-
 
     import json
     app = wx.App(False)
@@ -58,8 +46,6 @@ def main():
     ap.add_argument("--journals", type=Path,
                     help="Path to Saved Games/Frontier Developments/Elite Dangerous")
     args = ap.parse_args()
-
-    _check_version(None, parent=None, prefs=cfg)
 
     if args.journals:
         cfg["journal_dir"] = str(args.journals.expanduser())
