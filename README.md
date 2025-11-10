@@ -34,10 +34,6 @@ On first run you should start the "Journal Historian" to process all of your ava
 
 ---
 
-If you use journal-limpet.com to backup your journals externally, please run [rename_journals.sh](https://github.com/Kepas-Beleglorn/EDXD/blob/c294a7b66efa32fc31c00a315d5afa241e80a111/rename_journals.sh). See  [#133](https://github.com/Kepas-Beleglorn/EDXD/issues/133)  
-
----
-
 ## Contribute
 
 As I don't have every single OS on my machine, I'd appreciate any help testing EDXD on several OS. 
