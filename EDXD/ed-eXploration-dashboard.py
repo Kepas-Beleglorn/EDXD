@@ -2,12 +2,11 @@
 import wx
 
 from EDXD.gui.main_window import MainFrame
-from EDXD.globals import CFG_FILE, RAW_MATS, DEFAULT_WORTHWHILE_THRESHOLD, GIT_REPO, GIT_OWNER
+from EDXD.globals import CFG_FILE, RAW_MATS, DEFAULT_WORTHWHILE_THRESHOLD
 from EDXD.data_handler.model import Model
 from EDXD.data_handler.journal_reader import JournalReader
 from EDXD.data_handler.journal_controller import JournalController
 from EDXD.data_handler.status_json_watcher import StatusWatcher
-from EDXD.gui.about_info import AboutInfo
 from pathlib import Path
 import argparse, queue
 # version handling
