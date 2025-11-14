@@ -23,7 +23,6 @@ import requests
 
 API_ACCEPT = "application/vnd.github+json"
 
-
 def get_releases(owner: str, repo: str, token: str | None = None):
     headers = {"Accept": API_ACCEPT}
     if token:
