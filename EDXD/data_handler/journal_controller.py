@@ -33,16 +33,21 @@ class JournalController(PausableThread, threading.Thread):
 
     def process_event(self, evt, update_gui: bool, set_timestamp: bool = True):
         etype = evt.get("event")
-        systemaddress = evt.get("SystemAddress")
-        total_bodies = None
 
         #113:   after app-start, load only current SYSTEM.json
         #       store last read journal line (timestamp) and process only newer lines
         if set_timestamp:
-            if etype != "FSDTarget" and systemaddress is not None:
-                self.m.total_bodies = None
-                self.m.reset_system(evt.get("StarSystem") or evt.get("Name") or self.m.system_name, systemaddress)
+            #141: don't switch to FSDTarget, if system has been visited before.
+            if etype != "FSDTarget":
+                systemaddress = evt.get("SystemAddress")
+                total_bodies = None
+                if systemaddress is not None:
+                    self.m.total_bodies = None
+                    self.m.reset_system(evt.get("StarSystem") or evt.get("Name") or self.m.system_name, systemaddress)
 
+            else:
+                systemaddress = self.m.system_addr
+                total_bodies = self.m.total_bodies
             current_evt_timestamp_str = evt.get("timestamp")
             last_processed_timestamp_str = dh.read_last_timestamp(JOURNAL_TIMESTAMP_FILE, current_evt_timestamp_str)
 
