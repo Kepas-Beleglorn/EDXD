@@ -37,17 +37,6 @@ class JournalController(PausableThread, threading.Thread):
         #113:   after app-start, load only current SYSTEM.json
         #       store last read journal line (timestamp) and process only newer lines
         if set_timestamp:
-            #141: don't switch to FSDTarget, if system has been visited before.
-            if etype != "FSDTarget":
-                systemaddress = evt.get("SystemAddress")
-                total_bodies = None
-                if systemaddress is not None:
-                    self.m.total_bodies = None
-                    self.m.reset_system(evt.get("StarSystem") or evt.get("Name") or self.m.system_name, systemaddress)
-
-            else:
-                systemaddress = self.m.system_addr
-                total_bodies = self.m.total_bodies
             current_evt_timestamp_str = evt.get("timestamp")
             last_processed_timestamp_str = dh.read_last_timestamp(JOURNAL_TIMESTAMP_FILE, current_evt_timestamp_str)
 
@@ -64,10 +53,19 @@ class JournalController(PausableThread, threading.Thread):
                 self.last_event = evt
                 dh.update_last_timestamp(JOURNAL_TIMESTAMP_FILE, current_evt_timestamp_str)
 
-        else: # read data when run via journal historian
+        #141: don't load system data of FSDTarget, if targeted system has been visited before.
+        #137: reset_system no longer uses <evt.get("Name")>, as this NEVER holds the systems name
+        if etype != "FSDTarget":
+            systemaddress = evt.get("SystemAddress")
+            total_bodies = None
             if systemaddress is not None:
                 self.m.total_bodies = None
-                self.m.reset_system(evt.get("StarSystem") or evt.get("Name") or self.m.system_name, systemaddress)
+                self.m.reset_system(evt.get("StarSystem") or self.m.system_name, systemaddress)
+
+        else:
+            systemaddress = self.m.system_addr
+            total_bodies = self.m.total_bodies
+
 
         # ───── jump to a new system ───────────────────────────────
         #124: system/selection is no longer reset when entering super cruise
@@ -86,7 +84,12 @@ class JournalController(PausableThread, threading.Thread):
                 total_bodies=total_bodies
             )
 
-        if evt.get("FSSAllBodiesFound") is not None:
+        if etype == "FSSDiscoveryScan":
+            if evt.get("Progress")*1 == 1:
+                self.m.total_bodies = evt.get("Count")
+                total_bodies = self.m.total_bodies
+
+        if etype == "FSSAllBodiesFound":
             self.m.total_bodies = evt.get("Count")
             total_bodies = self.m.total_bodies
         # initialize all parameters for update_body
@@ -241,7 +244,7 @@ class JournalController(PausableThread, threading.Thread):
                 body_id = bip + str(body_int)
                 genus_id = evt.get("Name")
                 # generalize genus ID
-                genus_id = re.sub(r'_\d+_[A-Za-z](?=_Name;)', '_Genus', genus_id)
+                genus_id = re.sub(r'_\d+_[^_]+(?=_Name;)', '_Genus', genus_id)
                 genus_localised = evt.get("Genus_Localised")
                 variant_localised = evt.get("Name_Localised")
                 bio_dict = self.m.bodies[body_id].bio_found if body_id in self.m.bodies else {}
@@ -272,7 +275,7 @@ class JournalController(PausableThread, threading.Thread):
             genus_id = evt.get("Genus")
             species_id = evt.get("Species")
             # generalize genus ID
-            genus_id = re.sub(r'_\d+_[A-Za-z](?=_Name;)', '_Genus', genus_id)
+            genus_id = re.sub(r'_\d+_[^_]+(?=_Name;)', '_Genus', genus_id)
             genus_localised = evt.get("Genus_Localised")
             species_localised = evt.get("Species_Localised")
             variant_localised = evt.get("Variant_Localised")
