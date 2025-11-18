@@ -44,6 +44,8 @@ def _get_dark_theme():
         border                  = wx.Colour("#aa4400"),
         border_button_light     = wx.Colour("#bb550088"),
         border_button_dark      = wx.Colour("#88330088"),
+        grid_label_background   = wx.Colour("#292c30"),
+        grid_line_color         = wx.Colour("#292c30"),
         border_thickness        = 1,
         button_border_width     = 3,
         button_border_margin    = 1,
@@ -127,6 +129,9 @@ def _apply_theme_to_grid(widget: gridlib.Grid):
     widget.SetFont(theme["font"])
     widget.SelectionBackground = theme["background_hover"]
     widget.SelectionForeground = theme["foreground_accent"]
+    widget.SetLabelBackgroundColour(theme["grid_label_background"])
+    widget.SetGridLineColour(theme["grid_line_color"])
+
     widget.CellHighlightPenWidth = 0
 
 

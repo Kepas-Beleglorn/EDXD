@@ -258,6 +258,7 @@ class BodiesTable(gridlib.Grid):
     def _prepare_columns(self, display_cols):
         for i, colname in enumerate(display_cols):
             self.SetColLabelValue(i, self._headers.get(colname, SYMBOL.get(colname, colname[:2].title())))
+
             if colname == "status":
                 self.SetColSize(i, 44)
             elif colname == "body_type":
