@@ -35,7 +35,7 @@ except Exception:
 
 # Safely import the runtime font utilities (optional — no hard failure if absent)
 try:
-    from EDXD.resources.fonts import font_utils as _font_utils
+    from EDXD.gui.helper import font_utils as _font_utils
 except Exception:
     _font_utils = None
 
