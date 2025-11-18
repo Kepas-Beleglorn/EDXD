@@ -16,7 +16,7 @@ import textwrap
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-FONTS_DIR = ROOT / "resources" / "fonts"
+FONTS_DIR = ROOT / "noto"
 OUT_FILE = ROOT / "fonts_embedded.py"
 
 HEADER = '''"""
