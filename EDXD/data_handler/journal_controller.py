@@ -293,7 +293,10 @@ class JournalController(PausableThread, threading.Thread):
             if  scantype == "Analyze":
                 genus_scanned = 3
             else:
-                genus_scanned = genus_found_dict.scanned_count or 0
+                try:
+                    genus_scanned = genus_found_dict.scanned_count or 0
+                except AttributeError:
+                    genus_scanned = 0
 
             pos_first = None
             pos_second = None
