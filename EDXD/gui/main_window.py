@@ -47,8 +47,8 @@ class MainFrame(DynamicFrame):
         props = WindowProperties.load(WINID, default_height=DEFAULT_HEIGHT_MAIN, default_width=DEFAULT_WIDTH_MAIN,
                                       default_posx=DEFAULT_POS_X, default_posy=DEFAULT_POS_Y)
         DynamicFrame.__init__(self, title=TITLE, win_id=WINID, parent=None, style=wx.NO_BORDER | wx.FRAME_SHAPED | wx.STAY_ON_TOP, show_minimize=True, show_maximize=True, show_close=True)
-        # 2. Apply geometry
-        init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
+      #  # 2. Apply geometry
+      #  init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
 
         self.journal_reader = journal_reader
         self.journal_controller = journal_controller
@@ -96,6 +96,9 @@ class MainFrame(DynamicFrame):
 
         # listen for target changes
         self.model.register_target_listener(lambda name: wx.CallAfter(self._update_target, name))
+
+        # 2. Apply geometry
+        init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
 
     def _update_system(self, title: str = ""):
         init_widget(widget=self.lbl_sys, title=title)

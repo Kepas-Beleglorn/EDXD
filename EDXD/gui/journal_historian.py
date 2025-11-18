@@ -26,8 +26,8 @@ class JournalHistorian(DynamicFrame):
         props = WindowProperties.load(WINID, default_height=DEFAULT_HEIGHT_JH, default_width=DEFAULT_WIDTH_JH,
                                       default_posx=DEFAULT_POS_X, default_posy=DEFAULT_POS_Y)
         DynamicFrame.__init__(self, title=TITLE, win_id=WINID, parent=None, style=wx.NO_BORDER | wx.FRAME_SHAPED | wx.STAY_ON_TOP, show_minimize=True, show_maximize=True, show_close=True)
-        # 2. Apply geometry
-        init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
+      #  # 2. Apply geometry
+      #  init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
 
         self.journal_reader = journal_reader
         self.journal_controller = journal_controller
@@ -67,6 +67,9 @@ class JournalHistorian(DynamicFrame):
         self.SetSizer(self.window_box)
 
         self.btn_start.Bind(wx.EVT_BUTTON, self.on_start)
+
+        # 2. Apply geometry
+        init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
 
     def on_start(self, event):
         # Gather files
