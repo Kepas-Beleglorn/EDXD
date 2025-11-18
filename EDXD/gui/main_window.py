@@ -1,25 +1,26 @@
 from __future__ import annotations
 
-import wx
+import functools
+import inspect
 from typing import Dict
 
+import wx
+
+from EDXD.data_handler.journal_controller import JournalController
+from EDXD.data_handler.journal_reader import JournalReader
 from EDXD.data_handler.model import Model, Body
 from EDXD.data_handler.status_json_watcher import StatusWatcher
-from EDXD.data_handler.journal_reader import JournalReader
-from EDXD.data_handler.journal_controller import JournalController
-
-from EDXD.gui.helper.dynamic_frame import DynamicFrame
-from EDXD.gui.helper.gui_handler import init_widget
-from EDXD.gui.table_view import BodiesTable
-from EDXD.gui.helper.window_properties import WindowProperties
-from EDXD.gui.main_window_options import MainWindowOptions
+from EDXD.globals import DEFAULT_HEIGHT_MAIN, DEFAULT_WIDTH_MAIN, DEFAULT_POS_Y, DEFAULT_POS_X, RESIZE_MARGIN
+from EDXD.globals import logging
 from EDXD.gui.detail_selected import DetailSelected
 from EDXD.gui.detail_target import DetailTargeted
+from EDXD.gui.helper.dynamic_frame import DynamicFrame
+from EDXD.gui.helper.gui_handler import init_widget
+from EDXD.gui.helper.window_properties import WindowProperties
+from EDXD.gui.main_window_options import MainWindowOptions
 from EDXD.gui.psps_gui import PositionTracker
-from EDXD.globals import DEFAULT_HEIGHT, DEFAULT_WIDTH, DEFAULT_POS_Y, DEFAULT_POS_X, RESIZE_MARGIN
+from EDXD.gui.table_view import BodiesTable
 
-from EDXD.globals import logging
-import inspect, functools
 
 def log_call(level=logging.INFO):
     """Decorator that logs function name and bound arguments."""
@@ -43,7 +44,8 @@ WINID = "EDXD_MAIN_WINDOW"
 class MainFrame(DynamicFrame):
     def __init__(self, model: Model, prefs: Dict, journal_reader: JournalReader, journal_controller: JournalController, status_watcher: StatusWatcher):
         # 1. Load saved properties (or use defaults)
-        props = WindowProperties.load(WINID, default_height=DEFAULT_HEIGHT, default_width=DEFAULT_WIDTH, default_posx=DEFAULT_POS_X, default_posy=DEFAULT_POS_Y)
+        props = WindowProperties.load(WINID, default_height=DEFAULT_HEIGHT_MAIN, default_width=DEFAULT_WIDTH_MAIN,
+                                      default_posx=DEFAULT_POS_X, default_posy=DEFAULT_POS_Y)
         DynamicFrame.__init__(self, title=TITLE, win_id=WINID, parent=None, style=wx.NO_BORDER | wx.FRAME_SHAPED | wx.STAY_ON_TOP, show_minimize=True, show_maximize=True, show_close=True)
         # 2. Apply geometry
         init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)

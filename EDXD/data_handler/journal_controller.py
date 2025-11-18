@@ -1,13 +1,15 @@
-import json, threading, queue, re
 import inspect
-import EDXD.data_handler.helper.bio_helper as bio_helper
-import EDXD.data_handler.helper.data_helper as dh
-
+import json
+import queue
+import re
+import threading
 from typing import Dict
 
-from EDXD.data_handler.planetary_surface_positioning_system import PSPSCoordinates
-from EDXD.data_handler.model import Model, Genus, CodexEntry, Ring
+import EDXD.data_handler.helper.bio_helper as bio_helper
+import EDXD.data_handler.helper.data_helper as dh
 from EDXD.data_handler.helper.pausable_thread import PausableThread
+from EDXD.data_handler.model import Model, Genus, CodexEntry, Ring
+from EDXD.data_handler.planetary_surface_positioning_system import PSPSCoordinates
 from EDXD.globals import logging, BODY_ID_PREFIX, log_context, JOURNAL_TIMESTAMP_FILE
 
 bip = BODY_ID_PREFIX
@@ -65,7 +67,6 @@ class JournalController(PausableThread, threading.Thread):
         else:
             systemaddress = self.m.system_addr
             total_bodies = self.m.total_bodies
-
 
         # ───── jump to a new system ───────────────────────────────
         #124: system/selection is no longer reset when entering super cruise
@@ -233,6 +234,7 @@ class JournalController(PausableThread, threading.Thread):
                                 body_id=body_id
                             )
                     geo_found[geo_id] = geo_codex_found
+
                     if geo_found is not None:
                         geo_scanned = len(geo_found)
 
@@ -292,7 +294,6 @@ class JournalController(PausableThread, threading.Thread):
                 genus_scanned = 3
             else:
                 genus_scanned = genus_found_dict.scanned_count or 0
-
 
             pos_first = None
             pos_second = None

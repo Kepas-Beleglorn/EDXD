@@ -1,24 +1,27 @@
 
 from __future__ import annotations
-import wx
-from EDXD.gui.helper.dynamic_dialog import DynamicDialog
-from EDXD.gui.helper.theme_handler import get_theme
-from EDXD.gui.helper.gui_handler import init_widget
+
 from typing import Optional
-from EDXD.gui.psps_gui_buttons import PSPSButtons
-from EDXD.gui.helper.window_properties import WindowProperties
-from EDXD.globals import DEFAULT_WIDTH, DEFAULT_POS_Y, DEFAULT_POS_X, RESIZE_MARGIN, ICONS
+
+import wx
+
 from EDXD.data_handler.model import Body
 from EDXD.data_handler.planetary_surface_positioning_system import PSPS, PSPSCoordinates
+from EDXD.globals import DEFAULT_WIDTH_PSPS, DEFAULT_HEIGHT_PSPS, DEFAULT_POS_Y, DEFAULT_POS_X, RESIZE_MARGIN, ICONS
+from EDXD.gui.helper.dynamic_dialog import DynamicDialog
+from EDXD.gui.helper.gui_handler import init_widget
+from EDXD.gui.helper.theme_handler import get_theme
+from EDXD.gui.helper.window_properties import WindowProperties
+from EDXD.gui.psps_gui_buttons import PSPSButtons
 
 TITLE = "Planetary Surface Positioning System"
 WINID = "PSPS"
-DEFAULT_HEIGHT = 200
 
 class PositionTracker(DynamicDialog):
     def __init__(self, parent, title=TITLE, win_id=WINID):
         # 1. Load saved properties (or use defaults)
-        props = WindowProperties.load(win_id, default_height=DEFAULT_HEIGHT, default_width=DEFAULT_WIDTH, default_posx=DEFAULT_POS_X, default_posy=DEFAULT_POS_Y)
+        props = WindowProperties.load(win_id, default_height=DEFAULT_HEIGHT_PSPS, default_width=DEFAULT_WIDTH_PSPS,
+                                      default_posx=DEFAULT_POS_X, default_posy=DEFAULT_POS_Y)
         DynamicDialog.__init__(self, parent=parent, style=wx.NO_BORDER | wx.FRAME_SHAPED | wx.STAY_ON_TOP, title=title, win_id=win_id, show_minimize=False, show_maximize=False, show_close=True)
         # 2. Apply geometry
         init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=win_id)

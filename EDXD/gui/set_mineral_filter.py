@@ -7,27 +7,33 @@ set_mineral_filter.py – filter & preferences window
 """
 
 from __future__ import annotations
-import wx
-from EDXD.gui.helper.gui_dynamic_toggle_button import DynamicToggleButton
+
 from typing import Dict
-from EDXD.gui.helper.theme_handler import get_theme
+
+import wx
+
+from EDXD.globals import BTN_HEIGHT, BTN_WIDTH
 from EDXD.gui.helper.dynamic_dialog import DynamicDialog
 from EDXD.gui.helper.gui_dynamic_button import DynamicButton
+from EDXD.gui.helper.gui_dynamic_toggle_button import DynamicToggleButton
 from EDXD.gui.helper.gui_handler import init_widget
+from EDXD.gui.helper.theme_handler import get_theme
 from EDXD.gui.helper.window_properties import WindowProperties
-from EDXD.globals import BTN_HEIGHT, BTN_WIDTH
 
 TITLE = "Minerals to show"
 WINID = "MINERALS_FILTER"
 MINERAL_BTN_WIDTH = 128
 
-from EDXD.globals import DEFAULT_HEIGHT, DEFAULT_WIDTH, DEFAULT_POS_Y, DEFAULT_POS_X, RAW_MATS
+from EDXD.globals import DEFAULT_HEIGHT_MINERALS_FILTER, DEFAULT_WIDTH_MINERALS_FILTER, DEFAULT_POS_Y, DEFAULT_POS_X, \
+    RAW_MATS
 
 # ---------------------------------------------------------------------------
 class MineralsFilter(DynamicDialog):
     def __init__(self, parent, prefs: Dict):
         # 1. Load saved properties (or use defaults)
-        props = WindowProperties.load(WINID, default_height=DEFAULT_HEIGHT, default_width=DEFAULT_WIDTH, default_posx=DEFAULT_POS_X, default_posy=DEFAULT_POS_Y)
+        props = WindowProperties.load(WINID, default_height=DEFAULT_HEIGHT_MINERALS_FILTER,
+                                      default_width=DEFAULT_WIDTH_MINERALS_FILTER, default_posx=DEFAULT_POS_X,
+                                      default_posy=DEFAULT_POS_Y)
         DynamicDialog.__init__(self, parent=parent, style=wx.NO_BORDER | wx.FRAME_SHAPED | wx.STAY_ON_TOP, title=TITLE, win_id=WINID, show_minimize=False, show_maximize=False, show_close=True)
         # 2. Apply geometry
         init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
