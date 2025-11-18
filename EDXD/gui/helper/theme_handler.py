@@ -1,11 +1,14 @@
+import functools
+import inspect
+
 import wx
 import wx.grid as gridlib
 import wx.lib.buttons as buttons
 
-#from EDXD.globals import ICON_PATH
-
 from EDXD.globals import logging
-import inspect, functools
+
+
+# from EDXD.globals import ICON_PATH
 
 def log_call(level=logging.INFO):
     """Decorator that logs function name and bound arguments."""
@@ -98,8 +101,6 @@ def _apply_theme_to_gauge(widget: wx.Gauge):
     theme = get_theme()
     #widget.SetBackgroundColour(theme["background"])
     #widget.SetForegroundColour(theme["foreground"])
-
-
     #widget.SetFont(theme["font_bold"])
 
 def _apply_theme_to_button(widget: buttons.GenButton):
@@ -131,7 +132,6 @@ def _apply_theme_to_grid(widget: gridlib.Grid):
     widget.SelectionForeground = theme["foreground_accent"]
     widget.SetLabelBackgroundColour(theme["grid_label_background"])
     widget.SetGridLineColour(theme["grid_line_color"])
-
     widget.CellHighlightPenWidth = 0
 
 
