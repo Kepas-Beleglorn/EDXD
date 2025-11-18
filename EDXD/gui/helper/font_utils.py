@@ -13,17 +13,32 @@ import tempfile
 from pathlib import Path
 
 # try to import the generated module; if it's missing, nothing to do
+_FONT_FILES = {}
+_fb = None
 try:
-    from EDXD.resources.fonts import fonts_embedded
-
-    _FONT_FILES = getattr(fonts_embedded, "FONT_FILES", {}) or {}
+    # first try the local/package-level location (if you had moved it earlier)
+    from . import fonts_embedded as _fb
 except Exception:
+    try:
+        # try the helper package location where you now placed it
+        from EDXD.gui.helper import fonts_embedded as _fb
+    except Exception:
+        try:
+            # final attempt via importlib (covers unusual import setups)
+            import importlib
+
+            _fb = importlib.import_module("EDXD.gui.helper.fonts_embedded")
+        except Exception:
+            _fb = None
+
+if _fb is not None:
+    _FONT_FILES = getattr(_fb, "FONT_FILES", {}) or {}
+else:
     _FONT_FILES = {}
 
 # track temp files/dirs for cleanup
 _temp_dir = None
 _registered_windows_buffers = []
-
 
 def _ensure_temp_dir():
     global _temp_dir
