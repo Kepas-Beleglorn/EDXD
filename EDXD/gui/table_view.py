@@ -19,7 +19,7 @@ class BodiesTable(gridlib.Grid):
             RAW_MATS)
         # At the top of your class, after self._all_cols:
         self._headers = {
-            "body_id" : "BodyID",
+            "body_id": "BodyID",
             "status": ICONS["status_header"],
             "body_type": "Type",
             "scoopable": ICONS["scoopable"],
