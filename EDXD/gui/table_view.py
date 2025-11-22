@@ -19,21 +19,21 @@ class BodiesTable(gridlib.Grid):
             RAW_MATS)
         # At the top of your class, after self._all_cols:
         self._headers = {
-            "body_id": "BodyID",
-            "status": ICONS["status_header"],
-            "body_type": "Type",
-            "scoopable": ICONS["scoopable"],
-            "body": "Body",
-            "distance": "Distance",
-            "land": ICONS["landable"],
-            "first_footfalled": ICONS["col_first_footfalled"],
-            "bio": ICONS["biosigns"],
-            "geo": ICONS["geosigns"],
-            "value": ICONS["value"],
-            "worthwhile": ICONS["worthwhile"],
-            "first_discovered": ICONS["col_first_discovered"],
-            "mapped": ICONS["mapped"],
-            "first_mapped": ICONS["col_first_mapped"]
+            "body_id"           : "BodyID",
+            "status"            : ICONS["status_header"],
+            "body_type"         : "Type",
+            "scoopable"         : ICONS["scoopable"],
+            "body"              : "Body",
+            "distance"          : "Distance",
+            "land"              : ICONS["landable"],
+            "first_footfalled"  : ICONS["col_first_footfalled"],
+            "bio"               : ICONS["biosigns"],
+            "geo"               : ICONS["geosigns"],
+            "value"             : ICONS["value"],
+            "worthwhile"        : ICONS["worthwhile"],
+            "first_discovered"  : ICONS["col_first_discovered"],
+            "mapped"            : ICONS["mapped"],
+            "first_mapped"      : ICONS["col_first_mapped"]
         }
 
         self._display_cols = None
@@ -49,21 +49,21 @@ class BodiesTable(gridlib.Grid):
         self.ClearSelection()  # To clear any selection if needed
         self._col2name = {mat: mat.title() for mat in RAW_MATS}
         self._col2name.update({
-            "body_id": "BodyID",
-            "status": "Selected or targeted",
-            "body_type": "Type of body or star",
-            "scoopable": "Star is scoopable",
-            "body": "Bodies in current system",
-            "distance": "Distance from entry point",
-            "land": "Landable",
-            "first_footfalled": "First footfall",
-            "bio": "Bio-signals",
-            "geo": "Geo-signals",
-            "value": "Estimated value",
-            "worthwhile": "Worthwhile mapping data",
-            "first_discovered": "First discovered",
-            "mapped": "Body was mapped",
-            "first_mapped": "First mapped"
+            "body_id"           : "BodyID",
+            "status"            : "Selected or targeted",
+            "body_type"         : "Type of body or star",
+            "scoopable"         : "Star is scoopable",
+            "body"              : "Bodies in current system",
+            "distance"          : "Distance from entry point",
+            "land"              : "Landable",
+            "first_footfalled"  : "First footfall",
+            "bio"               : "Bio-signals",
+            "geo"               : "Geo-signals",
+            "value"             : "Estimated value",
+            "worthwhile"        : "Worthwhile mapping data",
+            "first_discovered"  : "First discovered",
+            "mapped"            : "Body was mapped",
+            "first_mapped"      : "First mapped"
         })
 
         self._prepare_columns(display_cols=self._all_cols)

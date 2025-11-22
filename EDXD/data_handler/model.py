@@ -70,10 +70,10 @@ class Body:
                  geo_complete:      bool = False,
                  geo_scanned:       int = 0,
                  bio_complete:      bool = False,
-                 bio_scanned: int = 0,
-                 first_discovered: int = 0,
-                 first_mapped: int = 0,
-                 first_footfalled: int = 0
+                 bio_scanned:       int = 0,
+                 first_discovered:  int = 0,
+                 first_mapped:      int = 0,
+                 first_footfalled:  int = 0
                  ):
 
         self.body_id            = body_id
@@ -95,9 +95,9 @@ class Body:
         self.geo_scanned        = geo_scanned
         self.bio_complete       = bio_complete
         self.bio_scanned        = bio_scanned
-        self.first_discovered = first_discovered
-        self.first_mapped = first_mapped
-        self.first_footfalled = first_footfalled
+        self.first_discovered   = first_discovered
+        self.first_mapped       = first_mapped
+        self.first_footfalled   = first_footfalled
 
 class Ring:
     __slots__ = ("body_id", "body_name", "signals")
@@ -276,27 +276,27 @@ class Model:
                 self.total_bodies = cached.get("total_bodies", None)
             body_map = cached.get("bodies", {})
             for body_id, body_properties in body_map.items():
-                body_name = body_properties.get("body_name", "")
-                body_type = body_properties.get("body_type", "")
-                scoopable = body_properties.get("scoopable", False)
-                distance = body_properties.get("distance", 0)
-                landable = body_properties.get("landable", False)
-                bio_count = body_properties.get("biosignals", 0)
-                geo_count = body_properties.get("geosignals", 0)
-                mats = body_properties.get("materials", {})
-                bio_dict = body_properties.get("bio_found", {})
-                geo_dict = body_properties.get("geo_found", {})
-                estimated_value = body_properties.get("estimated_value", 0)
-                rings_dict = body_properties.get("rings", {})
-                radius = body_properties.get("radius", 0.0)
-                mapped = body_properties.get("mapped", False)
-                geo_complete = body_properties.get("geo_complete", False)
-                geo_scanned = body_properties.get("geo_scanned", 0)
-                bio_complete = body_properties.get("bio_complete", False)
-                bio_scanned = body_properties.get("bio_scanned", 0)
-                first_discovered = body_properties.get("first_discovered", 0)
-                first_mapped = body_properties.get("first_mapped", 0)
-                first_footfalled = body_properties.get("first_footfalled", 0)
+                body_name           = body_properties.get("body_name", "")
+                body_type           = body_properties.get("body_type", "")
+                scoopable           = body_properties.get("scoopable", False)
+                distance            = body_properties.get("distance", 0)
+                landable            = body_properties.get("landable", False)
+                bio_count           = body_properties.get("biosignals", 0)
+                geo_count           = body_properties.get("geosignals", 0)
+                mats                = body_properties.get("materials", {})
+                bio_dict            = body_properties.get("bio_found", {})
+                geo_dict            = body_properties.get("geo_found", {})
+                estimated_value     = body_properties.get("estimated_value", 0)
+                rings_dict          = body_properties.get("rings", {})
+                radius              = body_properties.get("radius", 0.0)
+                mapped              = body_properties.get("mapped", False)
+                geo_complete        = body_properties.get("geo_complete", False)
+                geo_scanned         = body_properties.get("geo_scanned", 0)
+                bio_complete        = body_properties.get("bio_complete", False)
+                bio_scanned         = body_properties.get("bio_scanned", 0)
+                first_discovered    = body_properties.get("first_discovered", 0)
+                first_mapped        = body_properties.get("first_mapped", 0)
+                first_footfalled    = body_properties.get("first_footfalled", 0)
 
                 bio_found = {k: Genus.from_dict(v) if isinstance(v, dict) else v for k, v in bio_dict.items()}
                 geo_found = {k: CodexEntry(**v) if isinstance(v, dict) else v for k, v in geo_dict.items()}
@@ -341,25 +341,25 @@ class Model:
                 self.total_bodies = tmp_total_bodies
             if body_id is not None:
                 body = self.bodies.get(body_id, Body(body_id=body_id))
-                body.body_name = body_name or body.body_name or ""
-                body.body_type = body_type or body.body_type or ""
-                body.scoopable = scoopable or body.scoopable or False
-                body.distance = distance or body.distance or 0
-                body.landable = landable or body.landable or False
-                body.biosignals = biosignals or body.biosignals or 0
-                body.geosignals = geosignals or body.geosignals or 0
-                body.bio_found = bio_found or body.bio_found or {}
-                body.geo_found = geo_found or body.geo_found or {}
-                body.rings = rings or body.rings or {}
-                body.radius = radius or body.radius or 0
-                body.mapped = mapped or body.mapped or False
-                body.geo_complete = geo_complete or body.geo_complete or False
-                body.geo_scanned = geo_scanned or body.geo_scanned or 0
-                body.bio_complete = bio_complete or body.bio_complete or False
-                body.bio_scanned = bio_scanned or body.bio_scanned or 0
-                body.first_discovered = first_discovered or body.first_discovered or 0
-                body.first_mapped = first_mapped or body.first_mapped or 0
-                body.first_footfalled = first_footfalled or body.first_footfalled or 0
+                body.body_name          = body_name         or body.body_name           or ""
+                body.body_type          = body_type         or body.body_type           or ""
+                body.scoopable          = scoopable         or body.scoopable           or False
+                body.distance           = distance          or body.distance            or 0
+                body.landable           = landable          or body.landable            or False
+                body.biosignals         = biosignals        or body.biosignals          or 0
+                body.geosignals         = geosignals        or body.geosignals          or 0
+                body.bio_found          = bio_found         or body.bio_found           or {}
+                body.geo_found          = geo_found         or body.geo_found           or {}
+                body.rings              = rings             or body.rings               or {}
+                body.radius             = radius            or body.radius              or 0
+                body.mapped             = mapped            or body.mapped              or False
+                body.geo_complete       = geo_complete      or body.geo_complete        or False
+                body.geo_scanned        = geo_scanned       or body.geo_scanned         or 0
+                body.bio_complete       = bio_complete      or body.bio_complete        or False
+                body.bio_scanned        = bio_scanned       or body.bio_scanned         or 0
+                body.first_discovered   = first_discovered  or body.first_discovered    or 0
+                body.first_mapped       = first_mapped      or body.first_mapped        or 0
+                body.first_footfalled   = first_footfalled  or body.first_footfalled    or 0
 
                 if materials is not None:
                     body.materials.update(materials)
@@ -416,9 +416,9 @@ class Model:
                     "geo_scanned"       : body.geo_scanned,
                     "geo_complete"      : body.geo_complete,
                     "materials"         : body.materials,
-                    "first_discovered": body.first_discovered,
-                    "first_mapped": body.first_mapped,
-                    "first_footfalled": body.first_footfalled,
+                    "first_discovered"  : body.first_discovered,
+                    "first_mapped"      : body.first_mapped,
+                    "first_footfalled"  : body.first_footfalled,
                     "bio_found"         : {
                         genusid:
                             genus.to_dict()
