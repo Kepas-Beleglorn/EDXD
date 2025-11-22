@@ -108,14 +108,25 @@ class JournalController(PausableThread, threading.Thread):
         geo_scanned     = None
         bio_complete    = None
         bio_scanned     = None
+
+        first_discovered = None
+        first_mapped = None
+        first_footfalled = None
+
         materials       = {}
-        scandata        = evt
 
         bio_found:      Dict[str, Genus]        = {}
         geo_found:      Dict[str, CodexEntry]   = {}
         rings_found:    Dict[str, Ring]         = {}
 
+        scandata = evt
+
         self.m.read_data_from_cache(systemaddress)
+
+        # ToDo: #146 remove redundancy of the following three lines
+        # body_name = evt.get("BodyName")
+        # bodyid_int = evt.get("BodyID")
+        # body_id = bip + str(bodyid_int)
 
         # FSS - body scan in system
         if etype == "Scan":
@@ -135,6 +146,69 @@ class JournalController(PausableThread, threading.Thread):
                 scoopable = body_type in ["K", "G", "B", "F", "O", "A", "M"]
                 materials = {m["Name"]: m["Percent"] for m in evt.get("Materials", [])}
 
+                # initialise first_*
+                # 0 - no data yet
+                # 1 - some one else was first
+                # 2 - I am first
+                first_discovered = 0
+                first_mapped = 0
+                first_footfalled = 0
+
+                if body_id in self.m.bodies:
+                    first_discovered = self.m.bodies[body_id].first_discovered or first_discovered
+                    first_mapped = self.m.bodies[body_id].first_mapped or first_mapped
+                    first_footfalled = self.m.bodies[body_id].first_footfalled or first_footfalled
+
+                # first analyse data during FSS
+                if evt.get("ScanType") in {"AutoScan", "Detailed"}:
+                    # are we first to discover?
+                    if not evt.get("WasDiscovered"):
+                        first_discovered = 2
+                    else:
+                        if first_discovered != 2:
+                            first_discovered = 1
+
+                    # Is that thing mapped?
+                    if not evt.get("WasMapped"):
+                        # It could be I've been there, but haven't sold the mapping data yet.
+                        if first_mapped != 2:
+                            first_mapped = 0
+                    else:
+                        if first_mapped != 2:
+                            first_mapped = 1
+
+                    # Has anyone set foot on that rock?
+                    if not evt.get("WasFootfalled"):
+                        # It could be I've been there, but haven't sold the mapping data yet.
+                        if first_footfalled != 2:
+                            first_footfalled = 0
+                    else:
+                        if first_footfalled != 2:
+                            first_footfalled = 1
+
+        if etype == "Disembark":
+            body_name = evt.get("BodyName")
+            bodyid_int = evt.get("BodyID")
+            body_id = bip + str(bodyid_int)
+
+            # initialise first_*
+            # 0 - no data yet
+            # 1 - some one else was first
+            # 2 - I am first
+            first_footfalled = 0
+
+            if body_id in self.m.bodies:
+                first_footfalled = self.m.bodies[body_id].first_footfalled or first_footfalled
+
+            # Has anyone set foot on that rock?
+            if not evt.get("WasFootfalled"):
+                # It could be I've been there, but haven't sold the footfall data yet.
+                if first_footfalled != 2:
+                    first_footfalled = 2
+            else:
+                if first_footfalled != 2:
+                    first_footfalled = 1
+
         if etype == "SAAScanComplete":
             body_name = evt.get("BodyName")
             # todo: process ring data properly
@@ -144,6 +218,24 @@ class JournalController(PausableThread, threading.Thread):
                 bodyid_int = evt.get("BodyID")
                 body_id = bip + str(bodyid_int)
                 mapped = True
+
+                # initialise first_*
+                # 0 - no data yet
+                # 1 - some one else was first
+                # 2 - I am first
+                first_mapped = 0
+
+                if body_id in self.m.bodies:
+                    first_mapped = self.m.bodies[body_id].first_mapped or first_mapped
+
+                # Is that thing mapped?
+                if not evt.get("WasMapped"):
+                    # It could be I've been there, but haven't sold the mapping data yet. Or, I'm teh first to ever map that thing.
+                    if first_mapped != 2:
+                        first_mapped = 2
+                else:
+                    if first_mapped != 2:
+                        first_mapped = 1
 
         # FSS - scanning of bodies
         if etype == "FSSBodySignals":
@@ -376,7 +468,10 @@ class JournalController(PausableThread, threading.Thread):
                 geo_complete=geo_complete,
                 geo_scanned=geo_scanned,
                 bio_complete=bio_complete,
-                bio_scanned=bio_scanned
+                bio_scanned=bio_scanned,
+                first_discovered=first_discovered,
+                first_mapped=first_mapped,
+                first_footfalled=first_footfalled
             )
 
         # nothing to safe here, just update the target

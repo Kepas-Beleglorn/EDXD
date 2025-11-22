@@ -158,7 +158,16 @@ ICONS = {
     "new_entry": "🚩",
     "pinned": "📍",
     "worthwhile": "💰",
-    "mapped": "🌐"
+    "mapped": "🌐",
+    "first_discovered": "🥇",
+    "first_mapped": "🥇",
+    "first_footfalled": "🥇",
+    "previous_discovered": "🌑",
+    "previous_mapped": "🌑",
+    "previous_footfalled": "🗿",
+    "col_first_discovered": "🔭",
+    "col_first_mapped": "🛰️",
+    "col_first_footfalled": "🕺🏽"
 }
 
 
