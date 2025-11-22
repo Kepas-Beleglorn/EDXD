@@ -76,6 +76,7 @@ class JournalController(PausableThread, threading.Thread):
             self.m.target_body_id = None
             self.m.selected_body_id = None
             self.m.reset_system(system_name=evt.get("StarSystem"), address=systemaddress)
+            body_id = "body_1"
 
         if evt.get("BodyCount") is not None:
             self.m.total_bodies = evt.get("BodyCount")
@@ -109,10 +110,6 @@ class JournalController(PausableThread, threading.Thread):
         bio_complete    = None
         bio_scanned     = None
 
-        first_discovered = None
-        first_mapped = None
-        first_footfalled = None
-
         materials       = {}
 
         bio_found:      Dict[str, Genus]        = {}
@@ -122,42 +119,48 @@ class JournalController(PausableThread, threading.Thread):
         scandata = evt
 
         self.m.read_data_from_cache(systemaddress)
+        bodyid_int = None
+        if etype not in {"ScanBaryCentre", "Location", "StartJump", "SupercruiseExit"}:
+            if "BodyID" in evt:
+                bodyid_int = evt.get("BodyID")
+            if bodyid_int is None and etype == "ScanOrganic" and "Body" in evt:
+                bodyid_int = evt.get("Body")
+            if bodyid_int is not None:
+                body_id = bip + str(bodyid_int)
+            if "BodyName" in evt:
+                body_name = evt.get("BodyName")
+            if body_name is None and etype == "FSDJump" and "Body" in evt:
+                body_name = evt.get("Body")
+            if body_name is None and body_id in self.m.bodies:
+                body_name = self.m.bodies[body_id].body_name
 
-        # ToDo: #146 remove redundancy of the following three lines
-        # body_name = evt.get("BodyName")
-        # bodyid_int = evt.get("BodyID")
-        # body_id = bip + str(bodyid_int)
+        # initialise first_*
+        # 0 - no data yet
+        # 1 - some one else was first
+        # 2 - I am first
+        first_discovered = 0
+        first_mapped = 0
+        first_footfalled = 0
+
+        if body_id in self.m.bodies:
+            first_discovered = self.m.bodies[body_id].first_discovered or first_discovered
+            first_mapped = self.m.bodies[body_id].first_mapped or first_mapped
+            first_footfalled = self.m.bodies[body_id].first_footfalled or first_footfalled
 
         # FSS - body scan in system
         if etype == "Scan":
-            body_name = evt.get("BodyName")
             # todo: process ring data properly
             if body_name.endswith("Ring"):
                 pass # skip for now
             else:
                 distance = evt.get("DistanceFromArrivalLS")
-                bodyid_int = evt.get("BodyID")
                 landable = evt.get("Landable")
-                body_id = bip + str(bodyid_int)
                 body_type = evt.get("PlanetClass") or evt.get("StarType")
                 radius = evt.get("Radius")
                 if body_type is None and "Belt Cluster" in body_name:
                     body_type = "Belt Cluster"
                 scoopable = body_type in ["K", "G", "B", "F", "O", "A", "M"]
                 materials = {m["Name"]: m["Percent"] for m in evt.get("Materials", [])}
-
-                # initialise first_*
-                # 0 - no data yet
-                # 1 - some one else was first
-                # 2 - I am first
-                first_discovered = 0
-                first_mapped = 0
-                first_footfalled = 0
-
-                if body_id in self.m.bodies:
-                    first_discovered = self.m.bodies[body_id].first_discovered or first_discovered
-                    first_mapped = self.m.bodies[body_id].first_mapped or first_mapped
-                    first_footfalled = self.m.bodies[body_id].first_footfalled or first_footfalled
 
                 # first analyse data during FSS
                 if evt.get("ScanType") in {"AutoScan", "Detailed"}:
@@ -187,19 +190,8 @@ class JournalController(PausableThread, threading.Thread):
                             first_footfalled = 1
 
         if etype == "Disembark":
-            body_name = evt.get("BodyName")
-            bodyid_int = evt.get("BodyID")
-            body_id = bip + str(bodyid_int)
-
-            # initialise first_*
-            # 0 - no data yet
-            # 1 - some one else was first
-            # 2 - I am first
-            first_footfalled = 0
-
-            if body_id in self.m.bodies:
-                first_footfalled = self.m.bodies[body_id].first_footfalled or first_footfalled
-
+            if body_id:
+                body_name = evt.get("Name")
             # Has anyone set foot on that rock?
             if not evt.get("WasFootfalled"):
                 # It could be I've been there, but haven't sold the footfall data yet.
@@ -210,23 +202,11 @@ class JournalController(PausableThread, threading.Thread):
                     first_footfalled = 1
 
         if etype == "SAAScanComplete":
-            body_name = evt.get("BodyName")
             # todo: process ring data properly
             if body_name.endswith("Ring"):
                 pass  # skip for now
             else:
-                bodyid_int = evt.get("BodyID")
-                body_id = bip + str(bodyid_int)
                 mapped = True
-
-                # initialise first_*
-                # 0 - no data yet
-                # 1 - some one else was first
-                # 2 - I am first
-                first_mapped = 0
-
-                if body_id in self.m.bodies:
-                    first_mapped = self.m.bodies[body_id].first_mapped or first_mapped
 
                 # Is that thing mapped?
                 if not evt.get("WasMapped"):
@@ -239,13 +219,10 @@ class JournalController(PausableThread, threading.Thread):
 
         # FSS - scanning of bodies
         if etype == "FSSBodySignals":
-            body_name = evt.get("BodyName")
             # todo: process rings properly
             if body_name.endswith("Ring"):
                 pass  # skip for now
             else:
-                bodyid_int = evt.get("BodyID")
-                body_id = bip + str(bodyid_int)
                 for signal in evt.get("Signals", []):
                     if signal.get("Type") == "$SAA_SignalType_Biological;":
                         biosignals = signal.get("Count")
@@ -255,13 +232,10 @@ class JournalController(PausableThread, threading.Thread):
 
         # DSS - mapping of bodies
         if etype == "SAASignalsFound":
-            body_name = evt.get("BodyName")
             # todo: process rings properly
             if body_name.endswith("Ring"):
                 pass  # skip for now
             else:
-                bodyid_int = evt.get("BodyID")
-                body_id = bip + str(bodyid_int)
                 for signal in evt.get("Signals", []):
                     if signal.get("Type") == "$SAA_SignalType_Biological;":
                         biosignals = signal.get("Count")
@@ -294,8 +268,6 @@ class JournalController(PausableThread, threading.Thread):
 
         # ── SRV geology scan (CodexEntry, but not if IsNewDiscovery=falsgenuse) ───
         if etype == "CodexEntry":  # and evt.get("Category") == "$Codex_Category_Geology;":
-            bodyid_int = evt.get("BodyID")
-            body_id = bip + str(bodyid_int)
             subcategory = evt.get("SubCategory")
             if subcategory == "$Codex_SubCategory_Geology_and_Anomalies;":
                 if evt.get("NearestDestination") != "$Fixed_Event_Life_Cloud;":
@@ -334,8 +306,6 @@ class JournalController(PausableThread, threading.Thread):
                         geo_complete = True
 
             if subcategory == "$Codex_SubCategory_Organic_Structures;":
-                body_int = evt.get("BodyID")
-                body_id = bip + str(body_int)
                 genus_id = evt.get("Name")
                 # generalize genus ID
                 genus_id = re.sub(r'_\d+_[^_]+(?=_Name;)', '_Genus', genus_id)
@@ -364,8 +334,6 @@ class JournalController(PausableThread, threading.Thread):
 
         if etype == "ScanOrganic":
             scantype = evt.get("ScanType")
-            body_int = evt.get("Body")
-            body_id = bip + str(body_int)
             genus_id = evt.get("Genus")
             species_id = evt.get("Species")
             # generalize genus ID
@@ -382,7 +350,7 @@ class JournalController(PausableThread, threading.Thread):
             if body_id in self.m.bodies and genus_id in self.m.bodies[body_id].bio_found:
                 genus_found_dict = self.m.bodies[body_id].bio_found[genus_id]
 
-            if  scantype == "Analyze":
+            if scantype == "Analyse":
                 genus_scanned = 3
             else:
                 try:
@@ -445,7 +413,14 @@ class JournalController(PausableThread, threading.Thread):
 
         # save/update data
         self.m.total_bodies = total_bodies or self.m.total_bodies
-        if body_id is not None:
+        # todo: process ring data properly
+        # workaround for empty body type
+        if body_type is None and body_id in self.m.bodies:
+            body_type = self.m.bodies[body_id].body_type or "🚫 no data 🚫"
+        if body_type is None:
+            body_type = "🚫 no data 🚫"
+
+        if body_id is not None and (body_name is None or not body_name.endswith("Ring")):
             self.m.update_body(
                 systemaddress=systemaddress,
                 body_id=body_id,
