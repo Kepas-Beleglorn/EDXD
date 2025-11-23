@@ -59,6 +59,21 @@ jobs:
         with:
           python-version: '3.13'
 
+      - name: Compute requirements hash
+        id: reqhash
+        shell: bash
+        run: |
+          if [ -f requirements.txt ]; then
+            python - <<'PY'
+import hashlib, os
+h = hashlib.sha256(open("requirements.txt","rb").read()).hexdigest()
+with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
+    f.write(f"reqhash={h}\n")
+PY
+          else
+            echo "reqhash=missing" >> $GITHUB_OUTPUT
+          fi
+
       - name: Install system dependencies for wxPython
         run: |
           sudo apt-get update
@@ -98,7 +113,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          key: ${{ runner.os }}-pip-${{ steps.reqhash.outputs.reqhash }}
           restore-keys: |
             ${{ runner.os }}-pip-
 
