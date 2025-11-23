@@ -195,7 +195,7 @@ class JournalController(PausableThread, threading.Thread):
             # Has anyone set foot on that rock?
             if not evt.get("WasFootfalled"):
                 # It could be I've been there, but haven't sold the footfall data yet.
-                if first_footfalled != 2:
+                if first_footfalled == 0:
                     first_footfalled = 2
             else:
                 if first_footfalled != 2:
@@ -211,7 +211,7 @@ class JournalController(PausableThread, threading.Thread):
                 # Is that thing mapped?
                 if not evt.get("WasMapped"):
                     # It could be I've been there, but haven't sold the mapping data yet. Or, I'm teh first to ever map that thing.
-                    if first_mapped != 2:
+                    if first_mapped == 0:
                         first_mapped = 2
                 else:
                     if first_mapped != 2:
