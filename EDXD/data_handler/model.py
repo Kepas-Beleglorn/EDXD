@@ -363,7 +363,7 @@ class Model:
 
                 if materials is not None:
                     body.materials.update(materials)
-                if scandata is not None:
+                if scandata is not None and scandata.get("event") == "Scan" and scandata.get("ScanType") in {"AutoScan", "Detailed"}:
                     body.estimated_value = appraise_body(body_info=scandata, just_scanned_value=False)
 
                 self.bodies[body_id] = body
