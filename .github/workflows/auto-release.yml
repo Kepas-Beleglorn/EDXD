@@ -65,11 +65,11 @@ jobs:
         run: |
           if [ -f requirements.txt ]; then
             python - <<'PY'
-import hashlib, os
-h = hashlib.sha256(open("requirements.txt","rb").read()).hexdigest()
-with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
-    f.write(f"reqhash={h}\n")
-PY
+            import hashlib, os
+            h = hashlib.sha256(open("requirements.txt","rb").read()).hexdigest()
+            with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
+                f.write(f"reqhash={h}\n")
+            PY
           else
             echo "reqhash=missing" >> $GITHUB_OUTPUT
           fi
