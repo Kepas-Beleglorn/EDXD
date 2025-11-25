@@ -211,7 +211,7 @@ class BodiesTable(gridlib.Grid):
                                      getattr(body, "first_mapped", 0)),
                     "first_footfalled": (
                         f"{ICONS["first_footfalled"]}" if getattr(body, "first_footfalled", 0) == 2 else (
-                            f"{ICONS["previuos_footfalled"]}" if getattr(body, "first_footfalled", 0) == 1 else ""),
+                            f"{ICONS["previous_footfalled"]}" if getattr(body, "first_footfalled", 0) == 1 else ""),
                         getattr(body, "first_footfalled", 0)),
 
                 }
