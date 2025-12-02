@@ -1,20 +1,19 @@
 from __future__ import annotations
 
-from wsgiref.util import application_uri
+from typing import Dict
 
 import wx
-from typing import Dict
-from EDXD.gui.helper.theme_handler import get_theme
+
+from EDXD.globals import BTN_HEIGHT, BTN_WIDTH
 from EDXD.gui.helper.dynamic_dialog import DynamicDialog
 from EDXD.gui.helper.gui_dynamic_button import DynamicButton
 from EDXD.gui.helper.gui_handler import init_widget
-from EDXD.gui.helper.window_properties import WindowProperties
 from EDXD.gui.helper.link_label import LinkLabel
-from EDXD.globals import BTN_HEIGHT, BTN_WIDTH
+from EDXD.gui.helper.theme_handler import get_theme
+from EDXD.gui.helper.window_properties import WindowProperties
 
 TITLE = "About EDXD"
 WINID = "ABOUT_INFO"
-MINERAL_BTN_WIDTH = 128
 
 from EDXD.globals import DEFAULT_HEIGHT_ABOUT, DEFAULT_WIDTH_ABOUT, DEFAULT_POS_Y, DEFAULT_POS_X, RESIZE_MARGIN
 from EDXD.globals import APP_TITLE, GIT_OWNER, GIT_REPO

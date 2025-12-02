@@ -1,10 +1,12 @@
+import functools
+import inspect
+
 import wx
 
+from EDXD.data_handler.planetary_surface_positioning_system import PSPSCoordinates
 from EDXD.globals import *
-from EDXD.gui.helper.theme_handler import get_theme
-import inspect, functools
-
 from EDXD.gui.helper.gui_dynamic_button import DynamicButton
+from EDXD.gui.helper.theme_handler import get_theme
 
 
 def log_call(level=logging.INFO):
@@ -41,6 +43,15 @@ class PSPSButtons(wx.Panel):
         button_box.Add(self.btn_set_current_position, 0, wx.ALIGN_CENTER_VERTICAL | wx.TOP | wx.BOTTOM, margin)
         self.btn_set_current_position.Bind(wx.EVT_BUTTON, self._init_psps)
 
+        # set manual position
+        self.btn_set_manual_position = DynamicButton(parent=self, label="Enter position manually",
+                                                      size=wx.Size(BTN_WIDTH + self.theme["button_border_width"],
+                                                                   BTN_HEIGHT + self.theme["button_border_width"]),
+                                                      draw_border=True)
+        margin = self.theme["button_border_margin"] + self.theme["button_border_width"]
+        button_box.Add(self.btn_set_manual_position, 0, wx.ALIGN_CENTER_VERTICAL | wx.TOP | wx.BOTTOM, margin)
+        self.btn_set_manual_position.Bind(wx.EVT_BUTTON, self._init_manual_psps)
+
         # clear current position
         self.btn_set_current_position = DynamicButton(parent=self, label="Clear pinned position",
                                                       size=wx.Size(BTN_WIDTH + self.theme["button_border_width"], BTN_HEIGHT + self.theme["button_border_width"]), draw_border=True)
@@ -64,6 +75,15 @@ class PSPSButtons(wx.Panel):
 
     def _init_psps(self, event):
         self.parent.pinned_position = self.parent.current_position
+
+    def _init_manual_psps(self, event):
+        import EDXD.gui.psps_enter_coordinates as psps_manual
+        psps_input = psps_manual.PSPSManualCoordinates(parent=self)
+        psps_input.ShowModal()
+        lat = float(psps_input.txt_latitude.GetValue())
+        lon = float(psps_input.txt_longitude.GetValue())
+
+        self.parent.pinned_position = PSPSCoordinates(latitude=lat, longitude=lon)
 
     def _clear_psps(self, event):
         self.parent.pinned_position = None

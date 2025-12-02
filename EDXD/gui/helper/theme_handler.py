@@ -120,6 +120,7 @@ def _apply_theme_to_text(widget: wx.TextCtrl):
     theme = get_theme()
     widget.SetBackgroundColour(theme["background"])
     widget.SetForegroundColour(theme["foreground"])
+
     widget.SetFont(theme["font"])
 
 def _apply_theme_to_grid(widget: gridlib.Grid):

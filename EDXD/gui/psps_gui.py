@@ -41,7 +41,7 @@ class PositionTracker(DynamicDialog):
         self._update_body()
         self.window_box.Add(self.lbl_body, 0, wx.EXPAND | wx.EAST | wx.WEST | wx.SOUTH, RESIZE_MARGIN)
 
-        # Add options panel (mineral filter, landable, and maybe more in the future
+        # Add options panel with buttons in PSPS
         self.buttons = PSPSButtons(parent=self)
         self.window_box.Add(self.buttons, 0, wx.EXPAND | wx.EAST | wx.WEST, RESIZE_MARGIN)
 
@@ -93,7 +93,7 @@ class PositionTracker(DynamicDialog):
                 self.txt_pinned_position.Clear()
                 self.txt_distance_to_target.Clear()
 
-            if current_ok and self.pinned_position and self.pinned_position.latitude and self.pinned_position.longitude:
+            if current_ok and self.pinned_position and self.pinned_position.latitude is not None and self.pinned_position.longitude is not None:
                 self.txt_pinned_position.SetValue(f"{ICONS['pinned']} Lat: {self.pinned_position.latitude:.5f}° :: Long: {self.pinned_position.longitude:.5f}°")
                 pinned_ok = True
             if current_ok and pinned_ok:
@@ -110,6 +110,8 @@ class PositionTracker(DynamicDialog):
 
         if not self.IsShown():
             self.Show()
+
+        self.Fit()
 
     # --------------------------------------------------------------
     def _on_show(self, event):
