@@ -15,6 +15,8 @@ class BodiesTable(gridlib.Grid):
     #@log_call()
     def __init__(self, parent, on_select: Callable[[str], None]):
         super().__init__(parent)
+
+        self.parent = parent
         self._all_cols = ["body_id", "status", "body_type", "scoopable", "body", "distance", "land", "first_footfalled",
                           "bio", "geo", "value", "worthwhile", "first_discovered", "mapped", "first_mapped"] + list(
             RAW_MATS)
@@ -206,7 +208,7 @@ class BodiesTable(gridlib.Grid):
                             else f"{ICONS['geosigns']} {getattr(body, 'geo_scanned', 0)}/{getattr(body, 'geosignals', 0)}" if getattr(body, "geosignals", 0) > 0
                             else "", getattr(body, "geosignals", 0)),
                     "value": (f"{getattr(body, 'estimated_value', 0):,} Cr"             if getattr(body, "estimated_value", 0) else "",             getattr(body, "estimated_value", 0)),
-                    "worthwhile": (f"{ICONS["worthwhile"]}"                             if getattr(body, "estimated_value", 0) >= self.Parent.prefs.get("worthwhile_threshold", DEFAULT_WORTHWHILE_THRESHOLD) else "",  getattr(body, "estimated_value", 0)),
+                    "worthwhile": (f"{ICONS["worthwhile"]}"                             if getattr(body, "estimated_value", 0) >= self.parent.prefs.get("worthwhile_threshold", DEFAULT_WORTHWHILE_THRESHOLD) else "",  getattr(body, "estimated_value", 0)),
                     "mapped": (f"{ICONS['mapped']}"                                     if getattr(body, "mapped", False) else "",                  (1 if getattr(body, "mapped", False) else 0)),
                     "first_discovered": (
                         f"{ICONS["first_discovered"]}" if getattr(body, "first_discovered", 0) == 2 else (

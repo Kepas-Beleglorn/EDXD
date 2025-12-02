@@ -1,7 +1,12 @@
 # EDXD/version_check.py
 from __future__ import annotations
-import json, os, sys, urllib.request, urllib.error
+
+import json
+import os
+import urllib.error
+import urllib.request
 from typing import Optional, Tuple
+
 
 def _http_get(url: str, timeout: float = 5.0) -> bytes:
     req = urllib.request.Request(
@@ -48,6 +53,7 @@ def fetch_latest_release_version(owner: str, repo: str, include_prereleases: boo
     Otherwise scans /releases and picks the first non-draft (and prerelease if allowed).
     """
     base = f"https://api.github.com/repos/{owner}/{repo}/releases"
+
     try:
         if not include_prereleases:
             data = json.loads(_http_get(base + "/latest").decode("utf-8"))

@@ -36,6 +36,9 @@ class JournalController(PausableThread, threading.Thread):
     def process_event(self, evt, update_gui: bool, set_timestamp: bool = True):
         etype = evt.get("event")
 
+        # todo: #114 - implement FSD super charged state (perhaps even check for FSD injection via synth?); register on boost, reset after jump
+        # todo: #121 - determine fuel capacity of current ship
+
         #113:   after app-start, load only current SYSTEM.json
         #       store last read journal line (timestamp) and process only newer lines
         if set_timestamp:

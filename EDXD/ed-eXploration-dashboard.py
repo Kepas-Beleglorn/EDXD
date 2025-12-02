@@ -11,7 +11,7 @@ from EDXD.data_handler.journal_controller import JournalController
 from EDXD.data_handler.journal_reader import JournalReader
 from EDXD.data_handler.model import Model
 from EDXD.data_handler.status_json_watcher import StatusWatcher
-from EDXD.globals import CFG_FILE, RAW_MATS, DEFAULT_WORTHWHILE_THRESHOLD
+from EDXD.globals import CFG_FILE, RAW_MATS, DEFAULT_WORTHWHILE_THRESHOLD, DEFAULT_FUEL_LOW_THRESHOLD
 from EDXD.gui.main_window import MainFrame
 
 
@@ -93,6 +93,9 @@ def main():
     cfg.setdefault("mat_sel", {m: True for m in RAW_MATS})
     if "worthwhile_threshold" not in cfg.keys():
         cfg["worthwhile_threshold"] = DEFAULT_WORTHWHILE_THRESHOLD
+
+    if "fuel_low_threshold" not in cfg.keys():
+        cfg["fuel_low_threshold"] = DEFAULT_FUEL_LOW_THRESHOLD
 
     def _save():
         data = {k: v for k, v in cfg.items() if k != "save"}

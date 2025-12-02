@@ -14,6 +14,7 @@ from EDXD.globals import DEFAULT_HEIGHT_MAIN, DEFAULT_WIDTH_MAIN, DEFAULT_POS_Y,
 from EDXD.globals import logging
 from EDXD.gui.detail_selected import DetailSelected
 from EDXD.gui.detail_target import DetailTargeted
+from EDXD.gui.engine_status import EngineStatus
 from EDXD.gui.helper.dynamic_frame import DynamicFrame
 from EDXD.gui.helper.gui_handler import init_widget
 from EDXD.gui.helper.window_properties import WindowProperties
@@ -95,6 +96,9 @@ class MainFrame(DynamicFrame):
         self.win_psps = PositionTracker(self)
         self.win_psps.Show(True)
 
+        self.win_engine_status = EngineStatus(self)
+        self.win_engine_status.Show(True)
+
         # listen for target changes
         self.model.register_target_listener(lambda name: wx.CallAfter(self._update_target, name))
 
@@ -150,6 +154,8 @@ class MainFrame(DynamicFrame):
         if self.win_sel.lbl_body.GetLabelText() == self.win_tar.lbl_body.GetLabelText():
             self.win_sel.render(body=body, filters=self.prefs["mat_sel"], current_position=current_position, current_heading=current_heading)
         self.win_psps.render(body=body, current_position=current_position, current_heading=current_heading)
+        # todo: #121 - provide proper values to fuel gauge
+        self.win_engine_status.render(fuel_current=3, fuel_reservoir=0.39, fuel_capacity=40,vehicle="ship")
 
         # trigger a table refresh so the status icon updates immediately
         self._refresh()
