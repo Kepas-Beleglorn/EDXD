@@ -39,15 +39,19 @@ try:
 except Exception:
     _font_utils = None
 
+from EDXD.edxd_single_instance import SingleInstance
+from typing import Optional
+_instance: Optional[SingleInstance] = None
+
 def main():
     if "--version" in sys.argv:
         print(__version__)
         return
 
-    # check if another instalce of EDXD is already running (working from v0.6.0.0)
-    from EDXD.edxd_single_instance import SingleInstance
-    instance = SingleInstance()
-    instance.acquire_or_exit()
+    # check if another instance of EDXD is already running (working from v0.6.0.0)
+    global _instance
+    _instance = SingleInstance()
+    _instance.acquire_or_exit()
 
     import json
     app = wx.App(False)
