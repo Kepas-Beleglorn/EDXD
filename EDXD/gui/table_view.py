@@ -7,6 +7,7 @@ import wx.grid as gridlib
 from EDXD.data_handler.model import Body
 from EDXD.globals import SYMBOL, logging, RAW_MATS, ICONS, log_call, DEBUG_MODE, log_context, \
     DEFAULT_WORTHWHILE_THRESHOLD
+from EDXD.utils.clipboard import copy_text_to_clipboard
 
 
 class BodiesTable(gridlib.Grid):
@@ -82,6 +83,11 @@ class BodiesTable(gridlib.Grid):
         self.Bind(wx.EVT_KEY_DOWN, self._on_key_down)
         self.GetGridColLabelWindow().Bind(wx.EVT_MOTION, self._show_tip)
         self.loading = True
+
+        # Bind double-click for copying body name:
+        # Prefer the grid's cell double-click event, but also bind the generic mouse double-click as a fallback.
+        self.Bind(gridlib.EVT_GRID_CELL_LEFT_DCLICK, self._on_table_double_click)
+        self.Bind(wx.EVT_LEFT_DCLICK, self._on_table_double_click)
 
     def _show_tip(self, event):
         x = event.GetX()
@@ -301,3 +307,96 @@ class BodiesTable(gridlib.Grid):
                 self.SetColSize(i, 50 if DEBUG_MODE else 0)
             else:
                 self.SetColSize(i, 60)
+
+    def _plain_name_from_label(self, raw: str) -> str:
+        if not raw:
+            return raw
+        if " (" in raw:
+            raw = raw.split(" (", 1)[0]
+        if " - " in raw:
+            raw = raw.split(" - ", 1)[0]
+        return raw.strip()
+
+    def _on_table_double_click(self, evt: wx.Event):
+        """
+        Copy the body name from the clicked row/cell.
+        Handles both Grid cell-double-click events and generic mouse double-clicks.
+        """
+        name = None
+        index = None
+
+        # 1) If this is a Grid cell event, try to get row/col directly from the event
+        row = None
+        col = None
+        try:
+            # gridlib.Grid cell events expose GetRow/GetCol
+            row = evt.GetRow()
+            col = evt.GetCol()
+            index = row
+        except Exception:
+            # not a grid cell event; try to derive from mouse position
+            try:
+                pos = evt.GetPosition()
+                row = self.YToRow(pos.y)
+                col = self.XToCol(pos.x)
+                index = row
+            except Exception:
+                row = None
+                col = None
+
+        # If we have a valid row, try to copy the 'body' column if present, else fall back to the clicked cell
+        if row is not None and row >= 0:
+            try:
+                # Prefer the 'body' display column
+                if hasattr(self, "_display_cols") and self._display_cols and "body" in self._display_cols:
+                    body_col = self._display_cols.index("body")
+                    val = self.GetCellValue(row, body_col)
+                    if val and val.strip():
+                        name = self._plain_name_from_label(val)
+
+                # If that didn't yield a name, try the clicked column
+                if not name and col is not None and col >= 0:
+                    val = self.GetCellValue(row, col)
+                    if val and val.strip():
+                        name = self._plain_name_from_label(val)
+
+                # Final fallback: first non-empty cell in the row
+                if not name:
+                    for c in range(self.GetNumberCols()):
+                        try:
+                            val = self.GetCellValue(row, c)
+                            if val and val.strip():
+                                name = self._plain_name_from_label(val)
+                                break
+                        except Exception:
+                            continue
+            except Exception:
+                pass
+
+        # Fallback: use stored rows_data (the internal data used for rendering) to get the body display
+        if not name:
+            try:
+                if hasattr(self, "_rows_data") and index is not None and 0 <= index < len(self._rows_data):
+                    row_data = self._rows_data[index]
+                    candidate = ""
+                    if isinstance(row_data, dict):
+                        candidate = row_data.get("body", ("", ""))[0] or row_data.get("body_id", ("", ""))[0]
+                    if candidate:
+                        name = self._plain_name_from_label(candidate)
+            except Exception:
+                pass
+
+        # Final fallback: if a get_row_object mapping exists, prefer that (keeps parity with the previous approach)
+        if not name:
+            try:
+                if hasattr(self, "get_row_object"):
+                    row_obj = self.get_row_object(index)
+                    if row_obj:
+                        name = getattr(row_obj, "name", None) or getattr(row_obj, "body_name", None)
+            except Exception:
+                pass
+
+        if name:
+            copy_text_to_clipboard(name)
+
+        evt.Skip()

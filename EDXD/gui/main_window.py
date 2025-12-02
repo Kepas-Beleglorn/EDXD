@@ -20,6 +20,7 @@ from EDXD.gui.helper.window_properties import WindowProperties
 from EDXD.gui.main_window_options import MainWindowOptions
 from EDXD.gui.psps_gui import PositionTracker
 from EDXD.gui.table_view import BodiesTable
+from EDXD.utils.clipboard import copy_text_to_clipboard
 
 
 def log_call(level=logging.INFO):
@@ -47,8 +48,6 @@ class MainFrame(DynamicFrame):
         props = WindowProperties.load(WINID, default_height=DEFAULT_HEIGHT_MAIN, default_width=DEFAULT_WIDTH_MAIN,
                                       default_posx=DEFAULT_POS_X, default_posy=DEFAULT_POS_Y)
         DynamicFrame.__init__(self, title=TITLE, win_id=WINID, parent=None, style=wx.NO_BORDER | wx.FRAME_SHAPED | wx.STAY_ON_TOP, show_minimize=True, show_maximize=True, show_close=True)
-      #  # 2. Apply geometry
-      #  init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
 
         self.journal_reader = journal_reader
         self.journal_controller = journal_controller
@@ -57,7 +56,6 @@ class MainFrame(DynamicFrame):
         # Define the handler as a method
         def on_body_selected(body_name: str) -> None:
             self._row_clicked(body_name)
-            # You can update other parts of the UI here
 
         self.model = model
         self.prefs = prefs
@@ -72,11 +70,14 @@ class MainFrame(DynamicFrame):
         self._update_system()
         self.window_box.Add(self.lbl_sys, 0, wx.EXPAND | wx.EAST | wx.WEST | wx.SOUTH, RESIZE_MARGIN)
 
+        # bind double click event for system label
+        if getattr(self, "lbl_sys", None):
+            self.lbl_sys.Bind(wx.EVT_LEFT_DCLICK, self._on_lbl_sys_double_click)
+
         #System table with body info
         self.table_view = BodiesTable(self, on_select=on_body_selected)
         init_widget(self.table_view)
         self.window_box.Add(self.table_view, 1, wx.EXPAND | wx.EAST | wx.WEST | wx.SOUTH, RESIZE_MARGIN)
-
         self.SetSizer(self.window_box)
 
         # noinspection PyTypeChecker
@@ -152,6 +153,35 @@ class MainFrame(DynamicFrame):
 
         # trigger a table refresh so the status icon updates immediately
         self._refresh()
+
+    def _plain_name_from_label(self, raw: str) -> str:
+        if not raw:
+            return raw
+        # strip " (…)" and " - …" heuristically
+        if " (" in raw:
+            raw = raw.split(" (", 1)[0]
+        if " - " in raw:
+            raw = raw.split(" - ", 1)[0]
+        return raw.strip()
+
+    def _on_lbl_sys_double_click(self, evt: wx.Event):
+        # Prefer model.systemname (or close variants)
+        name = None
+        if getattr(self, "model", None):
+            name = getattr(self.model, "systemname", None) \
+                   or getattr(self.model, "system_name", None) \
+                   or getattr(self.model, "name", None)
+
+        # Fallback to the label text (strip trailing stats)
+        if not name and getattr(self, "lbl_sys", None):
+            raw = self.lbl_sys.GetLabel()
+            name = self._plain_name_from_label(raw)
+
+        if name:
+            copy_text_to_clipboard(name)
+            # Optionally give subtle UI feedback, e.g. a temporary status message:
+            # self.SetStatusText(f"Copied: {name}")
+        evt.Skip()
 
     # ------------------------------------------------------------------
     # periodic refresh

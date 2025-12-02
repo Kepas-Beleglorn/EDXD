@@ -1,15 +1,18 @@
 
 from __future__ import annotations
+
+from typing import Optional, Dict
+
 import wx
 
-from EDXD.data_handler.planetary_surface_positioning_system import PSPSCoordinates, PSPS
-from EDXD.gui.helper.dynamic_dialog import DynamicDialog
-from EDXD.gui.helper.theme_handler import get_theme
-from EDXD.gui.helper.gui_handler import init_widget
-from typing import Optional, Dict
-from EDXD.gui.helper.window_properties import WindowProperties
-from EDXD.globals import DEFAULT_HEIGHT, DEFAULT_WIDTH, DEFAULT_POS_Y, DEFAULT_POS_X, RESIZE_MARGIN, ICONS
 from EDXD.data_handler.model import Body
+from EDXD.data_handler.planetary_surface_positioning_system import PSPSCoordinates, PSPS
+from EDXD.globals import DEFAULT_HEIGHT, DEFAULT_WIDTH, DEFAULT_POS_Y, DEFAULT_POS_X, RESIZE_MARGIN, ICONS
+from EDXD.gui.helper.dynamic_dialog import DynamicDialog
+from EDXD.gui.helper.gui_handler import init_widget
+from EDXD.gui.helper.theme_handler import get_theme
+from EDXD.gui.helper.window_properties import WindowProperties
+from EDXD.utils.clipboard import copy_text_to_clipboard
 
 TITLE = "BODY DETAILS"
 WINID = "BODY_DETAILS"
@@ -22,6 +25,8 @@ class BodyDetails(DynamicDialog):
         # 2. Apply geometry
         init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=win_id)
 
+        self.body = None
+
         self.theme = get_theme()
 
         self._ready = False  # not yet mapped
@@ -32,6 +37,10 @@ class BodyDetails(DynamicDialog):
         self.lbl_body = wx.StaticText(parent=self)
         self._update_body()
         self.window_box.Add(self.lbl_body, 0, wx.EXPAND | wx.EAST | wx.WEST | wx.SOUTH, RESIZE_MARGIN)
+
+        # bind double click event for body label
+        if getattr(self, "lbl_body", None):
+            self.lbl_body.Bind(wx.EVT_LEFT_DCLICK, self._on_name_label_double_click)
 
         # body details
         self.txt_body_details = wx.TextCtrl(parent=self, style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE)
@@ -51,21 +60,23 @@ class BodyDetails(DynamicDialog):
     def render(self, body: Optional[Body], filters: Dict[str, bool], current_position: PSPSCoordinates, current_heading: float):
         self.lbl_body.SetLabelText(text=body.body_name if body else "")
         self.txt_body_details.Clear()
+        self.body = body
 
-        if body:
-            psps = PSPS(current_position, body.radius)
+        if self.body:
 
-            for mat, pct in sorted(body.materials.items(),
+            psps = PSPS(current_position, self.body.radius)
+
+            for mat, pct in sorted(self.body.materials.items(),
                                    key=lambda kv: kv[1],
                                    reverse=True):
                 if filters.get(mat, True):
                     self.txt_body_details.AppendText(f"{mat.title():<12} {pct:5.1f}%\n")
 
             # ── Biosignals progress lines ───────────────────────────────
-            if body.biosignals:
-                self.txt_body_details.AppendText(f"\n{ICONS['biosigns']}{' '*2}Bio-signals ({body.biosignals}):\n")
-                if body.bio_found:
-                    for species, genus in body.bio_found.items():
+            if self.body.biosignals:
+                self.txt_body_details.AppendText(f"\n{ICONS['biosigns']}{' '*2}Bio-signals ({self.body.biosignals}):\n")
+                if self.body.bio_found:
+                    for species, genus in self.body.bio_found.items():
                         done = int(genus.scanned_count if genus.scanned_count else 0)
                         bio_name = genus.variant_localised or genus.species_localised or genus.localised
                         bio_range = genus.min_distance
@@ -105,18 +116,18 @@ class BodyDetails(DynamicDialog):
                             self.txt_body_details.AppendText(f"{' '*2}{ICONS['unknown']}{' '*2}{bio_name}\n")
 
             # ── Geology progress lines ─────────────────────────────────
-            if body.geosignals:
+            if self.body.geosignals:
                 self.txt_body_details.AppendText(f"\n{ICONS['geosigns']}{' '*2}Geo-signals:")
 
-                done = len(body.geo_found) if body.geo_found is not None else 0
-                if 0 < done < body.geosignals:
-                    self.txt_body_details.AppendText(f"{' '*2}{done}/{body.geosignals}{' '*2}{ICONS['in_progress']}\n")
-                elif done == body.geosignals:
-                    self.txt_body_details.AppendText(f"{' '*2}{done}/{body.geosignals}{' '*2}{ICONS['checked']}\n")
+                done = len(self.body.geo_found) if self.body.geo_found is not None else 0
+                if 0 < done < self.body.geosignals:
+                    self.txt_body_details.AppendText(f"{' '*2}{done}/{self.body.geosignals}{' '*2}{ICONS['in_progress']}\n")
+                elif done == self.body.geosignals:
+                    self.txt_body_details.AppendText(f"{' '*2}{done}/{self.body.geosignals}{' '*2}{ICONS['checked']}\n")
                 else:
-                    self.txt_body_details.AppendText(f"{' '*2}(?)/{body.geosignals}{' '*2}{ICONS['geosigns']}\n")
+                    self.txt_body_details.AppendText(f"{' '*2}(?)/{self.body.geosignals}{' '*2}{ICONS['geosigns']}\n")
 
-                for signal, geo in body.geo_found.items():
+                for signal, geo in self.body.geo_found.items():
                     geo_name = geo.localised
                     if geo.is_new:
                         self.txt_body_details.AppendText(f"{ICONS['new_entry']:>4}{ICONS['geosigns']:>4}{' '*4}{geo_name}\n")
@@ -144,3 +155,25 @@ class BodyDetails(DynamicDialog):
         font.PointSize += 2
         font.FontWeight = wx.FONTWEIGHT_BOLD
         self.lbl_body.SetFont(font)
+
+    def _plain_name_from_label(self, raw: str) -> str:
+        if not raw:
+            return raw
+        if " (" in raw:
+            raw = raw.split(" (", 1)[0]
+        if " - " in raw:
+            raw = raw.split(" - ", 1)[0]
+        return raw.strip()
+
+    def _on_name_label_double_click(self, evt: wx.Event):
+        name = None
+        if getattr(self, "body", None):
+            name = getattr(self.body, "name", None) or getattr(self.body, "body_name", None)
+
+        if not name and getattr(self, "name_label", None):
+            raw = self.lbl_body.GetLabel()
+            name = self._plain_name_from_label(raw)
+
+        if name:
+            copy_text_to_clipboard(name)
+        evt.Skip()
