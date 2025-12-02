@@ -1,9 +1,13 @@
+import functools
+import inspect
+
 import wx
-from EDXD.gui.helper.window_properties import WindowProperties
-from EDXD.gui.custom_title_bar import CustomTitleBar
+
 from EDXD.globals import logging
-import inspect, functools
+from EDXD.gui.helper.custom_title_bar import CustomTitleBar
 from EDXD.gui.helper.icon_loader import make_icon_bundle
+from EDXD.gui.helper.window_properties import WindowProperties
+
 
 def log_call(level=logging.INFO):
     """Decorator that logs function name and bound arguments."""
