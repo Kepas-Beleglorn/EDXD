@@ -44,7 +44,6 @@ class JournalController(PausableThread, threading.Thread):
         self.m.ship_status.read_from_json(dh.read_ship_status(SHIP_STATUS_FILE, self.ship_status))
 
         if etype in {"Loadout"}: #, "LoadGame"}:
-            print(f"[[{evt.get("timestamp")}]] Loadout for 'Ship': [{evt.get("Ship")}]")
             if self.m.current_vessel == VESSEL_EV:
                 # on foot
                 pass
