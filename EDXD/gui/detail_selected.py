@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from EDXD.gui.body_details import BodyDetails
-from typing import Dict
 
 TITLE = "Selected body"
 WINID = "DETAIL_SELECTED"

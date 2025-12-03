@@ -1,5 +1,7 @@
 import math
+
 from EDXD.globals import direction_indicator
+
 
 class PSPSCoordinates:
     __slots__ = ("latitude", "longitude")
@@ -84,7 +86,8 @@ class PSPS:
         relative_bearing = (bearing - current_heading + 360) % 360
         return direction_indicator(relative_bearing)
 
-    def _calculate_bearing(self, from_pos: PSPSCoordinates, to_pos: PSPSCoordinates):
+    @staticmethod
+    def _calculate_bearing(from_pos: PSPSCoordinates, to_pos: PSPSCoordinates):
         lat1 = math.radians(from_pos.latitude)
         lat2 = math.radians(to_pos.latitude)
         delta_lon = math.radians(to_pos.longitude - from_pos.longitude)

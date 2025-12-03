@@ -10,6 +10,12 @@ model.py – core logic for ED Mineral Viewer
 
 from __future__ import annotations
 
+import threading
+from typing import Optional, List
+
+import EDXD.data_handler.helper.data_helper as dh
+from EDXD.data_handler.helper.body_appraiser import appraise_body
+from EDXD.data_handler.planetary_surface_positioning_system import PSPSCoordinates
 from EDXD.data_handler.vessel_status import *
 from EDXD.globals import BODY_ID_PREFIX
 
@@ -233,7 +239,7 @@ class Model:
         self.current_heading    : Optional[int] = None
         self.ship_status        : Optional[ShipStatus] = None
         self.fuel_level         : Optional[FuelLevel] = None
-
+        self.current_vessel     : Optional[str] = None
 
     # ----- listeners ---------------------------------------------------------
     def register_target_listener(self, cb):

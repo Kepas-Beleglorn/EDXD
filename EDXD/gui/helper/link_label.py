@@ -1,5 +1,4 @@
 import wx
-import webbrowser
 
 class LinkLabel(wx.StaticText):
     def __init__(self, parent, label="", url=""):

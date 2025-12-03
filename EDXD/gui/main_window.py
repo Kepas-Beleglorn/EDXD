@@ -87,10 +87,10 @@ class MainFrame(DynamicFrame):
         self.options.chk_landable.Bind(wx.EVT_BUTTON, self._toggle_land)
         self._selected = None  # currently clicked body name
 
-        self.win_sel = DetailSelected(self) #, self.prefs["mat_sel"])
+        self.win_sel = DetailSelected(self)
         self.win_sel.Show(True)
 
-        self.win_tar = DetailTargeted(self) #, self.prefs["mat_sel"])
+        self.win_tar = DetailTargeted(self)
         self.win_tar.Show(True)
 
         self.win_psps = PositionTracker(self)
@@ -168,7 +168,8 @@ class MainFrame(DynamicFrame):
         # trigger a table refresh so the status icon updates immediately
         self._refresh()
 
-    def _plain_name_from_label(self, raw: str) -> str:
+    @staticmethod
+    def _plain_name_from_label(raw: str) -> str:
         if not raw:
             return raw
         # strip " (…)" and " - …" heuristically

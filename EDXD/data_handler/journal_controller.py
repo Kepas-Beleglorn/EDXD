@@ -1,10 +1,13 @@
 import json
 import queue
 import re
+import threading
 
 import EDXD.data_handler.helper.bio_helper as bio_helper
+import EDXD.data_handler.helper.data_helper as dh
 from EDXD.data_handler.helper.pausable_thread import PausableThread
 from EDXD.data_handler.model import Model, Genus, CodexEntry, Ring
+from EDXD.data_handler.planetary_surface_positioning_system import PSPSCoordinates
 from EDXD.data_handler.vessel_status import *
 from EDXD.globals import logging, BODY_ID_PREFIX, log_context, JOURNAL_TIMESTAMP_FILE, SHIP_STATUS_FILE
 
@@ -161,7 +164,7 @@ class JournalController(PausableThread, threading.Thread):
 
         # initialise first_*
         # 0 - no data yet
-        # 1 - some one else was first
+        # 1 - someone else was first
         # 2 - I am first
         first_discovered = 0
         first_mapped = 0
@@ -282,7 +285,7 @@ class JournalController(PausableThread, threading.Thread):
                                     localised=genus_found_dict.localised or genus_found_dict.localised,
                                     variant_localised=genus_found_dict.variant_localised,
                                     species_localised=genus_found_dict.species_localised,
-                                    min_distance=genus_found_dict.min_distance or bio_helper.bioGetRange(genus_id),
+                                    min_distance=genus_found_dict.min_distance or bio_helper.bio_get_range(genus_id),
                                     scanned_count=genus_found_dict.scanned_count or 0
                                 )
 
@@ -351,7 +354,7 @@ class JournalController(PausableThread, threading.Thread):
                         localised=genus_found_dict.localised or genus_found_dict.localised,
                         species_localised=genus_found_dict.species_localised,
                         variant_localised=genus_found_dict.variant_localised or variant_localised,
-                        min_distance=genus_found_dict.min_distance or bio_helper.bioGetRange(genus_id),
+                        min_distance=genus_found_dict.min_distance or bio_helper.bio_get_range(genus_id),
                         scanned_count=genus_found_dict.scanned_count
                     )
 
@@ -399,11 +402,11 @@ class JournalController(PausableThread, threading.Thread):
                 pos_second = None
                 bio_scanned += 1
 
-            if biosignals_present > 0 and bio_scanned == biosignals_present:
+            if 0 < biosignals_present == bio_scanned:
                 bio_complete = True
 
             if genus_found_dict == {}:
-                genus_found = Genus(genusid=genus_id, localised=genus_localised, species_localised=species_localised, variant_localised=variant_localised, scanned_count=genus_scanned, min_distance=bio_helper.bioGetRange(genus_id), pos_first=pos_first, pos_second=pos_second)
+                genus_found = Genus(genusid=genus_id, localised=genus_localised, species_localised=species_localised, variant_localised=variant_localised, scanned_count=genus_scanned, min_distance=bio_helper.bio_get_range(genus_id), pos_first=pos_first, pos_second=pos_second)
             else:
                 if genus_found_dict.scanned_count == 3:
                     genus_scanned = genus_found_dict.scanned_count
@@ -415,7 +418,7 @@ class JournalController(PausableThread, threading.Thread):
                     localised=genus_found_dict.localised or genus_localised,
                     species_localised=genus_found_dict.species_localised or species_localised,
                     variant_localised=genus_found_dict.variant_localised or variant_localised,
-                    min_distance=genus_found_dict.min_distance or bio_helper.bioGetRange(genus_id),
+                    min_distance=genus_found_dict.min_distance or bio_helper.bio_get_range(genus_id),
                     scanned_count=genus_scanned,
                     pos_first=pos_first,
                     pos_second=pos_second

@@ -1,14 +1,16 @@
+import functools
+import inspect
+
 import wx
 
 from EDXD.globals import *
-from EDXD.gui.helper.theme_handler import get_theme
-import inspect, functools
-
+from EDXD.gui.about_info import AboutInfo
 from EDXD.gui.helper.gui_dynamic_button import DynamicButton
 from EDXD.gui.helper.gui_dynamic_toggle_button import DynamicToggleButton
-from EDXD.gui.set_mineral_filter import MineralsFilter
+from EDXD.gui.helper.theme_handler import get_theme
 from EDXD.gui.journal_historian import JournalHistorian
-from EDXD.gui.about_info import AboutInfo
+from EDXD.gui.set_mineral_filter import MineralsFilter
+
 
 def log_call(level=logging.INFO):
     """Decorator that logs function name and bound arguments."""
@@ -98,7 +100,8 @@ class MainWindowOptions(wx.Panel):
         about_info = AboutInfo(parent=self, prefs=self.parent.prefs)
         about_info.ShowModal()
 
-    def _check_version(self, parent, prefs):
+    @staticmethod
+    def _check_version(parent, prefs):
         # latest release on git
         from EDXD.data_handler.helper.version_check import check_github_for_update
 

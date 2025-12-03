@@ -1,6 +1,6 @@
 
 
-def bioGetRange(genus_name: str):
+def bio_get_range(genus_name: str):
     if genus_name in ["$Codex_Ent_Fumerolas_Genus_Name;"]:
         return 100
 

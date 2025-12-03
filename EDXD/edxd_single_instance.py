@@ -57,7 +57,7 @@ class SingleInstance:
     """
     Manage single-instance behavior.
 
-    By default uses filelock if installed; otherwise falls back to socket.
+    By default, uses filelock if installed; otherwise falls back to socket.
     """
     def __init__(self, method: str = "auto", socket_port: int = 45067) -> None:
         """

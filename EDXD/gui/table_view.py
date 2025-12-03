@@ -296,7 +296,7 @@ class BodiesTable(gridlib.Grid):
                 self.SetColSize(i, 222)
             elif colname == "body":
                 self.SetColSize(i, 275)
-            elif colname in ("distance"):
+            elif colname == "distance":
                 self.SetColSize(i, 80)
             elif colname in ("bio", "geo"):
                 self.SetColSize(i, 60)
@@ -310,7 +310,8 @@ class BodiesTable(gridlib.Grid):
             else:
                 self.SetColSize(i, 60)
 
-    def _plain_name_from_label(self, raw: str) -> str:
+    @staticmethod
+    def _plain_name_from_label(raw: str) -> str:
         if not raw:
             return raw
         if " (" in raw:

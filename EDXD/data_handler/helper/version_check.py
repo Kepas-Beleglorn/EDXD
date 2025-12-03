@@ -50,7 +50,7 @@ def fetch_latest_release_version(owner: str, repo: str, include_prereleases: boo
     """
     Returns the latest version string from GitHub Releases.
     If include_prereleases is False, uses /releases/latest.
-    Otherwise scans /releases and picks the first non-draft (and prerelease if allowed).
+    Otherwise, scans /releases and picks the first non-draft (and prerelease if allowed).
     """
     base = f"https://api.github.com/repos/{owner}/{repo}/releases"
 
@@ -88,4 +88,4 @@ def check_github_for_update(current_version: str, owner: str, repo: str,
     Returns (update_available, latest_version_or_None)
     """
     latest = fetch_latest_release_version(owner, repo, include_prereleases=include_prereleases)
-    return (is_update_available(current_version, latest), latest)
+    return is_update_available(current_version, latest), latest

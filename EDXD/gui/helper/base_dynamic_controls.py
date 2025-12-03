@@ -1,6 +1,9 @@
-import wx
-from EDXD.gui.helper.theme_handler import get_theme
 from typing import Protocol
+
+import wx
+
+from EDXD.gui.helper.theme_handler import get_theme
+
 
 class DynamicControlsBaseHint(Protocol):
     def SetBackgroundColour(self, colour): ...
@@ -40,6 +43,7 @@ class DynamicControlsBase:
             *args,
             **kwargs
     ):
+        self._themed_colors = None
         theme = get_theme()
         self._init_dynamic_controls(
             normal_bg           = normal_bg             or theme["background"],

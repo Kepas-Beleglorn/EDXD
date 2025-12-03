@@ -10,16 +10,16 @@ class FuelGauge(wx.Panel):
     def __init__(
         self,
         parent,
-        id=wx.ID_ANY,
-        range=100,
+        gauge_id=wx.ID_ANY,
+        gauge_range=100,
         level=100,
         warning_threshold=10,
         show_scale=False,
         **kwargs
     ):
-        super().__init__(parent, id, **kwargs)
+        super().__init__(parent, gauge_id, **kwargs)
 
-        self._range = max(1, range)
+        self._range = max(1, gauge_range)
         self._level = max(0, min(level, self._range))
         self._warning_threshold = warning_threshold
         self._show_scale = show_scale
@@ -46,7 +46,7 @@ class FuelGauge(wx.Panel):
         return self._range
 
     def SetLevel(self, level):
-        """Set the current fuel value (0..range)."""
+        """Set the current fuel value (0...range)."""
         level = max(0, min(level, self._range))
         if level == self._level:
             return
@@ -111,7 +111,8 @@ class FuelGauge(wx.Panel):
             rect.height - 2 * padding - top_offset - bottom_offset,
         )
 
-    def _fraction_to_color(self, frac, brightness=1.0):
+    @staticmethod
+    def _fraction_to_color(frac, brightness=1.0):
         # Map 0..1 to red-yellow-green using HSV.
         frac = max(0.0, min(1.0, frac))
         # Hue 0.0 (red) to ~0.33 (green)

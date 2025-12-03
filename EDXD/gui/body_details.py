@@ -156,7 +156,8 @@ class BodyDetails(DynamicDialog):
         font.FontWeight = wx.FONTWEIGHT_BOLD
         self.lbl_body.SetFont(font)
 
-    def _plain_name_from_label(self, raw: str) -> str:
+    @staticmethod
+    def _plain_name_from_label(raw: str) -> str:
         if not raw:
             return raw
         if " (" in raw:

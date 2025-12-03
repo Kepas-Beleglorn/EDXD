@@ -1,6 +1,3 @@
-import functools
-import inspect
-
 import wx
 
 from EDXD.data_handler.planetary_surface_positioning_system import PSPSCoordinates
