@@ -119,7 +119,7 @@ class MainFrame(DynamicFrame):
                 fuel_current_reservoir=self.model.fuel_level.reserve,
                 fuel_capacity_main=self.model.ship_status.fuel_capacity.main,
                 fuel_capacity_reservoir=self.model.ship_status.fuel_capacity.reserve,
-                vehicle="ship"
+                vehicle=self.model.current_vessel
             )
 
     # ------------------------------------------------------------------

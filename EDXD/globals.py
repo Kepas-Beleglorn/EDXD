@@ -117,6 +117,13 @@ DEFAULT_FUEL_LOW_THRESHOLD = 10
 # prefix to stringify body_id
 BODY_ID_PREFIX = "body_"
 
+# ----------------------------------------------------------------------
+# vessel identifiers
+VESSEL_SHIP = "ship"
+VESSEL_SLF = "fighter"
+VESSEL_SRV = "SRV"
+VESSEL_EV = "EV suit"
+
 # -----------------------------------------------------------------------
 # symbol lookup for display in table_view.py
 SYMBOL = {

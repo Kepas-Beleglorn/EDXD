@@ -13,7 +13,7 @@ from EDXD.gui.helper.window_properties import WindowProperties
 TITLE = "Engine status"
 WINID = "ENGINE_STATUS"
 
-from EDXD.globals import DEFAULT_HEIGHT_ENGINE_STATUS, DEFAULT_WIDTH_ENGINE_STATUS, DEFAULT_POS_Y, DEFAULT_POS_X
+from EDXD.globals import DEFAULT_HEIGHT_ENGINE_STATUS, DEFAULT_WIDTH_ENGINE_STATUS, DEFAULT_POS_Y, DEFAULT_POS_X, VESSEL_SLF, VESSEL_SRV, VESSEL_EV, VESSEL_SHIP
 
 # ---------------------------------------------------------------------------
 class EngineStatus(DynamicDialog):
@@ -58,7 +58,15 @@ class EngineStatus(DynamicDialog):
         self.render()
 
     def render(self, fuel_current_main: float = 0, fuel_current_reservoir: float = 0, fuel_capacity_main: float = 0, fuel_capacity_reservoir: float = 0, vehicle: str = "ship"):
-        fuel_capacity_total = fuel_capacity_main + fuel_capacity_reservoir
+        if vehicle == VESSEL_SHIP:
+            fuel_capacity_total = fuel_capacity_main + fuel_capacity_reservoir
+        if vehicle == VESSEL_EV:
+            fuel_capacity_total = fuel_capacity_reservoir
+        if vehicle == VESSEL_SRV:
+            fuel_capacity_total = fuel_capacity_reservoir
+        if vehicle == VESSEL_SLF:
+            fuel_capacity_total = fuel_capacity_reservoir
+
         self.vessel_type = vehicle
         if fuel_capacity_total > 0:
             total_fuel = fuel_current_main + fuel_current_reservoir
@@ -70,6 +78,10 @@ class EngineStatus(DynamicDialog):
             self.Show()
 
         self.Fit()
+        if vehicle == VESSEL_EV:
+            self.pnl_fuel_gauge.Hide()
+        else:
+            self.pnl_fuel_gauge.Show()
 
     def set_values(self):
         self.lbl_fuel_level.SetLabelText(f"Fuel level - {self.vessel_type}")

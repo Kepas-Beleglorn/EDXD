@@ -7,7 +7,8 @@ from pathlib import Path
 from EDXD.data_handler.helper.pausable_thread import PausableThread
 from EDXD.data_handler.model import Model
 from EDXD.data_handler.vessel_status import FuelLevel
-from EDXD.globals import DEBUG_STATUS_JSON, DEBUG_PATH, BODY_ID_PREFIX, logging, log_context
+from EDXD.globals import DEBUG_STATUS_JSON, DEBUG_PATH, BODY_ID_PREFIX, logging, log_context, VESSEL_EV, VESSEL_SLF, \
+    VESSEL_SRV, VESSEL_SHIP
 
 bip = BODY_ID_PREFIX
 
@@ -51,9 +52,28 @@ class StatusWatcher(PausableThread, threading.Thread):
                 self.model.set_position(latitude=latitude, longitude=longitude, heading=heading)
                 self.model.set_target(body_id)
 
+            if pow(2, 0) & data.get("Flags2"):
+                # on foot
+                self.model.current_vessel = VESSEL_EV
+            else:
+                if pow(2, 24) & data.get("Flags") == pow(2, 24):
+                    # main ship
+                    self.model.current_vessel = VESSEL_SHIP
+
+                if pow(2, 25) & data.get("Flags") == pow(2, 25):
+                    # in SLF
+                    self.model.current_vessel = VESSEL_SLF
+
+                if pow(2, 26) & data.get("Flags") == pow(2, 26):
+                    # SRV
+                    self.model.current_vessel = VESSEL_SRV
+
             fuel_data = data.get("Fuel")
             if fuel_data:
                 self.model.fuel_level = FuelLevel(fuel_data.get("FuelMain"), fuel_data.get("FuelReservoir"))
+            else:
+                if self.model.current_vessel == VESSEL_EV:
+                    self.model.fuel_level = FuelLevel(0,0)
 
         except FileNotFoundError:
             pass

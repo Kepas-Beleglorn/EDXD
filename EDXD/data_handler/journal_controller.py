@@ -9,7 +9,8 @@ from EDXD.data_handler.helper.pausable_thread import PausableThread
 from EDXD.data_handler.model import Model, Genus, CodexEntry, Ring
 from EDXD.data_handler.planetary_surface_positioning_system import PSPSCoordinates
 from EDXD.data_handler.vessel_status import *
-from EDXD.globals import logging, BODY_ID_PREFIX, log_context, JOURNAL_TIMESTAMP_FILE, SHIP_STATUS_FILE
+from EDXD.globals import logging, BODY_ID_PREFIX, log_context, JOURNAL_TIMESTAMP_FILE, SHIP_STATUS_FILE, VESSEL_SHIP, \
+    VESSEL_SRV, VESSEL_EV, VESSEL_SLF
 
 bip = BODY_ID_PREFIX
 
@@ -43,11 +44,20 @@ class JournalController(PausableThread, threading.Thread):
         self.m.ship_status.read_from_json(dh.read_ship_status(SHIP_STATUS_FILE, self.ship_status))
 
         if etype in {"Loadout"}: #, "LoadGame"}:
-            print(f"Loadout for 'Ship': [{evt.get("Ship")}]")
-            if "ExplorationSuit" in evt.get("Ship"):
+            print(f"[[{evt.get("timestamp")}]] Loadout for 'Ship': [{evt.get("Ship")}]")
+            if self.m.current_vessel == VESSEL_EV:
                 # on foot
                 pass
-            else:
+
+            if self.m.current_vessel == VESSEL_SRV:
+                # SRV
+                pass
+
+            if self.m.current_vessel == VESSEL_SLF:
+                # SLF
+                pass
+
+            if self.m.current_vessel == VESSEL_SHIP:
                 #self.ship_status = ShipStatus(dh.read_ship_status(SHIP_STATUS_FILE, self.ship_status))
                 self.m.ship_status.ship_type = evt.get("Ship") or self.ship_status.ship_type
                 self.m.ship_status.ship_id = evt.get("ShipID") or self.ship_status.ship_id
