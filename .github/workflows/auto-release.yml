@@ -130,6 +130,16 @@ jobs:
           cp dist/ed-eXploration-dashboard* release/
         shell: bash
 
+      - name: Add flake.nix to release (only Linux)
+        if: runner.os == 'Linux'
+        run: |
+          if [ -f flake.nix ]; then
+            cp flake.nix release/
+          else
+            echo "flake.nix not found in repo root; skipping"
+          fi
+        shell: bash
+
       - name: Archive release for Linux/macOS
         if: runner.os != 'Windows'
         run: |
