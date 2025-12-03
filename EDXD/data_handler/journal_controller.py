@@ -57,7 +57,6 @@ class JournalController(PausableThread, threading.Thread):
                 pass
 
             if self.m.current_vessel == VESSEL_SHIP:
-                #self.ship_status = ShipStatus(dh.read_ship_status(SHIP_STATUS_FILE, self.ship_status))
                 self.m.ship_status.ship_type = evt.get("Ship") or self.ship_status.ship_type
                 self.m.ship_status.ship_id = evt.get("ShipID") or self.ship_status.ship_id
                 self.m.ship_status.ship_name = evt.get("ShipName") or self.ship_status.ship_name
