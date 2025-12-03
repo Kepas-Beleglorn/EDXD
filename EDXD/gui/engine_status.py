@@ -38,6 +38,10 @@ class EngineStatus(DynamicDialog):
         self.pnl_fuel_gauge = FuelGauge(parent=self, show_scale=True, warning_threshold=self.parent.prefs.get("fuel_low_threshold", DEFAULT_FUEL_LOW_THRESHOLD))
         grid.Add(self.pnl_fuel_gauge, 0, wx.EXPAND | wx.ALL, -4)
 
+        # spacer
+        self.lbl_spacer = wx.StaticText(parent=self, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE, size=Size(DEFAULT_WIDTH_ENGINE_STATUS-50, BTN_HEIGHT))
+        grid.Add(self.lbl_spacer, 0, wx.EXPAND | wx.ALL, -4)
+
         # FSD supercharged state
         self.lbl_fsd_super_charged = wx.StaticText(parent=self, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE, size=Size(DEFAULT_WIDTH_ENGINE_STATUS-50, BTN_HEIGHT))
         grid.Add(self.lbl_fsd_super_charged, 0, wx.EXPAND | wx.ALL, -4)
