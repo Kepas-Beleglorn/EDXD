@@ -29,7 +29,6 @@ class FuelGauge(wx.Panel):
         self.Bind(wx.EVT_TIMER, self.OnTimer, self._timer)
 
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)  # for flicker-free drawing
-        #self.SetBackgroundStyle(wx.BG_STYLE_PAINT)  # for flicker-free drawing
         self.Bind(wx.EVT_PAINT, self.OnPaint)
         self.Bind(wx.EVT_SIZE, self.OnSize)
         apply_theme(self)

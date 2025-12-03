@@ -26,6 +26,7 @@ class EngineStatus(DynamicDialog):
 
         self.theme = get_theme()
         self.parent = parent
+        self.vessel_type = None
 
         grid = wx.FlexGridSizer(cols=1, hgap=8, vgap=4)
 
@@ -45,18 +46,6 @@ class EngineStatus(DynamicDialog):
 
         self.window_box.Add(grid, flag=wx.ALL | wx.EXPAND, border=10)
 
-        # confirm button
-        #hbox = wx.BoxSizer(wx.HORIZONTAL)
-        #btn_confirm = DynamicButton(parent=self, label="Confirm",
-        #                           size=wx.Size(BTN_WIDTH + self.theme["button_border_width"],
-        #                                        BTN_HEIGHT + self.theme["button_border_width"]), draw_border=True)
-        #btn_cancel = DynamicButton(parent=self, label="Cancel",
-        #                          size=wx.Size(BTN_WIDTH + self.theme["button_border_width"],
-        #                                       BTN_HEIGHT + self.theme["button_border_width"]), draw_border=True)
-        #hbox.Add(btn_confirm, flag=wx.RIGHT, border=8)
-        #hbox.Add(btn_cancel)
-        #self.window_box.Add(hbox, flag=wx.ALIGN_CENTER | wx.ALL, border=10)
-
         self.SetSizer(self.window_box)
 
         self.set_values()
@@ -68,23 +57,20 @@ class EngineStatus(DynamicDialog):
         #btn_confirm.Bind(wx.EVT_BUTTON, lambda evt: self._on_confirm())
         self.render()
 
-    def render(self, fuel_current: float = 0, fuel_reservoir: float = 0, fuel_capacity: float = 0, vehicle: str = "ship"):
-        if vehicle == "SRV":
-            max_fuel = 0.5
-        else:
-            max_fuel = fuel_capacity + 0.5
+    def render(self, fuel_current_main: float = 0, fuel_current_reservoir: float = 0, fuel_capacity_main: float = 0, fuel_capacity_reservoir: float = 0, vehicle: str = "ship"):
+        fuel_capacity_total = fuel_capacity_main + fuel_capacity_reservoir
+        self.vessel_type = vehicle
+        if fuel_capacity_total > 0:
+            total_fuel = fuel_current_main + fuel_current_reservoir
+            fuel_level = float(total_fuel / fuel_capacity_total) * 100
+            self.pnl_fuel_gauge.SetLevel(fuel_level)
 
-        total_fuel = fuel_current + fuel_reservoir
-
-        fuel_level = float(total_fuel / max_fuel) * 100
-
-        self.pnl_fuel_gauge.SetLevel(fuel_level)
-
+        self.set_values()
         if not self.IsShown():
             self.Show()
 
         self.Fit()
 
     def set_values(self):
-        self.lbl_fuel_level.SetLabelText("Fuel level")
+        self.lbl_fuel_level.SetLabelText(f"Fuel level - {self.vessel_type}")
         self.lbl_fsd_super_charged.SetLabelText("FSD state")

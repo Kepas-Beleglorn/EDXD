@@ -1,16 +1,12 @@
-import inspect
 import json
 import queue
 import re
-import threading
-from typing import Dict
 
 import EDXD.data_handler.helper.bio_helper as bio_helper
-import EDXD.data_handler.helper.data_helper as dh
 from EDXD.data_handler.helper.pausable_thread import PausableThread
 from EDXD.data_handler.model import Model, Genus, CodexEntry, Ring
-from EDXD.data_handler.planetary_surface_positioning_system import PSPSCoordinates
-from EDXD.globals import logging, BODY_ID_PREFIX, log_context, JOURNAL_TIMESTAMP_FILE
+from EDXD.data_handler.vessel_status import *
+from EDXD.globals import logging, BODY_ID_PREFIX, log_context, JOURNAL_TIMESTAMP_FILE, SHIP_STATUS_FILE
 
 bip = BODY_ID_PREFIX
 
@@ -23,6 +19,7 @@ class JournalController(PausableThread, threading.Thread):
         self.q = q
         self.m = model
         self.last_event = None
+        self.ship_status = None
 
     def _process_data(self):
         try:
@@ -37,7 +34,32 @@ class JournalController(PausableThread, threading.Thread):
         etype = evt.get("event")
 
         # todo: #114 - implement FSD super charged state (perhaps even check for FSD injection via synth?); register on boost, reset after jump
-        # todo: #121 - determine fuel capacity of current ship
+
+        #121 - determine fuel capacity of current ship
+        self.m.ship_status = ShipStatus()
+        self.m.ship_status.read_from_json(dh.read_ship_status(SHIP_STATUS_FILE, self.ship_status))
+
+        if etype in {"Loadout"}: #, "LoadGame"}:
+            print(f"Loadout for 'Ship': [{evt.get("Ship")}]")
+            if "ExplorationSuit" in evt.get("Ship"):
+                # on foot
+                pass
+            else:
+                #self.ship_status = ShipStatus(dh.read_ship_status(SHIP_STATUS_FILE, self.ship_status))
+                self.m.ship_status.ship_type = evt.get("Ship") or self.ship_status.ship_type
+                self.m.ship_status.ship_id = evt.get("ShipID") or self.ship_status.ship_id
+                self.m.ship_status.ship_name = evt.get("ShipName") or self.ship_status.ship_name
+                self.m.ship_status.ship_ident = evt.get("ShipIdent") or self.ship_status.ship_ident
+                fuel_main   : float = 0
+                fuel_reserve: float = 0
+
+                fuel_main = evt.get("FuelCapacity").get("Main")
+                fuel_reserve = evt.get("FuelCapacity").get("Reserve")
+
+                self.m.ship_status.fuel_capacity = FuelLevel(fuel_main, fuel_reserve) or self.m.ship_status.fuel_capacity
+
+                dh.update_ship_status(SHIP_STATUS_FILE, self.m.ship_status)
+
 
         #113:   after app-start, load only current SYSTEM.json
         #       store last read journal line (timestamp) and process only newer lines

@@ -1,8 +1,14 @@
-import json, inspect, re
+import inspect
+import json
+import re
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
+
+from EDXD.data_handler.vessel_status import ShipStatus
 from EDXD.globals import log_context, logging
-from datetime import datetime
+
+
 # ---------------------------------------------------------------------------
 # helpers
 # ---------------------------------------------------------------------------
@@ -22,9 +28,6 @@ def save(path: Path, data):
     except Exception as e:
         log_context(level=logging.ERROR, frame=inspect.currentframe(), e=e)
 
-#def latest_journal(folder: Path) -> Optional[Path]:
-#    files = sorted(folder.glob("Journal.*.log"))
-#    return files[-1] if files else None
 #133 - change sorting of journal files
 def _extract_timestamp_from_filename(path: Path) -> Optional[datetime]:
     """
@@ -191,4 +194,27 @@ def ensure_timestamp_file(journal_timestamp_file, new_timestamp):
         # You can choose any default value for "last_timestamp"
         default_data = {"last_timestamp": new_timestamp}
         with open(journal_timestamp_file, "w") as f:
+            json.dump(default_data, f, indent=2)
+
+def read_ship_status(ship_status_file, ship_status):
+    ensure_ship_status_file(ship_status_file, ship_status)
+    try:
+        with open(ship_status_file, "r") as f:
+            data = json.load(f)
+            return data
+    except FileNotFoundError:
+        return None
+    except json.decoder.JSONDecodeError:
+        return None
+
+def update_ship_status(ship_status_file, ship_status: ShipStatus):
+    if ship_status_file.exists():
+        with open(ship_status_file, "w") as f:
+            json.dump(ship_status.to_json(), f, indent=4)
+
+def ensure_ship_status_file(ship_status_file, ship_status):
+    if not ship_status_file.exists():
+        # You can choose any default value for "last_timestamp"
+        default_data = ship_status
+        with open(ship_status_file, "w") as f:
             json.dump(default_data, f, indent=2)

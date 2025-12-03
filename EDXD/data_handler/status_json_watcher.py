@@ -1,8 +1,14 @@
-import json, threading, time, inspect
-from EDXD.data_handler.model import Model, Body
-from EDXD.data_handler.helper.pausable_thread import PausableThread
+import inspect
+import json
+import threading
+import time
 from pathlib import Path
+
+from EDXD.data_handler.helper.pausable_thread import PausableThread
+from EDXD.data_handler.model import Model
+from EDXD.data_handler.vessel_status import FuelLevel
 from EDXD.globals import DEBUG_STATUS_JSON, DEBUG_PATH, BODY_ID_PREFIX, logging, log_context
+
 bip = BODY_ID_PREFIX
 
 # ---------------------------------------------------------------------------
@@ -44,6 +50,11 @@ class StatusWatcher(PausableThread, threading.Thread):
                 heading = data.get("Heading")
                 self.model.set_position(latitude=latitude, longitude=longitude, heading=heading)
                 self.model.set_target(body_id)
+
+            fuel_data = data.get("Fuel")
+            if fuel_data:
+                self.model.fuel_level = FuelLevel(fuel_data.get("FuelMain"), fuel_data.get("FuelReservoir"))
+
         except FileNotFoundError:
             pass
         except Exception as e:

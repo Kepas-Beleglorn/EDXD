@@ -112,6 +112,16 @@ class MainFrame(DynamicFrame):
         font.FontWeight = wx.FONTWEIGHT_BOLD
         self.lbl_sys.SetFont(font)
 
+    def _update_fuel_status(self):
+        if self.model and self.model.fuel_level and self.model.ship_status:
+            self.win_engine_status.render(
+                fuel_current_main=self.model.fuel_level.main,
+                fuel_current_reservoir=self.model.fuel_level.reserve,
+                fuel_capacity_main=self.model.ship_status.fuel_capacity.main,
+                fuel_capacity_reservoir=self.model.ship_status.fuel_capacity.reserve,
+                vehicle="ship"
+            )
+
     # ------------------------------------------------------------------
     # event handlers
     # ------------------------------------------------------------------
@@ -154,8 +164,6 @@ class MainFrame(DynamicFrame):
         if self.win_sel.lbl_body.GetLabelText() == self.win_tar.lbl_body.GetLabelText():
             self.win_sel.render(body=body, filters=self.prefs["mat_sel"], current_position=current_position, current_heading=current_heading)
         self.win_psps.render(body=body, current_position=current_position, current_heading=current_heading)
-        # todo: #121 - provide proper values to fuel gauge
-        self.win_engine_status.render(fuel_current=3, fuel_reservoir=0.39, fuel_capacity=40,vehicle="ship")
 
         # trigger a table refresh so the status icon updates immediately
         self._refresh()
@@ -235,14 +243,17 @@ class MainFrame(DynamicFrame):
         name = self.model.system_name or "No system"
         self._update_system(title=f"{name}   ({scanned}/{total})")
 
+        self._update_fuel_status()
+
         # noinspection PyTypeChecker
         if self._refresh_timer:
             self._refresh_timer.Stop()
-        self._refresh_timer = wx.CallLater(millis=1000, callableObj=self._refresh)  # schedule next update
+        self._refresh_timer = wx.CallLater(millis=500, callableObj=self._refresh)  # schedule next update
 
     def on_close(self, event):
         self.win_sel.Close(True)
         self.win_tar.Close(True)
         self.win_psps.Close(True)
+        self.win_engine_status.Close(True)
         self.save_geometry()
         event.Skip()
