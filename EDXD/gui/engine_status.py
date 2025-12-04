@@ -6,6 +6,7 @@ from wx import Size
 from EDXD.globals import BTN_HEIGHT, DEFAULT_FUEL_LOW_THRESHOLD
 from EDXD.gui.helper.dynamic_dialog import DynamicDialog
 from EDXD.gui.helper.fuel_gauge import FuelGauge
+from EDXD.gui.helper.fsd_indicator import FSDIndicator
 from EDXD.gui.helper.gui_handler import init_widget
 from EDXD.gui.helper.theme_handler import get_theme
 from EDXD.gui.helper.window_properties import WindowProperties
@@ -27,8 +28,12 @@ class EngineStatus(DynamicDialog):
         self.theme = get_theme()
         self.parent = parent
         self.vessel_type = None
+        max_height = wx.Size(-1, DEFAULT_HEIGHT_ENGINE_STATUS)
+        min_width = wx.Size(DEFAULT_WIDTH_ENGINE_STATUS, -1)
+        self.SetMinSize(min_width)
+        self.SetMaxSize(max_height)
 
-        grid = wx.FlexGridSizer(cols=1, hgap=8, vgap=4)
+        grid = wx.BoxSizer(wx.VERTICAL)
 
         # Fuel level (label)
         self.lbl_fuel_level = wx.StaticText(parent=self, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE, size=Size(DEFAULT_WIDTH_ENGINE_STATUS-50, BTN_HEIGHT))
@@ -43,14 +48,19 @@ class EngineStatus(DynamicDialog):
         grid.Add(self.lbl_spacer, 0, wx.EXPAND | wx.ALL, -4)
 
         # FSD supercharged state
-        self.lbl_fsd_super_charged = wx.StaticText(parent=self, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE, size=Size(DEFAULT_WIDTH_ENGINE_STATUS-50, BTN_HEIGHT))
-        grid.Add(self.lbl_fsd_super_charged, 0, wx.EXPAND | wx.ALL, -4)
+        #self.lbl_fsd_super_charged = wx.StaticText(parent=self, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE, size=Size(DEFAULT_WIDTH_ENGINE_STATUS-50, BTN_HEIGHT))
+        #grid.Add(self.lbl_fsd_super_charged, 0, wx.EXPAND | wx.ALL, -4)
 
         # todo: 114 - implement FSD super charged state (perhaps even check for FSD injection via synth?)
+        # FSD indicator: make sure parent is the same panel that the sizer will be attached to
+        self.fsd_indicator = FSDIndicator(parent=self, size=wx.Size(200, 100))
+        self.fsd_indicator.set_text("FSD STATUS")
+
+        grid.Add(self.fsd_indicator, 0, wx.CENTER | wx.EXPAND | wx.ALL, 5)
 
         self.window_box.Add(grid, flag=wx.ALL | wx.EXPAND, border=10)
 
-        self.SetSizer(self.window_box)
+        #self.SetSizer(self.window_box)
 
         self.set_values()
 
@@ -60,6 +70,7 @@ class EngineStatus(DynamicDialog):
         #btn_cancel.Bind(wx.EVT_BUTTON, lambda evt: self.Close())
         #btn_confirm.Bind(wx.EVT_BUTTON, lambda evt: self._on_confirm())
         self.render()
+        self.Fit()
 
     def render(self, fuel_current_main: float = 0, fuel_current_reservoir: float = 0, fuel_capacity_main: float = 0, fuel_capacity_reservoir: float = 0, vehicle: str = "ship"):
         if vehicle == VESSEL_SHIP:
@@ -89,4 +100,4 @@ class EngineStatus(DynamicDialog):
 
     def set_values(self):
         self.lbl_fuel_level.SetLabelText(f"Fuel level - {self.vessel_type}")
-        self.lbl_fsd_super_charged.SetLabelText("FSD state")
+        #self.lbl_fsd_super_charged.SetLabelText("FSD state")
