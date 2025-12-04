@@ -14,9 +14,9 @@ dependencies = [
 ]
 
 [project.scripts]
-edxd = "EDXD.__main__:main"
+edxd = "EDXD.main:main"
 
 [tool.setuptools.packages.find]
-where = ["EDXD"]
+include = ["EDXD*"]
 exclude = ["EDXD/resources*"]
 

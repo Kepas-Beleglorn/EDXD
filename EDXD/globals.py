@@ -1,16 +1,30 @@
 import functools
 import inspect
 import sys
+import os
+import platform
 from pathlib import Path
 from typing import List
 
-
 def get_app_dir():
     is_frozen = getattr(sys, 'frozen', False)
-    if is_frozen:
-        local_path = Path(sys.executable).parent
-    else:
-        local_path = Path(__file__).resolve().parent
+
+    # Determine the appropriate app data directory based on the OS
+    if platform.system() == "Windows":
+        app_data_path = Path(os.getenv("APPDATA")) # Not 100% sure what this gives. May need some tweaking
+    elif platform.system() == "Darwin":  # macOS
+        app_data_path = Path.home() / "Library" / "Application Support"
+    else: # Assuming Linux or other systems
+        app_data_path = Path.home() / ".local" / "share"
+
+    local_path = app_data_path / "edxd"
+    # if is_froen:
+    #     # When frozen, use the application-specific data directory
+    #     local_path = app_data_path / "edxd"  # Replace with your app name
+    # else:
+    #     # During development, use the parent directory of the script
+    #     local_path = Path(__file__).resolve().parent
+
     return local_path
 
 import logging

@@ -78,6 +78,12 @@ buildPythonPackage {
     filelock
   ];
 
+  propagatedBuildInputs = [
+    tomli
+    watchdog
+    wxpython
+    filelock
+  ];
 
   # installPhase = ''
   #   mkdir -p $out/bin
