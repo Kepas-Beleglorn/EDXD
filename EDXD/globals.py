@@ -55,8 +55,13 @@ def log_context(frame, e, level=logging.DEBUG):
 # -----------------------------------------------------------------------
 # general paths for storing data
 APP_DIR = get_app_dir()
-CFG_FILE = APP_DIR / "config.json"
-CACHE_DIR = APP_DIR / "system-data"
+# CFG_FILE = APP_DIR / "config.json"
+# CACHE_DIR = APP_DIR / "system-data"
+CFG_FILE_PATH =  Path("config/") 
+CFG_FILE_PATH.mkdir(parents=True, exist_ok=True)
+CFG_FILE = CFG_FILE_PATH / "config.json"
+# CFG_FILE.touch(exist_ok=True)
+CACHE_DIR = Path("cache/")
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
 # ICON_PATH = APP_DIR/"resources/edxd_128.png"  # Normalize path for OS compatibility
 ICON_PNG_B64 = """
