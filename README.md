@@ -30,10 +30,6 @@ Just download the zip for your platform, unpack the contents anywhere you like a
 ./ed-eXploration-dashboard --journals "/path/to/your/EDJournals/Saved Games/Frontier Developments/Elite Dangerous"
 `
 
-**If you're on NixOS:**
-Execute "nix develop" from the root directory of the cloned repository. This loads the required dependencies into the environment of the shell you just entered. In this shell you can execute the binary as usual, bit with a "./" infront of it
-`./ed-eXploration-dashboard --journals "/path/to/your/EDJournals/Saved Games/Frontier Developments/Elite Dangerous"`
-
 On first run you should start the "Journal Historian" to process all of your available journal files.
 
 ---
