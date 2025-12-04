@@ -27,8 +27,12 @@
 Just download the zip for your platform, unpack the contents anywhere you like and run with 
 
 `
-ed-eXploration-dashboard --journals "/path/to/your/EDJournals/Saved Games/Frontier Developments/Elite Dangerous"
+./ed-eXploration-dashboard --journals "/path/to/your/EDJournals/Saved Games/Frontier Developments/Elite Dangerous"
 `
+
+**If you're on NixOS:**
+Execute "nix develop" from the root directory of the cloned repository. This loads the required dependencies into the environment of the shell you just entered. In this shell you can execute the binary as usual, bit with a "./" infront of it
+`./ed-eXploration-dashboard --journals "/path/to/your/EDJournals/Saved Games/Frontier Developments/Elite Dangerous"`
 
 On first run you should start the "Journal Historian" to process all of your available journal files.
 
@@ -37,7 +41,18 @@ On first run you should start the "Journal Historian" to process all of your ava
 ## Contribute
 
 As I don't have every single OS on my machine, I'd appreciate any help testing EDXD on several OS. 
-If you want to help, please see [#120](https://github.com/Kepas-Beleglorn/EDXD/issues/120) and linked issues. 
+If you want to help, please see [#120](https://github.com/Kepas-Beleglorn/EDXD/issues/120) and linked issues.
+
+---
+
+## Credits
+
+Thanks for support goes to:
+
+- [@joncage](https://github.com/joncage): Your BodyAppraiser.py from [ed-scout](https://github.com/joncage/ed-scout) saved me a lot of time.
+- [@zer0se7ense7en](https://github.com/zer0se7ense7en): Thanks for testing on NixOS.
+- [@romabyson](https://github.com/romabysen): Without you I would never have noticed the different file name patterns of the journal files.
+- [@Nyomancer](https://github.com/Nyomancer): Thanks for the occasional code review. You have a keen eye!
 
 ---
 
