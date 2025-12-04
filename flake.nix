@@ -10,6 +10,8 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
+
+        python = pkgs.python3;
       in {
         devShells.default = pkgs.mkShell {
           buildInputs = [
@@ -50,6 +52,11 @@
             pkgs.xorg.libxcb
             pkgs.zlib
           ];
+        };
+
+        packages = rec {
+          edxd = python.pkgs.callPackage ./default.nix {};
+          default = edxd;
         };
       }
     );

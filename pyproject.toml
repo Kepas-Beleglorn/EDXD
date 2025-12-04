@@ -4,7 +4,7 @@ version = "0.5.0.3"
 description = "Elite Dangerous eXploration Dashboard"
 authors = [{ name = "Kepas Beleglorn", email = "Kepas-Beleglorn@users.noreply.github.com" }]
 readme = "README.md"
-license = 'CC BY-NC 4.0'
+license = 'CC-BY-NC-4.0'
 requires-python = ">=3.9"
 dependencies = [
     "watchdog>=3.0.0",
