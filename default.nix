@@ -34,7 +34,7 @@ buildPythonPackage rec {
   src = fetchFromGitHub {
     owner = "Otard95"; # "Kepas-Beleglorn";
     repo = "EDXD";
-    rev = "fa2d9df05dd248dc72e7c7fa8ac3cde20b58ff30"; # version;
+    rev = version;
     hash = "sha256-aue5Itd4BPtloSdAZVl0pGyABkemufnZkBrPVRhAiUM=";
   };
 
