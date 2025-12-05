@@ -46,7 +46,7 @@ If you want to help, please see [#120](https://github.com/Kepas-Beleglorn/EDXD/i
 Thanks for support goes to:
 
 - [@joncage](https://github.com/joncage): Your BodyAppraiser.py from [ed-scout](https://github.com/joncage/ed-scout) saved me a lot of time.
-- [@zer0se7ense7en](https://github.com/zer0se7ense7en) and [Otard95](https://github.com/Otard95): Thanks for testing on NixOS and contributing to the project by reviewing and optimising several things.
+- [@zer0se7ense7en](https://github.com/zer0se7ense7en) and [@Otard95](https://github.com/Otard95): Thanks for testing on NixOS and contributing to the project by reviewing and optimising several things.
 - [@romabyson](https://github.com/romabysen): Without you I would never have noticed the different file name patterns of the journal files.
 - [@Nyomancer](https://github.com/Nyomancer): Thanks for the occasional code review. You have a keen eye!
 
