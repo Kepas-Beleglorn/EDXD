@@ -44,9 +44,14 @@ jobs:
         run: nix flake check
 
       - name: Get fetchFromGitHub hash
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_SHA: ${{ github.sha }}
         run: nix flake prefetch --json github:${{ env.GITHUB_REPOSITORY }}/${{ env.GITHUB_SHA }} | jq '.hash'
 
       - name: Find tag
+        env:
+          GITHUB_REF: ${{ github.ref }}
         run: echo ${{ env.GITHUB_REF }} | xargs -I {} basename {} || exit 0
 
       - name: "Export Nix store cache"
