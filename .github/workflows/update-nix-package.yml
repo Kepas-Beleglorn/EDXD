@@ -1,10 +1,9 @@
-name: Test nix workflow
+name: Update nix package
 
 on:
   push:
     tags:
       - v*
-  workflow_dispatch:
 
 jobs:
   nix-test:
@@ -33,7 +32,7 @@ jobs:
         if: "steps.nix-cache.outputs.cache-hit == 'true'"
         run: "nix-store --import < /tmp/nixcache"
 
-      - name: Update flake
+      - name: Update package
         env:
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_SHA: ${{ github.sha }}
