@@ -32,10 +32,10 @@ buildPythonPackage rec {
   version = "v0.5.0.3";
 
   src = fetchFromGitHub {
-    owner = "Kepas-Beleglorn";
+    owner = "Otard95"; # "Kepas-Beleglorn";
     repo = "EDXD";
-    tag = version;
-    hash = "sha256-c+Ll3ig9+Wr1/w9NQTBLWHmkRkTTGHlVY2vkQcBG6zM=";
+    rev = "fa2d9df05dd248dc72e7c7fa8ac3cde20b58ff30"; # version;
+    hash = "sha256-aue5Itd4BPtloSdAZVl0pGyABkemufnZkBrPVRhAiUM=";
   };
 
   # do not run tests
