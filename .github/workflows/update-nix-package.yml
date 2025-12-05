@@ -21,7 +21,7 @@ jobs:
         id: nix-cache
         with:
           path: /tmp/nixcache
-          key: nix-store-nixos-unstable 
+          key: nix-store
 
       - name: Init nix
         uses: cachix/install-nix-action@v31
