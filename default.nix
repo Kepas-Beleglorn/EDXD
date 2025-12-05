@@ -1,4 +1,5 @@
 {
+  fetchFromGitHub,
   buildPythonPackage,
   setuptools,
   wheel,
@@ -26,11 +27,16 @@
   wxpython,
   filelock,
 }:
-buildPythonPackage {
+buildPythonPackage rec {
   pname = "ed-eXploration-dashboard";
   version = "v0.5.0.3";
 
-  src = ./.;
+  src = fetchFromGitHub {
+    owner = "Otard95";
+    repo = "EDXD";
+    tag = version;
+    hash = "sha256-c+Ll3ig9+Wr1/w9NQTBLWHmkRkTTGHlVY2vkQcBG6zM=";
+  };
 
   # do not run tests
   doCheck = false;

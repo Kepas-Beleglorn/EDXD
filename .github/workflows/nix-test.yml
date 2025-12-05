@@ -1,0 +1,29 @@
+name: Test nix workflow
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  example_matrix:
+    strategy:
+      matrix:
+        channel: ["nixos-unstable", "25.11"]
+  nix-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Init nix
+        uses: cachix/install-nix-action@v31
+        with:
+          nix_path: nixpkgs=channel:${{ matrix.channel }}
+          # github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - run: nix build
+      - run: nix flake check
