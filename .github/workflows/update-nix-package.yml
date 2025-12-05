@@ -6,7 +6,7 @@ on:
       - v*
 
 jobs:
-  nix-test:
+  update-nix-package:
     runs-on: ubuntu-latest
     permissions:
       contents: write
