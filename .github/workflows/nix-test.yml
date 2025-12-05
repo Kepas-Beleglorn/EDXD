@@ -7,12 +7,11 @@ on:
   workflow_dispatch:
 
 jobs:
-  example_matrix:
+  nix-test:
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         channel: ["nixos-unstable", "25.11"]
-  nix-test:
-    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
