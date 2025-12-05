@@ -7,8 +7,6 @@ from pathlib import Path
 from typing import List
 
 def get_app_dir():
-    is_frozen = getattr(sys, 'frozen', False)
-
     # Determine the appropriate app data directory based on the OS
     if platform.system() == "Windows":
         app_data_path = Path(os.getenv("APPDATA")) # Not 100% sure what this gives. May need some tweaking
@@ -17,15 +15,18 @@ def get_app_dir():
     else: # Assuming Linux or other systems
         app_data_path = Path.home() / ".local" / "share"
 
-    local_path = app_data_path / "edxd"
-    # if is_froen:
-    #     # When frozen, use the application-specific data directory
-    #     local_path = app_data_path / "edxd"  # Replace with your app name
-    # else:
-    #     # During development, use the parent directory of the script
-    #     local_path = Path(__file__).resolve().parent
+    module_path = Path(__file__).resolve()
 
-    return local_path
+    # CASE 1: PyInstaller frozen executable (should catch everything but nix)
+    if getattr(sys, "frozen", False):
+        return app_data_path / "edxd"
+
+    # CASE 2: Running from Nix store
+    if module_path.parts[1] == "nix" and module_path.parts[2] == "store":
+        return app_data_path / "edxd"
+
+    # CASE 3: Running from source (development mode)
+    return module_path.parent
 
 import logging
 
