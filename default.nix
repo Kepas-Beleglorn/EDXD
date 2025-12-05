@@ -29,13 +29,13 @@
 }:
 buildPythonPackage rec {
   pname = "ed-eXploration-dashboard";
-  version = "v0.5.0.6";
+  version = "v0.5.0.3";
 
   src = fetchFromGitHub {
-    owner = "Otard95"; # "Kepas-Beleglorn";
+    owner = "Kepas-Beleglorn";
     repo = "EDXD";
     rev = version;
-    hash = "sha256-zOI4zVpkfJvs0L+sjqeGSrXHl4QCd4IPi/EJ0Z9O6bo=";
+    hash = "sha256-c+Ll3ig9+Wr1/w9NQTBLWHmkRkTTGHlVY2vkQcBG6zM=";
   };
 
   # do not run tests
@@ -90,9 +90,4 @@ buildPythonPackage rec {
     wxpython
     filelock
   ];
-
-  # installPhase = ''
-  #   mkdir -p $out/bin
-  #   cp ed-eXploration-dashboard $out/bin
-  # '';
 }
