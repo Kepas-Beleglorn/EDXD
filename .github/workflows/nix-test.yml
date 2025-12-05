@@ -25,7 +25,7 @@ jobs:
         id: nix-cache
         with:
           path: /tmp/nixcache
-          key: nix-store
+          key: nix-store-${{ matrix.channel }}
 
       - name: Init nix
         uses: cachix/install-nix-action@v31
@@ -47,7 +47,7 @@ jobs:
         run: nix flake prefetch --json github:${{ env.GITHUB_REPOSITORY }}/${{ env.GITHUB_SHA }} | jq '.hash'
 
       - name: Find tag
-        run: echo ${{ env.GITHUB_REF }} | basename
+        run: echo ${{ env.GITHUB_REF }} | xargs -I {} basename {} || exit 0
 
       - name: "Export Nix store cache"
         if: "steps.nix-cache.outputs.cache-hit != 'true'"
