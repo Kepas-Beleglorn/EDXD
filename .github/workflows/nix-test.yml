@@ -21,7 +21,7 @@ jobs:
           fetch-depth: 0
 
       - name: "Cache Nix store"
-        uses: actions/cache@v3.0.8
+        uses: actions/cache@v4.3
         id: nix-cache
         with:
           path: /tmp/nixcache
