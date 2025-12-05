@@ -12,6 +12,8 @@ jobs:
     strategy:
       matrix:
         channel: ["nixos-unstable", "25.11"]
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -22,7 +24,7 @@ jobs:
         uses: cachix/install-nix-action@v31
         with:
           nix_path: nixpkgs=channel:${{ matrix.channel }}
-          # github_access_token: ${{ secrets.GITHUB_TOKEN }}
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
       - run: nix build
       - run: nix flake check
