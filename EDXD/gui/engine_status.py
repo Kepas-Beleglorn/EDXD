@@ -10,6 +10,7 @@ from EDXD.gui.helper.fsd_indicator import FSDIndicator
 from EDXD.gui.helper.gui_handler import init_widget
 from EDXD.gui.helper.theme_handler import get_theme
 from EDXD.gui.helper.window_properties import WindowProperties
+from EDXD.data_handler.vessel_status import ShipStatus
 
 TITLE = "Engine status"
 WINID = "ENGINE_STATUS"
@@ -28,6 +29,8 @@ class EngineStatus(DynamicDialog):
         self.theme = get_theme()
         self.parent = parent
         self.vessel_type = None
+        self.ship_status: ShipStatus = self.parent.model.ship_status
+
         max_height = wx.Size(-1, DEFAULT_HEIGHT_ENGINE_STATUS)
         min_width = wx.Size(DEFAULT_WIDTH_ENGINE_STATUS, -1)
         self.SetMinSize(min_width)
@@ -48,31 +51,27 @@ class EngineStatus(DynamicDialog):
         grid.Add(self.lbl_spacer, 0, wx.EXPAND | wx.ALL, -4)
 
         # FSD supercharged state
-        #self.lbl_fsd_super_charged = wx.StaticText(parent=self, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE, size=Size(DEFAULT_WIDTH_ENGINE_STATUS-50, BTN_HEIGHT))
-        #grid.Add(self.lbl_fsd_super_charged, 0, wx.EXPAND | wx.ALL, -4)
-
         # todo: 114 - implement FSD super charged state (perhaps even check for FSD injection via synth?)
-        # FSD indicator: make sure parent is the same panel that the sizer will be attached to
-        self.fsd_indicator = FSDIndicator(parent=self, size=wx.Size(200, 100))
+        self.fsd_indicator = FSDIndicator(parent=self, size=wx.Size(-1, 100))
         self.fsd_indicator.set_text("FSD STATUS")
 
         grid.Add(self.fsd_indicator, 0, wx.CENTER | wx.EXPAND | wx.ALL, 5)
 
+        # spacer
+        self.lbl_fsd_injection = wx.StaticText(parent=self,
+                                               style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE,
+                                               size=Size(DEFAULT_WIDTH_ENGINE_STATUS, BTN_HEIGHT))
+        grid.Add(self.lbl_fsd_injection, 0, wx.CENTER | wx.EXPAND | wx.ALL, -4)
+
         self.window_box.Add(grid, flag=wx.ALL | wx.EXPAND, border=10)
-
-        #self.SetSizer(self.window_box)
-
         self.set_values()
 
         self.SetSizer(self.window_box)
 
-        ## Bindings
-        #btn_cancel.Bind(wx.EVT_BUTTON, lambda evt: self.Close())
-        #btn_confirm.Bind(wx.EVT_BUTTON, lambda evt: self._on_confirm())
         self.render()
-        self.Fit()
 
     def render(self, fuel_current_main: float = 0, fuel_current_reservoir: float = 0, fuel_capacity_main: float = 0, fuel_capacity_reservoir: float = 0, vehicle: str = "ship"):
+        fuel_capacity_total = 0
         if vehicle == VESSEL_SHIP:
             fuel_capacity_total = fuel_capacity_main + fuel_capacity_reservoir
         if vehicle == VESSEL_EV:
@@ -100,4 +99,15 @@ class EngineStatus(DynamicDialog):
 
     def set_values(self):
         self.lbl_fuel_level.SetLabelText(f"Fuel level - {self.vessel_type}")
-        #self.lbl_fsd_super_charged.SetLabelText("FSD state")
+
+        if self.parent.model.ship_status.jet_cone_boost_factor is None:
+            self.fsd_indicator.set_state(FSDIndicator.STATE_OFF)
+            self.fsd_indicator.set_text("FSD nominal")
+        else:
+            self.fsd_indicator.set_state(FSDIndicator.STATE_SUPERCHARGED)
+            self.fsd_indicator.set_text(f"FSD supercharged (x{self.parent.model.ship_status.jet_cone_boost_factor})")
+
+        if self.ship_status.fsd_injection_factor is None:
+            self.lbl_fsd_injection.SetLabelText("")
+        else:
+            self.lbl_fsd_injection.SetLabelText(f"FSD injection active: +{self.parent.model.ship_status.fsd_injection_factor * 100}%")

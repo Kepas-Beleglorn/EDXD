@@ -240,6 +240,8 @@ class Model:
         self.ship_status        : Optional[ShipStatus] = None
         self.fuel_level         : Optional[FuelLevel] = None
         self.current_vessel     : Optional[str] = None
+        self.flags              : Optional[int] = None
+        self.flags2             : Optional[int] = None
 
     # ----- listeners ---------------------------------------------------------
     def register_target_listener(self, cb):

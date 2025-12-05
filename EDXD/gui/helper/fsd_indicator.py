@@ -87,7 +87,6 @@ class FSDIndicator(wx.Panel):
             self._pulse_speed = self.PULSE_SPEED * 1.6
         else:
             self._pulse_speed = self.PULSE_SPEED
-        self.set_text(state)
         self.Refresh()
 
     # little linear interpolation helper

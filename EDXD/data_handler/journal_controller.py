@@ -40,8 +40,26 @@ class JournalController(PausableThread, threading.Thread):
         # todo: #114 - implement FSD super charged state (perhaps even check for FSD injection via synth?); register on boost, reset after jump
 
         #121 - determine fuel capacity of current ship
-        self.m.ship_status = ShipStatus()
-        self.m.ship_status.read_from_json(dh.read_ship_status(SHIP_STATUS_FILE, self.ship_status))
+        if self.m.ship_status is None:
+            self.m.ship_status = ShipStatus()
+        self.m.ship_status = self.m.ship_status.read_from_json(dh.read_ship_status(SHIP_STATUS_FILE, self.ship_status))
+
+        # set FSD super charged factor
+        if etype == "JetConeBoost":
+            self.m.ship_status.jet_cone_boost_factor = float(evt.get("BoostValue"))
+            dh.update_ship_status(SHIP_STATUS_FILE, self.m.ship_status)
+
+        # set FSD injection factor
+        if etype == "Synthesis":
+            if evt.get("Name") is not None:
+                if evt.get("Name") == "FSD Basic":
+                    self.m.ship_status.fsd_injection_factor = 0.25
+                if evt.get("Name") == "FSD Standard":
+                    self.m.ship_status.fsd_injection_factor = 0.5
+                if evt.get("Name") == "FSD Premium":
+                    self.m.ship_status.fsd_injection_factor = 1.0
+
+            dh.update_ship_status(SHIP_STATUS_FILE, self.m.ship_status)
 
         if etype in {"Loadout"}: #, "LoadGame"}:
             if self.m.current_vessel == VESSEL_EV:
@@ -69,6 +87,13 @@ class JournalController(PausableThread, threading.Thread):
 
                 self.m.ship_status.fuel_capacity = FuelLevel(fuel_main, fuel_reserve) or self.m.ship_status.fuel_capacity
 
+                dh.update_ship_status(SHIP_STATUS_FILE, self.m.ship_status)
+
+        # reset FSD boosts
+        if etype == "StartJump":
+            if evt.get("JumpType") is not None and evt.get("JumpType") == "Hyperspace":
+                self.m.ship_status.fsd_injection_factor = None
+                self.m.ship_status.jet_cone_boost_factor = None
                 dh.update_ship_status(SHIP_STATUS_FILE, self.m.ship_status)
 
 

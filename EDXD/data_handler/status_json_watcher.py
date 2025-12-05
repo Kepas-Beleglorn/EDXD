@@ -52,7 +52,7 @@ class StatusWatcher(PausableThread, threading.Thread):
                 self.model.set_position(latitude=latitude, longitude=longitude, heading=heading)
                 self.model.set_target(body_id)
 
-            if pow(2, 0) & data.get("Flags2"):
+            if data.get("Flags2") and pow(2, 0) & data.get("Flags2"):
                 # on foot
                 self.model.current_vessel = VESSEL_EV
             else:
@@ -74,6 +74,10 @@ class StatusWatcher(PausableThread, threading.Thread):
             else:
                 if self.model.current_vessel == VESSEL_EV:
                     self.model.fuel_level = FuelLevel(0,0)
+
+
+            self.model.flags = int(data.get("Flags")) if data.get("Flags") else 0
+            self.model.flags2 = int(data.get("Flags2")) if data.get("Flags2") else 0
 
         except FileNotFoundError:
             pass

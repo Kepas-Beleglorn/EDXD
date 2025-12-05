@@ -56,6 +56,8 @@ class ShipStatus:
             self.ship_ident = ship_status.get("ship_ident", None)
             self.fuel_capacity = FuelLevel(ship_status.get("fuel_capacity", None).get("main", None), ship_status.get("fuel_capacity", None).get("reserve", None))
 
+        return self
+
     def to_json(self):
         data = {
             "ship_type": self.ship_type,
