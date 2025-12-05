@@ -22,7 +22,7 @@ jobs:
         id: nix-cache
         with:
           path: /tmp/nixcache
-          key: nix-store-${{ matrix.channel }}
+          key: nix-store
 
       - name: Init nix
         uses: cachix/install-nix-action@v31
