@@ -22,7 +22,7 @@ jobs:
         id: nix-cache
         with:
           path: /tmp/nixcache
-          key: nix-store
+          key: nix-store-nixos-unstable 
 
       - name: Init nix
         uses: cachix/install-nix-action@v31
@@ -55,6 +55,7 @@ jobs:
       - uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: Update nix flake [skip ci]
+          branch: main
 
       - name: "Export Nix store cache"
         if: "steps.nix-cache.outputs.cache-hit != 'true'"
