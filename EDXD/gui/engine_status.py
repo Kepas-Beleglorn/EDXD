@@ -94,8 +94,12 @@ class EngineStatus(DynamicDialog):
         self.Fit()
         if vehicle == VESSEL_EV:
             self.pnl_fuel_gauge.Hide()
+            self.fsd_indicator.Hide()
+            self.lbl_fsd_injection.Hide()
         else:
             self.pnl_fuel_gauge.Show()
+            self.fsd_indicator.Show()
+            self.lbl_fsd_injection.Show()
 
     def set_values(self):
         self.lbl_fuel_level.SetLabelText(f"Fuel level - {self.vessel_type}")
