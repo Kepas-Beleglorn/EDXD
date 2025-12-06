@@ -121,7 +121,7 @@ jobs:
 
       - name: Build with PyInstaller
         run: |
-          pyinstaller --onefile EDXD/main.py --name EDXD/ed-eXploration-dashboard.py
+          pyinstaller --onefile EDXD/main.py --name ed-eXploration-dashboard
         shell: bash
 
       - name: Prepare release directory
