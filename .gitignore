@@ -17,6 +17,8 @@ venv/
 # local data
 EDXD/system-data/
 config.json
+# nix
+result
 
 /EDXD/debug/*
 /EDXD/edxd_timestamp.json

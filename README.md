@@ -32,6 +32,54 @@ Just download the zip for your platform, unpack the contents anywhere you like a
 
 On first run you should start the "Journal Historian" to process all of your available journal files.
 
+### NixOs and Nix package manager
+
+#### Build cloned repo
+
+You can build the package simply by running `nix build` in the root of the
+repository. You'll get a `./result/` directory that is the package.
+
+#### NixOS
+
+**Using flake**
+
+Add to input:
+```nix
+{
+  ...
+  inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
+    nixpkgs-stable.url = "github:nixos/nixpkgs?ref=nixos-24.11";
+
+    edxd = {
+      url = "github:Kepas-Beleglorn/EDXD";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    ...
+```
+
+Add to system packages from the inputs:
+```nix
+{ inputs, ... }:
+{
+  ...
+  systemPackages = with pkgs; [
+    inputs.edxd.packages."${stdenv.hostPlatform.system}".default
+  ];
+}
+```
+
+**Using standard `configuration.nix`**
+
+> [!INFO]
+> If you get this working consider [contributing](#Contribute) to this README.
+
+#### Using `nix profile`
+
+```console
+$ nix profile install github:Kepas-Beleglorn/EDXD
+```
+
 ---
 
 ## Contribute
