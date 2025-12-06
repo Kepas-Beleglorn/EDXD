@@ -7,6 +7,12 @@ from pathlib import Path
 from typing import List
 
 def get_app_dir():
+
+    # PORTABLE mode (parameter --portable)
+    local_path = Path(sys.executable).parent
+    if getattr(sys, "portable", False):
+        return local_path
+
     # Determine the appropriate app data directory based on the OS
     if platform.system() == "Windows":
         app_data_path = Path(os.getenv("APPDATA")) # Not 100% sure what this gives. May need some tweaking
@@ -15,11 +21,11 @@ def get_app_dir():
     else: # Assuming Linux or other systems
         app_data_path = Path.home() / ".local" / "share"
 
-    module_path = Path(__file__).resolve()
-
     # CASE 1: PyInstaller frozen executable (should catch everything but nix)
     if getattr(sys, "frozen", False):
         return app_data_path / "edxd"
+
+    module_path = Path(__file__).resolve()
 
     # CASE 2: Running from Nix store
     if module_path.parts[1] == "nix" and module_path.parts[2] == "store":
