@@ -71,7 +71,7 @@ star_types = {
 
     'N': 91,
     'H': 92,
-    'SuperMassiveBlackHole': 93,
+    'SupermassiveBlackHole': 93,
 
     'X': 94,
 
