@@ -38,6 +38,10 @@ buildPythonPackage rec {
     hash = "sha256-c+Ll3ig9+Wr1/w9NQTBLWHmkRkTTGHlVY2vkQcBG6zM=";
   };
 
+  preBuild = ''
+    echo 'VERSION = "${version}"' > EDXD/_version.py
+  '';
+
   # do not run tests
   doCheck = false;
 
