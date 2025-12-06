@@ -40,7 +40,6 @@ jobs:
         run: |
           hash="$(nix flake prefetch --json github:${{ env.GITHUB_REPOSITORY }}/${{ env.GITHUB_SHA }} | jq -r '.hash')"
           tag="$(basename ${{ env.GITHUB_REF }})"
-          sha="${GITHUB_SHA}"
 
           sed -i 's|^  version = ".*";|  version = "'"$tag"'";|' default.nix
           sed -i 's|^\s*hash = ".*";|    hash = "'"$hash"'";|' default.nix
