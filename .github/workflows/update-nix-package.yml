@@ -4,15 +4,18 @@ name: Update nix package
 #  push:
 #    tags:
 #      - v*
+#on:
+#  workflow_run:
+#    workflows: ["Build binaries with PyInstaller and Draft Release"]
+#    types:
+#      - completed
+
 on:
-  workflow_run:
-    workflows: ["Build binaries with PyInstaller and Draft Release"]
-    types:
-      - completed
+  release:
+    types: [published]
 
 jobs:
   update-nix-package:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
