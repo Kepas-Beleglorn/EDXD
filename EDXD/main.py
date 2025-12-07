@@ -11,7 +11,7 @@ from EDXD.data_handler.journal_controller import JournalController
 from EDXD.data_handler.journal_reader import JournalReader
 from EDXD.data_handler.model import Model
 from EDXD.data_handler.status_json_watcher import StatusWatcher
-from EDXD.globals import CFG_FILE, RAW_MATS, DEFAULT_WORTHWHILE_THRESHOLD, DEFAULT_FUEL_LOW_THRESHOLD
+from EDXD.globals import CFG_FILE, RAW_MATS, DEFAULT_WORTHWHILE_THRESHOLD, DEFAULT_FUEL_LOW_THRESHOLD, args
 from EDXD.gui.main_window import MainFrame
 
 
@@ -44,15 +44,6 @@ from typing import Optional
 _instance: Optional[SingleInstance] = None
 
 def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--journals", type=Path,help="Path to Saved Games/Frontier Developments/Elite Dangerous")
-    ap.add_argument("--version", action="version", version=__version__)
-    ap.add_argument("--portable", help="Portable mode. All configs and data will be stored in the directory where the binary resides", action="store_true")
-    args = ap.parse_args()
-
-    if "--portable" in sys.argv:
-        setattr(sys, "portable", True)
-
     # check if another instance of EDXD is already running (working from v0.6.0.0)
     global _instance
     _instance = SingleInstance()

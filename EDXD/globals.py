@@ -5,9 +5,9 @@ import os
 import platform
 from pathlib import Path
 from typing import List
+import argparse
 
 def get_app_dir():
-
     # PORTABLE mode (parameter --portable)
     local_path = Path(sys.executable).parent
     if getattr(sys, "portable", False):
@@ -74,6 +74,21 @@ def log_context(frame, e, level=logging.DEBUG):
     logging.log(level, f"Exception str: {str(e)}")
 
 # -----------------------------------------------------------------------
+try:
+    from EDXD._version import VERSION as __version__
+except Exception:
+    __version__ = "0.0.0.0"
+
+ap = argparse.ArgumentParser()
+ap.add_argument("--journals", type=Path,help="Path to Saved Games/Frontier Developments/Elite Dangerous")
+ap.add_argument("--version", action="version", version=__version__)
+ap.add_argument("--portable", help="Portable mode. All configs and data will be stored in the directory where the binary resides", action="store_true")
+args = ap.parse_args()
+
+if "--portable" in sys.argv:
+    setattr(sys, "portable", True)
+
+
 # general paths for storing data
 APP_DIR = get_app_dir()
 CFG_FILE = APP_DIR / "config.json"
