@@ -1,12 +1,18 @@
 name: Update nix package
 
+#on:
+#  push:
+#    tags:
+#      - v*
 on:
-  push:
-    tags:
-      - v*
+  workflow_run:
+    workflows: ["Build binaries with PyInstaller and Draft Release"]
+    types:
+      - completed
 
 jobs:
   update-nix-package:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -14,6 +20,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
+          token:  ${{ secrets.PERSONAL_TOKEN }}
           fetch-depth: 0
 
       - name: "Cache Nix store"
