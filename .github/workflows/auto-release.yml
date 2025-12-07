@@ -39,9 +39,65 @@ jobs:
             echo "matched=false" >> $GITHUB_OUTPUT
           fi
 
+  update-nix-package:
+    runs-on: ubuntu-latest
+    needs: check-version-commit
+    if: needs.check-version-commit.outputs.matched == 'true'
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+
+      - name: "Cache Nix store"
+        uses: actions/cache@v4
+        id: nix-cache
+        with:
+          path: /tmp/nixcache
+          key: nix-store
+
+      - name: Init nix
+        uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.PERSONAL_TOKEN }}
+
+      - name: "Import Nix store cache"
+        if: "steps.nix-cache.outputs.cache-hit == 'true'"
+        run: "nix-store --import < /tmp/nixcache"
+
+      - name: Update package
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_SHA: ${{ github.sha }}
+          TAG: ${{ needs.check-version-commit.outputs.tag }}
+        run: |
+          hash="$(nix flake prefetch --json github:${{ env.GITHUB_REPOSITORY }}/${{ env.GITHUB_SHA }} | jq -r '.hash')"
+          tag="$TAG"
+
+          sed -i 's|^  version = ".*";|  version = "'"$tag"'";|' default.nix
+          sed -i 's|^\s*hash = ".*";|    hash = "'"$hash"'";|' default.nix
+
+      - name: Build
+        run: nix build
+
+      - name: Validate flake
+        run: nix flake check
+
+      - uses: stefanzweifel/git-auto-commit-action@v7
+        with:
+          commit_message: Update nix flake [skip ci]
+          branch: ${{ github.ref_name }}
+
+      - name: "Export Nix store cache"
+        if: "steps.nix-cache.outputs.cache-hit != 'true'"
+        run: "nix-store --export $(find /nix/store -maxdepth 1 -name '*-*') > /tmp/nixcache"
+
   build:
     name: Build on ${{ matrix.os }}
-    needs: check-version-commit
+    needs: [check-version-commit, update-nix-package]
     if: needs.check-version-commit.outputs.matched == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
@@ -52,6 +108,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.ref_name }}
           fetch-depth: 0
 
       - name: Set up Python
@@ -121,23 +178,13 @@ jobs:
 
       - name: Build with PyInstaller
         run: |
-          pyinstaller --onefile EDXD/main.py --name EDXD/ed-eXploration-dashboard.py
+          pyinstaller --onefile EDXD/main.py --name ed-eXploration-dashboard
         shell: bash
 
       - name: Prepare release directory
         run: |
           mkdir release
           cp dist/ed-eXploration-dashboard* release/
-        shell: bash
-
-      - name: Add flake.nix to release (only Linux)
-        if: runner.os == 'Linux'
-        run: |
-          if [ -f flake.nix ]; then
-            cp flake.nix release/
-          else
-            echo "flake.nix not found in repo root; skipping"
-          fi
         shell: bash
 
       - name: Archive release for Linux/macOS
@@ -161,13 +208,14 @@ jobs:
 
   tag-and-release:
     name: Tag & Create GitHub Release
-    needs: [build, check-version-commit]
+    needs: [build, check-version-commit, update-nix-package]
     runs-on: ubuntu-latest
     if: needs.check-version-commit.outputs.matched == 'true'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.ref_name }}
           fetch-depth: 0
 
       - name: Download all build artifacts
@@ -200,7 +248,7 @@ jobs:
         run: |
           echo "${{ needs.check-version-commit.outputs.body }}" > RELEASE_NOTES.md
           echo "" >> RELEASE_NOTES.md
-          echo "**Full Changelog**: https://github.com/Kepas-Beleglorn/EDXD/compare/${{ steps.prev_tag.outputs.prev_tag }}...${{ needs.check-version-commit.outputs.tag }}" >> RELEASE_NOTES.md
+          echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/${{ steps.prev_tag.outputs.prev_tag }}...${{ needs.check-version-commit.outputs.tag }}" >> RELEASE_NOTES.md
 
       - name: Download all build artifacts
         uses: actions/download-artifact@v4
