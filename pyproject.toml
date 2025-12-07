@@ -1,6 +1,6 @@
 [project]
 name = "edxd"
-version = "0.6.1.3"
+version = "0.6.1.4"
 description = "Elite Dangerous eXploration Dashboard"
 authors = [{ name = "Kepas Beleglorn", email = "Kepas-Beleglorn@users.noreply.github.com" }]
 readme = "README.md"
