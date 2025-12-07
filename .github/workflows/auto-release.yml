@@ -187,6 +187,7 @@ jobs:
           if ! git tag | grep -q "^$TAG$"; then
             git tag "$TAG"
             git push origin "$TAG"
+            git push --tags
           fi
 
       - name: Write release notes
