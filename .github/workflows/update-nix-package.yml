@@ -1,15 +1,5 @@
 name: Update nix package
 
-#on:
-#  push:
-#    tags:
-#      - v*
-#on:
-#  workflow_run:
-#    workflows: ["Build binaries with PyInstaller and Draft Release"]
-#    types:
-#      - completed
-
 on:
   release:
     types: [published]
