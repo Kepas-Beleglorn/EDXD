@@ -51,7 +51,6 @@ class EngineStatus(DynamicDialog):
         grid.Add(self.lbl_spacer, 0, wx.EXPAND | wx.ALL, -4)
 
         # FSD supercharged state
-        # todo: 114 - implement FSD super charged state (perhaps even check for FSD injection via synth?)
         self.fsd_indicator = FSDIndicator(parent=self, size=wx.Size(-1, 100))
         self.fsd_indicator.set_text("FSD STATUS")
 
