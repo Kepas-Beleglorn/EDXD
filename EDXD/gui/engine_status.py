@@ -74,9 +74,9 @@ class EngineStatus(DynamicDialog):
         if vehicle == VESSEL_EV:
             fuel_capacity_total = fuel_capacity_reservoir
         if vehicle == VESSEL_SRV:
-            fuel_capacity_total = fuel_capacity_reservoir
+            fuel_capacity_total = fuel_capacity_reservoir or 0.5
         if vehicle == VESSEL_SLF:
-            fuel_capacity_total = fuel_capacity_reservoir
+            fuel_capacity_total = fuel_capacity_reservoir or 0.5
 
         self.vessel_type = vehicle
         if fuel_capacity_total > 0:
