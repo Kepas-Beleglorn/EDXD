@@ -186,8 +186,8 @@ jobs:
           # Check if the tag exists
           if ! git tag | grep -q "^$TAG$"; then
             git tag "$TAG"
-            git push origin "$TAG"
             git push --tags
+            git push origin "$TAG"
           fi
 
       - name: Write release notes
