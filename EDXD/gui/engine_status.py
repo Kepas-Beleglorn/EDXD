@@ -10,7 +10,6 @@ from EDXD.gui.helper.fsd_indicator import FSDIndicator
 from EDXD.gui.helper.gui_handler import init_widget
 from EDXD.gui.helper.theme_handler import get_theme
 from EDXD.gui.helper.window_properties import WindowProperties
-from EDXD.data_handler.vessel_status import ShipStatus
 
 TITLE = "Engine status"
 WINID = "ENGINE_STATUS"
@@ -29,7 +28,6 @@ class EngineStatus(DynamicDialog):
         self.theme = get_theme()
         self.parent = parent
         self.vessel_type = None
-        self.ship_status: ShipStatus = self.parent.model.ship_status
 
         max_height = wx.Size(-1, DEFAULT_HEIGHT_ENGINE_STATUS)
         min_width = wx.Size(DEFAULT_WIDTH_ENGINE_STATUS, -1)
@@ -103,14 +101,14 @@ class EngineStatus(DynamicDialog):
     def set_values(self):
         self.lbl_fuel_level.SetLabelText(f"Fuel level - {self.vessel_type}")
 
-        if self.parent.model.ship_status.jet_cone_boost_factor is None:
+        if self.parent.model is None or self.parent.model.ship_status is None or self.parent.model.ship_status.jet_cone_boost_factor is None:
             self.fsd_indicator.set_state(FSDIndicator.STATE_OFF)
             self.fsd_indicator.set_text("FSD nominal")
         else:
             self.fsd_indicator.set_state(FSDIndicator.STATE_SUPERCHARGED)
             self.fsd_indicator.set_text(f"FSD supercharged (x{self.parent.model.ship_status.jet_cone_boost_factor})")
 
-        if self.ship_status.fsd_injection_factor is None:
+        if self.parent.model is None or self.parent.model.ship_status is None or self.parent.model.ship_status.fsd_injection_factor is None:
             self.lbl_fsd_injection.SetLabelText("")
         else:
             self.lbl_fsd_injection.SetLabelText(f"FSD injection active: +{self.parent.model.ship_status.fsd_injection_factor * 100}%")
