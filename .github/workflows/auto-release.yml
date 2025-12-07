@@ -262,12 +262,57 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.check-version-commit.outputs.tag }}
-          name: ${{ needs.check-version-commit.outputs.title }}
+          name: "EDXD ${{ needs.check-version-commit.outputs.title }}"
           body_path: RELEASE_NOTES.md
           draft: false
           make_latest: true
           files: |
             dist/**/*.tar.gz
             dist/**/*.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.PERSONAL_TOKEN }}
+
+      - name: Compute tag and flake hash
+        id: compute
+        run: |
+          TAG=${{ needs.check-version-commit.outputs.tag }}
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          # prefetch the exact commit that was tagged
+          HASH=$(nix flake prefetch --json github:${GITHUB_REPOSITORY}/${GITHUB_SHA} | jq -r '.hash')
+          echo "hash=$HASH" >> $GITHUB_OUTPUT
+
+      - name: Prepare nix bundle (default.nix + flake.nix)
+        run: |
+          set -euo pipefail
+          mkdir -p nix-bundle
+          # copy the repo's flake.nix and default.nix if present
+          if [ -f flake.nix ]; then cp flake.nix nix-bundle/; fi
+          if [ -f default.nix ]; then cp default.nix nix-bundle/; fi
+          # update version/hash in the copied default.nix if it exists
+          if [ -f nix-bundle/default.nix ]; then
+            sed -i 's|^  version = ".*";|  version = "'"${{ steps.compute.outputs.tag }}"'";|' nix-bundle/default.nix || true
+            sed -i 's|^\s*hash = ".*";|    hash = "'"${{ steps.compute.outputs.hash }}"'";|' nix-bundle/default.nix || true
+          fi
+          # add an install/readme to help users
+          cat > nix-bundle/README.md <<'EOF'
+          This archive contains nix packaging for EDXD pinned to the release tag.
+          Usage examples:
+            - Use flake.nix directly with `nix build` or `nix run` on NixOS.
+            - If default.nix was included, you can add this as a package in your overlay.
+          EOF
+          tar -czf edxd-nix-${{ steps.compute.outputs.tag }}.tar.gz -C nix-bundle .
+
+      - name: Attach Nix bundle to GitHub Release (create/update)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.compute.outputs.tag }}
+          files: edxd-nix-${{ steps.compute.outputs.tag }}.tar.gz
+          draft: false
+          make_latest: false
         env:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
