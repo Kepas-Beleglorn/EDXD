@@ -1,0 +1,60 @@
+name: Update nix package
+
+on:
+  push:
+    tags:
+      - v*
+
+jobs:
+  update-nix-package:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: "Cache Nix store"
+        uses: actions/cache@v4
+        id: nix-cache
+        with:
+          path: /tmp/nixcache
+          key: nix-store
+
+      - name: Init nix
+        uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "Import Nix store cache"
+        if: "steps.nix-cache.outputs.cache-hit == 'true'"
+        run: "nix-store --import < /tmp/nixcache"
+
+      - name: Update package
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_REF: ${{ github.ref }}
+        run: |
+          hash="$(nix flake prefetch --json github:${{ env.GITHUB_REPOSITORY }}/${{ env.GITHUB_SHA }} | jq -r '.hash')"
+          tag="$(basename ${{ env.GITHUB_REF }})"
+
+          sed -i 's|^  version = ".*";|  version = "'"$tag"'";|' default.nix
+          sed -i 's|^\s*hash = ".*";|    hash = "'"$hash"'";|' default.nix
+
+      - name: Build
+        run: nix build
+
+      - name: Validate flake
+        run: nix flake check
+
+      - uses: stefanzweifel/git-auto-commit-action@v7
+        with:
+          commit_message: Update nix flake [skip ci]
+          branch: main
+
+      - name: "Export Nix store cache"
+        if: "steps.nix-cache.outputs.cache-hit != 'true'"
+        run: "nix-store --export $(find /nix/store -maxdepth 1 -name '*-*') > /tmp/nixcache"
