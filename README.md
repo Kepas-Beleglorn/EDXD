@@ -97,6 +97,8 @@ $ nix profile install github:Kepas-Beleglorn/EDXD
 As I don't have every single OS on my machine, I'd appreciate any help testing EDXD on several OS. 
 If you want to help, please see [#120](https://github.com/Kepas-Beleglorn/EDXD/issues/120) and linked issues.
 
+If you have suggestions, found a bug or want to file a feature request, please do so and add a new issue. If you want to discuss EDXD feel free to join the [EDXD Discord](https://discord.gg/zmZZrq5f)
+
 ---
 
 ## Credits
