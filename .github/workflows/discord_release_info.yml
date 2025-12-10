@@ -1,0 +1,48 @@
+name: Update Discord release message
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  update-discord:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build Discord payload
+        id: payload
+        run: |
+          # Put the release body into a shell variable *with* newlines
+          desc=$(cat << 'EOF'
+          ${{ github.event.release.body }}
+          EOF
+          )
+            
+          # Use jq to build valid JSON and escape newlines properly
+          jq -n \
+          --arg title "EDXD ${{ github.event.release.tag_name }} released" \
+          --arg url   "${{ github.event.release.html_url }}" \
+          --arg desc  "$desc" \
+          '{
+            content: "",
+            embeds: [{
+              title: $title,
+              url:   $url,
+              description: $desc
+            }]
+          }' > payload.json
+
+      - name: Edit pinned Discord message
+        run: |
+          WEBHOOK_ANNOUNCEMENT_URL="${{ secrets.DISCORD_WEBHOOK_ANNOUNCE_URL }}"
+          WEBHOOK_PINNED_URL="${{ secrets.DISCORD_WEBHOOK_PINNED_URL }}"
+          MESSAGE_PINNED_ID="${{ secrets.DISCORD_MESSAGE_ID }}"
+
+          curl -X PATCH \
+               -H "Content-Type: application/json" \
+               -d @payload.json \
+               "$WEBHOOK_PINNED_URL/messages/$MESSAGE_PINNED_ID"
+
+          curl -X POST \
+               -H "Content-Type: application/json" \
+               -d @payload.json \
+               "$WEBHOOK_ANNOUNCEMENT_URL"
