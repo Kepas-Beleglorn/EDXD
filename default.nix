@@ -29,13 +29,13 @@
 }:
 buildPythonPackage rec {
   pname = "ed-eXploration-dashboard";
-  version = "v0.6.1.6";
+  version = "v0.0.0.0";
 
   src = fetchFromGitHub {
     owner = "Kepas-Beleglorn";
     repo = "EDXD";
     rev = version;
-    hash = "sha256-gTbaAKLEYYrGnwRp7CbFy+fqNbyOpRgqgPjEwYq3hcg=";
+    hash = "sha256-yC/x/hB5c5KAjk+q/R78I94En9QKVLZ8HaR688Hzzyk=";
   };
 
   preBuild = ''
