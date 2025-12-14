@@ -424,8 +424,9 @@ class JournalController(PausableThread, threading.Thread):
             if genus_scanned == 0:
                 pos_first = self.m.current_position
 
-            if genus_scanned == 1 and genus_found_dict.pos_first is not None:
-                pos_first = PSPSCoordinates.from_dict(genus_found_dict.pos_first)
+            if genus_scanned == 1:
+                if genus_found_dict.pos_first is not None:
+                    pos_first = PSPSCoordinates.from_dict(genus_found_dict.pos_first)
                 pos_second = self.m.current_position
 
             if genus_scanned == 3:
