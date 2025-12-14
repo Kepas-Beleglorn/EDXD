@@ -386,7 +386,9 @@ class JournalController(PausableThread, threading.Thread):
                         species_localised=genus_found_dict.species_localised,
                         variant_localised=genus_found_dict.variant_localised or variant_localised,
                         min_distance=genus_found_dict.min_distance or bio_helper.bio_get_range(genus_id),
-                        scanned_count=genus_found_dict.scanned_count
+                        scanned_count=genus_found_dict.scanned_count,
+                        pos_first=genus_found_dict.pos_first,
+                        pos_second=genus_found_dict.pos_second
                     )
 
                 bio_found[genus_id] = genus_found
