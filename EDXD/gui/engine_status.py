@@ -96,6 +96,8 @@ class EngineStatus(DynamicDialog):
         else:
             if vehicle == VESSEL_EV:
                 self.pnl_fuel_gauge.Hide()
+            else:
+                self.pnl_fuel_gauge.Show()
             self.fsd_indicator.Hide()
             self.lbl_fsd_injection.Hide()
 
