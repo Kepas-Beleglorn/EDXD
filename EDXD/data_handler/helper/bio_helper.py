@@ -47,5 +47,5 @@ def bio_get_range(genus_name: str):
 
     # fall back, if all else fails
     else:
-        return 50
+        return 10000
 
