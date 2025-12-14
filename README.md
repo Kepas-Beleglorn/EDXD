@@ -34,7 +34,7 @@ options:
   -h, --help           show this help message and exit
   --journals JOURNALS  Path to Saved Games/Frontier Developments/Elite
                        Dangerous
-  --version            show program version number and exit
+  --version            show program's version number and exit
   --portable           Portable mode. All configs and data will be stored in
                        the directory where the binary resides
 ```
