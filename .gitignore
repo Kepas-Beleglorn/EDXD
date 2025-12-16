@@ -20,7 +20,7 @@ config.json
 # nix
 result
 
-/EDXD/debug/*
+/EDXD/debug/statistics/*
 /EDXD/edxd_timestamp.json
 /debug/statistics/
 /EDXD/resources/ICON_PNG_B64.txt
