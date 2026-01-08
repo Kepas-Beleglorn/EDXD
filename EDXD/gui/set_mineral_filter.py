@@ -24,19 +24,18 @@ TITLE = "Minerals to show"
 WINID = "MINERALS_FILTER"
 MINERAL_BTN_WIDTH = 128
 
-from EDXD.globals import DEFAULT_HEIGHT_MINERALS_FILTER, DEFAULT_WIDTH_MINERALS_FILTER, DEFAULT_POS_Y, DEFAULT_POS_X, \
-    RAW_MATS
+from EDXD.globals import DEFAULT_HEIGHT_MINERALS_FILTER, DEFAULT_WIDTH_MINERALS_FILTER, DEFAULT_POS_Y, DEFAULT_POS_X, RAW_MATS, DEFAULT_WINDOW_SHOW
 
 # ---------------------------------------------------------------------------
 class MineralsFilter(DynamicDialog):
     def __init__(self, parent, prefs: Dict):
         # 1. Load saved properties (or use defaults)
-        props = WindowProperties.load(WINID, default_height=DEFAULT_HEIGHT_MINERALS_FILTER,
-                                      default_width=DEFAULT_WIDTH_MINERALS_FILTER, default_posx=DEFAULT_POS_X,
-                                      default_posy=DEFAULT_POS_Y)
         DynamicDialog.__init__(self, parent=parent, style=wx.NO_BORDER | wx.FRAME_SHAPED | wx.STAY_ON_TOP, title=TITLE, win_id=WINID, show_minimize=False, show_maximize=False, show_close=True)
+        self._props = WindowProperties.load(WINID, default_height=DEFAULT_HEIGHT_MINERALS_FILTER,
+                                      default_width=DEFAULT_WIDTH_MINERALS_FILTER, default_posx=DEFAULT_POS_X,
+                                      default_posy=DEFAULT_POS_Y, default_show=DEFAULT_WINDOW_SHOW)
         # 2. Apply geometry
-        init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
+        init_widget(self, width=self._props.width, height=self._props.height, posx=self._props.posx, posy=self._props.posy, title=TITLE)
 
         self.theme = get_theme()
         self.prefs = prefs

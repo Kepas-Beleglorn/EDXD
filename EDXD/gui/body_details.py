@@ -7,7 +7,7 @@ import wx
 
 from EDXD.data_handler.model import Body
 from EDXD.data_handler.planetary_surface_positioning_system import PSPSCoordinates, PSPS
-from EDXD.globals import DEFAULT_HEIGHT, DEFAULT_WIDTH, DEFAULT_POS_Y, DEFAULT_POS_X, RESIZE_MARGIN, ICONS
+from EDXD.globals import DEFAULT_HEIGHT, DEFAULT_WIDTH, DEFAULT_POS_Y, DEFAULT_POS_X, RESIZE_MARGIN, ICONS, DEFAULT_WINDOW_SHOW
 from EDXD.gui.helper.dynamic_dialog import DynamicDialog
 from EDXD.gui.helper.gui_handler import init_widget
 from EDXD.gui.helper.theme_handler import get_theme
@@ -20,10 +20,13 @@ WINID = "BODY_DETAILS"
 class BodyDetails(DynamicDialog):
     def __init__(self, parent, title, win_id):
         # 1. Load saved properties (or use defaults)
-        props = WindowProperties.load(win_id, default_height=DEFAULT_HEIGHT, default_width=DEFAULT_WIDTH, default_posx=DEFAULT_POS_X, default_posy=DEFAULT_POS_Y)
         DynamicDialog.__init__(self, parent=parent, style=wx.NO_BORDER | wx.FRAME_SHAPED | wx.STAY_ON_TOP, title=title, win_id=win_id, show_minimize=False, show_maximize=False, show_close=True)
+        self._props = WindowProperties.load(win_id, default_height=DEFAULT_HEIGHT, default_width=DEFAULT_WIDTH, default_posx=DEFAULT_POS_X, default_posy=DEFAULT_POS_Y, default_show=DEFAULT_WINDOW_SHOW)
+        if not self._props.show_window:
+            return
+
         # 2. Apply geometry
-        init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=win_id)
+        init_widget(self, width=self._props.width, height=self._props.height, posx=self._props.posx, posy=self._props.posy, title=win_id)
 
         self.body = None
 
@@ -44,7 +47,7 @@ class BodyDetails(DynamicDialog):
 
         # body details
         self.txt_body_details = wx.TextCtrl(parent=self, style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE)
-        init_widget(self.txt_body_details, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
+        init_widget(self.txt_body_details, width=self._props.width, height=self._props.height, posx=self._props.posx, posy=self._props.posy, title=TITLE)
         self.txt_body_details.SetEditable(False)
         self.window_box.Add(self.txt_body_details, 1, wx.EXPAND | wx.EAST | wx.WEST | wx.SOUTH, RESIZE_MARGIN)
 

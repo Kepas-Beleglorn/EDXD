@@ -48,11 +48,17 @@ def init_widget(widget, width: int = DEFAULT_WIDTH, height: int = DEFAULT_HEIGHT
 
 
 def init_frame(widget: wx.Frame, width: int, height: int, posx: int, posy: int, title: str):
+    if width is None or height is None or posx is None or posy is None:
+        return
+
     widget.SetSize(wx.Size(width=width, height=height))
     widget.SetPosition(wx.Point(x=posx, y=posy))
     widget.SetTitle(title)
 
 def init_dialog(widget: wx.Dialog, width: int, height: int, posx: int, posy: int, title: str):
+    if width is None or height is None or posx is None or posy is None:
+        return
+
     widget.SetSize(wx.Size(width=width, height=height))
     widget.SetPosition(wx.Point(x=posx, y=posy))
     widget.SetTitle(title)

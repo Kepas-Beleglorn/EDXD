@@ -3,7 +3,6 @@ from __future__ import annotations
 import wx
 from wx import Size
 
-from EDXD.globals import BTN_HEIGHT, DEFAULT_FUEL_LOW_THRESHOLD
 from EDXD.gui.helper.dynamic_dialog import DynamicDialog
 from EDXD.gui.helper.fuel_gauge import FuelGauge
 from EDXD.gui.helper.fsd_indicator import FSDIndicator
@@ -14,16 +13,19 @@ from EDXD.gui.helper.window_properties import WindowProperties
 TITLE = "Engine status"
 WINID = "ENGINE_STATUS"
 
-from EDXD.globals import DEFAULT_HEIGHT_ENGINE_STATUS, DEFAULT_WIDTH_ENGINE_STATUS, DEFAULT_POS_Y, DEFAULT_POS_X, VESSEL_SLF, VESSEL_SRV, VESSEL_EV, VESSEL_SHIP
+from EDXD.globals import DEFAULT_HEIGHT_ENGINE_STATUS, DEFAULT_WIDTH_ENGINE_STATUS, DEFAULT_POS_Y, DEFAULT_POS_X, VESSEL_SLF, VESSEL_SRV, VESSEL_EV, VESSEL_SHIP, DEFAULT_WINDOW_SHOW, BTN_HEIGHT, DEFAULT_FUEL_LOW_THRESHOLD
 
 # ---------------------------------------------------------------------------
 class EngineStatus(DynamicDialog):
     def __init__(self, parent):
         # 1. Load saved properties (or use defaults)
-        props = WindowProperties.load(WINID, default_height=DEFAULT_HEIGHT_ENGINE_STATUS, default_width=DEFAULT_WIDTH_ENGINE_STATUS, default_posx=DEFAULT_POS_X, default_posy=DEFAULT_POS_Y)
         DynamicDialog.__init__(self, parent=parent, style=wx.NO_BORDER | wx.FRAME_SHAPED | wx.STAY_ON_TOP, title=TITLE, win_id=WINID, show_minimize=False, show_maximize=False, show_close=True)
+        self._props = WindowProperties.load(WINID, default_height=DEFAULT_HEIGHT_ENGINE_STATUS, default_width=DEFAULT_WIDTH_ENGINE_STATUS, default_posx=DEFAULT_POS_X, default_posy=DEFAULT_POS_Y, default_show=DEFAULT_WINDOW_SHOW)
+        if not self._props.show_window:
+            return
+
         # 2. Apply geometry
-        init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
+        init_widget(self, width=self._props.width, height=self._props.height, posx=self._props.posx, posy=self._props.posy, title=TITLE)
 
         self.theme = get_theme()
         self.parent = parent

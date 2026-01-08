@@ -7,7 +7,7 @@ import wx
 
 from EDXD.data_handler.model import Body
 from EDXD.data_handler.planetary_surface_positioning_system import PSPS, PSPSCoordinates
-from EDXD.globals import DEFAULT_WIDTH_PSPS, DEFAULT_HEIGHT_PSPS, DEFAULT_POS_Y, DEFAULT_POS_X, RESIZE_MARGIN, ICONS
+from EDXD.globals import DEFAULT_WIDTH_PSPS, DEFAULT_HEIGHT_PSPS, DEFAULT_POS_Y, DEFAULT_POS_X, RESIZE_MARGIN, ICONS, DEFAULT_WINDOW_SHOW
 from EDXD.gui.helper.dynamic_dialog import DynamicDialog
 from EDXD.gui.helper.gui_handler import init_widget
 from EDXD.gui.helper.theme_handler import get_theme
@@ -20,11 +20,14 @@ WINID = "PSPS"
 class PositionTracker(DynamicDialog):
     def __init__(self, parent, title=TITLE, win_id=WINID):
         # 1. Load saved properties (or use defaults)
-        props = WindowProperties.load(win_id, default_height=DEFAULT_HEIGHT_PSPS, default_width=DEFAULT_WIDTH_PSPS,
-                                      default_posx=DEFAULT_POS_X, default_posy=DEFAULT_POS_Y)
         DynamicDialog.__init__(self, parent=parent, style=wx.NO_BORDER | wx.FRAME_SHAPED | wx.STAY_ON_TOP, title=title, win_id=win_id, show_minimize=False, show_maximize=False, show_close=True)
+        self._props = WindowProperties.load(win_id, default_height=DEFAULT_HEIGHT_PSPS, default_width=DEFAULT_WIDTH_PSPS,
+                                            default_posx=DEFAULT_POS_X, default_posy=DEFAULT_POS_Y, default_show=DEFAULT_WINDOW_SHOW)
+        if not self._props.show_window:
+            return
+
         # 2. Apply geometry
-        init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=win_id)
+        init_widget(self, width=self._props.width, height=self._props.height, posx=self._props.posx, posy=self._props.posy, title=win_id)
 
         self.psps = None
         self.pinned_position = None
@@ -47,19 +50,19 @@ class PositionTracker(DynamicDialog):
 
         # current position
         self.txt_current_position = wx.TextCtrl(parent=self, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE)
-        init_widget(self.txt_current_position, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
+        init_widget(self.txt_current_position, width=self._props.width, height=self._props.height, posx=self._props.posx, posy=self._props.posy, title=TITLE)
         self.txt_current_position.SetEditable(False)
         self.window_box.Add(self.txt_current_position, 0, wx.EXPAND | wx.EAST | wx.WEST | wx.SOUTH, RESIZE_MARGIN)
 
         # pinned position
         self.txt_pinned_position = wx.TextCtrl(parent=self, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE)
-        init_widget(self.txt_pinned_position, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
+        init_widget(self.txt_pinned_position, width=self._props.width, height=self._props.height, posx=self._props.posx, posy=self._props.posy, title=TITLE)
         self.txt_pinned_position.SetEditable(False)
         self.window_box.Add(self.txt_pinned_position, 0, wx.EXPAND | wx.EAST | wx.WEST | wx.SOUTH, RESIZE_MARGIN)
 
         # distance to target
         self.txt_distance_to_target = wx.TextCtrl(parent=self, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE)
-        init_widget(self.txt_distance_to_target, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
+        init_widget(self.txt_distance_to_target, width=self._props.width, height=self._props.height, posx=self._props.posx, posy=self._props.posy, title=TITLE)
         self.txt_distance_to_target.SetEditable(False)
         self.window_box.Add(self.txt_distance_to_target, 0, wx.EXPAND | wx.EAST | wx.WEST | wx.SOUTH, RESIZE_MARGIN)
 

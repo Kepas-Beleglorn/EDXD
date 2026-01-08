@@ -35,29 +35,32 @@ class WINDOW(wx.Frame):
 
 import json
 import os
+from typing import Optional
 from EDXD.globals import CFG_FILE
 
 class WindowProperties:
-    __slots__ = ("window_id", "height", "width", "posx", "posy")
+    __slots__ = ("window_id", "height", "width", "posx", "posy", "show_window")
 
-    def __init__(self, window_id: str, height: int, width: int, posx: int, posy: int):
-        self.window_id: str = window_id
-        self.height:    int = height
-        self.width:     int = width
-        self.posx:      int = posx
-        self.posy:      int = posy
-
+    def __init__(self, window_id: Optional[str], height: Optional[int], width: Optional[int], posx: Optional[int], posy: Optional[int], show_window: Optional[bool]) -> None:
+        self.window_id:     Optional[str]   = window_id
+        self.height:        Optional[int]   = height
+        self.width:         Optional[int]   = width
+        self.posx:          Optional[int]   = posx
+        self.posy:          Optional[int]   = posy
+        self.show_window:   Optional[bool]  = show_window
 
     @classmethod
-    def load(cls, window_id: str, default_height=400, default_width=300, default_posx=100, default_posy=100):
+    def load(cls, window_id: str, default_height=400, default_width=300, default_posx=100, default_posy=100, default_show=True):
         if os.path.exists(CFG_FILE):
             with open(CFG_FILE, "r") as f:
                 data = json.load(f)
             props = data.get(window_id)
             if props:
-                return cls(window_id, props["height"], props["width"], props["posx"], props["posy"])
+                if "show_window" not in props:
+                    props["show_window"] = default_show
+                return cls(window_id, props["height"], props["width"], props["posx"], props["posy"], props["show_window"])
         # Return defaults if not found
-        return cls(window_id, default_height, default_width, default_posx, default_posy)
+        return cls(window_id, default_height, default_width, default_posx, default_posy, default_show)
 
     def save(self):
         # Read current config or create new
@@ -71,11 +74,12 @@ class WindowProperties:
             "height": self.height,
             "width": self.width,
             "posx": self.posx,
-            "posy": self.posy
+            "posy": self.posy,
+            "show": self.show_window
         }
         # Write back to disk
         with open(CFG_FILE, "w") as f:
             json.dump(data, f, indent=2)
 
     def __repr__(self):
-        return f"WindowProperties({self.window_id}, {self.height}, {self.width}, {self.posx}, {self.posy})"
+        return f"WindowProperties({self.window_id}, {self.height}, {self.width}, {self.posx}, {self.posy}, {self.show_window})"

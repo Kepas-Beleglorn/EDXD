@@ -10,8 +10,7 @@ import wx
 from EDXD.data_handler.journal_controller import JournalController
 from EDXD.data_handler.journal_reader import JournalReader
 from EDXD.data_handler.status_json_watcher import StatusWatcher
-from EDXD.globals import CACHE_DIR, logging, log_context, JOURNAL_TIMESTAMP_FILE
-from EDXD.globals import DEFAULT_HEIGHT_JH, DEFAULT_WIDTH_JH, DEFAULT_POS_Y, DEFAULT_POS_X, RESIZE_MARGIN
+from EDXD.globals import CACHE_DIR, logging, log_context, JOURNAL_TIMESTAMP_FILE, DEFAULT_HEIGHT_JH, DEFAULT_WIDTH_JH, DEFAULT_POS_Y, DEFAULT_POS_X, RESIZE_MARGIN, DEFAULT_WINDOW_SHOW
 from EDXD.gui.helper.dynamic_frame import DynamicFrame
 from EDXD.gui.helper.gui_dynamic_button import DynamicButton
 from EDXD.gui.helper.gui_handler import init_widget
@@ -23,11 +22,9 @@ WINID = "EDXD_JOURNAL_HISTORIAN"
 class JournalHistorian(DynamicFrame):
     def __init__(self, journal_reader: JournalReader, journal_controller:JournalController, status_json_watcher: StatusWatcher):
         # 1. Load saved properties (or use defaults)
-        props = WindowProperties.load(WINID, default_height=DEFAULT_HEIGHT_JH, default_width=DEFAULT_WIDTH_JH,
-                                      default_posx=DEFAULT_POS_X, default_posy=DEFAULT_POS_Y)
         DynamicFrame.__init__(self, title=TITLE, win_id=WINID, parent=None, style=wx.NO_BORDER | wx.FRAME_SHAPED | wx.STAY_ON_TOP, show_minimize=True, show_maximize=True, show_close=True)
-      #  # 2. Apply geometry
-      #  init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
+        self._props = WindowProperties.load(WINID, default_height=DEFAULT_HEIGHT_JH, default_width=DEFAULT_WIDTH_JH,
+                                      default_posx=DEFAULT_POS_X, default_posy=DEFAULT_POS_Y, default_show=DEFAULT_WINDOW_SHOW)
 
         self.journal_reader = journal_reader
         self.journal_controller = journal_controller
@@ -69,7 +66,7 @@ class JournalHistorian(DynamicFrame):
         self.btn_start.Bind(wx.EVT_BUTTON, self.on_start)
 
         # 2. Apply geometry
-        init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
+        init_widget(self, width=self._props.width, height=self._props.height, posx=self._props.posx, posy=self._props.posy, title=TITLE)
 
     def on_start(self, event):
         # Gather files
