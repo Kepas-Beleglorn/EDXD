@@ -10,7 +10,7 @@ from EDXD.data_handler.journal_controller import JournalController
 from EDXD.data_handler.journal_reader import JournalReader
 from EDXD.data_handler.model import Model, Body
 from EDXD.data_handler.status_json_watcher import StatusWatcher
-from EDXD.globals import DEFAULT_HEIGHT_MAIN, DEFAULT_WIDTH_MAIN, DEFAULT_POS_Y, DEFAULT_POS_X, RESIZE_MARGIN, DEFAULT_WINDOW_SHOW
+from EDXD.globals import DEFAULT_HEIGHT_MAIN, DEFAULT_WIDTH_MAIN, DEFAULT_POS_Y, DEFAULT_POS_X, RESIZE_MARGIN
 from EDXD.globals import logging
 from EDXD.gui.detail_selected import DetailSelected
 from EDXD.gui.detail_target import DetailTargeted
@@ -46,8 +46,9 @@ WINID = "EDXD_MAIN_WINDOW"
 class MainFrame(DynamicFrame):
     def __init__(self, model: Model, prefs: Dict, journal_reader: JournalReader, journal_controller: JournalController, status_watcher: StatusWatcher):
         # 1. Load saved properties (or use defaults)
+        props = WindowProperties.load(WINID, default_height=DEFAULT_HEIGHT_MAIN, default_width=DEFAULT_WIDTH_MAIN,
+                                      default_posx=DEFAULT_POS_X, default_posy=DEFAULT_POS_Y)
         DynamicFrame.__init__(self, title=TITLE, win_id=WINID, parent=None, style=wx.NO_BORDER | wx.FRAME_SHAPED | wx.STAY_ON_TOP, show_minimize=True, show_maximize=True, show_close=True)
-        self._props = WindowProperties.load(WINID, default_height=DEFAULT_HEIGHT_MAIN, default_width=DEFAULT_WIDTH_MAIN, default_posx=DEFAULT_POS_X, default_posy=DEFAULT_POS_Y, default_show=DEFAULT_WINDOW_SHOW)
 
         self.journal_reader = journal_reader
         self.journal_controller = journal_controller
@@ -102,7 +103,7 @@ class MainFrame(DynamicFrame):
         self.model.register_target_listener(lambda name: wx.CallAfter(self._update_target, name))
 
         # 2. Apply geometry
-        init_widget(self, width=self._props.width, height=self._props.height, posx=self._props.posx, posy=self._props.posy, title=TITLE)
+        init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
 
     def _update_system(self, title: str = ""):
         init_widget(widget=self.lbl_sys, title=title)
@@ -255,5 +256,5 @@ class MainFrame(DynamicFrame):
         self.win_tar.Close(True)
         self.win_psps.Close(True)
         self.win_engine_status.Close(True)
-        self.save_geometry(show_window=True) # main window is always visible!
+        self.save_geometry()
         event.Skip()

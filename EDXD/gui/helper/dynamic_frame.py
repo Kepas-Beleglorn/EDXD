@@ -41,11 +41,6 @@ class DynamicFrame(wx.Frame):
         self._resize_dir = None
         self._mouse_start = None
         self._frame_start = None
-        self._props: WindowProperties = WindowProperties(None, None, None, None, None, None)
-
-        self._resize = False
-        self._resize_dir = None
-        self._mouse_start = None
 
         # Window box sizer for titlebar + content
         self.window_box = wx.BoxSizer(wx.VERTICAL)
@@ -130,25 +125,14 @@ class DynamicFrame(wx.Frame):
         evt.Skip()
 
     def on_close(self, event):
-        # todo: save current show-state when closing app
-        self.save_geometry(show_window=False)
+        self.save_geometry()
         event.Skip()
 
-    def save_geometry(self, show_window: bool):
+    def save_geometry(self):
         # Save geometry
-        if self._props.show_window:
-            x, y = self.GetPosition()
-            w, h = self.GetSize()
-            #show = self._props.show_window
-
-        else:
-            x = self._props.posx
-            y = self._props.posy
-            w = self._props.width
-            h = self._props.height
-            #show = show_window
-
-        props = WindowProperties(window_id=self.win_id, height=h, width=w, posx=x, posy=y, show_window=show_window)
+        x, y = self.GetPosition()
+        w, h = self.GetSize()
+        props = WindowProperties(window_id=self.win_id, height=h, width=w, posx=x, posy=y)
         props.save()
         if hasattr(self, '_refresh_timer') and getattr(self, '_refresh_timer') is not None:
             getattr(self, '_refresh_timer').Stop()
