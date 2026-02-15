@@ -27,9 +27,9 @@ def log_call(level=logging.INFO):
 
 class DynamicFrame(wx.Frame):
     from EDXD.globals import RESIZE_MARGIN  # px area at edge/corner for resizing
-    def __init__(self, parent, style, title, win_id, show_minimize: bool = False, show_maximize: bool = False, show_close: bool = False):
+    def __init__(self, parent, style, title, win_id, show_minimize: bool = False, show_maximize: bool = False, show_close: bool = False, is_hidden: bool = False):
         super().__init__(parent=parent, title=title, style=style)
-
+        #todo: exit if hidden
         try:
             self.SetIcons(make_icon_bundle())  # <— plural: SetIcons uses wx.IconBundle
         except Exception as e:
