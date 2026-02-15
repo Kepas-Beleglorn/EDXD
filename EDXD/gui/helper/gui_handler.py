@@ -43,7 +43,7 @@ def init_widget(widget, width: int = DEFAULT_WIDTH, height: int = DEFAULT_HEIGHT
         else:
             init_gen_button(widget=widget, title=title)
     else:
-        #logging.info(f"{widget.Name} - {}")
+        logging.info(f"{widget.Name} - {widget}")
         return
 
 

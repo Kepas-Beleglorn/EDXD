@@ -4,7 +4,7 @@ import functools
 import inspect
 from typing import Dict
 
-import wx
+import wx, json
 
 from EDXD.data_handler.journal_controller import JournalController
 from EDXD.data_handler.journal_reader import JournalReader
@@ -12,7 +12,7 @@ from EDXD.data_handler.model import Model, Body
 from EDXD.data_handler.status_json_watcher import StatusWatcher
 
 from EDXD.globals import DEFAULT_HEIGHT_MAIN, DEFAULT_WIDTH_MAIN, DEFAULT_POS_Y, DEFAULT_POS_X, RESIZE_MARGIN
-from EDXD.globals import logging
+from EDXD.globals import logging, CFG_FILE
 
 from EDXD.gui.detail_selected import DetailSelected
 from EDXD.gui.detail_target import DetailTargeted
@@ -66,6 +66,13 @@ class MainFrame(DynamicFrame):
         self.prefs = prefs
         self._refresh_timer = None
 
+        # prepare panels
+        self.win_sel = None
+        self.win_tar = None
+        self.win_psps = None
+        self.win_engine_status = None
+        self.win_status_flags = None
+
         # Add options panel (mineral filter, landable, and maybe more in the future
         self.options = MainWindowOptions(parent=self)
         self.window_box.Add(self.options, 0, wx.EXPAND | wx.EAST | wx.WEST, RESIZE_MARGIN)
@@ -92,26 +99,79 @@ class MainFrame(DynamicFrame):
         self._selected = None  # currently clicked body name
 
         # initialise sub windows
-        self.win_sel = DetailSelected(self)
-        if self.win_sel: self.win_sel.Show(True)
-
-        self.win_tar = DetailTargeted(self)
-        if self.win_tar: self.win_tar.Show(True)
-
-        self.win_psps = PositionTracker(self)
-        if self.win_psps: self.win_psps.Show(True)
-
-        self.win_engine_status = EngineStatus(self)
-        if self.win_engine_status: self.win_engine_status.Show(True)
-
-        self.win_status_flags = StatusFlags(self)
-        if self.win_status_flags: self.win_status_flags.Show(True)
+        self._init_panels()
 
         # listen for target changes
         self.model.register_target_listener(lambda name: wx.CallAfter(self._update_target, name))
 
         # 2. Apply geometry
         init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
+
+    def update_panels(self):
+        self.prefs = json.loads(CFG_FILE.read_text()) if CFG_FILE.exists() else {}
+        self._init_panels()
+
+    def _init_panels(self):
+        # initialise sub windows
+        # selected body ------------------------------------------------------------------------------------------------
+        from EDXD.gui.detail_selected import WINID as winIdSelected
+        hidden = self.prefs.get(winIdSelected).get("is_hidden", False)
+        if hidden:
+            if self.win_sel is not None:
+                self.win_sel.Close()
+                self.win_sel = None
+        else:
+            if self.win_sel is None:
+                self.win_sel = DetailSelected(self)
+                self.win_sel.Show(True)
+
+        # target body --------------------------------------------------------------------------------------------------
+        from EDXD.gui.detail_target import WINID as winIdSelected
+        hidden = self.prefs.get(winIdSelected).get("is_hidden", False)
+        if hidden:
+            if self.win_tar is not None:
+                self.win_tar.Close()
+                self.win_tar = None
+        else:
+            if self.win_tar is None:
+                self.win_tar = DetailTargeted(self)
+                self.win_tar.Show(True)
+
+        # Planetary Surface Positioning System -------------------------------------------------------------------------
+        from EDXD.gui.psps_gui import WINID as winIdSelected
+        hidden = self.prefs.get(winIdSelected).get("is_hidden", False)
+        if hidden:
+            if self.win_psps is not None:
+                self.win_psps.Close()
+                self.win_psps = None
+        else:
+            if self.win_psps is None:
+                self.win_psps = PositionTracker(self)
+                self.win_psps.Show(True)
+
+        # engine status ------------------------------------------------------------------------------------------------
+        from EDXD.gui.engine_status  import WINID as winIdSelected
+        hidden = self.prefs.get(winIdSelected).get("is_hidden", False)
+        if hidden:
+            if self.win_engine_status is not None:
+                self.win_engine_status.Close()
+                self.win_engine_status = None
+        else:
+            if self.win_engine_status is None:
+                self.win_engine_status = EngineStatus(self)
+                self.win_engine_status.Show(True)
+
+        # status flags -------------------------------------------------------------------------------------------------
+        from EDXD.gui.status_flags import WINID as winIdSelected
+        hidden = self.prefs.get(winIdSelected).get("is_hidden", False)
+        if hidden:
+            if self.win_status_flags is not None:
+                self.win_status_flags.Close()
+                self.win_status_flags = None
+        else:
+            if self.win_status_flags is None:
+                self.win_status_flags = StatusFlags(self)
+                self.win_status_flags.Show(True)
 
     def _update_system(self, title: str = ""):
         init_widget(widget=self.lbl_sys, title=title)

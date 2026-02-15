@@ -76,6 +76,8 @@ def apply_theme(widget):
         _apply_theme_to_gauge(widget)
     elif widget.Name == "grid":
         _apply_theme_to_grid(widget)
+    elif widget.Name == "dirpickerctrl":
+        _apply_theme_to_dirpickerctrl(widget)
     else:
         return
 
@@ -135,5 +137,12 @@ def _apply_theme_to_grid(widget: gridlib.Grid):
     widget.SetGridLineColour(theme["grid_line_color"])
     widget.CellHighlightPenWidth = 0
 
+def _apply_theme_to_dirpickerctrl(widget: wx.DirPickerCtrl):
+    theme = get_theme()
+    widget.SetBackgroundColour(theme["background"])
+    widget.SetForegroundColour(theme["foreground"])
 
+    widget.TextCtrl.SetBackgroundColour(theme["background"])
+    widget.TextCtrl.SetForegroundColour(theme["foreground"])
 
+    widget.SetFont(theme["font"])

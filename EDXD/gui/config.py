@@ -8,14 +8,15 @@ set_mineral_filter.py – filter & preferences window
 
 from __future__ import annotations
 
-from typing import Dict
-
 import wx, json
+import subprocess
+import sys
 
-from EDXD.globals import BTN_HEIGHT, BTN_WIDTH
+from EDXD.globals import BTN_HEIGHT, BTN_WIDTH, CACHE_DIR
 from EDXD.gui.helper.dynamic_dialog import DynamicDialog
-from EDXD.gui.helper.gui_dynamic_button import DynamicButton
+from EDXD.gui.helper.gui_dir_picker import DirPicker
 from EDXD.gui.helper.gui_dynamic_toggle_button import DynamicToggleButton
+from EDXD.gui.helper.gui_dynamic_button import DynamicButton
 from EDXD.gui.helper.gui_handler import init_widget
 from EDXD.gui.helper.theme_handler import get_theme
 from EDXD.gui.helper.window_properties import WindowProperties
@@ -23,14 +24,14 @@ from EDXD.gui.helper.window_properties import WindowProperties
 TITLE = "EDXD Configuration"
 WINID = "EDXD_CONFIGURATION"
 
-from EDXD.globals import DEFAULT_HEIGHT, DEFAULT_WIDTH, DEFAULT_POS_Y, DEFAULT_POS_X, CFG_FILE
+from EDXD.globals import DEFAULT_HEIGHT, DEFAULT_WIDTH, DEFAULT_POS_Y, DEFAULT_POS_X, CFG_FILE, RESIZE_MARGIN
 
 # ---------------------------------------------------------------------------
 class EDXDConfig(DynamicDialog):
     def __init__(self, parent):
         # 1. Load saved properties (or use defaults)
         props = WindowProperties.load(WINID, default_height=DEFAULT_HEIGHT, default_width=DEFAULT_WIDTH, default_posx=DEFAULT_POS_X, default_posy=DEFAULT_POS_Y)
-        DynamicDialog.__init__(self, parent=parent, style=wx.NO_BORDER | wx.FRAME_SHAPED | wx.STAY_ON_TOP, title=TITLE, win_id=WINID, show_minimize=False, show_maximize=False, show_close=True)
+        DynamicDialog.__init__(self, parent=parent, style=wx.NO_BORDER | wx.FRAME_SHAPED | wx.STAY_ON_TOP, title=TITLE, win_id=WINID, show_minimize=False, show_maximize=False, show_close=False)
         # 2. Apply geometry
         init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
 
@@ -39,81 +40,132 @@ class EDXDConfig(DynamicDialog):
         self._load_config()
 
         # Config items grid
-        grid = wx.FlexGridSizer(cols=4, hgap=8, vgap=4)
-        #for mat in RAW_MATS:
-        #    btn = DynamicToggleButton(
-        #        parent=self,
-        #        label=mat.title(),
-        #        is_toggled=self.prefs.get("mat_sel", {}).get(mat, True),
-        #        size=wx.Size(MINERAL_BTN_WIDTH, BTN_HEIGHT)
-        #    )
-        #    self.mat_buttons[mat] = btn
-        #    grid.Add(btn, 0, wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.BOTTOM, -4)
-        self.window_box.Add(grid, flag=wx.ALL, border=10)
+        self.grid_paths = wx.FlexGridSizer(cols=2, hgap=8, vgap=4)
 
-        # (De)select all and Apply buttons
-        hbox = wx.BoxSizer(wx.HORIZONTAL)
-        btn_toggle = DynamicButton(parent=self, label="(De-)select all", size=wx.Size(BTN_WIDTH + self.theme["button_border_width"], BTN_HEIGHT + self.theme["button_border_width"]), draw_border=True)
-        btn_apply = DynamicButton(parent=self, label="Apply filter", size=wx.Size(BTN_WIDTH + self.theme["button_border_width"], BTN_HEIGHT + self.theme["button_border_width"]), draw_border=True)
-        hbox.Add(btn_toggle, flag=wx.RIGHT, border=8)
-        hbox.Add(btn_apply)
-        self.window_box.Add(hbox, flag=wx.ALIGN_CENTER | wx.ALL, border=10)
+        # Make the second, third, and fourth columns growable
+        self.grid_paths.AddGrowableCol(1)
 
-        self.SetSizer(self.window_box)
+        # Journal directory label
+        self.lbl_journal_dir = wx.StaticText(self, label="Journal file directory:")
+        self.grid_paths.Add(self.lbl_journal_dir, flag=wx.ALIGN_CENTER_VERTICAL)
+
+        # Journal directory file picker
+        self.journal_dir_picker = DirPicker(self, style=wx.DIRP_USE_TEXTCTRL)
+        self.grid_paths.Add(self.journal_dir_picker, flag=wx.EXPAND)
+
+        # System cache directory label
+        self.lbl_system_cache_dir = wx.StaticText(self, label="System cache directory:")
+        self.grid_paths.Add(self.lbl_system_cache_dir, flag=wx.ALIGN_CENTER_VERTICAL)
+
+        # System cache directory file picker
+        self.system_cache_dir_picker = DirPicker(self, style=wx.DIRP_USE_TEXTCTRL)
+        self.journal_dir_picker.SetPath(self.cfg.get("cache_dir", ""))
+        self.grid_paths.Add(self.system_cache_dir_picker, flag=wx.EXPAND)
+
+        # Add the grid to your main sizer
+        self.window_box.Add(self.grid_paths, flag=wx.ALL | wx.EXPAND, border=10)
+
+        # set defaults
+        temp: str = self.cfg.get("journal_dir", "")
+        self.journal_dir_picker.SetPath(temp)
+        self.journal_dir_picker.Refresh()
+        temp: str = self.cfg.get("cache_dir", str(CACHE_DIR))
+        self.system_cache_dir_picker.SetPath(temp)
+        self.system_cache_dir_picker.Refresh()
+        self.Layout()
+
+        # Config items grid for buttons
+        self.grid_windows = wx.FlexGridSizer(cols=2, hgap=8, vgap=4)
+        self.grid_windows.AddGrowableCol(0)
+        self.grid_windows.AddGrowableCol(1)
+
+        # Buttons
+        self.window_identifiers = [
+            ["DETAIL_TARGETED", "Targeted body"],
+            ["DETAIL_SELECTED", "Selected body"],
+            ["PSPS",            "Planetary Surface Positioning System"],
+            ["ENGINE_STATUS",   "Engine status"],
+            ["STATUS_FLAGS",    "Status flags"]
+        ]
+
+        self.window_buttons = {}
+        for i in range(len(self.window_identifiers)):
+            btn = DynamicToggleButton(
+                parent=self,
+                label=f"{self.window_identifiers[i][1]}",
+                is_toggled=not self.cfg.get(self.window_identifiers[i][0], {}).get("is_hidden", False),
+                size=wx.Size(BTN_WIDTH, BTN_HEIGHT)
+            )
+            self.window_buttons[self.window_identifiers[i][0]] = btn
+            self.grid_windows.Add(btn, flag=wx.EXPAND)
+
+        # Add the grid to your main sizer
+        self.window_box.Add(self.grid_windows, flag=wx.ALL | wx.EXPAND, border=10)
+
+        # Config items grid for buttons
+        self.grid_save_close = wx.FlexGridSizer(cols=2, hgap=8, vgap=4)
+        self.grid_save_close.AddGrowableCol(0)
+        self.grid_save_close.AddGrowableCol(1)
+
+        # Save button
+        self.btn_save_and_close = DynamicButton(parent=self, label="Save and close settings",
+                                   size=wx.Size(BTN_WIDTH + self.theme["button_border_width"],
+                                                BTN_HEIGHT + self.theme["button_border_width"]), draw_border=True)
+        self.grid_save_close.Add(self.btn_save_and_close, flag=wx.EXPAND)
+
+        self.btn_cancel = DynamicButton(parent=self, label="Discard changes and close settings",
+                                                size=wx.Size(BTN_WIDTH + self.theme["button_border_width"],
+                                                             BTN_HEIGHT + self.theme["button_border_width"]),
+                                                draw_border=True)
+        self.grid_save_close.Add(self.btn_cancel, flag=wx.EXPAND)
+
+        self.window_box.Add(self.grid_save_close, flag=wx.ALL | wx.EXPAND, border=10)
 
         # Bindings
-        btn_toggle.Bind(wx.EVT_BUTTON, self.on_toggle_all)
-        btn_apply.Bind(wx.EVT_BUTTON, self.on_apply)
+        self.btn_save_and_close.Bind(wx.EVT_BUTTON, self._save_config)
+        self.btn_cancel.Bind(wx.EVT_BUTTON, lambda evt: self.Close())
 
-        self.Fit()
+        # Set the main sizer
+        self.SetSizer(self.window_box)
+
+    def restart_app(self):
+        wx.GetApp().ExitMainLoop()
+        subprocess.Popen([sys.executable] + sys.argv)
+        sys.exit()
 
     def _load_config(self):
-        cfg = json.loads(CFG_FILE.read_text()) if CFG_FILE.exists() else {}
+        self.cfg = json.loads(CFG_FILE.read_text()) if CFG_FILE.exists() else {}
 
-        #if args.journals:
-        #    cfg["journal_dir"] = str(args.journals.expanduser())
-        #    CFG_FILE.write_text(json.dumps(cfg, indent=2))
-        ## ensure defaults even if file is old
-        #journal_dir = Path(cfg.get("journal_dir", ""))
-        #if not journal_dir.is_dir():
-        #    sys.exit("Run once with --journals <Saved Games …>")
+    def _save_config(self, event):
+        for win_id, btn in self.window_buttons.items():
+            self.cfg[win_id]["is_hidden"] = not btn.GetValue()
 
-        #q = queue.Queue()
-        #model = Model()
-        #journal_reader = JournalReader(journal_dir, q)
-        #journal_reader.start()
-        #journal_controller = JournalController(q, model)
-        #journal_controller.start()
+        # check if paths have changed
+        old_journal_path = self.cfg["journal_dir"]
+        old_system_cache_dir = self.cfg["cache_dir"]
+        restart_required = False
+        if old_journal_path != self.journal_dir_picker.GetPath():
+            restart_required = True
 
-        #cfg.setdefault("land", False)
-        #cfg.setdefault("mat_sel", {m: True for m in RAW_MATS})
-        #if "worthwhile_threshold" not in cfg.keys():
-        #    cfg["worthwhile_threshold"] = DEFAULT_WORTHWHILE_THRESHOLD
+        if old_system_cache_dir != self.system_cache_dir_picker.GetPath():
+            restart_required = True
 
-        #if "fuel_low_threshold" not in cfg.keys():
-        #    cfg["fuel_low_threshold"] = DEFAULT_FUEL_LOW_THRESHOLD
+        self.cfg["journal_dir"] = self.journal_dir_picker.GetPath()
+        self.cfg["cache_dir"] = self.system_cache_dir_picker.GetPath()
 
-    def _save_config(self):
         def _save():
             data = {k: v for k, v in self.cfg.items() if k != "save"}
             CFG_FILE.write_text(json.dumps(data, indent=2))
 
-        # ensure defaults even if file is old
         self.cfg["save"] = _save  # ← make the save-function available
         self.cfg["save"]()
 
-    def on_toggle_all(self, event):
-        # Toggle all buttons to the same value (all on or all off)
-        current = all(btn.GetValue() for btn in self.mat_buttons.values())
-        new_val = not current
-        for btn in self.mat_buttons.values():
-            btn.SetValue(new_val)
-            btn._is_toggled = new_val
-            btn.Refresh()
-
-    def on_apply(self, event):
-        # Save the selections back to prefs
-        self.prefs["mat_sel"] = {mat: btn.GetValue() for mat, btn in self.mat_buttons.items()}
-        if "save" in self.prefs and callable(self.prefs["save"]):
-            self.prefs["save"]()
-        self.Close()
+        if restart_required:
+            dlg = wx.MessageDialog(None, "Changing paths requires a restart, otherwise the old paths will be used! Restart now?",
+                                   "Restart Required", wx.YES_NO | wx.ICON_QUESTION)
+            result = dlg.ShowModal()
+            if result == wx.ID_YES:
+                self.restart_app()
+            dlg.Destroy()
+        else:
+            self.Close()

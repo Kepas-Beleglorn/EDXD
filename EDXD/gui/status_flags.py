@@ -19,8 +19,8 @@ from EDXD.data_handler.model import Model
 
 TITLE = "Status Flags"
 WINID = "STATUS_FLAGS"
-FLAG_BTN_WIDTH = 250
-FLAG_BTN_HEIGHT = 50
+FLAG_BTN_WIDTH = 270
+FLAG_BTN_HEIGHT = 45
 
 from EDXD.globals import DEFAULT_HEIGHT_MINERALS_FILTER, DEFAULT_WIDTH_MINERALS_FILTER, DEFAULT_POS_Y, DEFAULT_POS_X
 
@@ -37,7 +37,7 @@ class StatusFlags(DynamicDialog):
         init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
 
         self.model = Model()
-
+        self.debug_mode = parent.prefs.get(WINID).get("DEBUG", False)
         self.theme = get_theme()
         self.flag_button_values = [
                                 "Docked, (on a landing pad)",
@@ -45,33 +45,33 @@ class StatusFlags(DynamicDialog):
                                 "Landing Gear Down",
                                 "Shields Up",
                                 "Supercruise",
-                                "FlightAssist Off",
+                                "Flight Assist Off",
                                 "Hardpoints Deployed",
                                 "In Wing",
-                                "LightsOn",
+                                "Lights On",
                                 "Cargo Scoop Deployed",
                                 "Silent Running,",
                                 "Scooping Fuel",
-                                "Srv Handbrake",
-                                "Srv using Turret view",
-                                "Srv Turret retracted (close to ship)",
-                                "Srv DriveAssist",
-                                "Fsd MassLocked",
+                                "SRV Handbrake",
+                                "SRV Turret View",
+                                "SRV Turret Retracted (close to ship)",
+                                "SRV Drive Assist",
+                                "Fsd Mass Locked",
                                 "Fsd Charging",
                                 "Fsd Cooldown",
                                 "Low Fuel ( < 25% )",
                                 "Over Heating ( > 100% )",
                                 "Has Lat Long",
-                                "IsInDanger",
+                                "Is In Danger",
                                 "Being Interdicted",
-                                "In MainShip",
+                                "In Main Ship",
                                 "In Fighter",
                                 "In SRV",
-                                "Hud in Analysis mode",
+                                "HUD In Analysis Mode",
                                 "Night Vision",
-                                "Altitude from Average radius",
-                                "fsdJump",
-                                "srvHighBeam",
+                                "Altitude From Average Radius",
+                                "FSD Jump",
+                                "SRV High Beam",
                                 "UNKNOWN",
                                 "UNKNOWN",
                                 "UNKNOWN",
@@ -91,28 +91,28 @@ class StatusFlags(DynamicDialog):
                             ]
 
         self.flag2_button_values = [
-                                "OnFoot",
-                                "InTaxi (or dropship/shuttle)",
-                                "InMulticrew (ie in someone else's ship)",
-                                "OnFootInStation",
-                                "OnFootOnPlanet",
-                                "AimDownSight",
-                                "LowOxygen",
-                                "LowHealth",
+                                "On Foot",
+                                "In Taxi (or dropship/shuttle)",
+                                "In Multicrew (ie. in someone else's ship)",
+                                "On Foot In Station",
+                                "On Foot On Planet",
+                                "Aim Down Sight",
+                                "Low Oxygen",
+                                "Low Health",
                                 "Cold",
                                 "Hot",
-                                "VeryCold",
-                                "VeryHot",
+                                "Very Cold",
+                                "Very Hot",
                                 "Glide Mode",
-                                "OnFootInHangar",
-                                "OnFootSocialSpace",
-                                "OnFootExterior",
-                                "BreathableAtmosphere",
+                                "On Foot In Hangar",
+                                "On Foot In Social Space",
+                                "On Foot Exterior",
+                                "Breathable Atmosphere",
                                 "Telepresence Multicrew",
                                 "Physical Multicrew",
-                                "Fsd hyperdrive charging",
-                                "Supercruise Overcharge active",
-                                "Supercruise Assist active",
+                                "FSD Hyperdrive Charging",
+                                "Supercruise Overcharge Active",
+                                "Supercruise Assist Active",
                                 "UNKNOWN",
                                 "UNKNOWN",
                                 "UNKNOWN",
@@ -133,9 +133,15 @@ class StatusFlags(DynamicDialog):
         grid = wx.FlexGridSizer(cols=4, hgap=8, vgap=4)
         self.flag_buttons = {}
         for i in range(len(self.flag_button_values)):
+            if self.debug_mode:
+                label = f"[{i}]: {self.flag_button_values[i]}"
+            else:
+                label = f"{self.flag_button_values[i]}"
+                if label == "UNKNOWN":
+                    break
             btn = DynamicToggleButton(
                 parent=self,
-                label=f"[{i}]: {self.flag_button_values[i]}",
+                label=label,
                 is_toggled= False,
                 size=wx.Size(FLAG_BTN_WIDTH, FLAG_BTN_HEIGHT)
             )
@@ -151,9 +157,15 @@ class StatusFlags(DynamicDialog):
         grid2 = wx.FlexGridSizer(cols=4, hgap=8, vgap=4)
         self.flag2_buttons = {}
         for i in range(len(self.flag2_button_values)):
+            if self.debug_mode:
+                label = f"[{i}]: {self.flag2_button_values[i]}"
+            else:
+                label = f"{self.flag2_button_values[i]}"
+                if label == "UNKNOWN":
+                    break
             btn = DynamicToggleButton(
                 parent=self,
-                label=f"[{i}]: {self.flag2_button_values[i]}",
+                label=label,
                 is_toggled= False,
                 size=wx.Size(FLAG_BTN_WIDTH, FLAG_BTN_HEIGHT)
             )

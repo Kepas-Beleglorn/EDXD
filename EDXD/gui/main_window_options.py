@@ -10,6 +10,7 @@ from EDXD.gui.helper.gui_dynamic_toggle_button import DynamicToggleButton
 from EDXD.gui.helper.theme_handler import get_theme
 from EDXD.gui.journal_historian import JournalHistorian
 from EDXD.gui.set_mineral_filter import MineralsFilter
+from EDXD.gui.config import EDXDConfig
 
 
 def log_call(level=logging.INFO):
@@ -64,6 +65,15 @@ class MainWindowOptions(wx.Panel):
         options_box.Add(self.btn_load_history, 0, wx.ALIGN_CENTER_VERTICAL | wx.TOP | wx.BOTTOM, margin)
         self.btn_load_history.Bind(wx.EVT_BUTTON, self._load_all_logs)
 
+        # Show config dialog
+        self.btn_show_config = DynamicButton(parent=self, label="Configuration",
+                                              size=wx.Size(BTN_WIDTH + self.theme["button_border_width"],
+                                                           BTN_HEIGHT + self.theme["button_border_width"]),
+                                              draw_border=True)
+        margin = self.theme["button_border_margin"] + self.theme["button_border_width"]
+        options_box.Add(self.btn_show_config, 0, wx.ALIGN_CENTER_VERTICAL | wx.TOP | wx.BOTTOM, margin)
+        self.btn_show_config.Bind(wx.EVT_BUTTON, self._edit_config)
+
         # Call about info
         self.btn_about_info = DynamicButton(parent=self, label="About EDXD",
                                                     size=wx.Size(BTN_WIDTH + self.theme["button_border_width"],
@@ -80,6 +90,10 @@ class MainWindowOptions(wx.Panel):
         historian = JournalHistorian(journal_reader=self.parent.journal_reader, journal_controller=self.parent.journal_controller, status_json_watcher=self.parent.status_watcher)
         historian.Show()
 
+    def _edit_config(self, event):
+        config_dialog = EDXDConfig(self)
+        config_dialog.ShowModal()
+        self.parent.update_panels()
 
     def _on_paint(self, event):
         dc = wx.PaintDC(self)
