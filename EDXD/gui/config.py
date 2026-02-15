@@ -12,6 +12,8 @@ import wx, json
 import subprocess
 import sys
 
+from wx.lib.sized_controls import border
+
 from EDXD.globals import BTN_HEIGHT, BTN_WIDTH, CACHE_DIR
 from EDXD.gui.helper.dynamic_dialog import DynamicDialog
 from EDXD.gui.helper.gui_dir_picker import DirPicker
@@ -24,13 +26,13 @@ from EDXD.gui.helper.window_properties import WindowProperties
 TITLE = "EDXD Configuration"
 WINID = "EDXD_CONFIGURATION"
 
-from EDXD.globals import DEFAULT_HEIGHT, DEFAULT_WIDTH, DEFAULT_POS_Y, DEFAULT_POS_X, CFG_FILE, RESIZE_MARGIN
+from EDXD.globals import DEFAULT_HEIGHT_CONFIG, DEFAULT_WIDTH_CONFIG, DEFAULT_POS_Y, DEFAULT_POS_X, CFG_FILE, RESIZE_MARGIN
 
 # ---------------------------------------------------------------------------
 class EDXDConfig(DynamicDialog):
     def __init__(self, parent):
         # 1. Load saved properties (or use defaults)
-        props = WindowProperties.load(WINID, default_height=DEFAULT_HEIGHT, default_width=DEFAULT_WIDTH, default_posx=DEFAULT_POS_X, default_posy=DEFAULT_POS_Y)
+        props = WindowProperties.load(WINID, default_height=DEFAULT_HEIGHT_CONFIG, default_width=DEFAULT_WIDTH_CONFIG, default_posx=DEFAULT_POS_X, default_posy=DEFAULT_POS_Y)
         DynamicDialog.__init__(self, parent=parent, style=wx.NO_BORDER | wx.FRAME_SHAPED | wx.STAY_ON_TOP, title=TITLE, win_id=WINID, show_minimize=False, show_maximize=False, show_close=False)
         # 2. Apply geometry
         init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
@@ -38,6 +40,13 @@ class EDXDConfig(DynamicDialog):
         self.theme = get_theme()
         self.cfg = {}
         self._load_config()
+
+        min_size = wx.Size(DEFAULT_WIDTH_CONFIG, DEFAULT_HEIGHT_CONFIG)
+        self.SetMinSize(min_size)
+
+        # Hint to restart when paths change
+        self.lbl_restart_hint = wx.StaticText(self, label="\nChanging paths requires restart of EDXD.")
+        self.window_box.Add(self.lbl_restart_hint, flag=wx.ALL | wx.EXPAND, border=10)
 
         # Config items grid
         self.grid_paths = wx.FlexGridSizer(cols=2, hgap=8, vgap=4)
@@ -64,6 +73,10 @@ class EDXDConfig(DynamicDialog):
 
         # Add the grid to your main sizer
         self.window_box.Add(self.grid_paths, flag=wx.ALL | wx.EXPAND, border=10)
+
+        # A bit of explanation of the panel toggle
+        self.lbl_panel_toggle_hint = wx.StaticText(self, label="\nToggle visibility of panels you want to use. Main window is always on.")
+        self.window_box.Add(self.lbl_panel_toggle_hint, flag=wx.ALL | wx.EXPAND, border=10)
 
         # set defaults
         temp: str = self.cfg.get("journal_dir", "")
