@@ -10,8 +10,10 @@ from EDXD.data_handler.journal_controller import JournalController
 from EDXD.data_handler.journal_reader import JournalReader
 from EDXD.data_handler.model import Model, Body
 from EDXD.data_handler.status_json_watcher import StatusWatcher
+
 from EDXD.globals import DEFAULT_HEIGHT_MAIN, DEFAULT_WIDTH_MAIN, DEFAULT_POS_Y, DEFAULT_POS_X, RESIZE_MARGIN
 from EDXD.globals import logging
+
 from EDXD.gui.detail_selected import DetailSelected
 from EDXD.gui.detail_target import DetailTargeted
 from EDXD.gui.engine_status import EngineStatus
@@ -21,6 +23,8 @@ from EDXD.gui.helper.window_properties import WindowProperties
 from EDXD.gui.main_window_options import MainWindowOptions
 from EDXD.gui.psps_gui import PositionTracker
 from EDXD.gui.table_view import BodiesTable
+from EDXD.gui.status_flags import StatusFlags
+
 from EDXD.utils.clipboard import copy_text_to_clipboard
 
 
@@ -99,6 +103,9 @@ class MainFrame(DynamicFrame):
 
         self.win_engine_status = EngineStatus(self)
         if self.win_engine_status: self.win_engine_status.Show(True)
+
+        self.win_status_flags = StatusFlags(self)
+        if self.win_status_flags: self.win_status_flags.Show(True)
 
         # listen for target changes
         self.model.register_target_listener(lambda name: wx.CallAfter(self._update_target, name))
