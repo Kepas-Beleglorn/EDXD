@@ -34,6 +34,21 @@ class JournalController(PausableThread, threading.Thread):
 
         self.process_event(evt=evt, update_gui=True)
 
+    def normalize_genus(self, genus_id):
+        # Map known patterns to their base names
+        replacements = {
+            "SphereEFGH": "Sphere",
+            # Add other mappings as needed
+        }
+
+        for old, new in replacements.items():
+            genus_id = genus_id.replace(old, new)
+
+        # This regex matches the numeric part and any trailing suffix before "_Name"
+        genus_id = re.sub(r'(\w+)_\d+[^_]*_Name;', r'\1_Name;', genus_id)
+        genus_id = re.sub(r'_\d+_[^_]+(?=_Name;)', '_Genus', genus_id)
+        return genus_id
+
     def process_event(self, evt, update_gui: bool, set_timestamp: bool = True):
         etype = evt.get("event")
 
@@ -367,7 +382,7 @@ class JournalController(PausableThread, threading.Thread):
             if subcategory == "$Codex_SubCategory_Organic_Structures;":
                 genus_id = evt.get("Name")
                 # generalize genus ID
-                genus_id = re.sub(r'_\d+_[^_]+(?=_Name;)', '_Genus', genus_id)
+                genus_id = self.normalize_genus(genus_id) # re.sub(r'_\d+_[^_]+(?=_Name;)', '_Genus', genus_id)
                 genus_localised = evt.get("Genus_Localised")
                 variant_localised = evt.get("Name_Localised")
                 bio_dict = self.m.bodies[body_id].bio_found if body_id in self.m.bodies else {}
@@ -398,7 +413,7 @@ class JournalController(PausableThread, threading.Thread):
             genus_id = evt.get("Genus")
             species_id = evt.get("Species")
             # generalize genus ID
-            genus_id = re.sub(r'_\d+_[^_]+(?=_Name;)', '_Genus', genus_id)
+            genus_id = self.normalize_genus(genus_id) # re.sub(r'_\d+_[^_]+(?=_Name;)', '_Genus', genus_id)
             genus_localised = evt.get("Genus_Localised")
             species_localised = evt.get("Species_Localised")
             variant_localised = evt.get("Variant_Localised")
