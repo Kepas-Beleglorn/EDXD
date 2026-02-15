@@ -87,17 +87,18 @@ class MainFrame(DynamicFrame):
         self.options.chk_landable.Bind(wx.EVT_BUTTON, self._toggle_land)
         self._selected = None  # currently clicked body name
 
+        # initialise sub windows
         self.win_sel = DetailSelected(self)
-        self.win_sel.Show(True)
+        if self.win_sel: self.win_sel.Show(True)
 
         self.win_tar = DetailTargeted(self)
-        self.win_tar.Show(True)
+        if self.win_tar: self.win_tar.Show(True)
 
         self.win_psps = PositionTracker(self)
-        self.win_psps.Show(True)
+        if self.win_psps: self.win_psps.Show(True)
 
         self.win_engine_status = EngineStatus(self)
-        self.win_engine_status.Show(True)
+        if self.win_engine_status: self.win_engine_status.Show(True)
 
         # listen for target changes
         self.model.register_target_listener(lambda name: wx.CallAfter(self._update_target, name))
@@ -252,9 +253,9 @@ class MainFrame(DynamicFrame):
         self._refresh_timer = wx.CallLater(millis=500, callableObj=self._refresh)  # schedule next update
 
     def on_close(self, event):
-        self.win_sel.Close(True)
-        self.win_tar.Close(True)
-        self.win_psps.Close(True)
-        self.win_engine_status.Close(True)
+        if self.win_sel             : self.win_sel.Close(True)
+        if self.win_tar             : self.win_tar.Close(True)
+        if self.win_psps            : self.win_psps.Close(True)
+        if self.win_engine_status   : self.win_engine_status.Close(True)
         self.save_geometry()
         event.Skip()

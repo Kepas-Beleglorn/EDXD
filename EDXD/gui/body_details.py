@@ -18,9 +18,10 @@ TITLE = "BODY DETAILS"
 WINID = "BODY_DETAILS"
 
 class BodyDetails(DynamicDialog):
-    def __init__(self, parent, title, win_id):
+    def __init__(self, parent, title, win_id, is_hidden: bool = True):
         # 1. Load saved properties (or use defaults)
-        props = WindowProperties.load(win_id, default_height=DEFAULT_HEIGHT, default_width=DEFAULT_WIDTH, default_posx=DEFAULT_POS_X, default_posy=DEFAULT_POS_Y)
+        props = WindowProperties.load(win_id, default_height=DEFAULT_HEIGHT, default_width=DEFAULT_WIDTH, default_posx=DEFAULT_POS_X, default_posy=DEFAULT_POS_Y, default_is_hidden=False)
+        if props.is_hidden: return
         DynamicDialog.__init__(self, parent=parent, style=wx.NO_BORDER | wx.FRAME_SHAPED | wx.STAY_ON_TOP, title=title, win_id=win_id, show_minimize=False, show_maximize=False, show_close=True)
         # 2. Apply geometry
         init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=win_id)

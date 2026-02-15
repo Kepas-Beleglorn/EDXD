@@ -27,7 +27,7 @@ def log_call(level=logging.INFO):
 
 class DynamicDialog(wx.Dialog):
     from EDXD.globals import RESIZE_MARGIN  # px area at edge/corner for resizing
-    def __init__(self, parent, style, title, win_id, show_minimize: bool = False, show_maximize: bool = False, show_close: bool = False, is_hidden: bool = False):
+    def __init__(self, parent, style, title, win_id, show_minimize: bool = False, show_maximize: bool = False, show_close: bool = False):
         super().__init__(parent=parent, title=title, style=style)
         # todo: exit if hidden
         try:
@@ -132,7 +132,8 @@ class DynamicDialog(wx.Dialog):
         # Save geometry
         x, y = self.GetPosition()
         w, h = self.GetSize()
-        props = WindowProperties(window_id=self.win_id, height=h, width=w, posx=x, posy=y)
+        is_hidden = WindowProperties.load(window_id=self.win_id, default_height=h, default_width=w, default_posx=x, default_posy=y, default_is_hidden=False).is_hidden
+        props = WindowProperties(window_id=self.win_id, height=h, width=w, posx=x, posy=y, is_hidden=is_hidden)
         props.save()
         if hasattr(self, '_refresh_timer') and getattr(self, '_refresh_timer') is not None:
             getattr(self, '_refresh_timer').Stop()

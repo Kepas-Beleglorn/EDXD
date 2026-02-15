@@ -20,7 +20,8 @@ from EDXD.globals import DEFAULT_HEIGHT_ENGINE_STATUS, DEFAULT_WIDTH_ENGINE_STAT
 class EngineStatus(DynamicDialog):
     def __init__(self, parent):
         # 1. Load saved properties (or use defaults)
-        props = WindowProperties.load(WINID, default_height=DEFAULT_HEIGHT_ENGINE_STATUS, default_width=DEFAULT_WIDTH_ENGINE_STATUS, default_posx=DEFAULT_POS_X, default_posy=DEFAULT_POS_Y)
+        props = WindowProperties.load(WINID, default_height=DEFAULT_HEIGHT_ENGINE_STATUS, default_width=DEFAULT_WIDTH_ENGINE_STATUS, default_posx=DEFAULT_POS_X, default_posy=DEFAULT_POS_Y, default_is_hidden=False)
+        if props.is_hidden: return
         DynamicDialog.__init__(self, parent=parent, style=wx.NO_BORDER | wx.FRAME_SHAPED | wx.STAY_ON_TOP, title=TITLE, win_id=WINID, show_minimize=False, show_maximize=False, show_close=True)
         # 2. Apply geometry
         init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
