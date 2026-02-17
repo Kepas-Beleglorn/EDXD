@@ -50,7 +50,7 @@ def log_call(level=LOG_LEVEL):
 class Body:
     __slots__ = ("body_id", "body_name", "body_type", "scoopable", "landable", "biosignals", "geosignals", "estimated_value", "materials",
                  "bio_found", "geo_found", "distance", "rings", "radius", "mapped", "geo_complete", "geo_scanned",
-                 "bio_complete", "bio_scanned", "first_discovered", "first_mapped", "first_footfalled")
+                 "bio_complete", "bio_scanned", "first_discovered", "first_mapped", "first_footfalled", "g_force")
 
     def __init__(self,
                  body_id:           str,
@@ -74,7 +74,8 @@ class Body:
                  bio_scanned:       int = 0,
                  first_discovered:  int = 0,
                  first_mapped:      int = 0,
-                 first_footfalled:  int = 0
+                 first_footfalled:  int = 0,
+                 g_force:           float = 0.0
                  ):
 
         self.body_id            = body_id
@@ -99,6 +100,7 @@ class Body:
         self.first_discovered   = first_discovered
         self.first_mapped       = first_mapped
         self.first_footfalled   = first_footfalled
+        self.g_force            = g_force
 
 class Ring:
     __slots__ = ("body_id", "body_name", "signals")
@@ -190,14 +192,6 @@ class Genus:
 
         return cls(**d)
 
-"""
-{ "timestamp":"2025-06-12T18:37:58Z", "event":"CodexEntry", "EntryID":1400158, 
-"Name":"$Codex_Ent_IceFumarole_WaterGeysers_Name;", "Name_Localised":"Water Ice Fumarole", 
-"SubCategory":"$Codex_SubCategory_Geology_and_Anomalies;", "SubCategory_Localised":"Geology and anomalies", 
-"Category":"$Codex_Category_Biology;", "Category_Localised":"Biological and Geological", 
-"Region":"$Codex_RegionName_9;", "Region_Localised":"Inner Scutum-Centaurus Arm", "System":"Prua Phoe FX-H b28-18", 
-"SystemAddress":40181431154417, "BodyID":15, "Latitude":-66.832031, "Longitude":42.411892, "IsNewEntry":true }
-"""
 class CodexEntry:
     __slots__ = ("codexid", "localised", "is_new", "body_id")
     def __init__(self,
@@ -284,6 +278,7 @@ class Model:
                 scoopable           = body_properties.get("scoopable", False)
                 distance            = body_properties.get("distance", 0)
                 landable            = body_properties.get("landable", False)
+                g_force             = body_properties.get("g_force", 0.0)
                 bio_count           = body_properties.get("biosignals", 0)
                 geo_count           = body_properties.get("geosignals", 0)
                 mats                = body_properties.get("materials", {})
@@ -312,6 +307,7 @@ class Model:
                     scoopable=scoopable,
                     distance=distance,
                     landable=landable,
+                    g_force=g_force,
                     materials=mats,
                     biosignals=bio_count,
                     geosignals=geo_count,
@@ -335,7 +331,7 @@ class Model:
                     biosignals: int = None, geosignals: int = None, materials: Dict[str, float] = None, scandata = None,
                     bio_found: Dict[str, Genus] = None, geo_found: Dict[str, CodexEntry] = None, rings: Dict[str, Ring] = None, total_bodies: int = None, radius: float = 0.0, mapped: bool = False,
                     geo_complete: bool = False, geo_scanned: int = 0, bio_complete: bool = False, bio_scanned: int = 0,
-                    first_discovered: int = 0, first_mapped: int = 0, first_footfalled: int = 0):
+                    first_discovered: int = 0, first_mapped: int = 0, first_footfalled: int = 0, g_force: float = 0.0):
         with self.lock:
             self.system_addr = systemaddress
             tmp_total_bodies = total_bodies or self.total_bodies
@@ -349,6 +345,7 @@ class Model:
                 body.scoopable          = scoopable         or body.scoopable           or False
                 body.distance           = distance          or body.distance            or 0
                 body.landable           = landable          or body.landable            or False
+                body.g_force            = g_force           or body.g_force             or 0
                 body.biosignals         = biosignals        or body.biosignals          or 0
                 body.geosignals         = geosignals        or body.geosignals          or 0
                 body.bio_found          = bio_found         or body.bio_found           or {}
@@ -409,6 +406,7 @@ class Model:
                     "body_type"         : body.body_type,
                     "scoopable"         : body.scoopable,
                     "landable"          : body.landable,
+                    "g_force"           : body.g_force,
                     "radius"            : body.radius,
                     "mapped"            : body.mapped,
                     "distance"          : body.distance,

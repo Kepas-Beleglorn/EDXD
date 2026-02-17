@@ -176,6 +176,7 @@ class JournalController(PausableThread, threading.Thread):
         scoopable       = None
         distance        = None
         landable        = None
+        g_force         = None
         biosignals      = None
         geosignals      = None
         mapped          = None
@@ -231,6 +232,17 @@ class JournalController(PausableThread, threading.Thread):
                 landable = evt.get("Landable")
                 body_type = evt.get("PlanetClass") or evt.get("StarType")
                 radius = evt.get("Radius")
+                g_force = None
+                if not g_force and radius is not None:
+                    stellar_mass = evt.get("StellarMass") or None
+                    if stellar_mass:
+                        stellar_mass = float(stellar_mass)
+                    earth_mass = evt.get("MassEM") or None
+                    if earth_mass:
+                        earth_mass = float(earth_mass)
+
+                    g_force = dh.get_gravity_from_mass_and_radius(solar_masses=stellar_mass, earth_masses=earth_mass, radius=float(radius))
+
                 if body_type is None and "Belt Cluster" in body_name:
                     body_type = "Belt Cluster"
                 scoopable = body_type in ["K", "G", "B", "F", "O", "A", "M"]
@@ -506,6 +518,7 @@ class JournalController(PausableThread, threading.Thread):
                 scoopable=scoopable,
                 distance=distance,
                 landable=landable,
+                g_force=g_force,
                 biosignals=biosignals,
                 geosignals=geosignals,
                 materials=materials,

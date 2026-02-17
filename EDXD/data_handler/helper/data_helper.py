@@ -1,9 +1,12 @@
 import inspect
 import json
 import re
+import wx
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
+
+#from fontTools.ttLib.tables.C_P_A_L_ import Color
 
 from EDXD.data_handler.vessel_status import ShipStatus
 from EDXD.globals import log_context, logging
@@ -132,6 +135,48 @@ def _extract_timestamp_from_filename(path: Path) -> Optional[datetime]:
 
     # nothing matched
     return None
+
+def get_gravity_from_mass_and_radius(solar_masses: float = 0.0, earth_masses: float = 0.0, radius: float = 0.0) -> float:
+    mass = 0
+    if solar_masses:
+        mass = solar_masses * 1.989 * pow(10, 30)
+    if earth_masses:
+        mass = earth_masses * 5.972 * pow(10, 24)
+    g_base = 6.67430 * pow(10, -11)
+    return float(((g_base * mass) / pow(radius, 2))/ 9.80665)
+
+def format_gravity(g_force):
+    if abs(g_force) < 1000:
+        return f"{g_force:,.2f} g"
+    else:
+        return f"{g_force:.2e} g"
+
+def get_color_gradient_from_gravity(gravity: float = 0) -> wx.Colour:
+    if gravity == 0:
+        return wx.Colour(20, 20, 20)
+
+    if 0 < gravity <= 0.8:
+        return wx.Colour(150, 255, 150)
+
+    if 0.8 < gravity <= 2.0:
+        return wx.Colour(0, 200, 0)
+
+    if 2.0 < gravity <= 2.7:
+        return wx.Colour(255, 190, 25)
+
+    if 2.7 < gravity <= 4.0:
+        return wx.Colour(255, 150, 25)
+
+    if 4.0 < gravity <= 6.0:
+        return wx.Colour(255, 50, 0)
+
+    if 6.0 < gravity <= 20:
+        return wx.Colour(200, 0, 0)
+
+    if 20 < gravity:
+        return wx.Colour(220, 0, 255)
+
+    return wx.Colour(0, 0, 255)
 
 def latest_journal(folder: Path) -> Optional[Path]:
     """

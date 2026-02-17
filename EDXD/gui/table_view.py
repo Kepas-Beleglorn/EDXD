@@ -3,6 +3,7 @@ from typing import Dict, Callable, Optional
 
 import wx
 import wx.grid as gridlib
+import EDXD.data_handler.helper.data_helper as dh
 
 from EDXD.data_handler.model import Body
 from EDXD.globals import SYMBOL, logging, RAW_MATS, ICONS, log_call, DEBUG_MODE, log_context, \
@@ -17,7 +18,7 @@ class BodiesTable(gridlib.Grid):
         super().__init__(parent)
 
         self.parent = parent
-        self._all_cols = ["body_id", "status", "body_type", "scoopable", "body", "distance", "land", "first_footfalled",
+        self._all_cols = ["body_id", "status", "body_type", "scoopable", "body", "distance", "land", "g_force", "first_footfalled",
                           "bio", "geo", "value", "worthwhile", "first_discovered", "mapped", "first_mapped"] + list(
             RAW_MATS)
         # At the top of your class, after self._all_cols:
@@ -29,6 +30,7 @@ class BodiesTable(gridlib.Grid):
             "body"              : "Body",
             "distance"          : "Distance",
             "land"              : ICONS["landable"],
+            "g_force"           : "Gravity",
             "first_footfalled"  : ICONS["col_first_footfalled"],
             "bio"               : ICONS["biosigns"],
             "geo"               : ICONS["geosigns"],
@@ -59,6 +61,7 @@ class BodiesTable(gridlib.Grid):
             "body"              : "Bodies in current system",
             "distance"          : "Distance from entry point",
             "land"              : "Landable",
+            "g_force"           : "Surface gravity",
             "first_footfalled"  : "First footfall",
             "bio"               : "Bio-signals",
             "geo"               : "Geo-signals",
@@ -155,7 +158,7 @@ class BodiesTable(gridlib.Grid):
             target_body_id: str
     ):
         visible_mats = [m for m, on in filters.items() if on]
-        display_cols = ["body_id", "status", "body_type", "scoopable", "body", "distance", "land", "first_footfalled",
+        display_cols = ["body_id", "status", "body_type", "scoopable", "body", "distance", "land", "g_force", "first_footfalled",
                         "bio", "geo", "value", "worthwhile", "first_discovered", "mapped",
                         "first_mapped"] + visible_mats
 
@@ -183,6 +186,8 @@ class BodiesTable(gridlib.Grid):
                 attr_right.SetAlignment(wx.ALIGN_RIGHT, wx.ALIGN_CENTER)
                 self.SetColAttr(i, attr_right)
 
+            if colname == "g_force":
+                col_g_force = i
 
         # 1. PREPARE ROW DATA AS LIST OF DICTS (column name -> (disp, raw) tuple)
         rows_data = []
@@ -201,6 +206,7 @@ class BodiesTable(gridlib.Grid):
                     "body": (body.body_name, body.body_name.lower()),
                     "distance": (f"{getattr(body, 'distance', 0):,.0f} Ls"              if getattr(body, 'distance', 0) is not None else "",        getattr(body, 'distance', 0)),
                     "land": (f"{ICONS['landable']}"                                     if getattr(body, "landable", False)    else "",             (0 if getattr(body, "landable", False)  else 1)),
+                    "g_force": (dh.format_gravity(getattr(body, 'g_force', 0))              if getattr(body, 'g_force', 0) is not None else "",        getattr(body, 'g_force', 0)),
                     "bio":  (f"{ICONS['biosigns']}{ICONS['checked']}" if getattr(body, "bio_complete", False)
                             else f"{ICONS['biosigns']} {getattr(body, 'bio_scanned', 0)}/{getattr(body, 'biosignals', 0)}" if getattr(body, "biosignals", 0) > 0
                             else "", getattr(body, "biosignals", 0)),
@@ -226,11 +232,12 @@ class BodiesTable(gridlib.Grid):
                 for m in visible_mats:
                     matval = body.materials.get(m, None)
                     row[m] = (f"{matval:.1f} %" if matval is not None else "", matval if matval is not None else -1.0)
+
                 rows_data.append(row)
+
             except Exception as e:
                 log_context(level=logging.ERROR, frame=inspect.currentframe(), e=e)
                 logging.error(f"{getattr(body, 'distance', 0)} Ls")
-
 
         needed_rows = len(rows_data)
         current_rows = self.GetNumberRows()
@@ -262,6 +269,9 @@ class BodiesTable(gridlib.Grid):
             self._refresh_sort()
         self.ClearSelection()
 
+        # colorise G-force
+        self._set_g_force_color()
+
     def _refresh_sort(self):
         if not self.sort_col:
             return
@@ -286,6 +296,9 @@ class BodiesTable(gridlib.Grid):
                     log_context(level=logging.ERROR, frame=inspect.currentframe(), e=e)
                     logging.error(f"Failed to set value to {colname}(row[{r}]:col[{c}])")
 
+        # colorise G-force
+        self._set_g_force_color()
+
     def _prepare_columns(self, display_cols):
         for i, colname in enumerate(display_cols):
             self.SetColLabelValue(i, self._headers.get(colname, SYMBOL.get(colname, colname[:2].title())))
@@ -296,7 +309,7 @@ class BodiesTable(gridlib.Grid):
                 self.SetColSize(i, 222)
             elif colname == "body":
                 self.SetColSize(i, 275)
-            elif colname == "distance":
+            elif colname in ("distance", "g_force"):
                 self.SetColSize(i, 80)
             elif colname in ("bio", "geo"):
                 self.SetColSize(i, 60)
@@ -309,6 +322,26 @@ class BodiesTable(gridlib.Grid):
                 self.SetColSize(i, 50 if DEBUG_MODE else 0)
             else:
                 self.SetColSize(i, 60)
+
+    def _set_g_force_color(self):
+        col_g_force: int = -1
+
+        for i, colname in enumerate(self._display_cols):
+            if colname == "g_force":
+                col_g_force = i
+                break
+
+        # colorise G-force
+        if col_g_force > -1:
+            i: int = 0
+            while i < self.GetNumberRows():
+                g_force = float(self.GetCellValue(i, col_g_force).split(" ")[0].replace(",", ""))
+                attr = wx.grid.GridCellAttr()
+                attr.SetTextColour(dh.get_color_gradient_from_gravity(g_force))
+                self.SetAttr(i, col_g_force, attr)
+                i += 1
+
+            #self.refresh()
 
     @staticmethod
     def _plain_name_from_label(raw: str) -> str:
