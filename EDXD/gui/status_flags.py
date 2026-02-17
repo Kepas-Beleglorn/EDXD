@@ -15,7 +15,6 @@ from EDXD.gui.helper.gui_dynamic_toggle_button import DynamicToggleButton
 from EDXD.gui.helper.gui_handler import init_widget
 from EDXD.gui.helper.theme_handler import get_theme
 from EDXD.gui.helper.window_properties import WindowProperties
-from EDXD.data_handler.model import Model
 
 TITLE = "Status Flags"
 WINID = "STATUS_FLAGS"
@@ -36,7 +35,7 @@ class StatusFlags(DynamicDialog):
         # 2. Apply geometry
         init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
 
-        self.model = Model()
+        self.parent = parent
         self.debug_mode = parent.prefs.get(WINID).get("DEBUG", False)
         self.theme = get_theme()
         self.flag_button_values = [
@@ -178,16 +177,16 @@ class StatusFlags(DynamicDialog):
         self.Fit()
 
     def render(self):
-        if self.model.flags is not None:
+        if self.parent.model.flags is not None:
             for i in range(len(self.flag_buttons)):
-                new_val = (self.model.flags & pow(2, i)) != 0
+                new_val = (self.parent.model.flags & pow(2, i)) != 0
                 self.flag_buttons[i].SetValue(new_val)
                 self.flag_buttons[i]._is_toggled = new_val
                 self.flag_buttons[i].Refresh()
 
-        if self.model.flags2 is not None:
+        if self.parent.model.flags2 is not None:
             for i in range(len(self.flag2_buttons)):
-                new_val = (self.model.flags2 & pow(2, i)) != 0
+                new_val = (self.parent.model.flags2 & pow(2, i)) != 0
                 self.flag2_buttons[i].SetValue(new_val)
                 self.flag2_buttons[i]._is_toggled = new_val
                 self.flag2_buttons[i].Refresh()
