@@ -41,19 +41,22 @@ rgb()          { printf '\e[38;2;%d;%d;%dm' "$1" "$2" "$3"; }
 # ---------- colors (truecolor) ----------
 if [[ -t 1 && "$NO_COLOR_MODE" -eq 0 && -z "${NO_COLOR:-}" ]]; then
   RESET=$'\e[0m'
-  C_JOUR="$(rgb 0 220 120)"        # [journal]
-  C_BASE1="$(rgb 220 220 50)"      # zebra base 1
-  C_BASE2="$(rgb 190 190 190)"     # zebra base 2
-  C_BODYNAME="$(rgb 200 100 255)"  # BodyName
-  C_SYSTEMS="$(rgb 255 150 150)"   # StarSystem + SystemAddress
-  C_DISC="$(rgb 150 255 255)"      # discovery flags
-  C_RING="$(rgb 255 100 200)"      # rings
-  C_EVENT="$(rgb 50 222 50)"     # event
+  C_JOUR="$(rgb 0 220 120)"         # [journal]
+  C_BASE1="$(rgb 220 220 50)"       # zebra base 1
+  C_BASE2="$(rgb 190 190 190)"      # zebra base 2
+  C_BODYNAME="$(rgb 200 100 255)"   # BodyName
+  C_SYSTEMS="$(rgb 255 150 150)"    # StarSystem + SystemAddress
+  C_DISC="$(rgb 150 255 255)"       # discovery flags
+  C_RING="$(rgb 255 100 200)"       # rings
+  C_EVENT="$(rgb 50 222 50)"        # event
+  C_ATMOS="$(rgb 50 222 222)"       # atmosphere type
+  C_ATMOS_COMP="$(rgb 50 222 255)"  # atmosphere composition
   C_INFO="$(rgb 255 200 0)"
   C_ERR="$(rgb 255 80 80)"
 else
   RESET=""; C_JOUR=""; C_BASE1=""; C_BASE2=""; C_RING="";
-  C_BODYNAME=""; C_SYSTEMS=""; C_DISC=""; C_INFO=""; C_ERR=""; C_EVENT="";
+  C_BODYNAME=""; C_SYSTEMS=""; C_DISC=""; C_INFO=""; C_ERR="";
+  C_EVENT=""; C_ATMOS=""; C_ATMOS_COMP=""
 fi
 
 info(){ printf '%s[info]%s %s\n'  "$C_INFO" "$RESET" "$*" >&2; }
@@ -129,24 +132,28 @@ start_pipeline() {
 
     feed | mawk -W interactive \
       -v pref="$2" -v base1="$3" -v base2="$4" -v reset="$5" \
-      -v c_body="$6" -v c_sys="$7" -v c_disc="$8" -v c_rings="$9" -v c_event="${10}" "
+      -v c_body="$6" -v c_sys="$7" -v c_disc="$8" -v c_rings="$9" \
+      -v c_event="${10}" -v c_atmos="${11}" -v c_atmos_comp="${12}" "
       {
         base = (NR % 2 == 1) ? base1 : base2;
         line = \$0;
-        gsub(/\"BodyName\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/,            c_body  \"&\" reset base, line);
-        gsub(/\"event\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/,               c_event \"&\" reset base, line);
-        gsub(/\"StarSystem\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/,          c_sys   \"&\" reset base, line);
-        gsub(/\"SystemAddress\"[[:space:]]*:[[:space:]]*[0-9]+/,           c_sys   \"&\" reset base, line);
-        gsub(/\"WasDiscovered\"[[:space:]]*:[[:space:]]*(true|false)/,     c_disc  \"&\" reset base, line);
-        gsub(/\"WasMapped\"[[:space:]]*:[[:space:]]*(true|false)/,         c_disc  \"&\" reset base, line);
-        gsub(/\"WasFootfalled\"[[:space:]]*:[[:space:]]*(true|false)/,     c_disc  \"&\" reset base, line);
-        gsub(/\"Rings\"[[:space:]]*:[[:space:]]*\[[^\]]*\][[:space:]]*,?/, c_rings \"&\" reset base, line);
+        gsub(/\"BodyName\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/,                             c_body        \"&\" reset base, line);
+        gsub(/\"event\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/,                                c_event       \"&\" reset base, line);
+        gsub(/\"StarSystem\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/,                           c_sys         \"&\" reset base, line);
+        gsub(/\"SystemAddress\"[[:space:]]*:[[:space:]]*[0-9]+/,                            c_sys         \"&\" reset base, line);
+        gsub(/\"WasDiscovered\"[[:space:]]*:[[:space:]]*(true|false)/,                      c_disc        \"&\" reset base, line);
+        gsub(/\"WasMapped\"[[:space:]]*:[[:space:]]*(true|false)/,                          c_disc        \"&\" reset base, line);
+        gsub(/\"WasFootfalled\"[[:space:]]*:[[:space:]]*(true|false)/,                      c_disc        \"&\" reset base, line);
+        gsub(/\"Rings\"[[:space:]]*:[[:space:]]*\[[^\]]*\][[:space:]]*,?/,                  c_rings       \"&\" reset base, line);
+        gsub(/\"AtmosphereType\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/,                       c_atmos       \"&\" reset base, line);
+        gsub(/\"AtmosphereComposition\"[[:space:]]*:[[:space:]]*\[[^\]]*\][[:space:]]*,?/,  c_atmos_comp  \"&\" reset base, line);
         print pref base line reset;
         fflush();
       }"
   ' bash "$file" \
      "${C_JOUR}[journal] ${RESET}" "$C_BASE1" "$C_BASE2" "$RESET" \
-     "$C_BODYNAME" "$C_SYSTEMS" "$C_DISC" "$C_RING" "$C_EVENT" &
+     "$C_BODYNAME" "$C_SYSTEMS" "$C_DISC" "$C_RING" "$C_EVENT" \
+     "$C_ATMOS" "$C_ATMOS_COMP" &
 
   pipe_launcher_pid=$!
 }
