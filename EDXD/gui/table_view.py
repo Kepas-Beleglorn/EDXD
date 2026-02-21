@@ -5,7 +5,7 @@ import wx
 import wx.grid as gridlib
 import EDXD.data_handler.helper.data_helper as dh
 
-from EDXD.data_handler.model import Body
+from EDXD.data_handler.model import Body, FlatRowDataMainWindow
 from EDXD.globals import SYMBOL, logging, RAW_MATS, ICONS, log_call, DEBUG_MODE, log_context, \
     DEFAULT_WORTHWHILE_THRESHOLD
 from EDXD.utils.clipboard import copy_text_to_clipboard
@@ -18,7 +18,7 @@ class BodiesTable(gridlib.Grid):
         super().__init__(parent)
 
         self.parent = parent
-        self._all_cols = ["body_id", "status", "body_type", "scoopable", "body", "distance", "land", "g_force", "first_footfalled",
+        self._all_cols = ["body_id", "status", "body_type", "scoopable", "body", "distance", "land", "atmosphere", "g_force", "first_footfalled",
                           "bio", "geo", "value", "worthwhile", "first_discovered", "mapped", "first_mapped"] + list(
             RAW_MATS)
         # At the top of your class, after self._all_cols:
@@ -30,6 +30,7 @@ class BodiesTable(gridlib.Grid):
             "body"              : "Body",
             "distance"          : "Distance",
             "land"              : ICONS["landable"],
+            "atmosphere"        : ICONS["atmosphere_present"],
             "g_force"           : "Gravity",
             "first_footfalled"  : ICONS["col_first_footfalled"],
             "bio"               : ICONS["biosigns"],
@@ -61,6 +62,7 @@ class BodiesTable(gridlib.Grid):
             "body"              : "Bodies in current system",
             "distance"          : "Distance from entry point",
             "land"              : "Landable",
+            "atmosphere"        : "Atmosphere present",
             "g_force"           : "Surface gravity",
             "first_footfalled"  : "First footfall",
             "bio"               : "Bio-signals",
@@ -158,7 +160,7 @@ class BodiesTable(gridlib.Grid):
             target_body_id: str
     ):
         visible_mats = [m for m, on in filters.items() if on]
-        display_cols = ["body_id", "status", "body_type", "scoopable", "body", "distance", "land", "g_force", "first_footfalled",
+        display_cols = ["body_id", "status", "body_type", "scoopable", "body", "distance", "land", "atmosphere", "g_force", "first_footfalled",
                         "bio", "geo", "value", "worthwhile", "first_discovered", "mapped",
                         "first_mapped"] + visible_mats
 
@@ -196,18 +198,23 @@ class BodiesTable(gridlib.Grid):
             if landable_only and not getattr(body, "landable", False):
                 continue
             try:
+                flat_body = FlatRowDataMainWindow(body_to_parse=body)
+
                 row = {
                     "body_id":  (body_id, body_id if body_id is not None else ""),
-                    "status":   (ICONS["status_header"] if body.body_id == target_body_id == selected_body_id
-                                else ICONS["status_target"] if body.body_id == target_body_id
-                                else ICONS["status_selected"] if body.body_id == selected_body_id
+                    "status":   (ICONS["status_header"] if flat_body.body_id == target_body_id == selected_body_id
+                                else ICONS["status_target"] if flat_body.body_id == target_body_id
+                                else ICONS["status_selected"] if flat_body.body_id == selected_body_id
                                 else "", 0),
                     "body_type": (f"{str(getattr(body, 'body_type', ''))}", str(getattr(body, 'body_type', '')).lower()),
                     "scoopable": (f"{ICONS['scoopable']}"                               if getattr(body, "scoopable", False) else "",               (0 if getattr(body, "scoopable", False) else 1)),
                     "body": (body.body_name, body.body_name.lower()),
                     "distance": (f"{getattr(body, 'distance', 0):,.0f} Ls"              if getattr(body, 'distance', 0) is not None else "",        getattr(body, 'distance', 0)),
                     "land": (f"{ICONS['landable']}"                                     if getattr(body, "landable", False)    else "",             (0 if getattr(body, "landable", False)  else 1)),
-                    "g_force": (dh.format_gravity(getattr(body, 'g_force', 0))              if getattr(body, 'g_force', 0) is not None else "",        getattr(body, 'g_force', 0)),
+                    "atmosphere": (f"{ICONS['atmosphere_present']}"
+                                   if getattr(body, 'atmosphere', None) and getattr(body, 'atmosphere', None).type is not None else "",
+                                   (0 if getattr(body, 'atmosphere', None) and getattr(body, 'atmosphere', None).type is not None else 1)),
+                    "g_force": (dh.format_gravity(getattr(body, 'g_force', 0))          if getattr(body, 'g_force', 0) is not None else "",        getattr(body, 'g_force', 0)),
                     "bio":  (f"{ICONS['biosigns']}{ICONS['checked']}" if getattr(body, "bio_complete", False)
                             else f"{ICONS['biosigns']} {getattr(body, 'bio_scanned', 0)}/{getattr(body, 'biosignals', 0)}" if getattr(body, "biosignals", 0) > 0
                             else "", getattr(body, "biosignals", 0)),
@@ -238,7 +245,7 @@ class BodiesTable(gridlib.Grid):
 
             except Exception as e:
                 log_context(level=logging.ERROR, frame=inspect.currentframe(), e=e)
-                logging.error(f"{getattr(body, 'distance', 0)} Ls")
+                logging.error(f"{getattr(body, 'atmosphere', 0)}")
 
         needed_rows = len(rows_data)
         current_rows = self.GetNumberRows()
@@ -319,7 +326,7 @@ class BodiesTable(gridlib.Grid):
                 self.SetColSize(i, 60)
             elif colname == "value":
                 self.SetColSize(i, 100)
-            elif colname in ("land", "scoopable", "worthwhile", "mapped", "first_discovered", "first_mapped",
+            elif colname in ("land", "atmosphere", "scoopable", "worthwhile", "mapped", "first_discovered", "first_mapped",
                              "first_footfalled"):
                 self.SetColSize(i, 30)
             elif colname == "body_id":

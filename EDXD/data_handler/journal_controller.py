@@ -274,7 +274,7 @@ class JournalController(PausableThread, threading.Thread):
                         if first_footfalled != 2:
                             first_footfalled = 1
 
-                    if evt.get("AtmosphereType"):
+                    if evt.get("AtmosphereType") or evt.get("AtmosphereComposition"):
                         atmos_composition = {a["Name"]: a["Percent"] for a in evt.get("AtmosphereComposition", [])}
                         atmosphere = Atmosphere(type=evt.get("AtmosphereType"), composition=atmos_composition)
 
@@ -284,7 +284,7 @@ class JournalController(PausableThread, threading.Thread):
                 body_name = evt.get("Name")
             # Has anyone set foot on that rock?
             if not evt.get("WasFootfalled"):
-                # It could be I've been there, but haven't sold the footfall data yet.
+                # It could be I've been there, but haven't sold the footfall data yet.)
                 if first_footfalled == 0:
                     first_footfalled = 2
             else:

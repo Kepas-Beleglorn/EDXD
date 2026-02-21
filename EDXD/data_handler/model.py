@@ -157,6 +157,58 @@ class Atmosphere:
         return asdict(self)
 
 # ---------------------------------------------------------------------------
+# helper data classes for table views
+# ---------------------------------------------------------------------------
+@dataclass
+class FlatRowDataMainWindow:
+    body_id         : str = None
+    body_type       : str = None
+    scoopable       : bool = False
+    body            : str = None
+    distance        : float = 0.0
+    land            : bool = False
+    atmosphere      : str = None
+    g_force         : float = 0.0
+    bio_complete    : bool = False
+    bio_scanned     : int = 0
+    biosignals      : int = 0
+    geo_complete    : bool = False
+    geo_scanned     : int = 0
+    geosignals      : int = 0
+    estimated_value : int = 0
+    mapped          : bool = False
+    first_discovered: int = 0
+    first_mapped    : int = 0
+    first_footfalled: int = 0
+    body_to_parse   : object = field(repr=False, default=None)
+
+    def __post_init__(self):
+        if self.body_to_parse is not None:
+            self.body_id            = getattr(self.body_to_parse, 'body_id', self.body_id)
+            self.body_type          = getattr(self.body_to_parse, 'body_type', self.body_type)
+            self.scoopable          = getattr(self.body_to_parse, 'scoopable', self.scoopable)
+            self.body               = getattr(self.body_to_parse, 'body_name', self.body)
+            self.distance           = getattr(self.body_to_parse, 'distance', self.distance)
+            self.land               = getattr(self.body_to_parse, 'landable', self.land)
+            self.atmosphere         = getattr(self.body_to_parse, 'atmosphere', self.atmosphere)
+            self.g_force            = getattr(self.body_to_parse, 'g_force', self.g_force)
+            self.bio_complete       = getattr(self.body_to_parse, 'bio_complete', self.bio_complete)
+            self.bio_scanned        = getattr(self.body_to_parse, 'bio_scanned', self.bio_scanned)
+            self.biosignals         = getattr(self.body_to_parse, 'biosignals', self.biosignals)
+            self.geo_complete       = getattr(self.body_to_parse, 'geo_complete', self.geo_complete)
+            self.geo_scanned        = getattr(self.body_to_parse, 'geo_scanned', self.geo_scanned)
+            self.geosignals         = getattr(self.body_to_parse, 'geosignals', self.geosignals)
+            self.estimated_value    = getattr(self.body_to_parse, 'estimated_value', self.estimated_value)
+            self.mapped             = getattr(self.body_to_parse, 'mapped', self.mapped)
+            self.first_discovered   = getattr(self.body_to_parse, 'first_discovered', self.first_discovered)
+            self.first_mapped       = getattr(self.body_to_parse, 'first_mapped', self.first_mapped)
+            self.first_footfalled   = getattr(self.body_to_parse, 'first_footfalled', self.first_footfalled)
+
+            if isinstance(self.atmosphere, dict) and 'type' in self.atmosphere:
+                self.atmosphere = self.atmosphere['type']
+
+
+# ---------------------------------------------------------------------------
 # thread-safe data model
 # ---------------------------------------------------------------------------
 class Model:

@@ -219,7 +219,8 @@ ICONS = {
     "previous_footfalled"   : "🗿",
     "col_first_discovered"  : "🔭",
     "col_first_mapped"      : "🛰️",
-    "col_first_footfalled"  : "🕺🏽"
+    "col_first_footfalled"  : "🕺🏽",
+    "atmosphere_present"    : "☁️"
 }
 
 # -----------------------------------------------------------------------
