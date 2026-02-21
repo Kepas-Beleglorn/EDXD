@@ -11,6 +11,7 @@ model.py – core logic for ED Mineral Viewer
 from __future__ import annotations
 
 import threading
+from dataclasses import dataclass, asdict, field
 from typing import Optional, List
 
 import EDXD.data_handler.helper.data_helper as dh
@@ -44,141 +45,81 @@ def log_call(level=LOG_LEVEL):
         return wrapper
     return decorator
 
-# ---------------------------------------------------------------------------
-# simple container
-# ---------------------------------------------------------------------------
+@dataclass
 class Body:
-    __slots__ = ("body_id", "body_name", "body_type", "scoopable", "landable", "biosignals", "geosignals", "estimated_value", "materials",
-                 "bio_found", "geo_found", "distance", "rings", "radius", "mapped", "geo_complete", "geo_scanned",
-                 "bio_complete", "bio_scanned", "first_discovered", "first_mapped", "first_footfalled", "g_force")
+    body_id         : str
+    body_name       : str = ""
+    body_type       : str = ""
+    scoopable       : bool = False
+    landable        : bool = False
+    distance        : int = 0
+    materials       : Dict[str, float] = field(default_factory=dict)
+    bio_found       : Dict[str, Genus] = field(default_factory=dict)
+    geo_found       : Dict[str, CodexEntry] = field(default_factory=dict)
+    biosignals      : int = 0
+    geosignals      : int = 0
+    estimated_value : int = 0
+    rings           : Dict[str, Ring] = field(default_factory=dict)
+    radius          : float = 0.0
+    mapped          : bool = False
+    geo_complete    : bool = False
+    geo_scanned     : int = 0
+    bio_complete    : bool = False
+    bio_scanned     : int = 0
+    first_discovered: int = 0
+    first_mapped    : int = 0
+    first_footfalled: int = 0
+    g_force         : float = 0.0
+    atmosphere      : Atmosphere = None
 
-    def __init__(self,
-                 body_id:           str,
-                 body_name:         str = "",
-                 body_type:         str = "",
-                 scoopable:         bool = False,
-                 landable:          bool = False,
-                 distance:          int = 0,
-                 materials:         Dict[str, float] | None = None,
-                 bio_found:         Dict[str, Genus] | None = None,
-                 geo_found:         Dict[str, CodexEntry] | None = None,
-                 biosignals:        int = 0,
-                 geosignals:        int = 0,
-                 estimated_value:   int = 0,
-                 rings:             Dict[str, Ring] | None = None,
-                 radius:            float = 0.0,
-                 mapped:            bool = False,
-                 geo_complete:      bool = False,
-                 geo_scanned:       int = 0,
-                 bio_complete:      bool = False,
-                 bio_scanned:       int = 0,
-                 first_discovered:  int = 0,
-                 first_mapped:      int = 0,
-                 first_footfalled:  int = 0,
-                 g_force:           float = 0.0
-                 ):
+    def __post_init__(self):
+        # Ensure mutable defaults are initialized as empty dicts if None is passed
+        if self.materials is None:
+            self.materials = {}
+        if self.bio_found is None:
+            self.bio_found = {}
+        if self.geo_found is None:
+            self.geo_found = {}
+        if self.rings is None:
+            self.rings = {}
 
-        self.body_id            = body_id
-        self.body_name          = body_name
-        self.body_type          = body_type
-        self.scoopable          = scoopable
-        self.distance           = distance
-        self.landable           = landable
-        self.biosignals         = biosignals
-        self.geosignals         = geosignals
-        self.estimated_value    = estimated_value
-        self.materials          = materials or {}
-        self.bio_found          = bio_found or {}    # { biosign name -> scans_done }         e.g. {"Bacterium Bullaris":2}
-        self.geo_found          = geo_found or {}    # { "volcanism-01": True … }             True once SRV scanned
-        self.rings              = rings     or {}
-        self.radius             = radius
-        self.mapped             = mapped
-        self.geo_complete       = geo_complete
-        self.geo_scanned        = geo_scanned
-        self.bio_complete       = bio_complete
-        self.bio_scanned        = bio_scanned
-        self.first_discovered   = first_discovered
-        self.first_mapped       = first_mapped
-        self.first_footfalled   = first_footfalled
-        self.g_force            = g_force
-
+@dataclass
 class Ring:
-    __slots__ = ("body_id", "body_name", "signals")
-    def __init__(self,
-                 body_id:   str,
-                 body_name: str = "",
-                 signals:   Dict[str, int] | None = None):
+    body_id     : str
+    body_name   : str = ""
+    signals     : Dict[str, int] = field(default_factory=dict)
 
-        self.body_id = body_id
-        self.body_name = body_name
-        self.signals = signals or {}
+    def __post_init__(self):
+        # Ensure mutable defaults are initialized as empty dicts if None is passed
+        if self.signals is None:
+            self.signals = {}
 
     def to_dict(self):
-        data = {
-            "body_id": self.body_id,
-            "body_name": self.body_name,
-            "signals": self.signals
-        }
-        return data
+        return asdict(self)
 
-"""
-{
-	"timestamp": "2025-06-12T16:56:11Z",
-	"event": "ScanOrganic",
-	"ScanType": "Log",
-	"Genus": "$Codex_Ent_Fonticulus_Genus_Name;",
-	"Genus_Localised": "Fonticulua",
-	"Species": "$Codex_Ent_Fonticulus_02_Name;",
-	"Species_Localised": "Fonticulua Campestris",
-	"Variant": "$Codex_Ent_Fonticulus_02_M_Name;",
-	"Variant_Localised": "Fonticulua Campestris - Amethyst",
-	"SystemAddress": 40181431154417,
-	"Body": 17
-}
-"""
+@dataclass
 class Genus:
-    __slots__ = ("genusid", "localised", "species_localised", "variant_localised", "scanned_count", "min_distance", "pos_first", "pos_second")
-    def __init__(self,
-                 genusid            : str = None,
-                 localised          : str = None,
-                 species_localised  : str = None,
-                 variant_localised  : str = None,
-                 scanned_count      : int = None,
-                 min_distance       : int = None,
-                 pos_first          : PSPSCoordinates = None,
-                 pos_second         : PSPSCoordinates = None,
-                 ):
-        self.genusid            = genusid
-        self.localised          = localised
-        self.species_localised  = species_localised
-        self.variant_localised  = variant_localised
-        self.scanned_count      = scanned_count
-        self.min_distance       = min_distance
-        self.pos_first          = pos_first
-        self.pos_second         = pos_second
+    genusid            : Optional[str] = None
+    localised          : Optional[str] = None
+    species_localised  : Optional[str] = None
+    variant_localised  : Optional[str] = None
+    scanned_count      : Optional[int] = None
+    min_distance       : Optional[int] = None
+    pos_first          : Optional[PSPSCoordinates] = None
+    pos_second         : Optional[PSPSCoordinates] = None
 
     def to_dict(self):
-        data = {
-            "genusid"           : self.genusid,
-            "localised"         : self.localised,
-            "species_localised" : self.species_localised,
-            "variant_localised" : self.variant_localised,
-            "scanned_count"     : self.scanned_count,
-            "min_distance"      : self.min_distance,
-            "pos_first"         : (self.pos_first.to_dict() if hasattr(self.pos_first, "to_dict") else self.pos_first) if self.pos_first else None,
-            "pos_second"        : (self.pos_second.to_dict() if hasattr(self.pos_second, "to_dict") else self.pos_second) if self.pos_second else None
-        }
+        data = asdict(self)
+        if self.pos_first and hasattr(self.pos_first, "to_dict"):
+            data["pos_first"] = self.pos_first.to_dict()
+
+        if self.pos_second and hasattr(self.pos_second, "to_dict"):
+            data["pos_second"] = self.pos_second.to_dict()
+
         return data
 
     @classmethod
     def from_dict(cls, data: dict):
-        """
-        Convert a dict (as loaded from disk / cache) into a Genus instance.
-
-        This implements the same logic as the `genus_from_dict` helper you had
-        in journal_controller.py: if pos_first/pos_second are dicts, turn them
-        into PSPSCoordinates objects first, then pass everything to Genus().
-        """
         if not data:
             return None
 
@@ -192,50 +133,50 @@ class Genus:
 
         return cls(**d)
 
+@dataclass
 class CodexEntry:
-    __slots__ = ("codexid", "localised", "is_new", "body_id")
-    def __init__(self,
-                 codexid    : str = None,
-                 localised  : str = None,
-                 is_new     : bool = None,
-                 body_id    : str = None
-                 ):
-        self.codexid    = codexid
-        self.localised  = localised
-        self.is_new     = is_new
-        self.body_id    = body_id
+    codexid     : str = None
+    localised   : str = None
+    is_new      : bool = None
+    body_id     : str = None
 
     def to_dict(self):
-        data = {
-            "codexid"   : self.codexid,
-            "localised" : self.localised,
-            "is_new"    : self.is_new,
-            "body_id"   : self.body_id
-        }
-        return data
+        return asdict(self)
+
+@dataclass
+class Atmosphere:
+    type        : str = None
+    composition : Dict[str, float] = field(default_factory=dict)
+
+    def __post_init__(self):
+        # Ensure mutable defaults are initialized as empty dicts if None is passed
+        if self.composition is None:
+            self.composition = {}
+
+    def to_dict(self):
+        return asdict(self)
 
 # ---------------------------------------------------------------------------
 # thread-safe data model
 # ---------------------------------------------------------------------------
 class Model:
     """Keeps the bodies of the *current* system; notifies target listeners."""
-
     def __init__(self):
         self.lock               = threading.Lock()
-        self.system_name        : Optional[str]         = None
-        self.system_addr        : Optional[int]         = None
-        self.bodies             : Dict[str, Body]       = {}
-        self.target_body_id     : Optional[str]         = None
-        self.selected_body_id   : Optional[str]         = None
-        self.total_bodies       : Optional[int]         = None
-        self._target_cbs        : List = []             # listeners
+        self.system_name        : Optional[str]             = None
+        self.system_addr        : Optional[int]             = None
+        self.bodies             : Dict[str, Body]           = {}
+        self.target_body_id     : Optional[str]             = None
+        self.selected_body_id   : Optional[str]             = None
+        self.total_bodies       : Optional[int]             = None
+        self._target_cbs        : List                      = [] # listeners
         self.current_position   : Optional[PSPSCoordinates] = None
-        self.current_heading    : Optional[int] = None
-        self.ship_status        : Optional[ShipStatus] = None
-        self.fuel_level         : Optional[FuelLevel] = None
-        self.current_vessel     : Optional[str] = None
-        self.flags              : Optional[int] = None
-        self.flags2             : Optional[int] = None
+        self.current_heading    : Optional[int]             = None
+        self.ship_status        : Optional[ShipStatus]      = None
+        self.fuel_level         : Optional[FuelLevel]       = None
+        self.current_vessel     : Optional[str]             = None
+        self.flags              : Optional[int]             = None
+        self.flags2             : Optional[int]             = None
 
     # ----- listeners ---------------------------------------------------------
     def register_target_listener(self, cb):
@@ -295,6 +236,7 @@ class Model:
                 first_discovered    = body_properties.get("first_discovered", 0)
                 first_mapped        = body_properties.get("first_mapped", 0)
                 first_footfalled    = body_properties.get("first_footfalled", 0)
+                atmosphere          = body_properties.get("atmosphere", None)
 
                 bio_found = {k: Genus.from_dict(v) if isinstance(v, dict) else v for k, v in bio_dict.items()}
                 geo_found = {k: CodexEntry(**v) if isinstance(v, dict) else v for k, v in geo_dict.items()}
@@ -323,15 +265,15 @@ class Model:
                     bio_scanned=bio_scanned,
                     first_discovered=first_discovered,
                     first_mapped=first_mapped,
-                    first_footfalled=first_footfalled
+                    first_footfalled=first_footfalled,
+                    atmosphere=atmosphere
                 )
 
-    #@log_call(logging.DEBUG)
     def update_body(self, systemaddress: int, body_id: str, body_name: str = None, body_type: str = None, scoopable: bool = None, distance: int = None, landable: bool = None,
                     biosignals: int = None, geosignals: int = None, materials: Dict[str, float] = None, scandata = None,
                     bio_found: Dict[str, Genus] = None, geo_found: Dict[str, CodexEntry] = None, rings: Dict[str, Ring] = None, total_bodies: int = None, radius: float = 0.0, mapped: bool = False,
                     geo_complete: bool = False, geo_scanned: int = 0, bio_complete: bool = False, bio_scanned: int = 0,
-                    first_discovered: int = 0, first_mapped: int = 0, first_footfalled: int = 0, g_force: float = 0.0):
+                    first_discovered: int = 0, first_mapped: int = 0, first_footfalled: int = 0, g_force: float = 0.0, atmosphere: Atmosphere = None):
         with self.lock:
             self.system_addr = systemaddress
             tmp_total_bodies = total_bodies or self.total_bodies
@@ -360,6 +302,7 @@ class Model:
                 body.first_discovered   = first_discovered  or body.first_discovered    or 0
                 body.first_mapped       = first_mapped      or body.first_mapped        or 0
                 body.first_footfalled   = first_footfalled  or body.first_footfalled    or 0
+                body.atmosphere         = atmosphere        or body.atmosphere          or None
 
                 if materials is not None:
                     body.materials.update(materials)
@@ -436,6 +379,7 @@ class Model:
                             ring.to_dict()
                         for ringid, ring in body.rings.items()
                     },
+                    "atmosphere"        : body.atmosphere.to_dict() if hasattr(body.atmosphere, 'to_dict') else body.atmosphere,
                 }
                 for body_id, body in self.bodies.items()
             },

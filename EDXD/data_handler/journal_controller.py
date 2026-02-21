@@ -1,12 +1,10 @@
 import json
 import queue
 import re
-import threading
 
 import EDXD.data_handler.helper.bio_helper as bio_helper
-import EDXD.data_handler.helper.data_helper as dh
 from EDXD.data_handler.helper.pausable_thread import PausableThread
-from EDXD.data_handler.model import Model, Genus, CodexEntry, Ring
+from EDXD.data_handler.model import *
 from EDXD.data_handler.planetary_surface_positioning_system import PSPSCoordinates
 from EDXD.data_handler.vessel_status import *
 from EDXD.globals import logging, BODY_ID_PREFIX, log_context, JOURNAL_TIMESTAMP_FILE, SHIP_STATUS_FILE, VESSEL_SHIP, \
@@ -184,6 +182,7 @@ class JournalController(PausableThread, threading.Thread):
         geo_scanned     = None
         bio_complete    = None
         bio_scanned     = None
+        atmosphere      = None
 
         materials       = {}
 
@@ -274,6 +273,11 @@ class JournalController(PausableThread, threading.Thread):
                     else:
                         if first_footfalled != 2:
                             first_footfalled = 1
+
+                    if evt.get("AtmosphereType"):
+                        atmos_composition = {a["Name"]: a["Percent"] for a in evt.get("AtmosphereComposition", [])}
+                        atmosphere = Atmosphere(type=evt.get("AtmosphereType"), composition=atmos_composition)
+
 
         if etype == "Disembark":
             if body_id:
@@ -536,7 +540,8 @@ class JournalController(PausableThread, threading.Thread):
                 bio_scanned=bio_scanned,
                 first_discovered=first_discovered,
                 first_mapped=first_mapped,
-                first_footfalled=first_footfalled
+                first_footfalled=first_footfalled,
+                atmosphere=atmosphere
             )
 
         # nothing to safe here, just update the target
