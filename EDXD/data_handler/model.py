@@ -166,7 +166,7 @@ class FlatRowDataMainWindow:
     scoopable       : bool = False
     body            : str = None
     distance        : float = 0.0
-    land            : bool = False
+    landable        : bool = False
     atmosphere      : str = None
     g_force         : float = 0.0
     bio_complete    : bool = False
@@ -189,7 +189,7 @@ class FlatRowDataMainWindow:
             self.scoopable          = getattr(self.body_to_parse, 'scoopable', self.scoopable)
             self.body               = getattr(self.body_to_parse, 'body_name', self.body)
             self.distance           = getattr(self.body_to_parse, 'distance', self.distance)
-            self.land               = getattr(self.body_to_parse, 'landable', self.land)
+            self.landable           = getattr(self.body_to_parse, 'landable', self.landable)
             self.atmosphere         = getattr(self.body_to_parse, 'atmosphere', self.atmosphere)
             self.g_force            = getattr(self.body_to_parse, 'g_force', self.g_force)
             self.bio_complete       = getattr(self.body_to_parse, 'bio_complete', self.bio_complete)
@@ -206,6 +206,11 @@ class FlatRowDataMainWindow:
 
             if isinstance(self.atmosphere, dict) and 'type' in self.atmosphere:
                 self.atmosphere = self.atmosphere['type']
+            elif isinstance(self.atmosphere, Atmosphere):
+                self.atmosphere = self.atmosphere.type
+
+            if self.atmosphere is None or self.atmosphere == "None":
+                self.atmosphere = ""
 
 
 # ---------------------------------------------------------------------------

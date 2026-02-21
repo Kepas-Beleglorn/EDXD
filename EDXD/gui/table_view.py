@@ -201,41 +201,44 @@ class BodiesTable(gridlib.Grid):
                 flat_body = FlatRowDataMainWindow(body_to_parse=body)
 
                 row = {
-                    "body_id":  (body_id, body_id if body_id is not None else ""),
-                    "status":   (ICONS["status_header"] if flat_body.body_id == target_body_id == selected_body_id
-                                else ICONS["status_target"] if flat_body.body_id == target_body_id
-                                else ICONS["status_selected"] if flat_body.body_id == selected_body_id
-                                else "", 0),
-                    "body_type": (f"{str(getattr(body, 'body_type', ''))}", str(getattr(body, 'body_type', '')).lower()),
-                    "scoopable": (f"{ICONS['scoopable']}"                               if getattr(body, "scoopable", False) else "",               (0 if getattr(body, "scoopable", False) else 1)),
-                    "body": (body.body_name, body.body_name.lower()),
-                    "distance": (f"{getattr(body, 'distance', 0):,.0f} Ls"              if getattr(body, 'distance', 0) is not None else "",        getattr(body, 'distance', 0)),
-                    "land": (f"{ICONS['landable']}"                                     if getattr(body, "landable", False)    else "",             (0 if getattr(body, "landable", False)  else 1)),
-                    "atmosphere": (f"{ICONS['atmosphere_present']}"
-                                   if getattr(body, 'atmosphere', None) and getattr(body, 'atmosphere', None).type is not None else "",
-                                   (0 if getattr(body, 'atmosphere', None) and getattr(body, 'atmosphere', None).type is not None else 1)),
-                    "g_force": (dh.format_gravity(getattr(body, 'g_force', 0))          if getattr(body, 'g_force', 0) is not None else "",        getattr(body, 'g_force', 0)),
-                    "bio":  (f"{ICONS['biosigns']}{ICONS['checked']}" if getattr(body, "bio_complete", False)
-                            else f"{ICONS['biosigns']} {getattr(body, 'bio_scanned', 0)}/{getattr(body, 'biosignals', 0)}" if getattr(body, "biosignals", 0) > 0
-                            else "", getattr(body, "biosignals", 0)),
-                    "geo":  (f"{ICONS['geosigns']}{ICONS['checked']}" if getattr(body, "geo_complete", False)
-                            else f"{ICONS['geosigns']} {getattr(body, 'geo_scanned', 0)}/{getattr(body, 'geosignals', 0)}" if getattr(body, "geosignals", 0) > 0
-                            else "", getattr(body, "geosignals", 0)),
-                    "value": (f"{getattr(body, 'estimated_value', 0):,} Cr"             if getattr(body, "estimated_value", 0) else "",             getattr(body, "estimated_value", 0)),
-                    "worthwhile": (f"{ICONS["worthwhile"]}"                             if getattr(body, "estimated_value", 0) >= self.parent.prefs.get("worthwhile_threshold", DEFAULT_WORTHWHILE_THRESHOLD) else "",  getattr(body, "estimated_value", 0)),
-                    "mapped": (f"{ICONS['mapped']}"                                     if getattr(body, "mapped", False) else "",                  (1 if getattr(body, "mapped", False) else 0)),
-                    "first_discovered": (
-                        f"{ICONS["first_discovered"]}" if getattr(body, "first_discovered", 0) == 2 else (
-                            f"{ICONS["previous_discovered"]}" if getattr(body, "first_discovered", 0) == 1 else ""),
-                        getattr(body, "first_discovered", 0)),
-                    "first_mapped": (f"{ICONS["first_mapped"]}" if getattr(body, "first_mapped", 0) == 2 else (
-                        f"{ICONS["previous_mapped"]}" if getattr(body, "first_mapped", 0) == 1 else ""),
-                                     getattr(body, "first_mapped", 0)),
-                    "first_footfalled": (
-                        f"{ICONS["first_footfalled"]}" if getattr(body, "first_footfalled", 0) == 2 else (
-                            f"{ICONS["previous_footfalled"]}" if getattr(body, "first_footfalled", 0) == 1 else ""),
-                        getattr(body, "first_footfalled", 0)),
-
+                    "body_id"           : (body_id, body_id if body_id is not None else ""),
+                    "status"            : (
+                            ICONS["status_header"]      if flat_body.body_id == target_body_id == selected_body_id else
+                            ICONS["status_target"]      if flat_body.body_id == target_body_id else
+                            ICONS["status_selected"]    if flat_body.body_id == selected_body_id else
+                            "", 0),
+                    "body_type"         : (f"{flat_body.body_type}", flat_body.body_type.lower()),
+                    "scoopable"         : (f"{ICONS['scoopable']}"  if flat_body.scoopable else "", (0 if flat_body.scoopable else 1)),
+                    "body"              : (body.body_name, body.body_name.lower()),
+                    "distance"          : (f"{flat_body.distance:,.0f} Ls" if flat_body.distance is not None else "", flat_body.distance),
+                    "land"              : (f"{ICONS['landable']}" if flat_body.landable   else "", (0 if flat_body.landable  else 1)),
+                    "atmosphere"        : (f"{ICONS['atmosphere_present']}" if flat_body.atmosphere != "" else "", (0 if flat_body.atmosphere != "" else 1)),
+                    "g_force"           : (dh.format_gravity(flat_body.g_force) if flat_body.g_force is not None else "", flat_body.g_force),
+                    "bio"               : (
+                            f"{ICONS['biosigns']}{ICONS['checked']}"                                if flat_body.bio_complete else
+                            f"{ICONS['biosigns']} {flat_body.bio_scanned}/{flat_body.biosignals}"   if flat_body.biosignals > 0 else
+                            "", flat_body.biosignals),
+                    "geo"               : (
+                            f"{ICONS['geosigns']}{ICONS['checked']}"                               if flat_body.geo_complete else
+                            f"{ICONS['geosigns']} {flat_body.geo_scanned}/{flat_body.geosignals}"  if flat_body.geosignals > 0 else
+                            "", flat_body.geosignals),
+                    "value"             : (f"{flat_body.estimated_value:,} Cr"  if flat_body.estimated_value else "", flat_body.estimated_value),
+                    "worthwhile"        : (f"{ICONS["worthwhile"]}"             if flat_body.estimated_value >= self.parent.prefs.get("worthwhile_threshold", DEFAULT_WORTHWHILE_THRESHOLD) else "",
+                            flat_body.estimated_value),
+                    "mapped"            : (f"{ICONS['mapped']}"                 if flat_body.mapped else "",
+                            (1 if flat_body.mapped else 0)),
+                    "first_discovered"  : (
+                            f"{ICONS["first_discovered"]}"      if flat_body.first_discovered == 2 else (
+                            f"{ICONS["previous_discovered"]}"   if flat_body.first_discovered == 1 else ""),
+                        flat_body.first_discovered),
+                    "first_mapped"      : (
+                            f"{ICONS["first_mapped"]}"          if flat_body.first_mapped == 2 else (
+                            f"{ICONS["previous_mapped"]}"       if flat_body.first_mapped == 1 else ""),
+                        flat_body.first_mapped),
+                    "first_footfalled"  : (
+                            f"{ICONS["first_footfalled"]}"      if flat_body.first_footfalled == 2 else (
+                            f"{ICONS["previous_footfalled"]}"   if flat_body.first_footfalled == 1 else ""),
+                        flat_body.first_discovered),
                 }
                 for m in visible_mats:
                     matval = body.materials.get(m, None)
@@ -245,7 +248,7 @@ class BodiesTable(gridlib.Grid):
 
             except Exception as e:
                 log_context(level=logging.ERROR, frame=inspect.currentframe(), e=e)
-                logging.error(f"{getattr(body, 'atmosphere', 0)}")
+                
 
         needed_rows = len(rows_data)
         current_rows = self.GetNumberRows()
