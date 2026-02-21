@@ -55,6 +55,11 @@ class PSPS:
         if target_coordinates is None:
             target_coordinates = self.target_coordinates
 
+        if target_coordinates.latitude is None:
+            return "N/A"
+        if target_coordinates.longitude is None:
+            return "N/A"
+
         # convert target coordinates to radians
         rad_lat_target = math.radians(target_coordinates.latitude)
         rad_long_target = math.radians(target_coordinates.longitude)
