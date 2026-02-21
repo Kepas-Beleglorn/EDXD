@@ -8,7 +8,7 @@ license = 'CC-BY-NC-4.0'
 requires-python = ">=3.9"
 dependencies = [
     "watchdog>=3.0.0",
-    "wxPython~=4.2.3",
+    "wxPython~=4.2.5",
     "tomli",
     "filelock"
 ]

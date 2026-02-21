@@ -170,6 +170,7 @@ class BodiesTable(gridlib.Grid):
             self.DeleteCols(0, current_cols - needed_cols)
         self._prepare_columns(display_cols=display_cols)
 
+        freeze_col = 0
         # Align value and distance columns to right
         for i, colname in enumerate(display_cols):
             if colname in ["body", "body_type"]:
@@ -186,8 +187,8 @@ class BodiesTable(gridlib.Grid):
                 attr_right.SetAlignment(wx.ALIGN_RIGHT, wx.ALIGN_CENTER)
                 self.SetColAttr(i, attr_right)
 
-            if colname == "g_force":
-                col_g_force = i
+            if colname == "body":
+                freeze_col = i + 1
 
         # 1. PREPARE ROW DATA AS LIST OF DICTS (column name -> (disp, raw) tuple)
         rows_data = []
@@ -268,6 +269,9 @@ class BodiesTable(gridlib.Grid):
         if hasattr(self, "_refresh_sort"):
             self._refresh_sort()
         self.ClearSelection()
+
+        # freeze columns for scrolling
+        self.FreezeTo(row=0, col=freeze_col)
 
         # colorise G-force
         self._set_g_force_color()
@@ -436,3 +440,4 @@ class BodiesTable(gridlib.Grid):
             copy_text_to_clipboard(name)
 
         evt.Skip()
+
