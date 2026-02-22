@@ -1,0 +1,75 @@
+name: Sync Project Column to Label
+
+on:
+  project_card:
+    types: [moved]
+
+jobs:
+  sync-labels:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Sync Project Column to Label
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const TARGET_PROJECT_NAME = "EDXD"; // Only sync for this project
+
+            const { data: card } = await github.rest.projects.getCard({
+              card_id: context.payload.project_card.id,
+            });
+
+            // Fetch the project to check its name
+            const { data: project } = await github.rest.projects.getProject({
+              project_id: card.project_id,
+            });
+
+            // Skip if not the target project
+            if (project.name !== TARGET_PROJECT_NAME) {
+              console.log(`Skipping: Not the target project (${project.name}).`);
+              return;
+            }
+
+            const { data: column } = await github.rest.projects.getColumn({
+              column_id: card.column_id,
+            });
+            const { data: issue } = await github.rest.issues.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: card.content_url.split('/').pop(),
+            });
+
+            // Get the previous column (if available)
+            let previousColumnName = null;
+            if (context.payload.changes && context.payload.changes.column_id) {
+              const { data: previousColumn } = await github.rest.projects.getColumn({
+                column_id: context.payload.changes.column_id.from,
+              });
+              previousColumnName = previousColumn.name;
+            }
+
+            // Get the current column name
+            const currentColumnName = column.name;
+
+            // Remove the old label (if it exists)
+            if (previousColumnName) {
+              const oldLabelExists = issue.labels.some(label => label.name === previousColumnName);
+              if (oldLabelExists) {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  name: previousColumnName,
+                });
+              }
+            }
+
+            // Add the new label (use the column name as the label)
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              labels: [currentColumnName],
+            });
