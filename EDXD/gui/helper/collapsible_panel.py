@@ -3,29 +3,30 @@ from EDXD.gui.helper.gui_handler import init_widget
 from EDXD.gui.helper.gui_dynamic_toggle_button import DynamicToggleButton
 
 class CollapsiblePanel(wx.Panel):
-    def __init__(self, parent, label="Panel Title", collapsed=False):
+    def __init__(self, parent, label="Panel Title", collapsed=False, columns: int = 1):
         super().__init__(parent)
         self.parent = parent
         self.label = label
         self.collapsed = collapsed
+        self.columns = columns
         self.animation_duration = 200  # ms
         self.content_height = 0
 
         # Main sizer
         self.main_sizer = wx.BoxSizer(wx.VERTICAL)
 
-        # Header (clickable)
+        # Header
         self.header = wx.Panel(self)
         self.header.SetBackgroundColour(wx.Colour(50, 50, 50))
         self.header_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.header_label = wx.StaticText(self.header, label=self.label)
+        # Toggle button
         self.toggle_button = DynamicToggleButton(parent=self.header,
                 label="–",
                 is_toggled=self.collapsed,
                 size=wx.Size(20,20),
                 style=wx.FONTWEIGHT_BOLD
         )
-
         self.toggle_button.Bind(wx.EVT_BUTTON, self.on_toggle)
 
         init_widget(widget=self.header, title=self.label)
@@ -42,6 +43,9 @@ class CollapsiblePanel(wx.Panel):
         self.content.SetSizer(self.content_sizer)
         self.content.Hide() if collapsed else self.content.Show()
 
+        # Setup table
+        self.setup_table()
+
         # Layout
         self.main_sizer.Add(self.header, 0, wx.EXPAND)
         self.main_sizer.Add(self.content, 1, wx.EXPAND)
@@ -51,13 +55,32 @@ class CollapsiblePanel(wx.Panel):
         self.Layout()
         self.Bind(wx.EVT_SIZE, self.on_size)
 
+    def setup_table(self):
+        """Set up a table-like layout with two columns."""
+        self.table_sizer = wx.FlexGridSizer(cols=self.columns)  # 2 columns, 5px gaps
+
+        self.content_sizer.Add(self.table_sizer, 1, wx.EXPAND | wx.ALL, 5)
+        self.content_height = self.content.GetBestSize().height
+        self.main_sizer.Layout()
+
+    def add_table_row(self, label_text, value_text):
+        """Add a row to the table."""
+        label = wx.StaticText(self.content, label=label_text)
+        value = wx.StaticText(self.content, label=value_text)
+
+        init_widget(widget=label, title=label_text)
+        init_widget(widget=value, title=value_text)
+
+        self.table_sizer.Add(label, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        self.table_sizer.Add(value, 0, wx.ALL | wx.EXPAND, 5)
+
     def on_toggle(self, event):
         """Toggle collapse/expand state with animation."""
         self.collapsed = not self.collapsed
         target_height = 0 if self.collapsed else self.content_height
 
-        # Update button icon
-        self.toggle_button.SetLabelText("+" if self.collapsed else "–")
+        # Update button label
+        self.toggle_button.SetLabel("+" if self.collapsed else "–")
 
         # Animate
         self.animate_height(target_height)
@@ -97,35 +120,3 @@ class CollapsiblePanel(wx.Panel):
         if not self.collapsed:
             self.content_height = self.content.GetBestSize().height
         event.Skip()
-
-    def add_content(self, widget, proportion=1, flag=wx.EXPAND, border=5):
-        """Add a widget to the content area."""
-        if hasattr(widget, 'Name'):
-            init_widget(widget)
-        else:
-            for item in widget.GetChildren():
-                if hasattr(item, 'Name'):
-                    init_widget(item)
-
-        self.content_sizer.Add(widget, proportion, flag, border)
-        self.content_height = self.content.GetBestSize().height
-        self.main_sizer.Layout()
-
-    def set_label(self, label):
-        """Update the panel label."""
-        self.label = label
-        self.header_label.SetLabel(label)
-
-    def is_collapsed(self):
-        """Return collapse state."""
-        return self.collapsed
-
-    def collapse(self):
-        """Collapse the panel."""
-        if not self.collapsed:
-            self.on_toggle(None)
-
-    def expand(self):
-        """Expand the panel."""
-        if self.collapsed:
-            self.on_toggle(None)
