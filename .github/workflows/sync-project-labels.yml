@@ -23,18 +23,6 @@ jobs:
                   projectV2(number: $projectNumber) {
                     id
                     title
-                    fields(first: 20) {
-                      nodes {
-                        ... on ProjectV2Field {
-                          id
-                          name
-                        }
-                        ... on ProjectV2SingleSelectField {
-                          id
-                          name
-                        }
-                      }
-                    }
                     items(first: 100) {
                       nodes {
                         id
