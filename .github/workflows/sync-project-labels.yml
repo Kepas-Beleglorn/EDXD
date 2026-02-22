@@ -23,6 +23,18 @@ jobs:
                   projectV2(number: $projectNumber) {
                     id
                     title
+                    fields(first: 20) {
+                      nodes {
+                        ... on ProjectV2Field {
+                          id
+                          name
+                        }
+                        ... on ProjectV2SingleSelectField {
+                          id
+                          name
+                        }
+                      }
+                    }
                     items(first: 100) {
                       nodes {
                         id
@@ -37,7 +49,14 @@ jobs:
                         }
                         fieldValues(first: 20) {
                           nodes {
-                            __typename
+                            ... on ProjectV2ItemFieldSingleSelectValue {
+                              field {
+                                ... on ProjectV2SingleSelectField {
+                                  name
+                                }
+                              }
+                              name
+                            }
                           }
                         }
                       }
@@ -65,7 +84,23 @@ jobs:
                 }
 
                 const issueNumber = item.content.number;
-                console.log(`Processing issue #${issueNumber}`);
+                let statusLabel = null;
+
+                // Extract the Status field value
+                const fieldValues = item.fieldValues.nodes;
+                for (const fieldValue of fieldValues) {
+                  if (fieldValue.field && fieldValue.field.name === 'Status' && fieldValue.name) {
+                    statusLabel = fieldValue.name;
+                    break;
+                  }
+                }
+
+                if (!statusLabel) {
+                  console.log(`Issue #${issueNumber}: No status found`);
+                  continue;
+                }
+
+                console.log(`Issue #${issueNumber}: Status = ${statusLabel}`);
 
                 // Get current issue labels
                 const { data: issue } = await github.rest.issues.get({
@@ -74,11 +109,42 @@ jobs:
                   issue_number: issueNumber
                 });
 
-                console.log(`Current labels: ${issue.labels.map(l => l.name).join(', ')}`);
+                const currentLabels = issue.labels.map(l => l.name);
+                console.log(`  Current labels: ${currentLabels.join(', ') || 'none'}`);
+
+                // Remove old status labels
+                const statusLabelNames = ["Backlog", "Ready", "In Progress", "In Review", "Done"];
+                const oldStatusLabels = currentLabels.filter(l => statusLabelNames.includes(l));
+                
+                for (const oldLabel of oldStatusLabels) {
+                  if (oldLabel !== statusLabel) {
+                    await github.rest.issues.removeLabel({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      issue_number: issueNumber,
+                      name: oldLabel
+                    });
+                    console.log(`  Removed label: "${oldLabel}"`);
+                  }
+                }
+
+                // Add the status label
+                if (!currentLabels.includes(statusLabel)) {
+                  await github.rest.issues.addLabels({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: issueNumber,
+                    labels: [statusLabel]
+                  });
+                  console.log(`  Added label: "${statusLabel}"`);
+                } else {
+                  console.log(`  Already has label: "${statusLabel}"`);
+                }
               }
 
               console.log("Sync completed successfully");
             } catch (error) {
               console.error("Error syncing labels:", error.message);
+              console.error("Full error:", error);
               throw error;
             }
