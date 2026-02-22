@@ -63,16 +63,11 @@ class CollapsiblePanel(wx.Panel):
         self.content_height = self.content.GetBestSize().height
         self.main_sizer.Layout()
 
-    def add_table_row(self, label_text, value_text):
+    def add_table_item(self, label_text):
         """Add a row to the table."""
         label = wx.StaticText(self.content, label=label_text)
-        value = wx.StaticText(self.content, label=value_text)
-
         init_widget(widget=label, title=label_text)
-        init_widget(widget=value, title=value_text)
-
-        self.table_sizer.Add(label, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
-        self.table_sizer.Add(value, 0, wx.ALL | wx.EXPAND, 5)
+        self.table_sizer.Add(label, 0, wx.ALL | wx.EXPAND, 5)
 
     def on_toggle(self, event):
         """Toggle collapse/expand state with animation."""

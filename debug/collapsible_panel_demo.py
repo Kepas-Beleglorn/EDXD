@@ -1,7 +1,5 @@
 from EDXD.gui.helper.collapsible_panel import CollapsiblePanel
 import wx
-import wx.grid as gridlib
-from EDXD.gui.helper.gui_dynamic_button import DynamicButton
 from EDXD.gui.helper.gui_handler import init_widget
 
 
@@ -13,16 +11,20 @@ class MyFrame(wx.Frame):
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         init_widget(self)
         # Create panels
-        self.panel1 = CollapsiblePanel(self, label="Details", columns=2)
+        self.panel1 = CollapsiblePanel(self, label="Details", columns=4)
 
         # Add rows
-        self.panel1.add_table_row("short", "long first row")
-        self.panel1.add_table_row("short2", "looooooong")
+        self.panel1.add_table_item("short")
+        self.panel1.add_table_item("long first row")
+        self.panel1.add_table_item("short2")
+        self.panel1.add_table_item("looooooong")
 
 
         self.panel2 = CollapsiblePanel(self, label="Details2", columns=2)
-        self.panel2.add_table_row("short", "long first row")
-        self.panel2.add_table_row("short2", "looooooong")
+        self.panel2.add_table_item("short")
+        self.panel2.add_table_item("long first row")
+        self.panel2.add_table_item("short2")
+        self.panel2.add_table_item("looooooong")
 
         # Add panels to the main sizer with wx.EXPAND flag
         main_sizer.Add(self.panel1, 0, wx.EXPAND)
