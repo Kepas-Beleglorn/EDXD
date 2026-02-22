@@ -35,7 +35,7 @@ def init_widget(widget, width: int = DEFAULT_WIDTH, height: int = DEFAULT_HEIGHT
         init_panel(widget=widget, title=title)
     elif widget.Name == "staticText":
         init_static_text(widget=widget, title=title)
-    elif widget.Name == "text":
+    elif widget.Name in ["text"]:
         init_text(widget=widget, title=title)
     elif widget.Name == "genbutton":
         if is_ctrl_box:

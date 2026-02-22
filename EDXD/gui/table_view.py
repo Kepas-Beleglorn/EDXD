@@ -198,47 +198,47 @@ class BodiesTable(gridlib.Grid):
             if landable_only and not getattr(body, "landable", False):
                 continue
             try:
-                flat_body = FlatRowDataMainWindow(body_to_parse=body)
+                flat_body_data = FlatRowDataMainWindow(body_to_parse=body)
 
                 row = {
                     "body_id"           : (body_id, body_id if body_id is not None else ""),
                     "status"            : (
-                            ICONS["status_header"]      if flat_body.body_id == target_body_id == selected_body_id else
-                            ICONS["status_target"]      if flat_body.body_id == target_body_id else
-                            ICONS["status_selected"]    if flat_body.body_id == selected_body_id else
+                            ICONS["status_header"]      if flat_body_data.body_id == target_body_id == selected_body_id else
+                            ICONS["status_target"]      if flat_body_data.body_id == target_body_id else
+                            ICONS["status_selected"]    if flat_body_data.body_id == selected_body_id else
                             "", 0),
-                    "body_type"         : (f"{flat_body.body_type}", flat_body.body_type.lower()),
-                    "scoopable"         : (f"{ICONS['scoopable']}"  if flat_body.scoopable else "", (0 if flat_body.scoopable else 1)),
+                    "body_type"         : (f"{flat_body_data.body_type}", flat_body_data.body_type.lower()),
+                    "scoopable"         : (f"{ICONS['scoopable']}"  if flat_body_data.scoopable else "", (0 if flat_body_data.scoopable else 1)),
                     "body"              : (body.body_name, body.body_name.lower()),
-                    "distance"          : (f"{flat_body.distance:,.0f} Ls" if flat_body.distance is not None else "", flat_body.distance),
-                    "land"              : (f"{ICONS['landable']}" if flat_body.landable   else "", (0 if flat_body.landable  else 1)),
-                    "atmosphere"        : (f"{ICONS['atmosphere_present']}" if flat_body.atmosphere != "" else "", (0 if flat_body.atmosphere != "" else 1)),
-                    "g_force"           : (dh.format_gravity(flat_body.g_force) if flat_body.g_force is not None else "", flat_body.g_force),
+                    "distance"          : (f"{flat_body_data.distance:,.0f} Ls" if flat_body_data.distance is not None else "", flat_body_data.distance),
+                    "land"              : (f"{ICONS['landable']}" if flat_body_data.landable   else "", (0 if flat_body_data.landable  else 1)),
+                    "atmosphere"        : (f"{ICONS['atmosphere_present']}" if flat_body_data.atmosphere != "" else "", (0 if flat_body_data.atmosphere != "" else 1)),
+                    "g_force"           : (dh.format_gravity(flat_body_data.g_force) if flat_body_data.g_force is not None else "", flat_body_data.g_force),
                     "bio"               : (
-                            f"{ICONS['biosigns']}{ICONS['checked']}"                                if flat_body.bio_complete else
-                            f"{ICONS['biosigns']} {flat_body.bio_scanned}/{flat_body.biosignals}"   if flat_body.biosignals > 0 else
-                            "", flat_body.biosignals),
+                            f"{ICONS['biosigns']}{ICONS['checked']}"                                if flat_body_data.bio_complete else
+                            f"{ICONS['biosigns']} {flat_body_data.bio_scanned}/{flat_body_data.biosignals}"   if flat_body_data.biosignals > 0 else
+                            "", flat_body_data.biosignals),
                     "geo"               : (
-                            f"{ICONS['geosigns']}{ICONS['checked']}"                               if flat_body.geo_complete else
-                            f"{ICONS['geosigns']} {flat_body.geo_scanned}/{flat_body.geosignals}"  if flat_body.geosignals > 0 else
-                            "", flat_body.geosignals),
-                    "value"             : (f"{flat_body.estimated_value:,} Cr"  if flat_body.estimated_value else "", flat_body.estimated_value),
-                    "worthwhile"        : (f"{ICONS["worthwhile"]}"             if flat_body.estimated_value >= self.parent.prefs.get("worthwhile_threshold", DEFAULT_WORTHWHILE_THRESHOLD) else "",
-                            flat_body.estimated_value),
-                    "mapped"            : (f"{ICONS['mapped']}"                 if flat_body.mapped else "",
-                            (1 if flat_body.mapped else 0)),
+                            f"{ICONS['geosigns']}{ICONS['checked']}"                               if flat_body_data.geo_complete else
+                            f"{ICONS['geosigns']} {flat_body_data.geo_scanned}/{flat_body_data.geosignals}"  if flat_body_data.geosignals > 0 else
+                            "", flat_body_data.geosignals),
+                    "value"             : (f"{flat_body_data.estimated_value:,} Cr"  if flat_body_data.estimated_value else "", flat_body_data.estimated_value),
+                    "worthwhile"        : (f"{ICONS["worthwhile"]}"             if flat_body_data.estimated_value >= self.parent.prefs.get("worthwhile_threshold", DEFAULT_WORTHWHILE_THRESHOLD) else "",
+                            flat_body_data.estimated_value),
+                    "mapped"            : (f"{ICONS['mapped']}"                 if flat_body_data.mapped else "",
+                            (1 if flat_body_data.mapped else 0)),
                     "first_discovered"  : (
-                            f"{ICONS["first_discovered"]}"      if flat_body.first_discovered == 2 else (
-                            f"{ICONS["previous_discovered"]}"   if flat_body.first_discovered == 1 else ""),
-                        flat_body.first_discovered),
+                            f"{ICONS["first_discovered"]}"      if flat_body_data.first_discovered == 2 else (
+                            f"{ICONS["previous_discovered"]}"   if flat_body_data.first_discovered == 1 else ""),
+                        flat_body_data.first_discovered),
                     "first_mapped"      : (
-                            f"{ICONS["first_mapped"]}"          if flat_body.first_mapped == 2 else (
-                            f"{ICONS["previous_mapped"]}"       if flat_body.first_mapped == 1 else ""),
-                        flat_body.first_mapped),
+                            f"{ICONS["first_mapped"]}"          if flat_body_data.first_mapped == 2 else (
+                            f"{ICONS["previous_mapped"]}"       if flat_body_data.first_mapped == 1 else ""),
+                        flat_body_data.first_mapped),
                     "first_footfalled"  : (
-                            f"{ICONS["first_footfalled"]}"      if flat_body.first_footfalled == 2 else (
-                            f"{ICONS["previous_footfalled"]}"   if flat_body.first_footfalled == 1 else ""),
-                        flat_body.first_discovered),
+                            f"{ICONS["first_footfalled"]}"      if flat_body_data.first_footfalled == 2 else (
+                            f"{ICONS["previous_footfalled"]}"   if flat_body_data.first_footfalled == 1 else ""),
+                        flat_body_data.first_discovered),
                 }
                 for m in visible_mats:
                     matval = body.materials.get(m, None)

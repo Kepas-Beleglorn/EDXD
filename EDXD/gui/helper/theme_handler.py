@@ -60,7 +60,6 @@ def _get_dark_theme():
     return ed_dark_theme
 
 def apply_theme(widget):
-    #logging.info(f"Applying theme... {widget.Name}")
     if widget.Name == "frame":
         _apply_theme_to_frame(widget)
     if widget.Name == "dialog":
