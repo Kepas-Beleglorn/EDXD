@@ -25,40 +25,7 @@ jobs:
                       nodes {
                         id
                         content {
-                          ... on Issue {
-                            number
-                          }
-                        }
-                        fieldValues(first: 20) {
-                          nodes {
-                            field {
-                              name
-                            }
-                            ... on ProjectV2ItemFieldSingleSelectValue {
-                              field {
-                                name
-                              }
-                              name
-                            }
-                            ... on ProjectV2ItemFieldTextValue {
-                              field {
-                                name
-                              }
-                              text
-                            }
-                            ... on ProjectV2ItemFieldDateValue {
-                              field {
-                                name
-                              }
-                              date
-                            }
-                            ... on ProjectV2ItemFieldNumberValue {
-                              field {
-                                name
-                              }
-                              number
-                            }
-                          }
+                          __typename
                         }
                       }
                     }
@@ -73,77 +40,9 @@ jobs:
                 projectNumber: 9
               });
 
-              const items = result.repository.projectV2.items.nodes;
-
-              for (const item of items) {
-                if (!item.content || !item.content.number) {
-                  continue;
-                }
-
-                const issueNumber = item.content.number;
-                let statusLabel = null;
-
-                // Extract the Status field value
-                const statusField = item.fieldValues.nodes.find(
-                  field => field.field && field.field.name === "Status"
-                );
-
-                if (statusField && statusField.name) {
-                  statusLabel = statusField.name;
-                }
-
-                if (!statusLabel) {
-                  console.log(`Issue #${issueNumber}: No status found`);
-                  continue;
-                }
-
-                // Get current issue labels
-                const { data: issue } = await github.rest.issues.get({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: issueNumber
-                });
-
-                const currentLabels = issue.labels.map(l => l.name);
-                const hasStatusLabel = currentLabels.some(l => 
-                  ["Backlog", "Ready", "In Progress", "In Review", "Done"].includes(l)
-                );
-
-                // Remove old status labels
-                if (hasStatusLabel) {
-                  const oldLabels = currentLabels.filter(l => 
-                    ["Backlog", "Ready", "In Progress", "In Review", "Done"].includes(l)
-                  );
-                  
-                  for (const oldLabel of oldLabels) {
-                    if (oldLabel !== statusLabel) {
-                      await github.rest.issues.removeLabel({
-                        owner: context.repo.owner,
-                        repo: context.repo.repo,
-                        issue_number: issueNumber,
-                        name: oldLabel
-                      });
-                      console.log(`Issue #${issueNumber}: Removed label "${oldLabel}"`);
-                    }
-                  }
-                }
-
-                // Add the status label
-                if (!currentLabels.includes(statusLabel)) {
-                  await github.rest.issues.addLabels({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    issue_number: issueNumber,
-                    labels: [statusLabel]
-                  });
-                  console.log(`Issue #${issueNumber}: Added label "${statusLabel}"`);
-                } else {
-                  console.log(`Issue #${issueNumber}: Already has label "${statusLabel}"`);
-                }
-              }
-
-              console.log("Sync completed successfully");
+              console.log("GraphQL Result:", JSON.stringify(result, null, 2));
+              
             } catch (error) {
-              console.error("Error syncing labels:", error);
+              console.error("Error syncing labels:", error.message);
               throw error;
             }
