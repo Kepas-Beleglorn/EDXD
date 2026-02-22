@@ -1,8 +1,9 @@
 name: Sync Project Status to Label
 
 on:
-  issues:
-    types: [opened, edited, labeled]
+  schedule:
+    - cron: '*/5 * * * *'  # Run every 5 minutes
+  workflow_dispatch:  # Allow manual trigger
 
 jobs:
   sync-labels:
@@ -11,65 +12,117 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Sync Project Status to Label
+      - name: Sync Project Status to Labels
         uses: actions/github-script@v6
         with:
           github-token: ${{ secrets.PERSONAL_TOKEN }}
           script: |
-            const issue = context.payload.issue;
-            const labels = issue.labels.map(l => l.name);
-            
-            // Log for debugging
-            console.log(`Issue #${issue.number} labels:`, labels);
-            
-            // Check if this is a status field change
-            if (!payload.changes || !payload.changes.field_value) {
-              console.log('No field value change detected');
-              return;
-            }
+            const query = `
+              query($owner:String!, $projectNumber:Int!) {
+                repository(owner: $owner, name: "EDXD") {
+                  projectV2(number: $projectNumber) {
+                    items(first: 100) {
+                      nodes {
+                        id
+                        content {
+                          ... on Issue {
+                            number
+                          }
+                        }
+                        fieldValues(first: 20) {
+                          nodes {
+                            field {
+                              name
+                            }
+                            ... on ProjectV2ItemFieldSingleSelectValue {
+                              name
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `;
 
-            const item = payload.projects_v2_item;
-            const changes = payload.changes.field_value;
-            
-            // Get the issue number from the item content
-            if (!item.content || item.content.type !== 'Issue') {
-              console.log('Not an issue item');
-              return;
-            }
+            try {
+              const result = await github.graphql(query, {
+                owner: context.repo.owner,
+                projectNumber: 9
+              });
 
-            const issueNumber = item.content.number;
-            const newStatus = changes.field_value?.name;
-            const oldStatus = changes.field_value?.name; // Will be from previous value
-            
-            if (!newStatus) {
-              console.log('No status value');
-              return;
-            }
+              const items = result.repository.projectV2.items.nodes;
 
-            // Remove old label if it exists
-            if (oldStatus && oldStatus !== newStatus) {
-              try {
-                await github.rest.issues.removeLabel({
+              for (const item of items) {
+                if (!item.content || !item.content.number) {
+                  continue;
+                }
+
+                const issueNumber = item.content.number;
+                let statusLabel = null;
+
+                // Extract the Status field value
+                const statusField = item.fieldValues.nodes.find(
+                  field => field.field && field.field.name === "Status"
+                );
+
+                if (statusField && statusField.name) {
+                  statusLabel = statusField.name;
+                }
+
+                if (!statusLabel) {
+                  console.log(`Issue #${issueNumber}: No status found`);
+                  continue;
+                }
+
+                // Get current issue labels
+                const { data: issue } = await github.rest.issues.get({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
-                  issue_number: issueNumber,
-                  name: oldStatus,
+                  issue_number: issueNumber
                 });
-                console.log(`Removed label: ${oldStatus}`);
-              } catch (error) {
-                console.log(`Could not remove label ${oldStatus}: ${error.message}`);
-              }
-            }
 
-            // Add new label
-            try {
-              await github.rest.issues.addLabels({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: issueNumber,
-                labels: [newStatus],
-              });
-              console.log(`Added label: ${newStatus}`);
+                const currentLabels = issue.labels.map(l => l.name);
+                const hasStatusLabel = currentLabels.some(l => 
+                  ["Backlog", "Ready", "In Progress", "In Review", "Done"].includes(l)
+                );
+
+                // Remove old status labels
+                if (hasStatusLabel) {
+                  const oldLabels = currentLabels.filter(l => 
+                    ["Backlog", "Ready", "In Progress", "In Review", "Done"].includes(l)
+                  );
+                  
+                  for (const oldLabel of oldLabels) {
+                    if (oldLabel !== statusLabel) {
+                      await github.rest.issues.removeLabel({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        issue_number: issueNumber,
+                        name: oldLabel
+                      });
+                      console.log(`Issue #${issueNumber}: Removed label "${oldLabel}"`);
+                    }
+                  }
+                }
+
+                // Add the status label
+                if (!currentLabels.includes(statusLabel)) {
+                  await github.rest.issues.addLabels({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: issueNumber,
+                    labels: [statusLabel]
+                  });
+                  console.log(`Issue #${issueNumber}: Added label "${statusLabel}"`);
+                } else {
+                  console.log(`Issue #${issueNumber}: Already has label "${statusLabel}"`);
+                }
+              }
+
+              console.log("Sync completed successfully");
             } catch (error) {
-              console.log(`Could not add label ${newStatus}: ${error.message}`);
+              console.error("Error syncing labels:", error);
+              throw error;
             }
