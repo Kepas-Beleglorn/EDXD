@@ -15,7 +15,7 @@ jobs:
       - name: Sync Project Status to Labels
         uses: actions/github-script@v6
         with:
-          github-token: ${{ secrets.PERSONAL_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const query = `
               query($owner:String!, $projectNumber:Int!) {
@@ -35,7 +35,28 @@ jobs:
                               name
                             }
                             ... on ProjectV2ItemFieldSingleSelectValue {
+                              field {
+                                name
+                              }
                               name
+                            }
+                            ... on ProjectV2ItemFieldTextValue {
+                              field {
+                                name
+                              }
+                              text
+                            }
+                            ... on ProjectV2ItemFieldDateValue {
+                              field {
+                                name
+                              }
+                              date
+                            }
+                            ... on ProjectV2ItemFieldNumberValue {
+                              field {
+                                name
+                              }
+                              number
                             }
                           }
                         }
