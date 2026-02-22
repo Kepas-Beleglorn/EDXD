@@ -15,7 +15,7 @@ jobs:
       - name: Sync Project Status to Labels
         uses: actions/github-script@v6
         with:
-          github-token: ${{ secrets.PERSONAL_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const query = `
               query($user:String!, $projectNumber:Int!) {
@@ -76,6 +76,9 @@ jobs:
               console.log(`Project: ${project.title}`);
               console.log(`Items found: ${project.items.nodes.length}`);
               
+              // Define all possible status labels from your project columns
+              const STATUS_LABELS = ["Backlog", "Ready", "In progress", "In review", "Done"];
+              
               const items = project.items.nodes;
 
               for (const item of items) {
@@ -112,9 +115,8 @@ jobs:
                 const currentLabels = issue.labels.map(l => l.name);
                 console.log(`  Current labels: ${currentLabels.join(', ') || 'none'}`);
 
-                // Remove old status labels
-                const statusLabelNames = ["Backlog", "Ready", "In Progress", "In Review", "Done"];
-                const oldStatusLabels = currentLabels.filter(l => statusLabelNames.includes(l));
+                // Find and remove old status labels (only status labels, keep other labels)
+                const oldStatusLabels = currentLabels.filter(l => STATUS_LABELS.includes(l));
                 
                 for (const oldLabel of oldStatusLabels) {
                   if (oldLabel !== statusLabel) {
@@ -128,7 +130,7 @@ jobs:
                   }
                 }
 
-                // Add the status label
+                // Add the status label if not already present
                 if (!currentLabels.includes(statusLabel)) {
                   await github.rest.issues.addLabels({
                     owner: context.repo.owner,
@@ -145,6 +147,5 @@ jobs:
               console.log("Sync completed successfully");
             } catch (error) {
               console.error("Error syncing labels:", error.message);
-              console.error("Full error:", error);
               throw error;
             }
