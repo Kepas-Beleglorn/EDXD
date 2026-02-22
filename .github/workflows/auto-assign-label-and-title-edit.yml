@@ -10,7 +10,7 @@ permissions:
 jobs:
   auto_process_issue:
     runs-on: ubuntu-latest
-    if: github.event.issue.user.login == 'Kepas-Beleglorn' || github.event.issue.user.login == 'Mistral@Kepas-Beleglorn-Mistral'
+    if: github.event.issue.user.login == 'Kepas-Beleglorn' || github.event.issue.user.login == 'Kepas-Beleglorn-Mistral'
     steps:
       - name: Check for prefix and update issue
         uses: actions/github-script@v7
