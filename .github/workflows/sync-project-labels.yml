@@ -12,22 +12,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Sync Project Status to Labels
+      - name: Debug Project Query
         uses: actions/github-script@v6
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.PERSONAL_TOKEN }}
           script: |
             const query = `
-              query($user:String!, $projectNumber:Int!) {
+              query($user:String!) {
                 user(login: $user) {
-                  projectV2(number: $projectNumber) {
-                    items(first: 100) {
-                      nodes {
-                        id
-                        content {
-                          __typename
-                        }
-                      }
+                  projectsV2(first: 10) {
+                    nodes {
+                      id
+                      number
+                      title
                     }
                   }
                 }
@@ -36,13 +33,12 @@ jobs:
 
             try {
               const result = await github.graphql(query, {
-                user: context.repo.owner,
-                projectNumber: 9
+                user: context.repo.owner
               });
 
-              console.log("GraphQL Result:", JSON.stringify(result, null, 2));
+              console.log("User Projects:", JSON.stringify(result, null, 2));
               
             } catch (error) {
-              console.error("Error syncing labels:", error.message);
+              console.error("Error:", error.message);
               throw error;
             }
