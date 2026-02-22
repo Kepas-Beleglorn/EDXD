@@ -22,6 +22,7 @@ from EDXD.gui.helper.gui_dynamic_button import DynamicButton
 from EDXD.gui.helper.gui_handler import init_widget
 from EDXD.gui.helper.theme_handler import get_theme
 from EDXD.gui.helper.window_properties import WindowProperties
+from EDXD.gui.themed_msg_dialog import ThemedMessageDialog
 
 TITLE = "EDXD Configuration"
 WINID = "EDXD_CONFIGURATION"
@@ -174,10 +175,11 @@ class EDXDConfig(DynamicDialog):
         self.cfg["save"]()
 
         if restart_required:
-            dlg = wx.MessageDialog(None, "Changing paths requires a restart, otherwise the old paths will be used! Restart now?",
-                                   "Restart Required", wx.YES_NO | wx.ICON_QUESTION)
+            dlg = ThemedMessageDialog(None, "Changing paths requires a restart, otherwise the old paths will be used! Restart now?",
+                                   "Restart Required")
+
             result = dlg.ShowModal()
-            if result == wx.ID_YES:
+            if result:
                 self.restart_app()
             dlg.Destroy()
         else:
