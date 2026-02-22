@@ -78,8 +78,6 @@ def apply_theme(widget):
         _apply_theme_to_grid(widget)
     elif widget.Name == "dirpickerctrl":
         _apply_theme_to_dirpickerctrl(widget)
-    elif hasattr(widget, "ClassName") and widget.ClassName == "wxMessageDialog":
-        _apply_theme_to_msg_dlg(widget)
     else:
         return
 
