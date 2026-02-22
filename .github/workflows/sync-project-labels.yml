@@ -1,8 +1,8 @@
 name: Sync Project Status to Label
 
 on:
-  projects_v2_item:
-    types: [edited]
+  issues:
+    types: [opened, edited, labeled]
 
 jobs:
   sync-labels:
@@ -11,10 +11,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Sync Project Column to Label
+      - name: Sync Project Status to Label
         uses: actions/github-script@v6
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.PERSONAL_TOKEN }}
           script: |
             const payload = context.payload;
             
