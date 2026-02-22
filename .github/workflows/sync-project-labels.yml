@@ -2,7 +2,7 @@ name: Sync Project Status to Label
 
 on:
   issues:
-    types: [opened, edited, labeled]
+    types: [opened, edited]
 
 jobs:
   sync-labels:
