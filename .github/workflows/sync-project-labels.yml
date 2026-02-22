@@ -12,19 +12,35 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Debug Project Query
+      - name: Sync Project Status to Labels
         uses: actions/github-script@v6
         with:
           github-token: ${{ secrets.PERSONAL_TOKEN }}
           script: |
             const query = `
-              query($user:String!) {
+              query($user:String!, $projectNumber:Int!) {
                 user(login: $user) {
-                  projectsV2(first: 10) {
-                    nodes {
-                      id
-                      number
-                      title
+                  projectV2(number: $projectNumber) {
+                    id
+                    title
+                    items(first: 100) {
+                      nodes {
+                        id
+                        content {
+                          __typename
+                          ... on Issue {
+                            number
+                            repository {
+                              nameWithOwner
+                            }
+                          }
+                        }
+                        fieldValues(first: 20) {
+                          nodes {
+                            __typename
+                          }
+                        }
+                      }
                     }
                   }
                 }
@@ -33,12 +49,36 @@ jobs:
 
             try {
               const result = await github.graphql(query, {
-                user: context.repo.owner
+                user: context.repo.owner,
+                projectNumber: 9
               });
 
-              console.log("User Projects:", JSON.stringify(result, null, 2));
+              const project = result.user.projectV2;
+              console.log(`Project: ${project.title}`);
+              console.log(`Items found: ${project.items.nodes.length}`);
               
+              const items = project.items.nodes;
+
+              for (const item of items) {
+                if (!item.content || item.content.__typename !== 'Issue') {
+                  continue;
+                }
+
+                const issueNumber = item.content.number;
+                console.log(`Processing issue #${issueNumber}`);
+
+                // Get current issue labels
+                const { data: issue } = await github.rest.issues.get({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issueNumber
+                });
+
+                console.log(`Current labels: ${issue.labels.map(l => l.name).join(', ')}`);
+              }
+
+              console.log("Sync completed successfully");
             } catch (error) {
-              console.error("Error:", error.message);
+              console.error("Error syncing labels:", error.message);
               throw error;
             }
