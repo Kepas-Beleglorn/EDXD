@@ -13,6 +13,8 @@ from EDXD.gui.helper.gui_handler import init_widget
 from EDXD.gui.helper.theme_handler import get_theme
 from EDXD.gui.helper.window_properties import WindowProperties
 from EDXD.utils.clipboard import copy_text_to_clipboard
+from EDXD.gui.helper.collapsible_panel import CollapsiblePanel
+import EDXD.data_handler.helper.data_helper as dh
 
 TITLE = "BODY DETAILS"
 WINID = "BODY_DETAILS"
@@ -43,6 +45,21 @@ class BodyDetails(DynamicDialog):
         if getattr(self, "lbl_body", None):
             self.lbl_body.Bind(wx.EVT_LEFT_DCLICK, self._on_name_label_double_click)
 
+        # collapsible panels with details
+        # general data
+        self.general_panel = CollapsiblePanel(parent=self, columns=2, label="General")
+        self.window_box.Add(self.general_panel, 0, wx.EXPAND, RESIZE_MARGIN)
+        self.general_panel.Hide()
+
+        # minerals found
+        self.mat_panel = CollapsiblePanel(parent=self, columns=3, label="Materials")
+        self.window_box.Add(self.mat_panel, 0, wx.EXPAND, RESIZE_MARGIN)
+        self.mat_panel.Hide()
+
+        # TEST
+        self.test_panel = CollapsiblePanel(parent=self, columns=2, label="TEST")
+        self.window_box.Add(self.test_panel, 0, wx.EXPAND, RESIZE_MARGIN)
+
         # body details
         self.txt_body_details = wx.TextCtrl(parent=self, style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE)
         init_widget(self.txt_body_details, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
@@ -60,18 +77,34 @@ class BodyDetails(DynamicDialog):
     # ------------------------------------------------------------------
     def render(self, body: Optional[Body], filters: Dict[str, bool], current_position: PSPSCoordinates, current_heading: float):
         self.lbl_body.SetLabelText(text=body.body_name if body else "")
+        # reset
+        self.general_panel.reset_table()
+        self.mat_panel.reset_table()
+        self.test_panel.reset_table()
         self.txt_body_details.Clear()
         self.body = body
 
-        if self.body:
+        self.test_panel.add_table_item("HELLO")
+        self.test_panel.add_table_item("WORLD")
+
+        if self.body is None:
+            self.general_panel.Hide()
+            self.mat_panel.Hide()
+            self.txt_body_details.Clear()
+        else:
+            if not self.general_panel.IsShown():
+                self.general_panel.Show()
+            self.general_panel.add_table_item("Type")
+            self.general_panel.add_table_item(f"  {body.body_type}")
+            self.general_panel.add_table_item("Mapped value")
+            self.general_panel.add_table_item(f"  {body.estimated_value:,} Cr")
+            self.general_panel.add_table_item("Distance")
+            self.general_panel.add_table_item(f"  {body.distance:,.0f} Ls")
+            self.general_panel.add_table_item("Gravity")
+            self.general_panel.add_table_item(f"  {dh.format_gravity(body.g_force)}")
 
             psps = PSPS(current_position, self.body.radius)
-
-            for mat, pct in sorted(self.body.materials.items(),
-                                   key=lambda kv: kv[1],
-                                   reverse=True):
-                if filters.get(mat, True):
-                    self.txt_body_details.AppendText(f"{mat.title():<12} {pct:5.1f}%\n")
+            self._update_materials(filters)
 
             # ── Biosignals progress lines ───────────────────────────────
             if self.body.biosignals:
@@ -135,9 +168,6 @@ class BodyDetails(DynamicDialog):
                     else:
                         self.txt_body_details.AppendText(f"{ICONS['geosigns']:>13}{' '*4}{geo_name}\n")
 
-        else:
-            self.txt_body_details.Clear()
-
         if not self.txt_body_details.GetValue().strip():
             self.txt_body_details.SetValue("—")
 
@@ -179,3 +209,23 @@ class BodyDetails(DynamicDialog):
         if name:
             copy_text_to_clipboard(name)
         evt.Skip()
+
+    def _update_materials(self, filters: Dict[str, bool]):
+        show_mats = False
+        for mat, pct in sorted(self.body.materials.items(),
+                               key=lambda kv: kv[1],
+                               reverse=True):
+            if filters.get(mat, True):
+                show_mats = True
+                self.mat_panel.add_table_item(label_text=f"{mat.title():<12}")
+                self.mat_panel.add_table_item(label_text=f"{pct:5.1f}%", align=wx.ALIGN_RIGHT)
+                self.mat_panel.add_table_item("")
+
+        if show_mats and not self.mat_panel.IsShown():
+            self.mat_panel.Show()
+        elif not show_mats:
+            self.mat_panel.Hide()
+
+        if self.mat_panel.IsShown():
+            # Force a layout update
+            self.mat_panel.force_render()
