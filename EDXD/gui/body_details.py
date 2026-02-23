@@ -5,7 +5,7 @@ from typing import Optional, Dict
 
 import wx
 
-from EDXD.data_handler.model import Body
+from EDXD.data_handler.model import Body, Atmosphere
 from EDXD.data_handler.planetary_surface_positioning_system import PSPSCoordinates, PSPS
 from EDXD.globals import DEFAULT_HEIGHT, DEFAULT_WIDTH, DEFAULT_POS_Y, DEFAULT_POS_X, RESIZE_MARGIN, ICONS
 from EDXD.gui.helper.dynamic_dialog import DynamicDialog
@@ -51,14 +51,20 @@ class BodyDetails(DynamicDialog):
         self.window_box.Add(self.general_panel, 0, wx.EXPAND, RESIZE_MARGIN)
         self.general_panel.Hide()
 
+        # atmosphere data
+        self.atmosphere_panel = CollapsiblePanel(parent=self, columns=3, label="Atmosphere")
+        self.window_box.Add(self.atmosphere_panel, 0, wx.EXPAND, RESIZE_MARGIN)
+        self.atmosphere_panel.Hide()
+
         # minerals found
         self.mat_panel = CollapsiblePanel(parent=self, columns=3, label="Materials")
         self.window_box.Add(self.mat_panel, 0, wx.EXPAND, RESIZE_MARGIN)
         self.mat_panel.Hide()
 
-        # TEST
-        self.test_panel = CollapsiblePanel(parent=self, columns=2, label="TEST")
-        self.window_box.Add(self.test_panel, 0, wx.EXPAND, RESIZE_MARGIN)
+        # geo signals
+        self.geo_panel = CollapsiblePanel(parent=self, columns=1, label="Geological signals")
+        self.window_box.Add(self.geo_panel, 0, wx.EXPAND, RESIZE_MARGIN)
+        self.geo_panel.Hide()
 
         # body details
         self.txt_body_details = wx.TextCtrl(parent=self, style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE)
@@ -79,32 +85,24 @@ class BodyDetails(DynamicDialog):
         self.lbl_body.SetLabelText(text=body.body_name if body else "")
         # reset
         self.general_panel.reset_table()
+        self.atmosphere_panel.reset_table()
         self.mat_panel.reset_table()
-        self.test_panel.reset_table()
+        self.geo_panel.reset_table()
         self.txt_body_details.Clear()
         self.body = body
 
-        self.test_panel.add_table_item("HELLO")
-        self.test_panel.add_table_item("WORLD")
-
         if self.body is None:
             self.general_panel.Hide()
+            self.atmosphere_panel.Hide()
             self.mat_panel.Hide()
+            self.geo_panel.Hide()
             self.txt_body_details.Clear()
         else:
-            if not self.general_panel.IsShown():
-                self.general_panel.Show()
-            self.general_panel.add_table_item("Type")
-            self.general_panel.add_table_item(f"  {body.body_type}")
-            self.general_panel.add_table_item("Mapped value")
-            self.general_panel.add_table_item(f"  {body.estimated_value:,} Cr")
-            self.general_panel.add_table_item("Distance")
-            self.general_panel.add_table_item(f"  {body.distance:,.0f} Ls")
-            self.general_panel.add_table_item("Gravity")
-            self.general_panel.add_table_item(f"  {dh.format_gravity(body.g_force)}")
-
             psps = PSPS(current_position, self.body.radius)
+            self._update_general()
+            self._update_atmosphere()
             self._update_materials(filters)
+            self._update_geo_signals()
 
             # ── Biosignals progress lines ───────────────────────────────
             if self.body.biosignals:
@@ -149,25 +147,6 @@ class BodyDetails(DynamicDialog):
                         else:
                             self.txt_body_details.AppendText(f"{' '*2}{ICONS['unknown']}{' '*2}{bio_name}\n")
 
-            # ── Geology progress lines ─────────────────────────────────
-            if self.body.geosignals:
-                self.txt_body_details.AppendText(f"\n{ICONS['geosigns']}{' '*2}Geo-signals:")
-
-                done = len(self.body.geo_found) if self.body.geo_found is not None else 0
-                if 0 < done < self.body.geosignals:
-                    self.txt_body_details.AppendText(f"{' '*2}{done}/{self.body.geosignals}{' '*2}{ICONS['in_progress']}\n")
-                elif done == self.body.geosignals:
-                    self.txt_body_details.AppendText(f"{' '*2}{done}/{self.body.geosignals}{' '*2}{ICONS['checked']}\n")
-                else:
-                    self.txt_body_details.AppendText(f"{' '*2}(?)/{self.body.geosignals}{' '*2}{ICONS['geosigns']}\n")
-
-                for signal, geo in self.body.geo_found.items():
-                    geo_name = geo.localised
-                    if geo.is_new:
-                        self.txt_body_details.AppendText(f"{ICONS['new_entry']:>4}{ICONS['geosigns']:>4}{' '*4}{geo_name}\n")
-                    else:
-                        self.txt_body_details.AppendText(f"{ICONS['geosigns']:>13}{' '*4}{geo_name}\n")
-
         if not self.txt_body_details.GetValue().strip():
             self.txt_body_details.SetValue("—")
 
@@ -210,6 +189,65 @@ class BodyDetails(DynamicDialog):
             copy_text_to_clipboard(name)
         evt.Skip()
 
+    def _update_general(self):
+        if self.body is None or self.body.body_name == "":
+            self.general_panel.Hide()
+            return
+
+        if not self.general_panel.IsShown():
+            self.general_panel.Show()
+
+        self.general_panel.add_table_item("Type")
+        self.general_panel.add_table_item(f"  {self.body.body_type}")
+        self.general_panel.add_table_item("Mapped value")
+        self.general_panel.add_table_item(f"  {self.body.estimated_value:,} Cr")
+        self.general_panel.add_table_item("Distance")
+        self.general_panel.add_table_item(f"  {self.body.distance:,.0f} Ls")
+        if self.body.g_force is not None and self.body.g_force > 0:
+            self.general_panel.add_table_item("Gravity")
+            self._set_g_force_color(self.general_panel.add_table_item(f"  {dh.format_gravity(self.body.g_force)}"), self.body.g_force)
+
+        if self.general_panel.IsShown():
+            # Force a layout update
+            self.general_panel.force_render()
+
+    def _update_atmosphere(self):
+        atmosphere = self.body.atmosphere
+        if atmosphere is None:
+            self.atmosphere_panel.Hide()
+            return
+
+        atmos_type = None
+        atmos_comp = None
+        if isinstance(atmosphere, dict):
+            atmos_comp = atmosphere.get("composition", None)
+            atmos_type = atmosphere.get("type")
+
+        if isinstance(atmosphere, Atmosphere):
+            atmos_comp = atmosphere.composition
+            atmos_type = atmosphere.type
+
+        if atmos_comp is None or len(atmos_comp) == 0:
+            self.atmosphere_panel.Hide()
+            return
+
+        if atmos_type is not None and atmos_type != "None":
+            self.atmosphere_panel.header_label.SetLabel(f"Atmosphere: {dh.add_spaces_to_camel_case(atmos_type)}")
+        else:
+            self.atmosphere_panel.header_label.SetLabel(f"Atmosphere ({self.body.body_type})")
+
+        for mat, pct in sorted(atmos_comp.items(),
+                              key=lambda kv: kv[1],
+                              reverse=True):
+            self.atmosphere_panel.add_table_item(label_text=f"{mat.title():<12}")
+            self.atmosphere_panel.add_table_item(label_text=f"{pct:5.1f}%", align=wx.ALIGN_RIGHT)
+            self.atmosphere_panel.add_table_item("")
+
+        if not self.atmosphere_panel.IsShown():
+            self.atmosphere_panel.Show()
+            # Force a layout update
+            self.atmosphere_panel.force_render()
+
     def _update_materials(self, filters: Dict[str, bool]):
         show_mats = False
         for mat, pct in sorted(self.body.materials.items(),
@@ -229,3 +267,40 @@ class BodyDetails(DynamicDialog):
         if self.mat_panel.IsShown():
             # Force a layout update
             self.mat_panel.force_render()
+
+    def _update_geo_signals(self):
+        if self.body is None or self.body.geosignals == 0:
+            self.geo_panel.Hide()
+            return
+
+        if not self.geo_panel.IsShown():
+            self.geo_panel.Show()
+
+        geo_header: str = f"{ICONS['geosigns']}{' ' * 2}Geo-signals:"
+
+        done = len(self.body.geo_found) if self.body.geo_found is not None else 0
+        if 0 < done < self.body.geosignals:
+            geo_header += f"{' ' * 2}{done}/{self.body.geosignals}{' ' * 2}{ICONS['in_progress']}"
+        elif done == self.body.geosignals:
+            geo_header += f"{' ' * 2}{done}/{self.body.geosignals}{' ' * 2}{ICONS['checked']}"
+        else:
+            geo_header += f"{' ' * 2}(?)/{self.body.geosignals}{' ' * 2}{ICONS['geosigns']}"
+
+        self.geo_panel.header_label.SetLabel(geo_header)
+
+        for signal, geo in self.body.geo_found.items():
+            geo_name = geo.localised
+            if geo.is_new:
+                self.geo_panel.add_table_item(f"{ICONS['new_entry']:>4}{ICONS['geosigns']:>4}{' ' * 4}{geo_name}")
+            else:
+                self.geo_panel.add_table_item(f"{ICONS['geosigns']:>13}{' ' * 4}{geo_name}")
+
+        if self.geo_panel.IsShown():
+            # Force a layout update
+            self.geo_panel.force_render()
+
+    @staticmethod
+    def _set_g_force_color(label: wx.StaticText = None, g_force: float = 0.0):
+        if label is None:
+            return
+        label.SetForegroundColour(dh.get_color_gradient_from_gravity(g_force))

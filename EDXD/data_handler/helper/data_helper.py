@@ -263,3 +263,6 @@ def ensure_ship_status_file(ship_status_file, ship_status):
         default_data = ship_status
         with open(ship_status_file, "w") as f:
             json.dump(default_data, f, indent=2)
+
+def add_spaces_to_camel_case(s):
+    return re.sub(r'(?<!^)(?=[A-Z])', ' ', s)
