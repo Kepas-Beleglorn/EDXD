@@ -157,8 +157,8 @@ class EDXDConfig(DynamicDialog):
             self.cfg[win_id]["is_hidden"] = not btn.GetValue()
 
         # check if paths have changed
-        old_journal_path = self.cfg["journal_dir"]
-        old_system_cache_dir = self.cfg["cache_dir"]
+        old_journal_path = self.cfg.get("journal_dir")
+        old_system_cache_dir = self.cfg.get("cache_dir")
         restart_required = False
         if old_journal_path != self.journal_dir_picker.GetPath():
             restart_required = True
