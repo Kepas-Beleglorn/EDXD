@@ -63,7 +63,7 @@ class BodyDetails(DynamicDialog):
         self.mat_panel.Hide()
 
         # bio signals
-        self.bio_panel = CollapsiblePanel(parent=self, columns=4, label="Biological signals")
+        self.bio_panel = CollapsiblePanel(parent=self, columns=5, label="Biological signals")
         self.window_box.Add(self.bio_panel, 0, wx.EXPAND, RESIZE_MARGIN)
         self.bio_panel.Hide()
 
@@ -318,6 +318,7 @@ class BodyDetails(DynamicDialog):
             if scan_value is not None and scan_value > 0:
                 scan_value_str = f"{' ' * 2}{scan_value:,} Cr"
             self.bio_panel.add_table_item(label_text=f"{' ' * 2}{scan_value_str}", align=wx.ALIGN_RIGHT)
+            self.bio_panel.add_table_item("")
 
             # if currently in progress, add bearings to already scanned
             if done in [1, 2]:
@@ -326,6 +327,7 @@ class BodyDetails(DynamicDialog):
                 self.bio_panel.add_table_item(f"{bearing_one}")
                 lbl_range_1 = self.bio_panel.add_table_item(f"{range_one}")
                 self._set_distance_color(label=lbl_range_1, range_min=bio_range, range_current=range_raw_one)
+                self.bio_panel.add_table_item("")
 
             if done == 2:
                 self.bio_panel.add_table_item("")
@@ -333,6 +335,7 @@ class BodyDetails(DynamicDialog):
                 self.bio_panel.add_table_item(f"{bearing_two}")
                 lbl_range_2 = self.bio_panel.add_table_item(f"{range_two}")
                 self._set_distance_color(label=lbl_range_2, range_min=bio_range, range_current=range_raw_two)
+                self.bio_panel.add_table_item("")
 
         if self.geo_panel.IsShown():
             # Force a layout update
