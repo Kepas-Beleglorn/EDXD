@@ -36,7 +36,10 @@ class StatusFlags(DynamicDialog):
         init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
 
         self.parent = parent
-        self.debug_mode = parent.prefs.get(WINID).get("DEBUG", False)
+        if parent.prefs is None or parent.prefs.get(WINID) is None:
+            self.debug_mode = False
+        else:
+            self.debug_mode = parent.prefs.get(WINID).get("DEBUG", False)
         self.theme = get_theme()
         self.flag_button_values = [
                                 "Docked, (on a landing pad)",
