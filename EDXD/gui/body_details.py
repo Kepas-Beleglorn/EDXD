@@ -276,7 +276,7 @@ class BodyDetails(DynamicDialog):
         if not self.geo_panel.IsShown():
             self.geo_panel.Show()
 
-        geo_header: str = f"{ICONS['geosigns']}{' ' * 2}Geo-signals:"
+        geo_header: str = f"Geo-signals:"
 
         done = len(self.body.geo_found) if self.body.geo_found is not None else 0
         if 0 < done < self.body.geosignals:
