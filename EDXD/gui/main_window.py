@@ -115,7 +115,10 @@ class MainFrame(DynamicFrame):
         # initialise sub windows
         # selected body ------------------------------------------------------------------------------------------------
         from EDXD.gui.detail_selected import WINID as winIdSelected
-        hidden = self.prefs.get(winIdSelected).get("is_hidden", False)
+        if self.prefs is None or self.prefs.get(winIdSelected) is None:
+            hidden = False
+        else:
+            hidden = self.prefs.get(winIdSelected).get("is_hidden", False)
         if hidden:
             if self.win_sel is not None:
                 self.win_sel.Close()
@@ -127,7 +130,10 @@ class MainFrame(DynamicFrame):
 
         # target body --------------------------------------------------------------------------------------------------
         from EDXD.gui.detail_target import WINID as winIdSelected
-        hidden = self.prefs.get(winIdSelected).get("is_hidden", False)
+        if self.prefs is None or self.prefs.get(winIdSelected) is None:
+            hidden = False
+        else:
+            hidden = self.prefs.get(winIdSelected).get("is_hidden", False)
         if hidden:
             if self.win_tar is not None:
                 self.win_tar.Close()
@@ -139,7 +145,10 @@ class MainFrame(DynamicFrame):
 
         # Planetary Surface Positioning System -------------------------------------------------------------------------
         from EDXD.gui.psps_gui import WINID as winIdSelected
-        hidden = self.prefs.get(winIdSelected).get("is_hidden", False)
+        if self.prefs is None or self.prefs.get(winIdSelected) is None:
+            hidden = False
+        else:
+            hidden = self.prefs.get(winIdSelected).get("is_hidden", False)
         if hidden:
             if self.win_psps is not None:
                 self.win_psps.Close()
@@ -151,7 +160,10 @@ class MainFrame(DynamicFrame):
 
         # engine status ------------------------------------------------------------------------------------------------
         from EDXD.gui.engine_status  import WINID as winIdSelected
-        hidden = self.prefs.get(winIdSelected).get("is_hidden", False)
+        if self.prefs is None or self.prefs.get(winIdSelected) is None:
+            hidden = False
+        else:
+            hidden = self.prefs.get(winIdSelected).get("is_hidden", False)
         if hidden:
             if self.win_engine_status is not None:
                 self.win_engine_status.Close()
@@ -163,7 +175,10 @@ class MainFrame(DynamicFrame):
 
         # status flags -------------------------------------------------------------------------------------------------
         from EDXD.gui.status_flags import WINID as winIdSelected
-        hidden = self.prefs.get(winIdSelected).get("is_hidden", False)
+        if self.prefs is None or self.prefs.get(winIdSelected) is None:
+            hidden = False
+        else:
+            hidden = self.prefs.get(winIdSelected).get("is_hidden", False)
         if hidden:
             if self.win_status_flags is not None:
                 self.win_status_flags.Close()
