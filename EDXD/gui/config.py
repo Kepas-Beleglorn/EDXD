@@ -152,6 +152,8 @@ class EDXDConfig(DynamicDialog):
 
     def _save_config(self, event):
         for win_id, btn in self.window_buttons.items():
+            if self.cfg.get(win_id, None) is None:
+                self.cfg.setdefault(win_id, {})
             self.cfg[win_id]["is_hidden"] = not btn.GetValue()
 
         # check if paths have changed
