@@ -15,6 +15,7 @@ from EDXD.gui.helper.window_properties import WindowProperties
 from EDXD.utils.clipboard import copy_text_to_clipboard
 from EDXD.gui.helper.collapsible_panel import CollapsiblePanel
 import EDXD.data_handler.helper.data_helper as dh
+import EDXD.data_handler.helper.bio_helper as bh
 
 TITLE = "BODY DETAILS"
 WINID = "BODY_DETAILS"
@@ -61,16 +62,15 @@ class BodyDetails(DynamicDialog):
         self.window_box.Add(self.mat_panel, 0, wx.EXPAND, RESIZE_MARGIN)
         self.mat_panel.Hide()
 
+        # bio signals
+        self.bio_panel = CollapsiblePanel(parent=self, columns=4, label="Biological signals")
+        self.window_box.Add(self.bio_panel, 0, wx.EXPAND, RESIZE_MARGIN)
+        self.bio_panel.Hide()
+
         # geo signals
         self.geo_panel = CollapsiblePanel(parent=self, columns=1, label="Geological signals")
         self.window_box.Add(self.geo_panel, 0, wx.EXPAND, RESIZE_MARGIN)
         self.geo_panel.Hide()
-
-        # body details
-        self.txt_body_details = wx.TextCtrl(parent=self, style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE)
-        init_widget(self.txt_body_details, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
-        self.txt_body_details.SetEditable(False)
-        self.window_box.Add(self.txt_body_details, 1, wx.EXPAND | wx.EAST | wx.WEST | wx.SOUTH, RESIZE_MARGIN)
 
         self.SetSizer(self.window_box)
 
@@ -87,68 +87,23 @@ class BodyDetails(DynamicDialog):
         self.general_panel.reset_table()
         self.atmosphere_panel.reset_table()
         self.mat_panel.reset_table()
+        self.bio_panel.reset_table()
         self.geo_panel.reset_table()
-        self.txt_body_details.Clear()
         self.body = body
 
         if self.body is None:
             self.general_panel.Hide()
             self.atmosphere_panel.Hide()
             self.mat_panel.Hide()
+            self.bio_panel.Hide()
             self.geo_panel.Hide()
-            self.txt_body_details.Clear()
         else:
             psps = PSPS(current_position, self.body.radius)
             self._update_general()
             self._update_atmosphere()
             self._update_materials(filters)
+            self._update_bio_signals(psps=psps, current_heading=current_heading, current_position=current_position)
             self._update_geo_signals()
-
-            # ── Biosignals progress lines ───────────────────────────────
-            if self.body.biosignals:
-                self.txt_body_details.AppendText(f"\n{ICONS['biosigns']}{' '*2}Bio-signals ({self.body.biosignals}):\n")
-                if self.body.bio_found:
-                    for species, genus in self.body.bio_found.items():
-                        done = int(genus.scanned_count if genus.scanned_count else 0)
-                        bio_name = genus.variant_localised or genus.species_localised or genus.localised
-                        bio_range = genus.min_distance
-
-                        range_one = None
-                        range_two = None
-                        bearing_one = None
-                        bearing_two = None
-                        pos_first = PSPSCoordinates.from_dict(genus.pos_first)
-                        pos_second = PSPSCoordinates.from_dict(genus.pos_second)
-
-                        if done in [1, 2] and pos_first is not None:
-                            range_raw = psps.get_distance(current_coordinates=current_position, target_coordinates=pos_first, raw=True)
-                            range_one = psps.get_distance(current_coordinates=current_position, target_coordinates=pos_first)
-                            if (range_raw*1000) < bio_range:
-                                bearing_one = psps.get_relative_bearing(current_coordinates=current_position, target_coordinates=pos_first, current_heading=current_heading)
-                            else:
-                                bearing_one = ICONS['checked']
-                        if done == 2 and pos_first is not None and pos_second is not None:
-                            range_raw = psps.get_distance(current_coordinates=current_position, target_coordinates=pos_second, raw=True)
-                            range_two = psps.get_distance(current_coordinates=current_position, target_coordinates=pos_second)
-                            if (range_raw*1000) < bio_range:
-                                bearing_two = psps.get_relative_bearing(current_coordinates=current_position, target_coordinates=pos_second, current_heading=current_heading)
-                            else:
-                                bearing_two = ICONS['checked']
-
-                        if done >= 3:
-                            self.txt_body_details.AppendText(f"{' '*2}{ICONS['checked']}{' '*2}{bio_name}\n")
-                        elif 0 < done < 3:
-                            self.txt_body_details.AppendText(f"{' '*2}{ICONS['in_progress']}{' '*2}{bio_name}{' '*2}({done}/3){' '*2}({bio_range}m)")
-                            if done in [1, 2]:
-                                self.txt_body_details.AppendText(f"{' '*2}{bearing_one} {range_one}")
-                            if done == 2:
-                                self.txt_body_details.AppendText(f"{' '*2}{bearing_two} {range_two}")
-                            self.txt_body_details.AppendText(f"\n")
-                        else:
-                            self.txt_body_details.AppendText(f"{' '*2}{ICONS['unknown']}{' '*2}{bio_name}\n")
-
-        if not self.txt_body_details.GetValue().strip():
-            self.txt_body_details.SetValue("—")
 
         if not self.IsShown():
             self.Show()
@@ -280,11 +235,11 @@ class BodyDetails(DynamicDialog):
 
         done = len(self.body.geo_found) if self.body.geo_found is not None else 0
         if 0 < done < self.body.geosignals:
-            geo_header += f"{' ' * 2}{done}/{self.body.geosignals}{' ' * 2}{ICONS['in_progress']}"
+            geo_header += f"{' ' * 2}({done}/{self.body.geosignals}{' ' * 2}{ICONS['in_progress']})"
         elif done == self.body.geosignals:
-            geo_header += f"{' ' * 2}{done}/{self.body.geosignals}{' ' * 2}{ICONS['checked']}"
+            geo_header += f"{' ' * 2}({done}/{self.body.geosignals}{' ' * 2}{ICONS['checked']})"
         else:
-            geo_header += f"{' ' * 2}(?)/{self.body.geosignals}{' ' * 2}{ICONS['geosigns']}"
+            geo_header += f"{' ' * 2}(?/{self.body.geosignals}{' ' * 2}{ICONS['geosigns']})"
 
         self.geo_panel.header_label.SetLabel(geo_header)
 
@@ -299,8 +254,102 @@ class BodyDetails(DynamicDialog):
             # Force a layout update
             self.geo_panel.force_render()
 
+    def _update_bio_signals(self, psps: PSPS, current_position: PSPSCoordinates, current_heading: float):
+        if self.body is None or self.body.biosignals == 0:
+            self.bio_panel.Hide()
+            return
+
+        if not self.bio_panel.IsShown():
+            self.bio_panel.Show()
+
+        bio_header: str = f"{ICONS['biosigns']}{' ' * 2}Bio-signals:"
+
+        if 0 < self.body.bio_scanned < self.body.biosignals:
+            bio_header += f"{' ' * 2}({self.body.bio_scanned}/{self.body.biosignals}){' ' * 2}{ICONS['in_progress']}"
+        elif self.body.bio_scanned == self.body.biosignals:
+            bio_header += f"{' ' * 2}({self.body.bio_scanned}/{self.body.biosignals}){' ' * 2}{ICONS['checked']}"
+        else:
+            bio_header += f"{' ' * 2}({self.body.bio_scanned}/{self.body.biosignals}){' ' * 2}{ICONS['biosigns']}"
+
+        self.bio_panel.header_label.SetLabel(bio_header)
+
+        for species, genus in self.body.bio_found.items():
+            # prepare data -------------------------------------------------------------------
+            done = int(genus.scanned_count if genus.scanned_count else 0)
+            bio_name = genus.variant_localised or genus.species_localised or genus.localised
+            bio_range = genus.min_distance
+
+            range_raw_one = 0
+            range_raw_two = 0
+            range_one = None
+            range_two = None
+            bearing_one = None
+            bearing_two = None
+            pos_first = PSPSCoordinates.from_dict(genus.pos_first)
+            pos_second = PSPSCoordinates.from_dict(genus.pos_second)
+
+            if done in [1, 2] and pos_first is not None:
+                range_raw_one = psps.get_distance(current_coordinates=current_position, target_coordinates=pos_first,
+                                              raw=True)
+                range_one = psps.get_distance(current_coordinates=current_position, target_coordinates=pos_first)
+                bearing_one = psps.get_relative_bearing(current_coordinates=current_position,
+                                                        target_coordinates=pos_first,
+                                                        current_heading=current_heading)
+            if done == 2 and pos_first is not None and pos_second is not None:
+                range_raw_two = psps.get_distance(current_coordinates=current_position, target_coordinates=pos_second,
+                                              raw=True)
+                range_two = psps.get_distance(current_coordinates=current_position, target_coordinates=pos_second)
+                bearing_two = psps.get_relative_bearing(current_coordinates=current_position,
+                                                        target_coordinates=pos_second,
+                                                        current_heading=current_heading)
+
+            # line per genus
+            if done >= 3:
+                self.bio_panel.add_table_item(f"{ICONS['checked']}")
+            elif 0 < done < 3:
+                self.bio_panel.add_table_item(f"{ICONS['in_progress']}")
+            else:
+                self.bio_panel.add_table_item(f"{ICONS['unknown']}")
+
+            self.bio_panel.add_table_item(f"{bio_name}")
+            self.bio_panel.add_table_item(f"{' ' * 2}({done}/3)")
+            scan_value = bh.get_genus_value(genus.species_localised)
+            scan_value_str: str = ""
+            if scan_value is not None and scan_value > 0:
+                scan_value_str = f"{' ' * 2}{scan_value:,} Cr"
+            self.bio_panel.add_table_item(label_text=f"{' ' * 2}{scan_value_str}", align=wx.ALIGN_RIGHT)
+
+            # if currently in progress, add bearings to already scanned
+            if done in [1, 2]:
+                self.bio_panel.add_table_item("")
+                self.bio_panel.add_table_item(f"min. {bio_range}m")
+                self.bio_panel.add_table_item(f"{bearing_one}")
+                lbl_range_1 = self.bio_panel.add_table_item(f"{range_one}")
+                self._set_distance_color(label=lbl_range_1, range_min=bio_range, range_current=range_raw_one)
+
+            if done == 2:
+                self.bio_panel.add_table_item("")
+                self.bio_panel.add_table_item("")
+                self.bio_panel.add_table_item(f"{bearing_two}")
+                lbl_range_2 = self.bio_panel.add_table_item(f"{range_two}")
+                self._set_distance_color(label=lbl_range_2, range_min=bio_range, range_current=range_raw_two)
+
+        if self.geo_panel.IsShown():
+            # Force a layout update
+            self.geo_panel.force_render()
+
     @staticmethod
     def _set_g_force_color(label: wx.StaticText = None, g_force: float = 0.0):
         if label is None:
             return
         label.SetForegroundColour(dh.get_color_gradient_from_gravity(g_force))
+
+    @staticmethod
+    def _set_distance_color(label: wx.StaticText = None, range_min: float = 0.0, range_current: float = 0.0):
+        if label is None:
+            return
+
+        if range_current * 1000 > range_min:
+            label.SetForegroundColour(wx.GREEN)
+        else:
+            label.SetForegroundColour(wx.RED)
