@@ -1,0 +1,5 @@
+* [![Auto Assign, Label, and Edit Issue Title](https://github.com/Kepas-Beleglorn/EDXD/actions/workflows/auto-assign-label-and-title-edit.yml/badge.svg)](https://github.com/Kepas-Beleglorn/EDXD/actions/workflows/auto-assign-label-and-title-edit.yml)
+* [![Build binaries with PyInstaller and Draft Release](https://github.com/Kepas-Beleglorn/EDXD/actions/workflows/auto-release.yml/badge.svg)](https://github.com/Kepas-Beleglorn/EDXD/actions/workflows/auto-release.yml)
+* [![Update Discord release message](https://github.com/Kepas-Beleglorn/EDXD/actions/workflows/discord_release_info.yml/badge.svg)](https://github.com/Kepas-Beleglorn/EDXD/actions/workflows/discord_release_info.yml)
+* [![Update nix package](https://github.com/Kepas-Beleglorn/EDXD/actions/workflows/update-nix-package.yml/badge.svg)](https://github.com/Kepas-Beleglorn/EDXD/actions/workflows/update-nix-package.yml)
+* [![Sync Project Status to Label](https://github.com/Kepas-Beleglorn/EDXD/actions/workflows/sync-project-labels.yml/badge.svg)](https://github.com/Kepas-Beleglorn/EDXD/actions/workflows/sync-project-labels.yml)
