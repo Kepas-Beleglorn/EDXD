@@ -72,13 +72,21 @@ def get_genus_value(species_localised: str) -> int:
 
         # Anemone
         "Anemone Blatteum Bioluminescent": 1499900,
+        "Blatteum Bioluminescent Anemone": 1499900,
         "Anemone Croceum": 3399800,
+        "Croceum Anemone": 3399800,
         "Anemone Luteolum": 1499900,
+        "Luteolum Anemone": 1499900,
         "Anemone Prasinum Bioluminescent": 1499900,
+        "Prasinum Bioluminescent Anemone": 1499900,
         "Anemone Puniceum": 1499900,
+        "Puniceum Anemone": 1499900,
         "Anemone Roseum": 1499900,
+        "Roseum Anemone": 1499900,
         "Anemone Roseum Bioluminescent": 1499900,
+        "Roseum Bioluminescent Anemone": 1499900,
         "Anemone Rubeum Bioluminescent": 1499900,
+        "Rubeum Bioluminescent Anemone": 1499900,
 
         # Bacterium
         "Bacterium Nebulus": 9116600,
