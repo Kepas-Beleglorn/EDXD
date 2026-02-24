@@ -313,7 +313,10 @@ class BodyDetails(DynamicDialog):
 
             self.bio_panel.add_table_item(f"{bio_name}")
             self.bio_panel.add_table_item(f"{' ' * 2}({done}/3)")
-            scan_value = bh.get_genus_value(genus.species_localised)
+            genus_name = genus.species_localised
+            if (genus_name is None or genus_name == "") and genus.variant_localised is not None:
+                genus_name = genus.variant_localised.split(" - ")[0]
+            scan_value = bh.get_genus_value(genus_name)
             scan_value_str: str = ""
             if scan_value is not None and scan_value > 0:
                 scan_value_str = f"{' ' * 2}{scan_value:,} Cr"
