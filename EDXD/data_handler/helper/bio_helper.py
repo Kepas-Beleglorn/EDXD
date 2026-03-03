@@ -285,7 +285,7 @@ def estimate_biosigns(
                 if planet_type in ["Metal-Rich", "High Metal Content"]:
                     possible_species.append("Rubeum Bioluminescent Anemone")
         # B-type stars
-        if star_class == "B":
+        if star_class == SC.B:
             if star_luminosity in ["I", "II", "III"] and planet_type in ["Metal-Rich", "High Metal Content", "Rocky"]:
                 possible_species.append(["Roseum Bioluminescent Anemone", "Roseum Anemone"])
             if star_luminosity in ["IV", "V"] and planet_type in ["Metal-Rich", "High Metal Content"]:
