@@ -286,18 +286,21 @@ def estimate_biosigns(
                     possible_species.append("Rubeum Bioluminescent Anemone")
         # B-type stars
         if star_class == SC.B:
-            if star_luminosity in ["I", "II", "III"] and planet_type in ["Metal-Rich", "High Metal Content", "Rocky"]:
+            if star_luminosity in [SL.I, SL.II, SL.III] and planet_type in ["Metal-Rich", "High Metal Content", "Rocky"]:
                 possible_species.append(["Roseum Bioluminescent Anemone", "Roseum Anemone"])
-            if star_luminosity in ["IV", "V"] and planet_type in ["Metal-Rich", "High Metal Content"]:
+            if star_luminosity in [SL.IV, SL.V] and planet_type in ["Metal-Rich", "High Metal Content"]:
                 possible_species.append("Blatteum Bioluminescent Anemone")
-            if star_luminosity == "VI":
+            if star_luminosity == SL.VI:
                 if planet_type in ["Metal-Rich", "High Metal Content"]:
                     possible_species.append("Rubeum Bioluminescent Anemone")
                 if planet_type in ["Rocky"]:
                     possible_species.append("Croceum Anemone")
         # O-type stars
-        if star_class == "O" and planet_type in ["Metal-Rich", "High Metal Content", "Rocky", "Rocky Ice", "Icy"]:
-            possible_species.extend(["Prasinum Bioluminescent Anemone", "Puniceum Anemone"])
+        if star_class == "O":
+            if planet_type in ["Metal-Rich", "High Metal Content", "Rocky", "Rocky Ice", "Icy"]:
+                possible_species.extend(["Puniceum Anemone"])
+            if planet_type in ["Metal-Rich", "High Metal Content", "Rocky"]:
+                possible_species.extend(["Prasinum Bioluminescent Anemone"])
 
     # Bacterium
     if atmosphere in ["Helium", "Neon", "Neon-Rich", "Methane", "Methane-Rich", "Argon", "Argon-Rich", "Nitrogen", "Oxygen", "Ammonia", "CO2-Rich", "CO2", "Water", "SO2"]:
