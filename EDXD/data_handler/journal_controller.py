@@ -35,7 +35,8 @@ class JournalController(PausableThread, threading.Thread):
     def normalize_genus(self, genus_id):
         # Map known patterns to their base names
         replacements = {
-            "SphereEFGH": "Sphere",
+            "SphereEFGH":   "Sphere",
+            "TubeABCD"  :   "Tube",
             # Add other mappings as needed
         }
 
