@@ -1,8 +1,6 @@
 name: Sync Project Status to Label
 
 on:
-  schedule:
-    - cron: '* * * */1 *'  # Run every 5 minutes
   workflow_dispatch:  # Allow manual trigger
 
 jobs:
