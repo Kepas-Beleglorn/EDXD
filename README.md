@@ -27,7 +27,7 @@
 Just download the zip for your platform, unpack the contents anywhere you like and run with 
 
 `
-./ed-eXploration-dashboard --journals "/path/to/your/EDJournals/Saved Games/Frontier Developments/Elite Dangerous"
+./ed-eXploration-dashboard
 `
 ```
 options:
@@ -39,7 +39,7 @@ options:
                        the directory where the binary resides
 ```
 
-On first run you should start the "Journal Historian" to process all of your available journal files.
+On first run, after you set the path to your journal files in the configuration, you should start the "Journal Historian" to process all of your available journal files. Same goes for major updates of EDXD, as newer versions process more data from the journals. 
 
 
 ### NixOs and Nix package manager
