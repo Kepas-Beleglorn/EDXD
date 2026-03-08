@@ -29,7 +29,7 @@
 }:
 buildPythonPackage rec {
   pname = "ed-eXploration-dashboard";
-  version = "v0.6.2.0";
+  version = "v0.7.1.0";
 
   src = fetchFromGitHub {
     owner = "Kepas-Beleglorn";
