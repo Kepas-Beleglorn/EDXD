@@ -1,5 +1,5 @@
 {
-  description = "EDXD devshell with Wayland + X11/XCB + zlib";
+  description = "EDXD devshell with Wayland + X11/XCB + zlib + wxPython 4.2.5";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -9,8 +9,32 @@
   outputs = { self, nixpkgs, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        pkgs = nixpkgs.legacyPackages.${system};
+        # Import nixpkgs with a custom overlay to override wxpython
+        pkgs = import nixpkgs {
+          inherit system;
+          overlays = [
+            (final: prev: {
+              python3 = prev.python3.override {
+                packageOverrides = python-prev: {
+                  wxpython = python-prev.wxpython.overrideAttrs (oldAttrs: {
+                    version = "4.2.5";
+                    src = final.fetchFromGitHub {
+                      owner = "wxWidgets";
+                      repo = "Phoenix";
+                      rev = "wxPython-4.2.5";
+                      hash = "sha256-44e836d1bccd99c38790bb034b6ecf70d9060f6734320560f7c4b0d006144793";
+                    };
+                    # wxPython 4.2.5 from GitHub source may need build flags
+                    # Usually not needed for Phoenix, but kept for safety
+                    buildInputs = oldAttrs.buildInputs or [];
+                  });
+                };
+              };
+            })
+          ];
+        };
 
+        # Use the overridden python3
         python = pkgs.python3;
       in {
         devShells.default = pkgs.mkShell {
@@ -42,6 +66,9 @@
 
             # zlib (libz.so.1)
             pkgs.zlib
+            
+            # Ensure the shell sees the overridden wxpython
+            python.pkgs.wxpython
           ];
 
           LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [
@@ -55,6 +82,7 @@
         };
 
         packages = rec {
+          # This will now use the overridden python3 (with wxpython 4.2.5)
           edxd = python.pkgs.callPackage ./default.nix {};
           default = edxd;
         };
