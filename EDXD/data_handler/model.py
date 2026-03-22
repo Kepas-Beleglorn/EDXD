@@ -71,6 +71,10 @@ class Body:
     first_footfalled: int = 0
     g_force         : float = 0.0
     atmosphere      : Atmosphere = None
+    mean_temp       : float = 0.0
+    luminosity      : str = ""
+    volcanism       : str = ""
+    present_life    : str = ""
 
     def __post_init__(self):
         # Ensure mutable defaults are initialized as empty dicts if None is passed
@@ -294,6 +298,10 @@ class Model:
                 first_mapped        = body_properties.get("first_mapped", 0)
                 first_footfalled    = body_properties.get("first_footfalled", 0)
                 atmosphere          = body_properties.get("atmosphere", None)
+                mean_temp           = body_properties.get("mean_temp", 0.0)
+                luminosity          = body_properties.get("luminosity", "")
+                volcanism           = body_properties.get("volcanism", "")
+                present_life        = body_properties.get("present_life", "")
 
                 bio_found = {k: Genus.from_dict(v) if isinstance(v, dict) else v for k, v in bio_dict.items()}
                 geo_found = {k: CodexEntry(**v) if isinstance(v, dict) else v for k, v in geo_dict.items()}
@@ -323,14 +331,20 @@ class Model:
                     first_discovered=first_discovered,
                     first_mapped=first_mapped,
                     first_footfalled=first_footfalled,
-                    atmosphere=atmosphere
+                    atmosphere=atmosphere,
+                    mean_temp=mean_temp,
+                    luminosity=luminosity,
+                    volcanism=volcanism,
+                    present_life=present_life
                 )
 
     def update_body(self, systemaddress: int, body_id: str, body_name: str = None, body_type: str = None, scoopable: bool = None, distance: int = None, landable: bool = None,
                     biosignals: int = None, geosignals: int = None, materials: Dict[str, float] = None, scandata = None,
                     bio_found: Dict[str, Genus] = None, geo_found: Dict[str, CodexEntry] = None, rings: Dict[str, Ring] = None, total_bodies: int = None, radius: float = 0.0, mapped: bool = False,
                     geo_complete: bool = False, geo_scanned: int = 0, bio_complete: bool = False, bio_scanned: int = 0,
-                    first_discovered: int = 0, first_mapped: int = 0, first_footfalled: int = 0, g_force: float = 0.0, atmosphere: Atmosphere = None):
+                    first_discovered: int = 0, first_mapped: int = 0, first_footfalled: int = 0, g_force: float = 0.0, atmosphere: Atmosphere = None,
+                    mean_temp: float = 0.0, luminosity: str = "", volcanism: str = "", present_life: str = ""
+                    ):
         with self.lock:
             self.system_addr = systemaddress
             tmp_total_bodies = total_bodies or self.total_bodies
@@ -360,6 +374,10 @@ class Model:
                 body.first_mapped       = first_mapped      or body.first_mapped        or 0
                 body.first_footfalled   = first_footfalled  or body.first_footfalled    or 0
                 body.atmosphere         = atmosphere        or body.atmosphere          or None
+                body.mean_temp          = mean_temp         or body.mean_temp           or 0
+                body.luminosity         = luminosity        or body.luminosity          or ""
+                body.volcanism          = volcanism         or body.volcanism           or ""
+                body.present_life       = present_life      or body.present_life        or ""
 
                 if materials is not None:
                     body.materials.update(materials)
@@ -437,6 +455,10 @@ class Model:
                         for ringid, ring in body.rings.items()
                     },
                     "atmosphere"        : body.atmosphere.to_dict() if hasattr(body.atmosphere, 'to_dict') else body.atmosphere,
+                    "mean_temp"         : body.mean_temp,
+                    "luminosity"        : body.luminosity,
+                    "volcanism"         : body.volcanism,
+                    "present_life"      : body.present_life,
                 }
                 for body_id, body in self.bodies.items()
             },
