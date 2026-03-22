@@ -155,6 +155,15 @@ def format_gravity(g_force):
     else:
         return f"{g_force:.2e} g"
 
+def format_pressure(pressure):
+    # 1 atm = 101,325 Pascals
+    atm_value = pressure / 101325.0
+
+    if abs(atm_value) < 1000:
+        return f"{atm_value:,.2f} atm"
+    else:
+        return f"{atm_value:.2e} atm"
+
 def get_clean_luminosity(luminosity: str) -> str:
     return re.sub(r'[^A-Z]', '', luminosity)
 

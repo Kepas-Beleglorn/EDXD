@@ -189,10 +189,11 @@ class JournalController(PausableThread, threading.Thread):
         raw_luminosity  = None
         volcanism       = None
         present_life    = None
+        pressure        = None
 
         materials       = {}
 
-        parents:        Dict[str, int]          = {}
+        parents:        List[Dict[str, int]]    = []
         bio_found:      Dict[str, Genus]        = {}
         geo_found:      Dict[str, CodexEntry]   = {}
         rings_found:    Dict[str, Ring]         = {}
@@ -238,6 +239,9 @@ class JournalController(PausableThread, threading.Thread):
                 landable = evt.get("Landable")
                 body_type = evt.get("PlanetClass") or evt.get("StarType")
                 radius = evt.get("Radius")
+
+                if evt.get("SurfacePressure"):
+                    pressure = evt.get("SurfacePressure")
 
                 if evt.get("Luminosity"):
                     raw_luminosity = evt.get("Luminosity")
@@ -569,7 +573,8 @@ class JournalController(PausableThread, threading.Thread):
                 raw_luminosity=raw_luminosity,
                 volcanism=volcanism,
                 present_life=present_life,
-                parents=parents
+                parents=parents,
+                pressure=pressure
             )
 
         # nothing to safe here, just update the target

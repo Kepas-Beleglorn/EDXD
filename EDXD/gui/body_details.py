@@ -176,7 +176,10 @@ class BodyDetails(DynamicDialog):
 
         if self.body.luminosity is not None and self.body.luminosity != "":
             self.general_panel.add_table_item("Luminosity")
-            self.general_panel.add_table_item(f"  {self.body.luminosity} ({self.body.raw_luminosity})")
+            if self.body.luminosity != self.body.raw_luminosity:
+                self.general_panel.add_table_item(f"  {self.body.luminosity} ({self.body.raw_luminosity})")
+            else:
+                self.general_panel.add_table_item(f"  {self.body.luminosity}")
 
         if self.general_panel.IsShown():
             # Force a layout update
@@ -207,11 +210,16 @@ class BodyDetails(DynamicDialog):
         else:
             self.atmosphere_panel.header_label.SetLabel(f"Atmosphere ({self.body.body_type})")
 
+        if self.body.pressure is not None and self.body.pressure > 0:
+            self.atmosphere_panel.add_table_item(f"Surface pressure")
+            self.atmosphere_panel.add_table_item(f"  {dh.format_pressure(self.body.pressure)}")
+            self.atmosphere_panel.add_table_item("")
+
         for mat, pct in sorted(atmos_comp.items(),
                               key=lambda kv: kv[1],
                               reverse=True):
             self.atmosphere_panel.add_table_item(label_text=f"{mat.title():<12}")
-            self.atmosphere_panel.add_table_item(label_text=f"{pct:5.1f}%", align=wx.ALIGN_RIGHT)
+            self.atmosphere_panel.add_table_item(label_text=f"  {pct:5.1f}%", align=wx.ALIGN_RIGHT)
             self.atmosphere_panel.add_table_item("")
 
         if not self.atmosphere_panel.IsShown():
@@ -227,7 +235,7 @@ class BodyDetails(DynamicDialog):
             if filters.get(mat, True):
                 show_mats = True
                 self.mat_panel.add_table_item(label_text=f"{mat.title():<12}")
-                self.mat_panel.add_table_item(label_text=f"{pct:5.1f}%", align=wx.ALIGN_RIGHT)
+                self.mat_panel.add_table_item(label_text=f"  {pct:5.1f}%", align=wx.ALIGN_RIGHT)
                 self.mat_panel.add_table_item("")
 
         if show_mats and not self.mat_panel.IsShown():
