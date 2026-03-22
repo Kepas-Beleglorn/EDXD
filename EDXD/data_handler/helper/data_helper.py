@@ -258,7 +258,7 @@ def latest_journal(folder: Path) -> Optional[Path]:
     parsed.sort(key=lambda x: x[0])
     return parsed[-1][1]
 
-def parse_utc_isoformat(timestamp: str) -> datetime:
+def parse_utc_isoformat(timestamp: str) -> datetime|None:
     if timestamp is None:
         return None
 

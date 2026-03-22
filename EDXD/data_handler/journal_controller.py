@@ -32,7 +32,8 @@ class JournalController(PausableThread, threading.Thread):
 
         self.process_event(evt=evt, update_gui=True)
 
-    def normalize_genus(self, genus_id):
+    @staticmethod
+    def normalize_genus(genus_id):
         # Map known patterns to their base names
         replacements = {
             "SphereEFGH":   "Sphere",
@@ -56,7 +57,7 @@ class JournalController(PausableThread, threading.Thread):
             self.m.ship_status = ShipStatus()
         self.m.ship_status = self.m.ship_status.read_from_json(dh.read_ship_status(SHIP_STATUS_FILE, self.ship_status))
 
-        # set FSD super charged factor
+        # set FSD supercharged factor
         if etype == "JetConeBoost":
             self.m.ship_status.jet_cone_boost_factor = float(evt.get("BoostValue"))
             dh.update_ship_status(SHIP_STATUS_FILE, self.m.ship_status)
@@ -91,11 +92,9 @@ class JournalController(PausableThread, threading.Thread):
                 self.m.ship_status.ship_id = evt.get("ShipID") or self.ship_status.ship_id
                 self.m.ship_status.ship_name = evt.get("ShipName") or self.ship_status.ship_name
                 self.m.ship_status.ship_ident = evt.get("ShipIdent") or self.ship_status.ship_ident
-                fuel_main   : float = 0
-                fuel_reserve: float = 0
 
-                fuel_main = evt.get("FuelCapacity").get("Main")
-                fuel_reserve = evt.get("FuelCapacity").get("Reserve")
+                fuel_main       : float = evt.get("FuelCapacity").get("Main")
+                fuel_reserve    : float = evt.get("FuelCapacity").get("Reserve")
 
                 self.m.ship_status.fuel_capacity = FuelLevel(fuel_main, fuel_reserve) or self.m.ship_status.fuel_capacity
 
@@ -149,7 +148,6 @@ class JournalController(PausableThread, threading.Thread):
             self.m.target_body_id = None
             self.m.selected_body_id = None
             self.m.reset_system(system_name=evt.get("StarSystem"), address=systemaddress)
-            body_id = "body_1"
 
         if evt.get("BodyCount") is not None:
             self.m.total_bodies = evt.get("BodyCount")
@@ -310,7 +308,7 @@ class JournalController(PausableThread, threading.Thread):
                 body_name = evt.get("Name")
             # Has anyone set foot on that rock?
             if not evt.get("WasFootfalled"):
-                # It could be I've been there, but haven't sold the footfall data yet.)
+                # It could be I've been there, but haven't sold the footfall data yet.
                 if first_footfalled == 0:
                     first_footfalled = 2
             else:
@@ -561,7 +559,7 @@ class JournalController(PausableThread, threading.Thread):
                 radius=radius,
                 mapped=mapped,
                 geo_complete=geo_complete,
-                geo_scanned=geo_scanned,
+                geo_scanned=geo_scanned or 0,
                 bio_complete=bio_complete,
                 bio_scanned=bio_scanned,
                 first_discovered=first_discovered,
