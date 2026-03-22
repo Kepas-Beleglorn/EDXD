@@ -184,6 +184,10 @@ class JournalController(PausableThread, threading.Thread):
         bio_complete    = None
         bio_scanned     = None
         atmosphere      = None
+        mean_temp       = None
+        luminosity      = None
+        volcanism       = None
+        present_life    = None
 
         materials       = {}
 
@@ -232,6 +236,20 @@ class JournalController(PausableThread, threading.Thread):
                 landable = evt.get("Landable")
                 body_type = evt.get("PlanetClass") or evt.get("StarType")
                 radius = evt.get("Radius")
+
+                if evt.get("Luminosity"):
+                    luminosity = evt.get("Luminosity")
+
+                if evt.get("Volcanism"):
+                    volcanism = evt.get("Volcanism")
+
+                if evt.get("SurfaceTemperature"):
+                    mean_temp = evt.get("SurfaceTemperature")
+
+                # ToDo: Verify identifier for e.g. "Ammonia based life" in journals
+                if evt.get("LifeDiscovered"):
+                    present_life = evt.get("LifeDiscovered")
+
                 g_force = None
                 if not g_force and radius is not None:
                     stellar_mass = evt.get("StellarMass") or None
@@ -542,7 +560,11 @@ class JournalController(PausableThread, threading.Thread):
                 first_discovered=first_discovered,
                 first_mapped=first_mapped,
                 first_footfalled=first_footfalled,
-                atmosphere=atmosphere
+                atmosphere=atmosphere,
+                mean_temp=mean_temp,
+                luminosity=luminosity,
+                volcanism=volcanism,
+                present_life=present_life
             )
 
         # nothing to safe here, just update the target
