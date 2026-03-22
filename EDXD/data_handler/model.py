@@ -15,6 +15,7 @@ from dataclasses import dataclass, asdict, field
 from typing import Optional, List
 
 import EDXD.data_handler.helper.data_helper as dh
+from EDXD.data_handler.helper.biosign_estimator import estimate_system_biosigns
 from EDXD.data_handler.helper.body_appraiser import appraise_body
 from EDXD.data_handler.planetary_surface_positioning_system import PSPSCoordinates
 from EDXD.data_handler.vessel_status import *
@@ -506,3 +507,14 @@ class Model:
     def snapshot_total(self) -> Optional[int]:
         with self.lock:
             return self.total_bodies
+
+    def get_system_biosign_predictions(self) -> dict:
+        """
+        Analyzes current system bodies and returns potential biosigns.
+        Returns dict: { body_id: [ {name, base_value, scan_range}, ... ] }
+        """
+        with self.lock:
+            if not self.bodies:
+                return {}
+            # Pass a snapshot to the helper
+            return estimate_system_biosigns(self.bodies)
