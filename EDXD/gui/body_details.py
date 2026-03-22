@@ -164,15 +164,19 @@ class BodyDetails(DynamicDialog):
 
         if self.body.mean_temp is not None:
             self.general_panel.add_table_item("Surface Temperature")
-            self._set_temperature_colour(self.general_panel.add_table_item(f"  {dh.format_temperature(self.body.mean_temp)}"), self.body.mean_temp)
+            self._set_temperature_colour(self.general_panel.add_table_item(f"  {dh.format_temperature(self.body.mean_temp, self.body.landable)}"), self.body.mean_temp)
 
-        if self.body.volcanism is not None:
+        if self.body.volcanism is not None and self.body.volcanism != "":
             self.general_panel.add_table_item("Volcanism")
             self.general_panel.add_table_item(f"  {self.body.volcanism}")
 
-        if self.body.present_life is not None:
+        if self.body.present_life is not None and self.body.present_life != "":
             self.general_panel.add_table_item("Life")
             self.general_panel.add_table_item(f"  {self.body.present_life}")
+
+        if self.body.luminosity is not None and self.body.luminosity != "":
+            self.general_panel.add_table_item("Luminosity")
+            self.general_panel.add_table_item(f"  {self.body.luminosity} ({self.body.raw_luminosity})")
 
         if self.general_panel.IsShown():
             # Force a layout update

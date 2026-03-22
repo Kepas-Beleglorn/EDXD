@@ -155,8 +155,17 @@ def format_gravity(g_force):
     else:
         return f"{g_force:.2e} g"
 
-def format_temperature(temperature):
-    temperature_formatted = f"{temperature:,.2f} K"
+def get_clean_luminosity(luminosity: str) -> str:
+    return re.sub(r'[^A-Z]', '', luminosity)
+
+def format_temperature(temperature, landable):
+    if abs(temperature) < 1000:
+        temperature_formatted = f"{temperature:,.2f} K"
+    else:
+        temperature_formatted = f"{temperature:.2e} K"
+
+    if not landable:
+        return temperature_formatted
 
     if temperature < TEMPERATURE_LOW:
         temperature_formatted += " ❄️"

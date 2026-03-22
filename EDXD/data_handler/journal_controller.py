@@ -186,11 +186,13 @@ class JournalController(PausableThread, threading.Thread):
         atmosphere      = None
         mean_temp       = None
         luminosity      = None
+        raw_luminosity  = None
         volcanism       = None
         present_life    = None
 
         materials       = {}
 
+        parents:        Dict[str, int]          = {}
         bio_found:      Dict[str, Genus]        = {}
         geo_found:      Dict[str, CodexEntry]   = {}
         rings_found:    Dict[str, Ring]         = {}
@@ -238,7 +240,8 @@ class JournalController(PausableThread, threading.Thread):
                 radius = evt.get("Radius")
 
                 if evt.get("Luminosity"):
-                    luminosity = evt.get("Luminosity")
+                    raw_luminosity = evt.get("Luminosity")
+                    luminosity = dh.get_clean_luminosity(raw_luminosity)
 
                 if evt.get("Volcanism"):
                     volcanism = evt.get("Volcanism")
@@ -246,9 +249,8 @@ class JournalController(PausableThread, threading.Thread):
                 if evt.get("SurfaceTemperature"):
                     mean_temp = evt.get("SurfaceTemperature")
 
-                # ToDo: Verify identifier for e.g. "Ammonia based life" in journals
-                if evt.get("LifeDiscovered"):
-                    present_life = evt.get("LifeDiscovered")
+                if " with " in body_type:
+                    present_life = body_type.split(" with ")[1]
 
                 g_force = None
                 if not g_force and radius is not None:
@@ -265,6 +267,7 @@ class JournalController(PausableThread, threading.Thread):
                     body_type = "Belt Cluster"
                 scoopable = body_type in ["K", "G", "B", "F", "O", "A", "M"]
                 materials = {m["Name"]: m["Percent"] for m in evt.get("Materials", [])}
+                parents = evt.get("Parents", [])
 
                 # first analyse data during FSS
                 if evt.get("ScanType") in {"AutoScan", "Detailed"}:
@@ -563,8 +566,10 @@ class JournalController(PausableThread, threading.Thread):
                 atmosphere=atmosphere,
                 mean_temp=mean_temp,
                 luminosity=luminosity,
+                raw_luminosity=raw_luminosity,
                 volcanism=volcanism,
-                present_life=present_life
+                present_life=present_life,
+                parents=parents
             )
 
         # nothing to safe here, just update the target
