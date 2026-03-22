@@ -11,6 +11,10 @@ from typing import Optional
 from EDXD.data_handler.vessel_status import ShipStatus
 from EDXD.globals import log_context, logging
 
+TEMPERATURE_LOW = 170
+TEMPERATURE_HIGH = 320
+TEMPERATURE_HIGH_LETHAL = 800
+TEMPERATURE_LOW_LETHAL = 20
 
 # ---------------------------------------------------------------------------
 # helpers
@@ -151,7 +155,20 @@ def format_gravity(g_force):
     else:
         return f"{g_force:.2e} g"
 
-def get_color_gradient_from_gravity(gravity: float = 0) -> wx.Colour:
+def format_temperature(temperature):
+    temperature_formatted = f"{temperature:,.2f} K"
+
+    if temperature < TEMPERATURE_LOW:
+        temperature_formatted += " ❄️"
+    if temperature > TEMPERATURE_HIGH:
+        temperature_formatted += " 🔥"
+
+    if temperature < TEMPERATURE_LOW_LETHAL or temperature > TEMPERATURE_HIGH_LETHAL:
+        temperature_formatted += "⚠️"
+
+    return temperature_formatted
+
+def get_colour_gradient_from_gravity(gravity: float = 0) -> wx.Colour:
     if gravity == 0:
         return wx.Colour(20, 20, 20)
 
@@ -177,6 +194,24 @@ def get_color_gradient_from_gravity(gravity: float = 0) -> wx.Colour:
         return wx.Colour(220, 0, 255)
 
     return wx.Colour(0, 0, 255)
+
+def get_colour_gradient_from_temperature(temperature: float = 0) -> wx.Colour:
+    if TEMPERATURE_LOW <= temperature < TEMPERATURE_HIGH:
+        return wx.Colour(0, 200, 0)
+
+    if 20 <= temperature < TEMPERATURE_LOW:
+        return wx.Colour(0, 130, 210)
+
+    if temperature < TEMPERATURE_LOW_LETHAL:
+        return wx.Colour(0, 40, 220)
+
+    if TEMPERATURE_HIGH <= temperature < TEMPERATURE_HIGH_LETHAL:
+        return wx.Colour(255, 90, 0)
+
+    if temperature >= TEMPERATURE_HIGH_LETHAL:
+        return wx.Colour(200, 0, 0)
+
+    return wx.Colour(220, 0, 255)
 
 def latest_journal(folder: Path) -> Optional[Path]:
     """

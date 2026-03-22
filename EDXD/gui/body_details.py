@@ -160,7 +160,19 @@ class BodyDetails(DynamicDialog):
         self.general_panel.add_table_item(f"  {self.body.distance:,.0f} Ls")
         if self.body.g_force is not None and self.body.g_force > 0:
             self.general_panel.add_table_item("Gravity")
-            self._set_g_force_color(self.general_panel.add_table_item(f"  {dh.format_gravity(self.body.g_force)}"), self.body.g_force)
+            self._set_g_force_colour(self.general_panel.add_table_item(f"  {dh.format_gravity(self.body.g_force)}"), self.body.g_force)
+
+        if self.body.mean_temp is not None:
+            self.general_panel.add_table_item("Surface Temperature")
+            self._set_temperature_colour(self.general_panel.add_table_item(f"  {dh.format_temperature(self.body.mean_temp)}"), self.body.mean_temp)
+
+        if self.body.volcanism is not None:
+            self.general_panel.add_table_item("Volcanism")
+            self.general_panel.add_table_item(f"  {self.body.volcanism}")
+
+        if self.body.present_life is not None:
+            self.general_panel.add_table_item("Life")
+            self.general_panel.add_table_item(f"  {self.body.present_life}")
 
         if self.general_panel.IsShown():
             # Force a layout update
@@ -345,10 +357,16 @@ class BodyDetails(DynamicDialog):
             self.geo_panel.force_render()
 
     @staticmethod
-    def _set_g_force_color(label: wx.StaticText = None, g_force: float = 0.0):
+    def _set_g_force_colour(label: wx.StaticText = None, g_force: float = 0.0):
         if label is None:
             return
-        label.SetForegroundColour(dh.get_color_gradient_from_gravity(g_force))
+        label.SetForegroundColour(dh.get_colour_gradient_from_gravity(g_force))
+
+    @staticmethod
+    def _set_temperature_colour(label: wx.StaticText = None, temperature: float = 0.0):
+        if label is None:
+            return
+        label.SetForegroundColour(dh.get_colour_gradient_from_temperature(temperature))
 
     @staticmethod
     def _set_distance_color(label: wx.StaticText = None, range_min: float = 0.0, range_current: float = 0.0):

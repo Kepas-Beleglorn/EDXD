@@ -351,7 +351,7 @@ class BodiesTable(gridlib.Grid):
             while i < self.GetNumberRows():
                 g_force = float(self.GetCellValue(i, col_g_force).split(" ")[0].replace(",", ""))
                 attr = wx.grid.GridCellAttr()
-                attr.SetTextColour(dh.get_color_gradient_from_gravity(g_force))
+                attr.SetTextColour(dh.get_colour_gradient_from_gravity(g_force))
                 self.SetAttr(i, col_g_force, attr)
                 i += 1
 
