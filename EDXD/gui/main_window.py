@@ -10,6 +10,7 @@ from EDXD.data_handler.journal_controller import JournalController
 from EDXD.data_handler.journal_reader import JournalReader
 from EDXD.data_handler.model import Model, Body
 from EDXD.data_handler.status_json_watcher import StatusWatcher
+from EDXD.data_handler.helper.biosign_estimator import estimate_system_biosigns
 
 from EDXD.globals import DEFAULT_HEIGHT_MAIN, DEFAULT_WIDTH_MAIN, DEFAULT_POS_Y, DEFAULT_POS_X, RESIZE_MARGIN
 from EDXD.globals import logging, CFG_FILE
@@ -24,6 +25,7 @@ from EDXD.gui.main_window_options import MainWindowOptions
 from EDXD.gui.psps_gui import PositionTracker
 from EDXD.gui.table_view import BodiesTable
 from EDXD.gui.status_flags import StatusFlags
+from EDXD.gui.signal_prediction import SignalPrediction
 
 from EDXD.utils.clipboard import copy_text_to_clipboard
 
@@ -72,6 +74,7 @@ class MainFrame(DynamicFrame):
         self.win_psps = None
         self.win_engine_status = None
         self.win_status_flags = None
+        self.win_sig_pred = None
 
         # Add options panel (mineral filter, landable, and maybe more in the future
         self.options = MainWindowOptions(parent=self)
@@ -188,6 +191,21 @@ class MainFrame(DynamicFrame):
                 self.win_status_flags = StatusFlags(self)
                 self.win_status_flags.Show(True)
 
+        # Signal prediction -------------------------------------------------------------------------
+        from EDXD.gui.signal_prediction import WINID as winIdSelected
+        if self.prefs is None or self.prefs.get(winIdSelected) is None:
+            hidden = False
+        else:
+            hidden = self.prefs.get(winIdSelected).get("is_hidden", False)
+        if hidden:
+            if self.win_sig_pred is not None:
+                self.win_sig_pred.Close()
+                self.win_sig_pred = None
+        else:
+            if self.win_sig_pred is None:
+                self.win_sig_pred = SignalPrediction(self)
+                self.win_sig_pred.Show(True)
+
     def _update_system(self, title: str = ""):
         init_widget(widget=self.lbl_sys, title=title)
         font = self.lbl_sys.GetFont()
@@ -204,6 +222,10 @@ class MainFrame(DynamicFrame):
                 fuel_capacity_reservoir=self.model.ship_status.fuel_capacity.reserve,
                 vehicle=self.model.current_vessel
             )
+
+    def _update_biosign_prediction(self, body_data):
+        prediction_data = estimate_system_biosigns(body_data)
+        self.win_sig_pred.render(prediction=prediction_data)
 
     # ------------------------------------------------------------------
     # event handlers
@@ -303,9 +325,10 @@ class MainFrame(DynamicFrame):
 
         if tgt and self.win_tar:
             self.win_tar.render(body=tgt, filters=self.prefs["mat_sel"],  current_position=current_position, current_heading=current_heading)
-        # ---- system label (belts excluded from *scanned* only) -------
 
         bodies = self.model.snapshot_bodies()
+
+        self._update_biosign_prediction(bodies)
 
         if self.model.selected_body_id is None:
             self._selected = ""
@@ -339,5 +362,7 @@ class MainFrame(DynamicFrame):
         if self.win_tar             : self.win_tar.Close(True)
         if self.win_psps            : self.win_psps.Close(True)
         if self.win_engine_status   : self.win_engine_status.Close(True)
+        if self.win_status_flags    : self.win_status_flags.Close(True)
+        if self.win_sig_pred        : self.win_sig_pred.Close(True)
         self.save_geometry()
         event.Skip()

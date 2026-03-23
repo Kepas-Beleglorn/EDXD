@@ -4,12 +4,11 @@ from EDXD.data_handler.helper.system_params import (
     ATM_GROUP_CARBON, ATM_GROUP_WATER, ATM_GROUP_METHANE, ATM_GROUP_NEON,
     ATM_GROUP_ARGON, ATM_GROUP_RARE_GAS, ATM_GROUP_ALL_BACTERIA,
     PT_GROUP_LANDABLE_ROCKY, PT_GROUP_HMC_ROCKY, PT_GROUP_ICE,
-    VOLC_GROUP_GAS_ICE, VOLC_GROUP_CARBON_ICE, VOLC_GROUP_HOT_ROCK, VOLC_GROUP_INERT
+    VOLC_GROUP_HOT_ROCK
 )
 from EDXD.data_handler.helper.bio_helper import (
     get_genus_value,
-    get_scan_range_for_species,
-    SPECIES_TO_CODEX  # We need this reverse map
+    get_scan_range_for_species
 )
 
 
@@ -196,10 +195,18 @@ def estimate_system_biosigns(model_bodies: Dict[str, Any]) -> Dict[str, List[Dic
                 # If confirmed, probability is 100%. Otherwise calculate.
                 if species_name in confirmed_species_names:
                     prob = 1.0
-                    is_confirmed = True
                 else:
-                    prob = calculate_probability(species_name, pt_enum, atm_enum, mean_temp, volc_enum)
-                    is_confirmed = False
+                    # Inside the loop where you calculate prob:
+                    prob = calculate_probability(
+                        species_name=species_name,
+                        planet_type=pt_enum,
+                        atmosphere=atm_enum,
+                        mean_temp_k=mean_temp,
+                        volcanism=volc_enum,
+                        gravity=gravity,  # Pass these new args
+                        star_class=star_class_enum,
+                        star_luminosity=star_luminosity_enum
+                    )
 
                 results[body_id].append({
                     "body_id": body_id,
@@ -236,22 +243,127 @@ def _safe_get_enum(value: Optional[str], enum_class: Any, default: Any) -> Any:
         return default
 
 
-def calculate_probability(species_name: str, planet_type: PlanetType, atmosphere: Atmosphere,
-                          mean_temp_k: float, volcanism: Optional[Volcanism]) -> float:
+def calculate_probability(
+        species_name: str,
+        planet_type: PlanetType,
+        atmosphere: Atmosphere,
+        mean_temp_k: float,
+        volcanism: Optional[Volcanism],
+        gravity: Optional[float] = None,
+        star_class: Optional[StarClass] = None,
+        star_luminosity: Optional[StarLuminosity] = None
+) -> float:
+    """
+    Calculates a relative probability score (0.0 to 1.0).
+    Returns 0.0 if hard constraints (Gravity, Atmosphere, Star) are violated.
+    """
     score = 0.5
-    if "Aleoida" in species_name:
-        if 175 <= mean_temp_k <= 195: score += 0.3
-    elif "Tussock" in species_name:
-        if 145 <= mean_temp_k <= 195: score += 0.3
-    elif "Stratum" in species_name:
-        if 165 <= mean_temp_k <= 190: score += 0.2
+
+    # -----------------------------------------------------------------------
+    # 1. HARD CONSTRAINTS (Return 0.0 if failed)
+    # -----------------------------------------------------------------------
+
+    # Gravity Constraints (< 0.27g)
+    if gravity is not None and gravity > 0.27:
+        if any(x in species_name for x in ["Aleoida", "Clypeus", "Anemone", "Electricae", "Recepta"]):
+            return 0.0
+
+    # Atmosphere Constraints (Specific species require specific atm)
+    # If the estimator returned it, it's theoretically possible, but if we want strict probability:
+    # (Optional: Uncomment if you want to penalize mismatched atm heavily)
+    # if "Bacterium Nebulus" in species_name and atmosphere != Atmosphere.HELIUM: return 0.0
+
+    # Star Constraints
+    if "Amphora Plant" in species_name:
+        if star_class != StarClass.A:
+            return 0.0
+
+    if "Electricae Pluma" in species_name:
+        if star_class != StarClass.A or star_luminosity not in [StarLuminosity.V, StarLuminosity.VI]:
+            return 0.0
+
+    # -----------------------------------------------------------------------
+    # 2. TEMPERATURE PRECISION (Narrow ranges = Higher Score)
+    # -----------------------------------------------------------------------
+
+    temp_match = False
+
+    # Aleoida (Very Narrow: 5-10K windows)
+    if "Aleoida Arcus" in species_name and 175 <= mean_temp_k <= 180:
+        temp_match = True
+    elif "Aleoida Coronamus" in species_name and 180 <= mean_temp_k <= 190:
+        temp_match = True
+    elif "Aleoida Gravis" in species_name and 190 <= mean_temp_k <= 195:
+        temp_match = True
+    elif "Aleoida" in species_name and 175 <= mean_temp_k <= 195:
+        temp_match = True  # General match
+
+    # Tussock (Specific windows)
+    elif "Tussock Albata" in species_name and 175 <= mean_temp_k <= 180:
+        temp_match = True
+    elif "Tussock Caputus" in species_name and 180 <= mean_temp_k <= 190:
+        temp_match = True
+    elif "Tussock Ignis" in species_name and 160 <= mean_temp_k <= 170:
+        temp_match = True
+    elif "Tussock Pennata" in species_name and 145 <= mean_temp_k <= 155:
+        temp_match = True
+    elif "Tussock" in species_name and 145 <= mean_temp_k <= 195:
+        temp_match = True
+
+    # Stratum / Fungoida / Concha / Tubus (180-195K Sweet Spot)
+    elif any(x in species_name for x in ["Stratum", "Fungoida", "Concha", "Tubus", "Osseus"]):
+        if 180 <= mean_temp_k <= 195:
+            temp_match = True
+        elif 160 <= mean_temp_k <= 200:
+            temp_match = True  # Broader match
+
+    # Cactoida (Hot: 300-500K or CO2/Ammonia specific)
+    elif "Cactoida" in species_name:
+        if 300 <= mean_temp_k <= 500: temp_match = True
+
+    # Brain Tree (200-500K)
+    elif "Brain Tree" in species_name:
+        if 200 <= mean_temp_k <= 500: temp_match = True
+
+    # Fonticulua (Varies by Atm, but generally specific)
+    elif "Fonticulua" in species_name:
+        temp_match = True  # Hard to pinpoint without atm check, assume match if estimator passed it
+
+    if temp_match:
+        score += 0.3
     else:
-        score += 0.1
-    if atmosphere in [Atmosphere.SULPHUR_DIOXIDE, Atmosphere.AMMONIA, Atmosphere.HELIUM]:
+        # If temp is outside ideal range but inside survival range
+        score += 0.05
+
+    # -----------------------------------------------------------------------
+    # 3. ATMOSPHERE RARITY (Rare atm = Higher Confidence)
+    # -----------------------------------------------------------------------
+    if atmosphere in [Atmosphere.SULPHUR_DIOXIDE, Atmosphere.AMMONIA, Atmosphere.HELIUM, Atmosphere.NEON, Atmosphere.NEON_RICH]:
         score += 0.15
-    if volcanism and volcanism != Volcanism.NONE:
-        if "Fumerola" in species_name or "Sinuous" in species_name:
-            score += 0.25
+    elif atmosphere in [Atmosphere.ARGON, Atmosphere.ARGON_RICH, Atmosphere.OXYGEN]:
+        score += 0.10
+    elif atmosphere in [Atmosphere.CARBON_DIOXIDE, Atmosphere.CARBON_DIOXIDE_RICH]:
+        score += 0.05  # Common, less predictive power
+
+    # -----------------------------------------------------------------------
+    # 4. VOLCANISM DEPENDENCY (Critical for Fumerola/Sinuous)
+    # -----------------------------------------------------------------------
+    has_volcanism = volcanism and volcanism != Volcanism.NONE
+
+    if "Fumerola" in species_name or "Sinuous" in species_name:
+        if has_volcanism:
+            score += 0.25  # Critical match
+        else:
+            return 0.0  # Impossible without volcanism
+
+    # -----------------------------------------------------------------------
+    # 5. PLANET TYPE SPECIFICITY
+    # -----------------------------------------------------------------------
+    if "Electricae" in species_name and planet_type == PlanetType.ICY:
+        score += 0.1
+    if "Osseus Pumice" in species_name and planet_type == PlanetType.ROCKY_ICE:
+        score += 0.1
+
     return min(score, 1.0)
 
 
@@ -327,7 +439,7 @@ def estimate_biosigns(
     if atmosphere == Atmosphere.NONE and in_nebula: possible_species.append("Bark Mound")
 
     # Brain Tree
-    if (planet_type in PT_GROUP_LANDABLE_ROCKY and (200 <= mean_temp_k <= 500 or atmosphere in [Atmosphere.AMMONIA, Atmosphere.WATER, Atmosphere.WATER_RICH] or atmosphere in ATM_GROUP_WATER)):
+    if planet_type in PT_GROUP_LANDABLE_ROCKY and (200 <= mean_temp_k <= 500 or atmosphere in [Atmosphere.AMMONIA, Atmosphere.WATER, Atmosphere.WATER_RICH] or atmosphere in ATM_GROUP_WATER):
         if planet_type in [PlanetType.METAL_RICH, PlanetType.HMC] and 300 <= mean_temp_k <= 500: possible_species.append("Brain Tree Aureum")
         if planet_type == PlanetType.ROCKY and 200 <= mean_temp_k <= 300: possible_species.append("Brain Tree Gypseeum")
         if planet_type in [PlanetType.HMC, PlanetType.ROCKY] and 300 <= mean_temp_k <= 500: possible_species.append("Brain Tree Lindigoticum")

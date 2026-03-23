@@ -186,6 +186,36 @@ def format_temperature(temperature, landable):
 
     return temperature_formatted
 
+def format_probability(probability: float = 0.0):
+    return f"{probability*100:3.0f}%"
+
+def get_colour_gradient_from_probability(probability: float = 0) -> wx.Colour:
+    if probability == 0:
+        return wx.Colour(20, 20, 20)
+
+    if 0 < probability <= 0.8:
+        return wx.Colour(150, 255, 150)
+
+    if 0.8 < probability <= 2.0:
+        return wx.Colour(0, 200, 0)
+
+    if 2.0 < probability <= 2.7:
+        return wx.Colour(255, 190, 25)
+
+    if 2.7 < probability <= 4.0:
+        return wx.Colour(255, 150, 25)
+
+    if 4.0 < probability <= 6.0:
+        return wx.Colour(255, 50, 0)
+
+    if 6.0 < probability <= 20:
+        return wx.Colour(200, 0, 0)
+
+    if 20 < probability:
+        return wx.Colour(220, 0, 255)
+
+    return wx.Colour(0, 0, 255)
+
 def get_colour_gradient_from_gravity(gravity: float = 0) -> wx.Colour:
     if gravity == 0:
         return wx.Colour(20, 20, 20)
@@ -212,6 +242,7 @@ def get_colour_gradient_from_gravity(gravity: float = 0) -> wx.Colour:
         return wx.Colour(220, 0, 255)
 
     return wx.Colour(0, 0, 255)
+
 
 def get_colour_gradient_from_temperature(temperature: float = 0) -> wx.Colour:
     if TEMPERATURE_LOW <= temperature < TEMPERATURE_HIGH:

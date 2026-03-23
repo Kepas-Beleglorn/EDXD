@@ -95,11 +95,12 @@ class EDXDConfig(DynamicDialog):
 
         # Buttons
         self.window_identifiers = [
-            ["DETAIL_TARGETED", "Targeted body"],
-            ["DETAIL_SELECTED", "Selected body"],
-            ["PSPS",            "Planetary Surface Positioning System"],
-            ["ENGINE_STATUS",   "Engine status"],
-            ["STATUS_FLAGS",    "Status flags"]
+            ["DETAIL_TARGETED",         "Targeted body"],
+            ["DETAIL_SELECTED",         "Selected body"],
+            ["PSPS",                    "Planetary Surface Positioning System"],
+            ["ENGINE_STATUS",           "Engine status"],
+            ["BIOSIGNAL_PREDICTION",    "Biosignal prediction"],
+            ["STATUS_FLAGS",            "Status flags"]
         ]
 
         self.window_buttons = {}
