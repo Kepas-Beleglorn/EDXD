@@ -63,21 +63,13 @@ SPECIES_TO_CODEX = {
     "Amphora Plant": "$Codex_Ent_Shrubs_Genus_Name;",
 
     # Anemone (Clypeus)
-    "Anemone Blatteum Bioluminescent": "$Codex_Ent_Clypeus_Genus_Name;",
     "Blatteum Bioluminescent Anemone": "$Codex_Ent_Clypeus_Genus_Name;",
-    "Anemone Croceum": "$Codex_Ent_Clypeus_Genus_Name;",
     "Croceum Anemone": "$Codex_Ent_Clypeus_Genus_Name;",
-    "Anemone Luteolum": "$Codex_Ent_Clypeus_Genus_Name;",
     "Luteolum Anemone": "$Codex_Ent_Clypeus_Genus_Name;",
-    "Anemone Prasinum Bioluminescent": "$Codex_Ent_Clypeus_Genus_Name;",
     "Prasinum Bioluminescent Anemone": "$Codex_Ent_Clypeus_Genus_Name;",
-    "Anemone Puniceum": "$Codex_Ent_Clypeus_Genus_Name;",
     "Puniceum Anemone": "$Codex_Ent_Clypeus_Genus_Name;",
-    "Anemone Roseum": "$Codex_Ent_Clypeus_Genus_Name;",
     "Roseum Anemone": "$Codex_Ent_Clypeus_Genus_Name;",
-    "Anemone Roseum Bioluminescent": "$Codex_Ent_Clypeus_Genus_Name;",
     "Roseum Bioluminescent Anemone": "$Codex_Ent_Clypeus_Genus_Name;",
-    "Anemone Rubeum Bioluminescent": "$Codex_Ent_Clypeus_Genus_Name;",
     "Rubeum Bioluminescent Anemone": "$Codex_Ent_Clypeus_Genus_Name;",
 
     # Bacterium
@@ -261,21 +253,13 @@ def get_genus_value(species_localised: str) -> int:
         "Amphora Plant": 3626400,
 
         # Anemone
-        "Anemone Blatteum Bioluminescent": 1499900,
         "Blatteum Bioluminescent Anemone": 1499900,
-        "Anemone Croceum": 3399800,
         "Croceum Anemone": 3399800,
-        "Anemone Luteolum": 1499900,
         "Luteolum Anemone": 1499900,
-        "Anemone Prasinum Bioluminescent": 1499900,
         "Prasinum Bioluminescent Anemone": 1499900,
-        "Anemone Puniceum": 1499900,
         "Puniceum Anemone": 1499900,
-        "Anemone Roseum": 1499900,
         "Roseum Anemone": 1499900,
-        "Anemone Roseum Bioluminescent": 1499900,
         "Roseum Bioluminescent Anemone": 1499900,
-        "Anemone Rubeum Bioluminescent": 1499900,
         "Rubeum Bioluminescent Anemone": 1499900,
 
         # Bacterium

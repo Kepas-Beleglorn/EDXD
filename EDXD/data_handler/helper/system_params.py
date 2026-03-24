@@ -33,6 +33,7 @@ class StarClass(Enum):
     TTS = "TTS"
     H = "H"
     SupermassiveBlackHole = "SupermassiveBlackHole"
+    BlackHole = "Black Hole"
     # Variants found in CSV
     A_BlueWhiteSuperGiant = "A_BlueWhiteSuperGiant"
     K_OrangeGiant = "K_OrangeGiant"
@@ -238,17 +239,17 @@ ATM_GROUP_RARE_GAS: Set[Atmosphere] = {
     *ATM_GROUP_NEON, *ATM_GROUP_ARGON
 }
 
-ATM_GROUP_ALL_BACTERIA: Set[Atmosphere] = {
-    Atmosphere.HELIUM, Atmosphere.THICK_HELIUM, Atmosphere.THIN_HELIUM,
-    *ATM_GROUP_NEON, *ATM_GROUP_ARGON, *ATM_GROUP_METHANE,
-    Atmosphere.NITROGEN, Atmosphere.THICK_NITROGEN, Atmosphere.THIN_NITROGEN,
-    Atmosphere.OXYGEN, Atmosphere.THIN_OXYGEN,
-    Atmosphere.AMMONIA, Atmosphere.THICK_AMMONIA,
-    *ATM_GROUP_CARBON, *ATM_GROUP_WATER,
-    Atmosphere.SULPHUR_DIOXIDE, Atmosphere.THICK_SULPHUR_DIOXIDE, Atmosphere.THIN_SULPHUR_DIOXIDE,
-    Atmosphere.HOT_SULPHUR_DIOXIDE, Atmosphere.HOT_THICK_SULPHUR_DIOXIDE, Atmosphere.HOT_THIN_SULPHUR_DIOXIDE,
-    Atmosphere.HOT_SILICATE_VAPOUR, Atmosphere.HOT_THICK_SILICATE_VAPOUR, Atmosphere.HOT_THIN_SILICATE_VAPOUR,
-    Atmosphere.METALLIC_VAPOUR, Atmosphere.HOT_THICK_METALLIC_VAPOUR,
+ATM_GROUP_THIN_ATMOSPHERE: Set[Atmosphere] = {
+    Atmosphere.THIN_HELIUM,
+    Atmosphere.THIN_NEON, Atmosphere.THIN_NEON_RICH,
+    Atmosphere.THIN_ARGON, Atmosphere.THIN_ARGON_RICH,
+    Atmosphere.THIN_METHANE, Atmosphere.THIN_METHANE_RICH,
+    Atmosphere.THIN_NITROGEN, Atmosphere.THIN_OXYGEN,
+    Atmosphere.THIN_AMMONIA,
+    Atmosphere.THIN_CARBON_DIOXIDE, Atmosphere.THIN_CARBON_DIOXIDE_RICH, Atmosphere.HOT_THIN_CARBON_DIOXIDE,
+    Atmosphere.THIN_WATER, Atmosphere.THIN_WATER_RICH,
+    Atmosphere.THIN_SULPHUR_DIOXIDE, Atmosphere.HOT_THIN_SULPHUR_DIOXIDE,
+    Atmosphere.HOT_THIN_SILICATE_VAPOUR,
 }
 
 # Planet Type Groups
@@ -275,4 +276,15 @@ VOLC_GROUP_HOT_ROCK: Set[Volcanism] = {
 VOLC_GROUP_INERT: Set[Volcanism] = {
     Volcanism.NONE,
     # Helium is Atmosphere, but logic treats it as inert volcanism source sometimes
+}
+
+# Star class groups
+SC_WHITE_DWARFS: Set[StarClass] = {
+    StarClass.D,
+    StarClass.DA,
+    StarClass.DAB,
+    StarClass.DB,
+    StarClass.DC,
+    StarClass.DCV,
+    StarClass.DQ,
 }
