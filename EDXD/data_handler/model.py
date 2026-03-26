@@ -51,6 +51,7 @@ class Body:
     body_id         : str
     body_name       : str = ""
     body_type       : str = ""
+    is_star         : bool = False
     scoopable       : bool = False
     landable        : bool = False
     distance        : int = 0
@@ -285,6 +286,7 @@ class Model:
             for body_id, body_properties in body_map.items():
                 body_name           = body_properties.get("body_name", "")
                 body_type           = body_properties.get("body_type", "")
+                is_star             = body_properties.get("is_star", False)
                 scoopable           = body_properties.get("scoopable", False)
                 distance            = body_properties.get("distance", 0)
                 landable            = body_properties.get("landable", False)
@@ -322,6 +324,7 @@ class Model:
                     body_id=body_id,
                     body_name=body_name,
                     body_type=body_type,
+                    is_star=is_star,
                     scoopable=scoopable,
                     distance=distance,
                     landable=landable,
@@ -352,7 +355,7 @@ class Model:
                     pressure=pressure
                 )
 
-    def update_body(self, systemaddress: int, body_id: str, body_name: str = None, body_type: str = None, scoopable: bool = None, distance: int = None, landable: bool = None,
+    def update_body(self, systemaddress: int, body_id: str, body_name: str = None, body_type: str = None, is_star: bool = None, scoopable: bool = None, distance: int = None, landable: bool = None,
                     biosignals: int = None, geosignals: int = None, materials: Dict[str, float] = None, scandata = None,
                     bio_found: Dict[str, Genus] = None, geo_found: Dict[str, CodexEntry] = None, rings: Dict[str, Ring] = None, total_bodies: int = None, radius: float = 0.0, mapped: bool = False,
                     geo_complete: bool = False, geo_scanned: int = 0, bio_complete: bool = False, bio_scanned: int = 0,
@@ -369,6 +372,7 @@ class Model:
                 body = self.bodies.get(body_id, Body(body_id=body_id))
                 body.body_name          = body_name         or body.body_name           or ""
                 body.body_type          = body_type         or body.body_type           or ""
+                body.is_star            = is_star           or body.is_star             or False
                 body.scoopable          = scoopable         or body.scoopable           or False
                 body.distance           = distance          or body.distance            or 0
                 body.landable           = landable          or body.landable            or False
@@ -439,6 +443,7 @@ class Model:
                 body_id: {
                     "body_name"         : body.body_name,
                     "body_type"         : body.body_type,
+                    "is_star"           : body.is_star,
                     "scoopable"         : body.scoopable,
                     "landable"          : body.landable,
                     "g_force"           : body.g_force,

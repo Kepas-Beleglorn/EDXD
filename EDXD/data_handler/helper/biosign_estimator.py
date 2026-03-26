@@ -79,11 +79,7 @@ def estimate_system_biosigns(model_bodies: Dict[str, Any]) -> Dict[str, List[Dic
         if "water based life" in b_type.lower(): system_has_gas_giant_with_water_life = True
         if "ammonia based life" in b_type.lower(): system_has_gas_giant_with_ammonia_life = True
 
-        is_star = False
-        if not b.parents:
-            is_star = True
-        elif len(b.parents) > 0 and isinstance(b.parents[0], dict) and "Null" in b.parents[0]:
-            is_star = True
+        is_star = b.is_star
 
         # TODO: #221 create dictionary with star-ID (body_XX), star class and luminosity.
         #       Body should be able to determine it's parent stars via body_XX
@@ -240,7 +236,8 @@ def _safe_get_enum(value: Optional[str], enum_class: Any, default: Any) -> Any:
     if value is None: return default
     try:
         return enum_class(value)
-    except ValueError:
+    except ValueError as e:
+        print(f"Error: Enum value not found {enum_class}({value}): {e}")
         return default
 
 
@@ -394,7 +391,7 @@ def estimate_biosigns(
 
     # Amphora Plant
     if (
-            atmosphere in {None, "", "None", "none"} and StarClass.A in star_class and
+            atmosphere in {None, "", "None", "none"} and StarClass.A == star_class and
             (
                     system_has_earth_like or
                     system_has_ammonia_world or

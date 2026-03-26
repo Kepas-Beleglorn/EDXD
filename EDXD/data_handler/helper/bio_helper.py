@@ -378,11 +378,11 @@ def get_genus_value(species_localised: str) -> int:
         "Stratum Tectonicas": 19010800,
 
         # Tubas
-        "Tubas Cavas": 11873200,
-        "Tubas Compagibus": 7774700,
-        "Tubas Conifer": 2415500,
-        "Tubas Rosarium": 2637500,
-        "Tubas Sororibus": 5727600,
+        "Tubus Cavas": 11873200,
+        "Tubus Compagibus": 7774700,
+        "Tubus Conifer": 2415500,
+        "Tubus Rosarium": 2637500,
+        "Tubus Sororibus": 5727600,
 
         # Tussock
         "Tussock Albata": 3252500,

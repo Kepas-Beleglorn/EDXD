@@ -169,6 +169,7 @@ class JournalController(PausableThread, threading.Thread):
         body_id         = None
         body_name       = None
         body_type       = None
+        is_star         = None
         radius          = None
         scoopable       = None
         distance        = None
@@ -236,6 +237,7 @@ class JournalController(PausableThread, threading.Thread):
                 distance = evt.get("DistanceFromArrivalLS")
                 landable = evt.get("Landable")
                 body_type = evt.get("PlanetClass") or evt.get("StarType")
+                is_star = evt.get("StarType") is not None
                 radius = evt.get("Radius")
 
                 if evt.get("SurfacePressure"):
@@ -251,7 +253,7 @@ class JournalController(PausableThread, threading.Thread):
                 if evt.get("SurfaceTemperature"):
                     mean_temp = evt.get("SurfaceTemperature")
 
-                if " with " in body_type:
+                if body_type and " with " in body_type:
                     present_life = body_type.split(" with ")[1]
 
                 g_force = None
@@ -543,6 +545,7 @@ class JournalController(PausableThread, threading.Thread):
                 body_id=body_id,
                 body_name=body_name,
                 body_type=body_type,
+                is_star=is_star,
                 scoopable=scoopable,
                 distance=distance,
                 landable=landable,
