@@ -601,45 +601,86 @@ def estimate_biosigns(
                 possible_species.append("Osseus Spiralis")
 
     # Recepta
-    if atmosphere == Atmosphere.SULPHUR_DIOXIDE and (gravity is None or gravity < 0.27):
-        if planet_type in PT_GROUP_ICE: possible_species.append("Recepta Conditivus")
-        if planet_type in PT_GROUP_HMC_ROCKY: possible_species.extend(["Recepta Deltahedronix", "Recepta Umbrux"])
+    if atmosphere in [Atmosphere.THIN_SULPHUR_DIOXIDE, Atmosphere.HOT_THIN_SULPHUR_DIOXIDE] and gravity and gravity < 0.27:
+        if planet_type in PT_GROUP_ICE:
+            possible_species.append("Recepta Conditivus")
+        if planet_type in PT_GROUP_HMC_ROCKY:
+            possible_species.append("Recepta Deltahedronix")
+        if planet_type in [*PT_GROUP_HMC_ROCKY, *PT_GROUP_ICE]:
+            possible_species.append("Recepta Umbrux")
 
     # Sinuous Tuber
-    if volcanism and volcanism != Volcanism.NONE and atmosphere == Atmosphere.NONE:
-        if planet_type == PlanetType.ROCKY: possible_species.extend(["Sinuous Tuber Albidum", "Sinuous Tuber Caeruleum", "Sinuous Tuber Lindigoticum"])
-        if planet_type in [PlanetType.METAL_RICH, PlanetType.HMC]: possible_species.extend(["Sinuous Tuber Blatteum", "Sinuous Tuber Prasinum", "Sinuous Tuber Violaceum", "Sinuous Tuber Viride"])
-        if "silicate vapour" in volcanism.value: possible_species.append("Sinuous Tuber Roseus")
+    if volcanism and volcanism != Volcanism.NONE and atmosphere in Atmosphere.NONE:
+        if "silicate magma" in volcanism.value: possible_species.append("Sinuous Tuber Roseus")
+        if planet_type == PlanetType.ROCKY:
+            possible_species.extend(["Sinuous Tuber Albidum", "Sinuous Tuber Caeruleum", "Sinuous Tuber Lindigoticum"])
+        if planet_type in [PlanetType.METAL_RICH, PlanetType.HMC]:
+            possible_species.extend(["Sinuous Tuber Blatteum", "Sinuous Tuber Prasinum", "Sinuous Tuber Violaceum", "Sinuous Tuber Viride"])
 
     # Stratum
-    if planet_type == PlanetType.ROCKY:
-        if (atmosphere == Atmosphere.SULPHUR_DIOXIDE or atmosphere in ATM_GROUP_CARBON) and mean_temp_k > 165:
-            possible_species.extend(["Stratum Araneamus", "Stratum Cucumisis", "Stratum Excutitus", "Stratum Frigus"])
-        if atmosphere == Atmosphere.AMMONIA and mean_temp_k > 165: possible_species.append("Stratum Laminamus")
-        if (atmosphere == Atmosphere.SULPHUR_DIOXIDE or atmosphere in ATM_GROUP_CARBON) and 165 <= mean_temp_k <= 190: possible_species.append("Stratum Limaxus")
-        if (atmosphere == Atmosphere.AMMONIA or atmosphere in ATM_GROUP_WATER) and mean_temp_k > 165: possible_species.append("Stratum Paleas")
-    if planet_type == PlanetType.HMC and mean_temp_k > 165: possible_species.append("Stratum Tectonicas")
+    if atmosphere in ATM_GROUP_THIN_ATMOSPHERE:
+        if (planet_type == PlanetType.HMC
+                and mean_temp_k > 165):
+            possible_species.append("Stratum Tectonicas")
+        if planet_type == PlanetType.ROCKY:
+            if atmosphere == Atmosphere.THIN_AMMONIA and mean_temp_k > 165:
+                possible_species.extend(["Stratum Paleas", "Stratum Laminamus"])
+            if atmosphere in ATM_GROUP_WATER:
+                possible_species.append("Stratum Paleas")
+            if atmosphere in ATM_GROUP_CARBON:
+                if mean_temp_k > 165:
+                    possible_species.append("Stratum Paleas")
+                if mean_temp_k > 190:
+                    possible_species.extend(["Stratum Cucumisis", "Stratum Frigus"])
+                if 165 <= mean_temp_k <= 190:
+                    possible_species.extend(["Stratum Limaxus", "Stratum Excutitus"])
+            if atmosphere in [Atmosphere.THIN_SULPHUR_DIOXIDE, Atmosphere.HOT_THIN_SULPHUR_DIOXIDE]:
+                if mean_temp_k > 165:
+                    possible_species.append("Stratum Araneamus")
+                if mean_temp_k > 190:
+                    possible_species.extend(["Stratum Cucumisis", "Stratum Frigus"])
+                if 165 <= mean_temp_k <= 190:
+                    possible_species.extend(["Stratum Limaxus", "Stratum Excutitus"])
 
     # Tubus
-    if planet_type in PT_GROUP_HMC_ROCKY:
-        if atmosphere in ATM_GROUP_CARBON and 160 <= mean_temp_k <= 190: possible_species.extend(["Tubus Cavas", "Tubus Compagibus", "Tubus Conifer"])
-        if atmosphere == Atmosphere.AMMONIA and mean_temp_k > 160: possible_species.append("Tubus Rosarium")
-        if planet_type == PlanetType.HMC and (atmosphere == Atmosphere.AMMONIA or atmosphere in ATM_GROUP_CARBON) and 160 <= mean_temp_k <= 190: possible_species.append("Tubus Sororibus")
+    if atmosphere in ATM_GROUP_THIN_ATMOSPHERE and gravity and gravity <= 0.15:
+        if planet_type == PlanetType.HMC and atmosphere in [Atmosphere.THIN_AMMONIA, *ATM_GROUP_CARBON]:
+            possible_species.append("Tubus Sororibus")
+
+        if planet_type == PlanetType.ROCKY:
+            if atmosphere == Atmosphere.AMMONIA:
+                possible_species.append("Tubus Rosarium")
+            if atmosphere == Atmosphere.THIN_CARBON_DIOXIDE:
+                possible_species.append("Tubus Cavas")
+            if atmosphere in ATM_GROUP_CARBON and 160 <= mean_temp_k <= 190:
+                possible_species.extend(["Tubus Compagibus", "Tubus Conifer"])
 
     # Tussock
-    if planet_type == PlanetType.ROCKY:
+    if planet_type == PlanetType.ROCKY and atmosphere in ATM_GROUP_THIN_ATMOSPHERE and gravity and gravity <= 0.27:
         if atmosphere in ATM_GROUP_CARBON:
-            if 175 <= mean_temp_k <= 180: possible_species.append("Tussock Albata")
-            if 180 <= mean_temp_k <= 190: possible_species.append("Tussock Caputus")
-            if 160 <= mean_temp_k <= 170: possible_species.append("Tussock Ignis")
-            if 145 <= mean_temp_k <= 155: possible_species.append("Tussock Pennata")
-            if mean_temp_k < 195: possible_species.extend(["Tussock Pennatis", "Tussock Propagito"])
-            if 170 <= mean_temp_k <= 175: possible_species.append("Tussock Serrati")
-            if 190 <= mean_temp_k <= 195: possible_species.append("Tussock Triticum")
-            if 155 <= mean_temp_k <= 160: possible_species.append("Tussock Ventusa")
-        if atmosphere in ATM_GROUP_METHANE or atmosphere in ATM_GROUP_ARGON: possible_species.append("Tussock Capillum")
-        if atmosphere == Atmosphere.AMMONIA: possible_species.extend(["Tussock Catena", "Tussock Cultro", "Tussock Divisa"])
-        if atmosphere == Atmosphere.SULPHUR_DIOXIDE: possible_species.append("Tussock Stigmasis")
-        if atmosphere in ATM_GROUP_WATER: possible_species.append("Tussock Virgam")
+            if 175 <= mean_temp_k <= 180:
+                possible_species.append("Tussock Albata")
+            if 180 <= mean_temp_k <= 190:
+                possible_species.append("Tussock Caputus")
+            if 160 <= mean_temp_k <= 170:
+                possible_species.append("Tussock Ignis")
+            if 145 <= mean_temp_k <= 155:
+                possible_species.append("Tussock Pennata")
+            if mean_temp_k < 195:
+                possible_species.extend(["Tussock Pennatis", "Tussock Propagito"])
+            if 170 <= mean_temp_k <= 175:
+                possible_species.append("Tussock Serrati")
+            if 190 <= mean_temp_k <= 195:
+                possible_species.append("Tussock Triticum")
+            if 155 <= mean_temp_k <= 160:
+                possible_species.append("Tussock Ventusa")
+        if atmosphere in [*ATM_GROUP_METHANE, *ATM_GROUP_ARGON]:
+            possible_species.append("Tussock Capillum")
+        if atmosphere == Atmosphere.THIN_AMMONIA:
+            possible_species.extend(["Tussock Catena", "Tussock Cultro", "Tussock Divisa"])
+        if atmosphere in [Atmosphere.THIN_SULPHUR_DIOXIDE, Atmosphere.HOT_THIN_SULPHUR_DIOXIDE]:
+            possible_species.append("Tussock Stigmasis")
+        if atmosphere in ATM_GROUP_WATER:
+            possible_species.append("Tussock Virgam")
 
     return possible_species
