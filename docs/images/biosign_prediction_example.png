@@ -1,0 +1,3 @@
+"""Example image showing current biosign prediction output.
+This image demonstrates the current state of biosign prediction, where after DSS, if only one type of a species remains, the probability should be refined to 100%.
+"""
