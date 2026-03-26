@@ -35,7 +35,7 @@ def get_genus_prefix_from_codex(codex_key: str) -> str:
         "$Codex_Ent_Fonticulus_Genus_Name;": "Fonticulua",
         "$Codex_Ent_Stratum_Genus_Name;": "Stratum",
         "$Codex_Ent_Osseus_Genus_Name;": "Osseus",
-        "$Codex_Ent_Tubus_Genus_Name;": "Tubas",  # Note: Species are "Tubas ..."
+        "$Codex_Ent_Tubus_Genus_Name;": "Tubus",
         "$Codex_Ent_Electricae_Genus_Name;": "Electricae",
         "$Codex_Ent_Vents_Name;": "Vents",
         "$Codex_Ent_Sphere_Name;": "Sphere",
