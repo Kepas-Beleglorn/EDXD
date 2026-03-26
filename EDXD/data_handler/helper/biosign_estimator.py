@@ -1,6 +1,6 @@
 from typing import List, Optional, Dict, Any, Set
 from EDXD.data_handler.helper.system_params import (
-    StarClass, StarLuminosity, PlanetType, Volcanism,
+    StarClass, StarLuminosity, PlanetType,
     PT_GROUP_HMC_ROCKY, PT_GROUP_ICE,
     SC_WHITE_DWARFS
 )
@@ -112,7 +112,6 @@ def estimate_system_biosigns(model_bodies: Dict[str, Any]) -> Dict[str, List[Dic
         pt_raw = body.body_type if isinstance(body.body_type, str) else str(body.body_type)
         pt_enum = _safe_get_enum(pt_raw, PlanetType, PlanetType.ROCKY)
         volc_raw = getattr(body, 'volcanism', None) or "None"
-        volc_enum = _safe_get_enum(volc_raw, Volcanism, Volcanism.NONE)
 
         gravity = getattr(body, 'g_force', 0.0)
         mean_temp = getattr(body, 'mean_temp', 0.0)
@@ -146,7 +145,7 @@ def estimate_system_biosigns(model_bodies: Dict[str, Any]) -> Dict[str, List[Dic
             potential_species = estimate_biosigns(
                 planet_type=pt_enum, atmosphere=atm_raw, mean_temp_k=mean_temp,
                 star_class=star_class_enum, star_luminosity=star_luminosity_enum,
-                volcanism=volc_enum, gravity=gravity, in_nebula=in_nebula,
+                volcanism=volc_raw, gravity=gravity, in_nebula=in_nebula,
                 system_has_earth_like=system_has_earth_like,
                 system_has_ammonia_world=system_has_ammonia_world,
                 system_has_water_giant=system_has_water_giant,
@@ -205,7 +204,7 @@ def estimate_system_biosigns(model_bodies: Dict[str, Any]) -> Dict[str, List[Dic
                         planet_type=pt_enum,
                         atmosphere=atm_raw,
                         mean_temp_k=mean_temp,
-                        volcanism=volc_enum,
+                        volcanism=volc_raw,
                         gravity=gravity,  # Pass these new args
                         star_class=star_class_enum,
                         star_luminosity=star_luminosity_enum
@@ -237,7 +236,6 @@ def _safe_get_atmosphere_type(body_atmosphere: Any) -> str:
     if isinstance(body_atmosphere, str): return body_atmosphere if body_atmosphere else "None"
     return "None"
 
-
 def _safe_get_enum(value: Optional[str], enum_class: Any, default: Any) -> Any:
     if value is None: return default
     try:
@@ -251,7 +249,7 @@ def calculate_probability(
         planet_type: PlanetType,
         atmosphere: str,
         mean_temp_k: float,
-        volcanism: Optional[Volcanism],
+        volcanism: Optional[str],
         gravity: Optional[float] = None,
         star_class: Optional[StarClass] = None,
         star_luminosity: Optional[StarLuminosity] = None
@@ -351,7 +349,7 @@ def calculate_probability(
     # -----------------------------------------------------------------------
     # 4. VOLCANISM DEPENDENCY (Critical for Fumerola/Sinuous)
     # -----------------------------------------------------------------------
-    has_volcanism = volcanism and volcanism != Volcanism.NONE
+    has_volcanism = volcanism not in STR_LIST_NONE
 
     if "Fumerola" in species_name or "Sinuous" in species_name:
         if has_volcanism:
@@ -373,7 +371,7 @@ def calculate_probability(
 def estimate_biosigns(
         planet_type: PlanetType, atmosphere: str, mean_temp_k: float,
         star_class: Optional[StarClass] = None, star_luminosity: Optional[StarLuminosity] = None,
-        volcanism: Optional[Volcanism] = None, gravity: Optional[float] = None,
+        volcanism: Optional[str] = None, gravity: Optional[float] = None,
         in_nebula: bool = False, system_has_earth_like: bool = False,
         system_has_ammonia_world: bool = False, system_has_water_giant: bool = False,
         system_has_gas_giant_with_water_life: bool = False,
@@ -436,11 +434,11 @@ def estimate_biosigns(
         if "helium" in atmosphere:
             possible_species.append("Bacterium Nebulus")
         if "neon" in atmosphere:
-            if volcanism and any(opt in volcanism.value for opt in ("nitrogen", "ammonia")):
+            if any(opt in volcanism for opt in ("nitrogen", "ammonia")):
                 possible_species.append("Bacterium Omentum")
-            elif volcanism and any(opt in volcanism.value for opt in ("carbon", "methane")):
+            elif any(opt in volcanism for opt in ("carbon", "methane")):
                 possible_species.append("Bacterium Scopulum")
-            elif volcanism and "water" in volcanism.value:
+            elif "water" in volcanism:
                 possible_species.append("Bacterium Verrata")
             else:
                 possible_species.append("Bacterium Acies")
@@ -458,16 +456,16 @@ def estimate_biosigns(
             possible_species.append("Bacterium Aurasus")
         if any(opt in atmosphere for opt in ("water", "sulfur")):
             possible_species.append("Bacterium Cerbrus")
-        if volcanism and any(opt in volcanism.value for opt in ("helium", "metallic", "silicate")):
+        if any(opt in volcanism for opt in ("helium", "metallic", "silicate")):
             possible_species.append("Bacterium Tela")
 
     # Bark Mound
     if (atmosphere in STR_LIST_NONE
-            and (in_nebula or (volcanism and volcanism.value != Volcanism.NONE))):
+            and (in_nebula or (volcanism not in STR_LIST_NONE))):
         possible_species.append("Bark Mound")
 
     # Brain Tree
-    if volcanism and volcanism.value != Volcanism.NONE and atmosphere in STR_LIST_NONE:
+    if volcanism not in STR_LIST_NONE and atmosphere in STR_LIST_NONE:
         if 200 <= mean_temp_k <= 500:
             possible_species.append("Brain Tree Roseum")
         if system_has_earth_like or system_has_gas_giant_with_water_life:
@@ -578,18 +576,18 @@ def estimate_biosigns(
             possible_species.append("Frutexa Sponsae")
 
     # Fumerola
-    if volcanism and volcanism != Volcanism.NONE and "thin" in atmosphere and gravity and gravity <= 0.27:
+    if volcanism not in STR_LIST_NONE and "thin" in atmosphere and gravity and gravity <= 0.27:
         if (planet_type in PT_GROUP_ICE
-                and "water" in volcanism.value):
+                and "water" in volcanism):
             possible_species.append("Fumerola Aquatis")
         if (planet_type in PT_GROUP_ICE
-                and any(opt in volcanism.value for opt in ("methane", "carbon"))):
+                and any(opt in volcanism for opt in ("methane", "carbon"))):
             possible_species.append("Fumerola Carbosis")
         if (planet_type in PT_GROUP_HMC_ROCKY
-                and any(opt in volcanism.value for opt in ("metallic", "rocky", "silicate"))):
+                and any(opt in volcanism for opt in ("metallic", "rocky", "silicate"))):
             possible_species.append("Fumerola Extremus")
         if (planet_type in PT_GROUP_ICE
-                and any(opt in volcanism.value for opt in ("nitrogen", "ammonia"))):
+                and any(opt in volcanism for opt in ("nitrogen", "ammonia"))):
             possible_species.append("Fumerola Nitris")
 
     # Fungoida
@@ -628,8 +626,9 @@ def estimate_biosigns(
             possible_species.append("Recepta Umbrux")
 
     # Sinuous Tuber
-    if volcanism and volcanism != Volcanism.NONE and atmosphere in STR_LIST_NONE:
-        if "silicate magma" in volcanism.value: possible_species.append("Sinuous Tuber Roseus")
+    if volcanism not in STR_LIST_NONE and atmosphere in STR_LIST_NONE:
+        if "silicate magma" in volcanism:
+            possible_species.append("Sinuous Tuber Roseus")
         if planet_type == PlanetType.ROCKY:
             possible_species.extend(["Sinuous Tuber Albidum", "Sinuous Tuber Caeruleum", "Sinuous Tuber Lindigoticum"])
         if planet_type in [PlanetType.METAL_RICH, PlanetType.HMC]:

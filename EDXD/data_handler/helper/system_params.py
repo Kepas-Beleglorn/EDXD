@@ -81,65 +81,12 @@ class PlanetType(Enum):
     HELIUM_RICH_GIANT = "Helium rich gas giant"
     WATER_GIANT = "Water giant"
 
-class Volcanism(Enum):
-    NONE = "None"
-    # Water
-    WATER_GEYSERS = "water geysers volcanism"
-    WATER_MAGMA = "water magma volcanism"
-    MAJOR_WATER_GEYSERS = "major water geysers volcanism"
-    MAJOR_WATER_MAGMA = "major water magma volcanism"
-    MINOR_WATER_GEYSERS = "minor water geysers volcanism"
-    MINOR_WATER_MAGMA = "minor water magma volcanism"
-    # Carbon Dioxide
-    CO2_GEYSERS = "carbon dioxide geysers volcanism"
-    MINOR_CO2_GEYSERS = "minor carbon dioxide geysers volcanism"
-    # Silicate
-    SILICATE_VAPOUR_GEYSERS = "silicate vapour geysers volcanism"
-    MAJOR_SILICATE_VAPOUR_GEYSERS = "major silicate vapour geysers volcanism"
-    MINOR_SILICATE_VAPOUR_GEYSERS = "minor silicate vapour geysers volcanism"
-    # Metallic
-    METALLIC_MAGMA = "metallic magma volcanism"
-    MAJOR_METALLIC_MAGMA = "major metallic magma volcanism"
-    MINOR_METALLIC_MAGMA = "minor metallic magma volcanism"
-    # Rocky
-    ROCKY_MAGMA = "rocky magma volcanism"
-    MAJOR_ROCKY_MAGMA = "major rocky magma volcanism"
-    MINOR_ROCKY_MAGMA = "minor rocky magma volcanism"
-    # Ammonia
-    MINOR_AMMONIA_MAGMA = "minor ammonia magma volcanism"
-    # Methane
-    MINOR_METHANE_MAGMA = "minor methane magma volcanism"
-    # Nitrogen
-    MINOR_NITROGEN_MAGMA = "minor nitrogen magma volcanism"
-
 # ---------------------------------------------------------------------------
 # Helper Sets for Logic
 # ---------------------------------------------------------------------------
 # Planet Type Groups
-PT_GROUP_LANDABLE_ROCKY: Set[PlanetType] = {
-    PlanetType.ROCKY, PlanetType.HMC, PlanetType.METAL_RICH, PlanetType.ROCKY_ICE
-}
 PT_GROUP_HMC_ROCKY: Set[PlanetType] = {PlanetType.ROCKY, PlanetType.HMC}
 PT_GROUP_ICE: Set[PlanetType] = {PlanetType.ICY, PlanetType.ROCKY_ICE}
-
-# Volcanism Groups
-VOLC_GROUP_GAS_ICE: Set[Volcanism] = {
-    Volcanism.MINOR_NITROGEN_MAGMA, Volcanism.MINOR_AMMONIA_MAGMA,
-    # Add specific geysers if logic requires
-}
-VOLC_GROUP_CARBON_ICE: Set[Volcanism] = {
-    Volcanism.MINOR_METHANE_MAGMA,
-    Volcanism.CO2_GEYSERS, Volcanism.MINOR_CO2_GEYSERS
-}
-VOLC_GROUP_HOT_ROCK: Set[Volcanism] = {
-    Volcanism.METALLIC_MAGMA, Volcanism.MAJOR_METALLIC_MAGMA, Volcanism.MINOR_METALLIC_MAGMA,
-    Volcanism.ROCKY_MAGMA, Volcanism.MAJOR_ROCKY_MAGMA, Volcanism.MINOR_ROCKY_MAGMA,
-    Volcanism.SILICATE_VAPOUR_GEYSERS, Volcanism.MAJOR_SILICATE_VAPOUR_GEYSERS, Volcanism.MINOR_SILICATE_VAPOUR_GEYSERS,
-}
-VOLC_GROUP_INERT: Set[Volcanism] = {
-    Volcanism.NONE,
-    # Helium is Atmosphere, but logic treats it as inert volcanism source sometimes
-}
 
 # Star class groups
 SC_WHITE_DWARFS: Set[StarClass] = {
