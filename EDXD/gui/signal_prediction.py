@@ -1,7 +1,7 @@
 
 from __future__ import annotations
 
-from typing import Dict, List
+from typing import Dict, List, Set
 
 import wx
 
@@ -44,12 +44,16 @@ class SignalPrediction(DynamicDialog):
 
     # ------------------------------------------------------------------
     def render(self, prediction: Dict[str, List[Dict]] = None):
+        panels_to_remove: Set[str] = set()
         # remove unnecessary panels
         for panel_key in self.prediction_panels:
             if panel_key not in prediction.keys():
-                panel: CollapsiblePanel = self.prediction_panels.pop(panel_key)
-                self.window_box.Detach(panel)
-                panel.Destroy()
+                panels_to_remove.add(panel_key)
+
+        for panel_key in panels_to_remove:
+            panel: CollapsiblePanel = self.prediction_panels.pop(panel_key)
+            self.window_box.Detach(panel)
+            panel.Destroy()
 
         # add more panels
         for prediction_key in prediction.keys():

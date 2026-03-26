@@ -157,6 +157,7 @@ class CodexEntry:
 @dataclass
 class Atmosphere:
     type        : str = None
+    raw         : str = None
     composition : Dict[str, float] = field(default_factory=dict)
 
     def __post_init__(self):

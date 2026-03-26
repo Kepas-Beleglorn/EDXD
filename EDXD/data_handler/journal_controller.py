@@ -298,9 +298,9 @@ class JournalController(PausableThread, threading.Thread):
                         if first_footfalled != 2:
                             first_footfalled = 1
 
-                    if evt.get("AtmosphereType") or evt.get("AtmosphereComposition"):
+                    if evt.get("AtmosphereType") or evt.get("AtmosphereComposition") or evt.get("Atmosphere"):
                         atmos_composition = {a["Name"]: a["Percent"] for a in evt.get("AtmosphereComposition", [])}
-                        atmosphere = Atmosphere(type=evt.get("AtmosphereType"), composition=atmos_composition)
+                        atmosphere = Atmosphere(type=evt.get("AtmosphereType"), composition=atmos_composition, raw=evt.get("Atmosphere"))
 
 
         if etype == "Disembark":

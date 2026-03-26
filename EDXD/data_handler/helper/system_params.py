@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Set, Optional, List
+from typing import Set
 
 # ---------------------------------------------------------------------------
 # Enums derived from Journal Data (elite_all_constants.csv)
@@ -61,88 +61,6 @@ class StarLuminosity(Enum):
     # Fallback for non-standard entries like 'O' in luminosity field if any
     O = "O"
 
-class Atmosphere(Enum):
-    NONE = "None"
-    # Standard
-    AMMONIA = "Ammonia"
-    ARGON = "Argon"
-    ARGON_RICH = "ArgonRich"
-    CARBON_DIOXIDE = "CarbonDioxide"
-    CARBON_DIOXIDE_RICH = "CarbonDioxideRich"
-    HELIUM = "Helium"
-    METHANE = "Methane"
-    METHANE_RICH = "MethaneRich"
-    NEON = "Neon"
-    NEON_RICH = "NeonRich"
-    NITROGEN = "Nitrogen"
-    OXYGEN = "Oxygen"
-    SILICATE_VAPOUR = "SilicateVapour"
-    SULPHUR_DIOXIDE = "SulphurDioxide"
-    WATER = "Water"
-    WATER_RICH = "WaterRich"
-    METALLIC_VAPOUR = "MetallicVapour"
-    EARTH_LIKE = "EarthLike"
-    AMMONIA_OXYGEN = "AmmoniaOxygen"
-    # Thick variants
-    THICK_AMMONIA = "Thick Ammonia" # Note: CSV had spaces in some, normalize if needed
-    THICK_AMMONIA_RICH = "Thick AmmoniaRich"
-    THICK_ARGON = "Thick Argon"
-    THICK_ARGON_RICH = "Thick ArgonRich"
-    THICK_CARBON_DIOXIDE = "Thick CarbonDioxide"
-    THICK_CARBON_DIOXIDE_RICH = "Thick CarbonDioxideRich"
-    THICK_HELIUM = "Thick Helium"
-    THICK_METHANE = "Thick Methane"
-    THICK_METHANE_RICH = "Thick MethaneRich"
-    THICK_NITROGEN = "Thick Nitrogen"
-    THICK_SULPHUR_DIOXIDE = "Thick SulphurDioxide"
-    THICK_WATER = "Thick Water"
-    THICK_WATER_RICH = "Thick WaterRich"
-    THICK_EMPTY = "Thick  " # CSV had "thick  atmosphere" -> type might be "Thick  "
-    # Thin variants
-    THIN_AMMONIA = "Thin Ammonia"
-    THIN_ARGON = "Thin Argon"
-    THIN_ARGON_RICH = "Thin ArgonRich"
-    THIN_CARBON_DIOXIDE = "Thin CarbonDioxide"
-    THIN_CARBON_DIOXIDE_RICH = "Thin CarbonDioxideRich"
-    THIN_HELIUM = "Thin Helium"
-    THIN_METHANE = "Thin Methane"
-    THIN_METHANE_RICH = "Thin MethaneRich"
-    THIN_NEON = "Thin Neon"
-    THIN_NEON_RICH = "Thin NeonRich"
-    THIN_NITROGEN = "Thin Nitrogen"
-    THIN_OXYGEN = "Thin Oxygen"
-    THIN_SULPHUR_DIOXIDE = "Thin SulphurDioxide"
-    THIN_WATER = "Thin Water"
-    THIN_WATER_RICH = "Thin WaterRich"
-    THIN_EMPTY = "Thin  "
-    # Hot variants
-    HOT_CARBON_DIOXIDE = "Hot CarbonDioxide"
-    HOT_CARBON_DIOXIDE_RICH = "Hot CarbonDioxideRich"
-    HOT_SILICATE_VAPOUR = "Hot SilicateVapour"
-    HOT_SULPHUR_DIOXIDE = "Hot SulphurDioxide"
-    HOT_THICK_AMMONIA = "Hot Thick Ammonia"
-    HOT_THICK_AMMONIA_RICH = "Hot Thick AmmoniaRich"
-    HOT_THICK_ARGON_RICH = "Hot Thick ArgonRich"
-    HOT_THICK_CARBON_DIOXIDE = "Hot Thick CarbonDioxide"
-    HOT_THICK_CARBON_DIOXIDE_RICH = "Hot Thick CarbonDioxideRich"
-    HOT_THICK_METALLIC_VAPOUR = "Hot Thick MetallicVapour"
-    HOT_THICK_METHANE_RICH = "Hot Thick MethaneRich"
-    HOT_THICK_SILICATE_VAPOUR = "Hot Thick SilicateVapour"
-    HOT_THICK_SULPHUR_DIOXIDE = "Hot Thick SulphurDioxide"
-    HOT_THICK_WATER = "Hot Thick Water"
-    HOT_THICK_WATER_RICH = "Hot Thick WaterRich"
-    HOT_THIN_CARBON_DIOXIDE = "Hot Thin CarbonDioxide"
-    HOT_THIN_SILICATE_VAPOUR = "Hot Thin SilicateVapour"
-    HOT_THIN_SULPHUR_DIOXIDE = "Hot Thin SulphurDioxide"
-    HOT_WATER = "Hot Water"
-    HOT_AMMONIA = "Hot Ammonia" # Inferred
-    HOT_ARGON = "Hot Argon"     # Inferred
-    HOT_HELIUM = "Hot Helium"   # Inferred
-    HOT_METHANE = "Hot Methane" # Inferred
-    HOT_NITROGEN = "Hot Nitrogen" # Inferred
-    HOT_OXYGEN = "Hot Oxygen"   # Inferred
-    HOT_NEON = "Hot Neon"       # Inferred
-
 class PlanetType(Enum):
     ROCKY = "Rocky body"
     HMC = "High metal content body"
@@ -197,61 +115,6 @@ class Volcanism(Enum):
 # ---------------------------------------------------------------------------
 # Helper Sets for Logic
 # ---------------------------------------------------------------------------
-
-# Atmosphere Groups
-ATM_GROUP_CARBON: Set[Atmosphere] = {
-    Atmosphere.CARBON_DIOXIDE, Atmosphere.CARBON_DIOXIDE_RICH,
-    Atmosphere.THICK_CARBON_DIOXIDE, Atmosphere.THICK_CARBON_DIOXIDE_RICH,
-    Atmosphere.THIN_CARBON_DIOXIDE, Atmosphere.THIN_CARBON_DIOXIDE_RICH,
-    Atmosphere.HOT_CARBON_DIOXIDE, Atmosphere.HOT_CARBON_DIOXIDE_RICH,
-    Atmosphere.HOT_THICK_CARBON_DIOXIDE, Atmosphere.HOT_THICK_CARBON_DIOXIDE_RICH,
-    Atmosphere.HOT_THIN_CARBON_DIOXIDE,
-}
-
-ATM_GROUP_WATER: Set[Atmosphere] = {
-    Atmosphere.WATER, Atmosphere.WATER_RICH,
-    Atmosphere.THICK_WATER, Atmosphere.THICK_WATER_RICH,
-    Atmosphere.THIN_WATER, Atmosphere.THIN_WATER_RICH,
-    Atmosphere.HOT_WATER, Atmosphere.HOT_THICK_WATER, Atmosphere.HOT_THICK_WATER_RICH,
-}
-
-ATM_GROUP_METHANE: Set[Atmosphere] = {
-    Atmosphere.METHANE, Atmosphere.METHANE_RICH,
-    Atmosphere.THICK_METHANE, Atmosphere.THICK_METHANE_RICH,
-    Atmosphere.THIN_METHANE, Atmosphere.THIN_METHANE_RICH,
-    Atmosphere.HOT_THICK_METHANE_RICH,
-}
-
-ATM_GROUP_NEON: Set[Atmosphere] = {
-    Atmosphere.NEON, Atmosphere.NEON_RICH,
-    Atmosphere.THIN_NEON, Atmosphere.THIN_NEON_RICH,
-}
-
-ATM_GROUP_ARGON: Set[Atmosphere] = {
-    Atmosphere.ARGON, Atmosphere.ARGON_RICH,
-    Atmosphere.THICK_ARGON, Atmosphere.THICK_ARGON_RICH,
-    Atmosphere.THIN_ARGON, Atmosphere.THIN_ARGON_RICH,
-    Atmosphere.HOT_THICK_ARGON_RICH,
-}
-
-ATM_GROUP_RARE_GAS: Set[Atmosphere] = {
-    Atmosphere.HELIUM, Atmosphere.THICK_HELIUM, Atmosphere.THIN_HELIUM,
-    *ATM_GROUP_NEON, *ATM_GROUP_ARGON
-}
-
-ATM_GROUP_THIN_ATMOSPHERE: Set[Atmosphere] = {
-    Atmosphere.THIN_HELIUM,
-    Atmosphere.THIN_NEON, Atmosphere.THIN_NEON_RICH,
-    Atmosphere.THIN_ARGON, Atmosphere.THIN_ARGON_RICH,
-    Atmosphere.THIN_METHANE, Atmosphere.THIN_METHANE_RICH,
-    Atmosphere.THIN_NITROGEN, Atmosphere.THIN_OXYGEN,
-    Atmosphere.THIN_AMMONIA,
-    Atmosphere.THIN_CARBON_DIOXIDE, Atmosphere.THIN_CARBON_DIOXIDE_RICH, Atmosphere.HOT_THIN_CARBON_DIOXIDE,
-    Atmosphere.THIN_WATER, Atmosphere.THIN_WATER_RICH,
-    Atmosphere.THIN_SULPHUR_DIOXIDE, Atmosphere.HOT_THIN_SULPHUR_DIOXIDE,
-    Atmosphere.HOT_THIN_SILICATE_VAPOUR,
-}
-
 # Planet Type Groups
 PT_GROUP_LANDABLE_ROCKY: Set[PlanetType] = {
     PlanetType.ROCKY, PlanetType.HMC, PlanetType.METAL_RICH, PlanetType.ROCKY_ICE
