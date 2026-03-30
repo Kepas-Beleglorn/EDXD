@@ -193,13 +193,16 @@ class BodyDetails(DynamicDialog):
 
         atmos_type = None
         atmos_comp = None
+        atmos_raw = None
         if isinstance(atmosphere, dict):
             atmos_comp = atmosphere.get("composition", None)
             atmos_type = atmosphere.get("type")
+            atmos_raw  = atmosphere.get("raw")
 
         if isinstance(atmosphere, Atmosphere):
             atmos_comp = atmosphere.composition
             atmos_type = atmosphere.type
+            atmos_raw  = atmosphere.raw
 
         if atmos_comp is None or len(atmos_comp) == 0:
             self.atmosphere_panel.Hide()
@@ -210,6 +213,11 @@ class BodyDetails(DynamicDialog):
         else:
             self.atmosphere_panel.header_label.SetLabel(f"Atmosphere ({self.body.body_type})")
 
+        if atmosphere is not None:
+            self.atmosphere_panel.add_table_item(f"Classification")
+            self.atmosphere_panel.add_table_item(f"  {atmos_raw}")
+            self.atmosphere_panel.add_table_item("")
+
         if self.body.pressure is not None and self.body.pressure > 0:
             self.atmosphere_panel.add_table_item(f"Surface pressure")
             self.atmosphere_panel.add_table_item(f"  {dh.format_pressure(self.body.pressure)}")
@@ -218,8 +226,9 @@ class BodyDetails(DynamicDialog):
         for mat, pct in sorted(atmos_comp.items(),
                               key=lambda kv: kv[1],
                               reverse=True):
+            atm_raw_len = len(str(atmos_raw))
             self.atmosphere_panel.add_table_item(label_text=f"{mat.title():<12}")
-            self.atmosphere_panel.add_table_item(label_text=f"  {pct:5.1f}%", align=wx.ALIGN_RIGHT)
+            self.atmosphere_panel.add_table_item(label_text=f"  {pct:5.1f}%{' ':<{atm_raw_len+10}}", align=wx.ALIGN_RIGHT)
             self.atmosphere_panel.add_table_item("")
 
         if not self.atmosphere_panel.IsShown():
