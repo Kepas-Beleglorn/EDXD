@@ -78,7 +78,7 @@ class PositionTracker(DynamicDialog):
         self.txt_current_position.Clear()
         self.txt_distance_to_target.Clear()
 
-        if body and current_position:
+        if current_position:
             self.current_position = current_position
             self.psps = PSPS(self.pinned_position, body.radius)
             current_ok: bool = False
