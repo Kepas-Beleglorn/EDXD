@@ -80,7 +80,8 @@ class PositionTracker(DynamicDialog):
 
         if current_position:
             self.current_position = current_position
-            self.psps = PSPS(self.pinned_position, body.radius)
+            if body:
+                self.psps = PSPS(self.pinned_position, body.radius)
             current_ok: bool = False
             pinned_ok: bool = False
             if self.current_position.latitude and self.current_position.longitude:
