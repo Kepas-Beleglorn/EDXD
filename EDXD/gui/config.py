@@ -12,9 +12,10 @@ import wx, json
 import subprocess
 import sys
 
+from wx import Size
 from wx.lib.sized_controls import border
 
-from EDXD.globals import BTN_HEIGHT, BTN_WIDTH, CACHE_DIR
+from EDXD.globals import BTN_HEIGHT, BTN_WIDTH, CACHE_DIR, ICONS
 from EDXD.gui.helper.dynamic_dialog import DynamicDialog
 from EDXD.gui.helper.gui_dir_picker import DirPicker
 from EDXD.gui.helper.gui_dynamic_toggle_button import DynamicToggleButton
@@ -23,6 +24,7 @@ from EDXD.gui.helper.gui_handler import init_widget
 from EDXD.gui.helper.theme_handler import get_theme
 from EDXD.gui.helper.window_properties import WindowProperties
 from EDXD.gui.themed_msg_dialog import ThemedMessageDialog
+from EDXD.utils.positive_integer_credit_formatter import PositiveIntFormatterValidator
 
 TITLE = "EDXD Configuration"
 WINID = "EDXD_CONFIGURATION"
@@ -75,6 +77,22 @@ class EDXDConfig(DynamicDialog):
         # Add the grid to your main sizer
         self.window_box.Add(self.grid_paths, flag=wx.ALL | wx.EXPAND, border=10)
 
+        # grid for other options
+        self.grid_options = wx.FlexGridSizer(cols=3, hgap=8, vgap=4)
+        self.grid_options.AddGrowableCol(2)
+
+        # worthwhile threshold for indicator in main window
+        self.lbl_worthwhile_threshold = wx.StaticText(self, label=f"\nMinimum value to show worthwhile indicator ({ICONS["worthwhile"]}) on a body.")
+        self.grid_options.Add(self.lbl_worthwhile_threshold, flag=wx.ALL | wx.EXPAND, border=10)
+        self.txt_worthwhile_threshold = wx.TextCtrl(parent=self, style=wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_SIMPLE, size=Size(BTN_WIDTH, BTN_HEIGHT),
+                                                    validator=PositiveIntFormatterValidator())
+        init_widget(self.txt_worthwhile_threshold)
+        self.grid_options.Add(self.txt_worthwhile_threshold, flag=wx.ALL | wx.EXPAND, border=10)
+        self.grid_options.Add(wx.StaticText(self, label=""), 0, wx.ALIGN_LEFT | wx.EXPAND, 5)
+
+        # Add the grid to your main sizer
+        self.window_box.Add(self.grid_options, flag=wx.ALL | wx.EXPAND, border=10)
+
         # A bit of explanation of the panel toggle
         self.lbl_panel_toggle_hint = wx.StaticText(self, label="\nToggle visibility of panels you want to use. Main window is always on.")
         self.window_box.Add(self.lbl_panel_toggle_hint, flag=wx.ALL | wx.EXPAND, border=10)
@@ -87,6 +105,13 @@ class EDXDConfig(DynamicDialog):
         self.system_cache_dir_picker.SetPath(temp)
         self.system_cache_dir_picker.Refresh()
         self.Layout()
+        temp: str = str(self.cfg.get("worthwhile_threshold"))
+        self.txt_worthwhile_threshold.SetValue(temp)
+        validator = self.txt_worthwhile_threshold.GetValidator()
+        if isinstance(validator, PositiveIntFormatterValidator):
+            validator.RefreshFormatAndValidate()
+
+        self.txt_worthwhile_threshold.Refresh()
 
         # Config items grid for buttons
         self.grid_windows = wx.FlexGridSizer(cols=2, hgap=8, vgap=4)
@@ -169,6 +194,12 @@ class EDXDConfig(DynamicDialog):
 
         self.cfg["journal_dir"] = self.journal_dir_picker.GetPath()
         self.cfg["cache_dir"] = self.system_cache_dir_picker.GetPath()
+
+        worthwhile_threshold_raw = str(self.txt_worthwhile_threshold.GetValue())
+        if worthwhile_threshold_raw != "":
+            worthwhile_threshold_raw = worthwhile_threshold_raw.replace(" Cr", "").strip()
+            worthwhile_threshold_raw = worthwhile_threshold_raw.replace(",", "").strip()
+            self.cfg["worthwhile_threshold"] = int(worthwhile_threshold_raw)
 
         def _save():
             data = {k: v for k, v in self.cfg.items() if k != "save"}
