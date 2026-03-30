@@ -1,4 +1,4 @@
-from typing import List, Optional, Dict, Any, Set
+from typing import List, Optional, Dict, Any
 from EDXD.data_handler.helper.system_params import (
     StarClass, StarLuminosity, PlanetType,
     PT_GROUP_HMC_ROCKY, PT_GROUP_ICE,
@@ -12,48 +12,6 @@ from EDXD.data_handler.helper.bio_helper import (
 import EDXD.data_handler.helper.data_helper as dh
 
 STR_LIST_NONE = {None, "", "None", "none"}
-# ---------------------------------------------------------------------------
-# Helper: Map Codex Key to Species Prefix
-# ---------------------------------------------------------------------------
-def get_genus_prefix_from_codex(codex_key: str) -> str:
-    """
-    Extracts the genus name from the Codex Key to filter species.
-    Example: "$Codex_Ent_Bacterial_Genus_Name;" -> "Bacterium"
-    """
-    # Simple mapping based on your bio_get_range keys
-    mapping = {
-        "$Codex_Ent_Fumerolas_Genus_Name;": "Fumerola",
-        "$Codex_Ent_Aleoids_Genus_Name;": "Aleoida",
-        "$Codex_Ent_Clypeus_Genus_Name;": "Clypeus",  # Note: Anemone maps to Clypeus in some logic, but species start with Anemone
-        "$Codex_Ent_Conchas_Genus_Name;": "Concha",
-        "$Codex_Ent_Shrubs_Genus_Name;": "Shrubs",  # Covers Brain Tree, Bark Mound, Frutexa, Amphora
-        "$Codex_Ent_Recepta_Genus_Name;": "Recepta",
-        "$Codex_Ent_Tussocks_Genus_Name;": "Tussock",
-        "$Codex_Ent_Cactoid_Genus_Name;": "Cactoida",
-        "$Codex_Ent_Fungoids_Genus_Name;": "Fungoida",
-        "$Codex_Ent_Bacterial_Genus_Name;": "Bacterium",
-        "$Codex_Ent_Fonticulus_Genus_Name;": "Fonticulua",
-        "$Codex_Ent_Stratum_Genus_Name;": "Stratum",
-        "$Codex_Ent_Osseus_Genus_Name;": "Osseus",
-        "$Codex_Ent_Tubus_Genus_Name;": "Tubus",
-        "$Codex_Ent_Electricae_Genus_Name;": "Electricae",
-        "$Codex_Ent_Vents_Name;": "Vents",
-        "$Codex_Ent_Sphere_Name;": "Sphere",
-        "$Codex_Ent_Cone_Name;": "Cone",
-        "$Codex_Ent_Brancae_Name;": "Brancae",
-        "$Codex_Ent_Ground_Struct_Ice_Name;": "Ice",
-        "$Codex_Ent_Tube_Name;": "Tube",
-        "$Codex_Ent_Barnacles_Name;": "Barnacles",
-        "$Codex_Ent_Thargoid_Coral_Name;": "Thargoid",
-        "$Codex_Ent_Thargoid_Tower_Name;": "Thargoid",
-    }
-    return mapping.get(codex_key, "")
-
-
-def _get_shrubs_prefixes() -> Set[str]:
-    """Shrubs genus covers multiple distinct species prefixes."""
-    return {"Brain Tree", "Bark Mound", "Frutexa", "Amphora Plant", "Crystalline Shard"}
-
 
 # ---------------------------------------------------------------------------
 # Updated Estimator
@@ -116,13 +74,21 @@ def estimate_system_biosigns(model_bodies: Dict[str, Any]) -> Dict[str, List[Dic
 
         # 3. Check DSS & Codex Data
         bio_found_data = getattr(body, 'bio_found', {})
-        scanned_genus_keys = list(bio_found_data.keys()) if bio_found_data else []
+
+        scanned_genus_localised = set()
+        scanned_genus_species_localised = set()
+        for genus in bio_found_data.items():
+            scanned_genus_localised.add(genus[1].localised)
+            if genus[1].species_localised is not None:
+                scanned_genus_species_localised.add(genus[1].species_localised)
+            elif genus[1].variant_localised is not None:
+                scanned_genus_species_localised.add(str(genus[1].variant_localised).split(" - ")[0])
 
         # New: Track Confirmed Species
         confirmed_species_names = set()
         confirmed_variants = {}  # Map species_name -> color
 
-        if scanned_genus_keys:
+        if scanned_genus_localised:
             for key, data in bio_found_data.items():
                 # data is a dict: { "genusid": "...", "variant_localised": "Bacterium Cerbrus - Green", ... }
                 variant_raw = data.variant_localised
@@ -156,32 +122,33 @@ def estimate_system_biosigns(model_bodies: Dict[str, Any]) -> Dict[str, List[Dic
         # 5. Filter & Refine based on Codex Data
         final_species = []
 
-        if confirmed_species_names:
+        if potential_species:
             # CODEX PHASE: We know exactly what is here.
             # 1. Keep ONLY the confirmed species.
             # 2. Discard all other candidates of the same genus.
             for sp in potential_species:
-                if sp in confirmed_species_names:
+                if any(sp.startswith(p) for p in scanned_genus_species_localised):
                     final_species.append(sp)
                 # Optional: If you want to keep "theoretical" siblings until 100% complete,
                 # you can skip the 'else' block. But usually, 1 species found = others impossible.
-        elif scanned_genus_keys:
+        if scanned_genus_localised:
             # DSS PHASE (Genus known, species unknown): Filter by Genus Prefix (as before)
             allowed_prefixes = set()
-            for key in scanned_genus_keys:
-                prefix = get_genus_prefix_from_codex(key)
-                if prefix == "Shrubs":
-                    allowed_prefixes.update(_get_shrubs_prefixes())
-                elif prefix == "Thargoid":
-                    allowed_prefixes.update(["Thargoid"])
-                elif prefix:
-                    allowed_prefixes.add(prefix)
-
+            for item in scanned_genus_localised:
+                is_confirmed = False
+                for confirmed in confirmed_species_names:
+                    if item in confirmed:
+                        is_confirmed = True
+                        break
+                if not is_confirmed:
+                    allowed_prefixes.add(item)
             for sp in potential_species:
                 matches = any(sp.startswith(p) for p in allowed_prefixes)
                 # Special Anemone/Clypeus handling
                 if "Anemone" in sp and "Clypeus" in allowed_prefixes: matches = True
                 if matches: final_species.append(sp)
+
+
         else:
             # PRE-SCAN PHASE: Keep all physics candidates
             final_species = potential_species
@@ -213,8 +180,8 @@ def estimate_system_biosigns(model_bodies: Dict[str, Any]) -> Dict[str, List[Dic
                     "base_value": get_genus_value(species_name),
                     "scan_range": get_scan_range_for_species(species_name),
                     "probability": round(prob, 2),
-                    "confirmed_by_dss": scanned_genus_keys and not confirmed_species_names,  # True if only genus known
-                    "confirmed_by_codex": species_name in confirmed_species_names,  # True if exact species known
+                    "confirmed_by_dss": scanned_genus_localised,  # True if only genus known
+                    "confirmed_by_codex": species_name in scanned_genus_localised,  # True if exact species known
                     "variant_color": confirmed_variants.get(species_name),  # e.g. "Green"
                     "dss_complete": getattr(body, 'bio_complete', False)
                 })
