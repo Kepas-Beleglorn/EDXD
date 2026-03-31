@@ -158,20 +158,27 @@ def estimate_system_biosigns(model_bodies: Dict[str, Any]) -> Dict[str, List[Dic
             results[body_id] = []
             for species_name in final_species:
                 # If confirmed, probability is 100%, otherwise calculate.
-                if species_name in confirmed_species_names:
-                    prob = 1.0
-                else:
-                    # Inside the loop where you calculate prob:
-                    prob = calculate_probability(
-                        species_name=species_name,
-                        planet_type=pt_enum,
-                        atmosphere=atm_raw,
-                        mean_temp_k=mean_temp,
-                        volcanism=volc_raw,
-                        gravity=gravity,  # Pass these new args
-                        star_class=star_class_enum,
-                        star_luminosity=star_luminosity_enum
-                    )
+                if species_name in confirmed_species_names or any(species_name.startswith(p) for p in scanned_genus_localised):
+                    # check if found species is already unique in list
+                    current_genus = species_name.split(" ")[0]
+                    genus_occurence = 0
+                    for fs in final_species:
+                        if fs.startswith(current_genus):
+                            genus_occurence += 1
+                    if genus_occurence == 1:
+                        prob = 1.0
+                    else:
+                        # Inside the loop where you calculate prob:
+                        prob = calculate_probability(
+                            species_name=species_name,
+                            planet_type=pt_enum,
+                            atmosphere=atm_raw,
+                            mean_temp_k=mean_temp,
+                            volcanism=volc_raw,
+                            gravity=gravity,  # Pass these new args
+                            star_class=star_class_enum,
+                            star_luminosity=star_luminosity_enum
+                        )
 
                 results[body_id].append({
                     "body_id": body_id,
@@ -636,7 +643,7 @@ def estimate_biosigns(
                 possible_species.extend(["Tubus Compagibus", "Tubus Conifer"])
 
     # Tussock
-    if planet_type == PlanetType.ROCKY and "thin" in atmosphere and gravity and gravity <= 0.27:
+    if planet_type in [PlanetType.ROCKY, PlanetType.HMC] and "thin" in atmosphere and gravity and gravity <= 0.27:
         if "carbon" in atmosphere:
             if 175 <= mean_temp_k <= 180:
                 possible_species.append("Tussock Albata")
