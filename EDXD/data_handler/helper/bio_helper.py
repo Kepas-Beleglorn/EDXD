@@ -278,17 +278,17 @@ def get_genus_value(species_localised: str) -> int:
         "Bacterium Tela": 1949000,
 
         # Bark Mound
-        "Bark Mound": 1471900,
+        "Bark Mounds": 1471900,
 
         # Brain Tree
-        "Brain Tree Aureum": 3565100,
-        "Brain Tree Gypseeum": 3565100,
-        "Brain Tree Lindigoticum": 3565100,
-        "Brain Tree Lividum": 1593700,
-        "Brain Tree Ostrinum": 3565100,
-        "Brain Tree Puniceum": 3565100,
-        "Brain Tree Roseum": 1593700,
-        "Brain Tree Viride": 1593700,
+        "Aureum Brain Tree": 3565100,
+        "Gypseeum Brain Tree": 3565100,
+        "Lindigoticum Brain Tree": 3565100,
+        "Lividum Brain Tree": 1593700,
+        "Ostrinum Brain Tree": 3565100,
+        "Puniceum Brain Tree": 3565100,
+        "Roseum Brain Tree": 1593700,
+        "Viride Brain Tree": 1593700,
 
         # Cactoida
         "Cactoida Cortexum": 3667600,
@@ -309,7 +309,7 @@ def get_genus_value(species_localised: str) -> int:
         "Concha Renibus": 4572400,
 
         # Crystalline Shard
-        "Crystalline Shard": 3626400,
+        "Crystalline Shards": 3626400,
 
         # Electricae
         "Electricae Pluma": 6284600,

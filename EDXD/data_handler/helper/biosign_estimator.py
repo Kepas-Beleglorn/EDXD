@@ -71,6 +71,7 @@ def estimate_system_biosigns(model_bodies: Dict[str, Any]) -> Dict[str, List[Dic
         mean_temp = getattr(body, 'mean_temp', 0.0)
         distance_ls = getattr(body, 'distance', None)
         body_name = getattr(body, 'body_name', body_id)
+        pressure_atm = getattr(body, 'pressure', 0.0)
 
         # 3. Check DSS & Codex Data
         bio_found_data = getattr(body, 'bio_found', {})
@@ -158,26 +159,28 @@ def estimate_system_biosigns(model_bodies: Dict[str, Any]) -> Dict[str, List[Dic
             results[body_id] = []
             for species_name in final_species:
                 # If confirmed, probability is 100%, otherwise calculate.
+                prob = 0.0
                 if species_name in confirmed_species_names or any(species_name.startswith(p) for p in scanned_genus_localised):
                     # check if found species is already unique in list
                     current_genus = species_name.split(" ")[0]
-                    genus_occurence = 0
+                    genus_occurrence = 0
                     for fs in final_species:
                         if fs.startswith(current_genus):
-                            genus_occurence += 1
-                    if genus_occurence == 1:
+                            genus_occurrence += 1
+                    if genus_occurrence == 1:
                         prob = 1.0
                     else:
                         # Inside the loop where you calculate prob:
                         prob = calculate_probability(
                             species_name=species_name,
                             planet_type=pt_enum,
-                            atmosphere=atm_raw,
+                            #atmosphere=atm_raw,
+                            pressure_atm=pressure_atm,
                             mean_temp_k=mean_temp,
-                            volcanism=volc_raw,
+                            #volcanism=volc_raw,
                             gravity=gravity,  # Pass these new args
-                            star_class=star_class_enum,
-                            star_luminosity=star_luminosity_enum
+                            #star_class=star_class_enum,
+                            #star_luminosity=star_luminosity_enum
                         )
 
                 results[body_id].append({
@@ -194,7 +197,6 @@ def estimate_system_biosigns(model_bodies: Dict[str, Any]) -> Dict[str, List[Dic
                 })
 
     return results
-
 
 # ... [Keep _safe_get_atmosphere_type, _safe_get_enum, calculate_probability, estimate_biosigns from previous steps] ...
 def _safe_get_atmosphere_type(body_atmosphere: Any) -> str:
@@ -218,12 +220,9 @@ def _safe_get_enum(value: Optional[str], enum_class: Any, default: Any) -> Any:
 def calculate_probability(
         species_name: str,
         planet_type: PlanetType,
-        atmosphere: str,
+        pressure_atm: float,
         mean_temp_k: float,
-        volcanism: Optional[str],
         gravity: Optional[float] = None,
-        star_class: Optional[StarClass] = None,
-        star_luminosity: Optional[StarLuminosity] = None
 ) -> float:
     """
     Calculates a relative probability score (0.0 to 1.0).
@@ -231,110 +230,44 @@ def calculate_probability(
     """
     score = 0.5
 
-    # -----------------------------------------------------------------------
-    # 1. HARD CONSTRAINTS (Return 0.0 if failed)
-    # -----------------------------------------------------------------------
+    if "Aleoida" in species_name:
+        score += score_aleoida_variant(species_name, mean_temp_k, pressure_atm, gravity, planet_type)
 
-    # Gravity Constraints (< 0.27g)
-    if gravity is not None and gravity > 0.27:
-        if any(x in species_name for x in ["Aleoida", "Clypeus", "Anemone", "Electricae", "Recepta"]):
-            return 0.0
+    if "Amphora" in species_name:
+        score += score_amphora_variant(species_name, mean_temp_k, pressure_atm, gravity, planet_type)
 
-    # Atmosphere Constraints (Specific species require specific atm)
-    # If the estimator returned it, it's theoretically possible, but if we want strict probability:
-    # (Optional: Uncomment if you want to penalize mismatched atm heavily)
-    # if "Bacterium Nebulus" in species_name and atmosphere != Atmosphere.HELIUM: return 0.0
+    if "Anemone" in species_name:
+        score += score_anemone_variant(species_name, mean_temp_k, pressure_atm, gravity, planet_type)
 
-    # Star Constraints
-    if "Amphora Plant" in species_name:
-        if star_class != StarClass.A:
-            return 0.0
+    if "Bacteria" in species_name:
+        score += score_bacteria_variant(species_name, mean_temp_k, pressure_atm, gravity, planet_type)
 
-    if "Electricae Pluma" in species_name:
-        if star_class != StarClass.A or star_luminosity not in [StarLuminosity.V, StarLuminosity.VI]:
-            return 0.0
+    if "Bark" in species_name:
+        score += score_bark_variant(species_name, mean_temp_k, pressure_atm, gravity, planet_type)
 
-    # -----------------------------------------------------------------------
-    # 2. TEMPERATURE PRECISION (Narrow ranges = Higher Score)
-    # -----------------------------------------------------------------------
+    if "Brain" in species_name:
+        score += score_brain_variant(species_name, mean_temp_k, pressure_atm, gravity, planet_type)
 
-    temp_match = False
+    if "Cactoida" in species_name:
+        score += score_cactoida_variant(species_name, mean_temp_k, pressure_atm, gravity, planet_type)
 
-    # Aleoida (Very Narrow: 5-10K windows)
-    if "Aleoida Arcus" in species_name and 175 <= mean_temp_k <= 180:
-        temp_match = True
-    elif "Aleoida Coronamus" in species_name and 180 <= mean_temp_k <= 190:
-        temp_match = True
-    elif "Aleoida Gravis" in species_name and 190 <= mean_temp_k <= 195:
-        temp_match = True
-    elif "Aleoida" in species_name and 175 <= mean_temp_k <= 195:
-        temp_match = True  # General match
+    if "Clypeus" in species_name:
+        score += score_clypeus_variant(species_name, mean_temp_k, pressure_atm, gravity, planet_type)
 
-    # Tussock (Specific windows)
-    elif "Tussock Albata" in species_name and 175 <= mean_temp_k <= 180:
-        temp_match = True
-    elif "Tussock Caputus" in species_name and 180 <= mean_temp_k <= 190:
-        temp_match = True
-    elif "Tussock Ignis" in species_name and 160 <= mean_temp_k <= 170:
-        temp_match = True
-    elif "Tussock Pennata" in species_name and 145 <= mean_temp_k <= 155:
-        temp_match = True
-    elif "Tussock" in species_name and 145 <= mean_temp_k <= 195:
-        temp_match = True
+    if "Concha" in species_name:
+        score += score_concha_variant(species_name, mean_temp_k, pressure_atm, gravity, planet_type)
 
-    # Stratum / Fungoida / Concha / Tubus (180-195K Sweet Spot)
-    elif any(x in species_name for x in ["Stratum", "Fungoida", "Concha", "Tubus", "Osseus"]):
-        if 180 <= mean_temp_k <= 195:
-            temp_match = True
-        elif 160 <= mean_temp_k <= 200:
-            temp_match = True  # Broader match
+    if "Crystalline" in species_name:
+        score += score_crystal_variant(species_name, mean_temp_k, pressure_atm, gravity, planet_type)
 
-    # Cactoida (Hot: 300-500K or CO2/Ammonia specific)
-    elif "Cactoida" in species_name:
-        if 300 <= mean_temp_k <= 500: temp_match = True
+    if "Electricae" in species_name:
+        score += score_electricae_variant(species_name, mean_temp_k, pressure_atm, gravity, planet_type)
 
-    # Brain Tree (200-500K)
-    elif "Brain Tree" in species_name:
-        if 200 <= mean_temp_k <= 500: temp_match = True
+    if "Fonticulua" in species_name:
+        score += score_fonticulua_variant(species_name, mean_temp_k, pressure_atm, gravity, planet_type)
 
-    # Fonticulua (Varies by Atm, but generally specific)
-    elif "Fonticulua" in species_name:
-        temp_match = True  # Hard to pinpoint without atm check, assume match if estimator passed it
-
-    if temp_match:
-        score += 0.3
-    else:
-        # If temp is outside ideal range but inside survival range
-        score += 0.05
-
-    # -----------------------------------------------------------------------
-    # 3. ATMOSPHERE RARITY (Rare atm = Higher Confidence)
-    # -----------------------------------------------------------------------
-    if any(opt in atmosphere for opt in ("sulfur", "ammonia", "helium", "neon")):
-        score += 0.15
-    elif any(opt in atmosphere for opt in ("argon", "oxygen")):
-        score += 0.10
-    elif "carbon" in atmosphere :
-        score += 0.05  # Common, less predictive power
-
-    # -----------------------------------------------------------------------
-    # 4. VOLCANISM DEPENDENCY (Critical for Fumerola/Sinuous)
-    # -----------------------------------------------------------------------
-    has_volcanism = volcanism not in STR_LIST_NONE
-
-    if "Fumerola" in species_name or "Sinuous" in species_name:
-        if has_volcanism:
-            score += 0.25  # Critical match
-        else:
-            return 0.0  # Impossible without volcanism
-
-    # -----------------------------------------------------------------------
-    # 5. PLANET TYPE SPECIFICITY
-    # -----------------------------------------------------------------------
-    if "Electricae" in species_name and planet_type == PlanetType.ICY:
-        score += 0.1
-    if "Osseus Pumice" in species_name and planet_type == PlanetType.ROCKY_ICE:
-        score += 0.1
+    if "Frutexa" in species_name:
+        score += score_frutexa_variant(species_name, mean_temp_k, pressure_atm, gravity, planet_type)
 
     return min(score, 1.0)
 
@@ -352,16 +285,19 @@ def estimate_biosigns(
     possible_species: List[str] = []
 
     # Aleoida
-    if "thin" in atmosphere and planet_type in PT_GROUP_HMC_ROCKY and gravity is not None and gravity <= 0.27:
+    if "thin" in atmosphere and planet_type in PT_GROUP_HMC_ROCKY and gravity is not None and gravity <= 0.28:
         if "carbon dioxide" in atmosphere:
             if 175 <= mean_temp_k <= 180:
                 possible_species.append("Aleoida Arcus")
-            if 180 <= mean_temp_k <= 190:
+            if 179 <= mean_temp_k <= 190:
                 possible_species.append("Aleoida Coronamus")
-            if 190 <= mean_temp_k <= 195:
+            if 190 <= mean_temp_k <= 197:
                 possible_species.append("Aleoida Gravis")
         if "ammonia" in atmosphere:
-            possible_species.extend(["Aleoida Laminiae", "Aleoida Spica"])
+            if 152 <= mean_temp_k <= 177:
+                possible_species.append("Aleoida Laminiae")
+            if 170 <= mean_temp_k <= 177:
+                possible_species.append("Aleoida Spica")
 
     # Amphora Plant
     if (
@@ -454,7 +390,7 @@ def estimate_biosigns(
                 possible_species.append("Brain Tree Viride")
 
     # Cactoida
-    if "thin" in atmosphere and planet_type in PT_GROUP_HMC_ROCKY and gravity and gravity <= 0.27:
+    if "thin" in atmosphere and planet_type in PT_GROUP_HMC_ROCKY and gravity and gravity <= 0.28:
         if (
                 ("carbon" in atmosphere and "rich" not in atmosphere)
                 or ("rich" in atmosphere and 180 <= mean_temp_k <= 195)
@@ -475,7 +411,7 @@ def estimate_biosigns(
             possible_species.append("Clypeus Speculumi")
 
     # Concha
-    if planet_type in PT_GROUP_HMC_ROCKY and (gravity and gravity <= 0.27) and "thin" in atmosphere:
+    if planet_type in PT_GROUP_HMC_ROCKY and (gravity and gravity <= 0.28) and "thin" in atmosphere:
         if "ammonia" in atmosphere:
             possible_species.append("Concha Aureolas")
         if "nitrogen" in atmosphere:
@@ -506,7 +442,7 @@ def estimate_biosigns(
         possible_species.append("Crystalline Shard")
 
     # Electricae
-    if planet_type == PlanetType.ICY and ("thin" in atmosphere and any(opt in atmosphere for opt in ("helium", "neon", "argon"))) and gravity and gravity <= 0.27:
+    if planet_type == PlanetType.ICY and ("thin" in atmosphere and any(opt in atmosphere for opt in ("helium", "neon", "argon"))) and gravity and gravity <= 0.28:
         if ((star_class == StarClass.A and star_luminosity in [StarLuminosity.V, StarLuminosity.VI, StarLuminosity.VII])
                 or star_class in [StarClass.O, StarClass.B, StarClass.N, StarClass.BlackHole, *SC_WHITE_DWARFS]):
             possible_species.append("Electricae Pluma")
@@ -514,7 +450,7 @@ def estimate_biosigns(
             possible_species.append("Electricae Radialem")
 
     # Fonticulua
-    if atmosphere and "thin" in atmosphere and planet_type in PT_GROUP_ICE and gravity and gravity <= 0.27:
+    if atmosphere and "thin" in atmosphere and planet_type in PT_GROUP_ICE and gravity and gravity <= 0.28:
         if "neon" in atmosphere:
             possible_species.append("Fonticulua Segmentatus")
         if "methane" in atmosphere:
@@ -547,7 +483,7 @@ def estimate_biosigns(
             possible_species.append("Frutexa Sponsae")
 
     # Fumerola
-    if volcanism not in STR_LIST_NONE and "thin" in atmosphere and gravity and gravity <= 0.27:
+    if volcanism not in STR_LIST_NONE and "thin" in atmosphere and gravity and gravity <= 0.28:
         if (planet_type in PT_GROUP_ICE
                 and "water" in volcanism):
             possible_species.append("Fumerola Aquatis")
@@ -562,7 +498,7 @@ def estimate_biosigns(
             possible_species.append("Fumerola Nitris")
 
     # Fungoida
-    if gravity and gravity <= 0.27 and "thin" in atmosphere:
+    if gravity and gravity <= 0.28 and "thin" in atmosphere:
         if any(opt in atmosphere for opt in ("methane", "ammonia")):
             possible_species.append("Fungoida Setisis")
         if "argon" in atmosphere:
@@ -572,7 +508,7 @@ def estimate_biosigns(
             possible_species.extend(["Fungoida Gelata", "Fungoida Stabitis"])
 
     # Osseus
-    if "thin" in atmosphere and gravity and gravity <= 0.27:
+    if "thin" in atmosphere and gravity and gravity <= 0.28:
         if (planet_type == PlanetType.ROCKY_ICE
                 and any(opt in atmosphere for opt in ("methane", "argon", "nitrogen"))):
             possible_species.append("Osseus Pumice")
@@ -588,7 +524,7 @@ def estimate_biosigns(
                 possible_species.append("Osseus Spiralis")
 
     # Recepta
-    if "thin sulfur" in atmosphere and gravity and gravity < 0.27:
+    if "thin sulfur" in atmosphere and gravity and gravity < 0.28:
         if planet_type in PT_GROUP_ICE:
             possible_species.append("Recepta Conditivus")
         if planet_type in PT_GROUP_HMC_ROCKY:
@@ -631,7 +567,7 @@ def estimate_biosigns(
                     possible_species.extend(["Stratum Limaxus", "Stratum Excutitus"])
 
     # Tubus
-    if "thin" in atmosphere and gravity and gravity <= 0.15:
+    if "thin" in atmosphere and gravity and gravity <= 0.16:
         if planet_type == PlanetType.HMC and any(opt in atmosphere for opt in ("ammonia", "carbon")):
             possible_species.append("Tubus Sororibus")
         if planet_type == PlanetType.ROCKY:
@@ -643,7 +579,7 @@ def estimate_biosigns(
                 possible_species.extend(["Tubus Compagibus", "Tubus Conifer"])
 
     # Tussock
-    if planet_type in [PlanetType.ROCKY, PlanetType.HMC] and "thin" in atmosphere and gravity and gravity <= 0.27:
+    if planet_type in [PlanetType.ROCKY, PlanetType.HMC] and "thin" in atmosphere and gravity and gravity <= 0.28:
         if "carbon" in atmosphere:
             if 175 <= mean_temp_k <= 180:
                 possible_species.append("Tussock Albata")
@@ -671,3 +607,232 @@ def estimate_biosigns(
             possible_species.append("Tussock Virgam")
 
     return possible_species
+
+# Calculate probabilities
+def score_variant(species_name: str, mean_temp_k: float, pressure_atm: float, gravity: float, planet_type: PlanetType, modes: dict) -> float:
+    score = 0.0
+    name_lower = species_name.lower()
+
+    # Identify the target mode for this species
+    target = None
+    for key, val in modes.items():
+        if key in name_lower:
+            target = val
+            break
+
+    # Safety fallback if species name is unrecognized
+    if target is None:
+        return 0.0
+
+    target_temp, tolerance_temp, target_press, tolerance_pressure, target_grav, tolerance_gravity, target_planet_type = target
+
+    # Check planet type(s)
+    if planet_type in target_planet_type:
+        score += 0.075
+    else:
+        score += 0.025
+
+    # Check Temperature (Tolerance: ±{tolerance_temp} K)
+    if target_temp is not None:
+        if abs(mean_temp_k - target_temp) <= tolerance_temp:
+            score += 0.1
+        else:
+            score += 0.05
+
+    # Check Pressure (Tolerance: ±{tolerance_pressure} atm)
+    if target_press is not None:
+        if abs(pressure_atm - target_press) <= tolerance_pressure:
+            score += 0.1
+        else:
+            score += 0.05
+
+    # Check Gravity (Tolerance: ±{tolerance_gravity} g)
+    if target_grav is not None:
+        if abs(gravity - target_grav) <= tolerance_gravity:
+            score += 0.1
+        else:
+            score += 0.05
+
+    return score
+
+def score_aleoida_variant(species_name: str, mean_temp_k: float, pressure_atm: float, gravity: float, planet_type: PlanetType) -> float:
+    # Exact Mode values from Canonn Research Group tables
+    # Format: (Target_Temp_K, tolerance_temp Target_Pressure_atm, tolerance_pressure, Target_Gravity_g, tolerance_gravity)
+    modes = {
+        "arcus"     : (177.0, 5.0, 0.024, 0.005,  0.12, 0.05, [PlanetType.HMC, PlanetType.ICY, PlanetType.ROCKY]),
+        "coronamus" : (181.0, 5.0, 0.035, 0.005,  0.17, 0.05, [PlanetType.HMC, PlanetType.ROCKY, PlanetType.ICY]),
+        "gravis"    : (190.1, 5.0, 0.074, 0.005,  0.21, 0.05, [PlanetType.HMC, PlanetType.ROCKY, PlanetType.ICY, PlanetType.ROCKY_ICE]),
+        "laminiae"  : (171.0, 5.0, 0.001, 0.0005, 0.14, 0.05, [PlanetType.HMC, PlanetType.ROCKY]),
+        "spica"     : (173.0, 5.0, 0.001, 0.0005, 0.16, 0.05, [PlanetType.HMC, PlanetType.ROCKY])
+    }
+
+    return score_variant(species_name, mean_temp_k, pressure_atm, gravity, planet_type, modes)
+
+def score_amphora_variant(species_name: str, mean_temp_k: float, pressure_atm: float, gravity: float, planet_type: PlanetType) -> float:
+    # Exact Mode values from Canonn Research Group tables
+    # Format: (Target_Temp_K, tolerance_temp Target_Pressure_atm, tolerance_pressure, Target_Gravity_g, tolerance_gravity)
+    modes = {
+        "plant"     : (1090.0, 70.0, None, None,  1.0, 0.9, [PlanetType.HMC, PlanetType.METAL_RICH, PlanetType.ROCKY])
+    }
+
+    return score_variant(species_name, mean_temp_k, pressure_atm, gravity, planet_type, modes)
+
+def score_anemone_variant(species_name: str, mean_temp_k: float, pressure_atm: float, gravity: float, planet_type: PlanetType) -> float:
+    # Exact Mode values from Canonn Research Group tables
+    # Format: (Target_Temp_K, tolerance_temp Target_Pressure_atm, tolerance_pressure, Target_Gravity_g, tolerance_gravity)
+    modes = {
+        "blatteum bioluminescent"   : (1000.0, 500.0, 0.0035,  0.0035,  1.42,   0.66,   [PlanetType.HMC, PlanetType.METAL_RICH, PlanetType.ROCKY]),
+        "croceum"                   : (390.0,  50.0,  0.0035,  0.0035,  0.09,   0.05,   [PlanetType.HMC, PlanetType.ROCKY]),
+        "luteolum"                  : (349.0,  75.0,  0.0035,  0.0035,  0.1,    0.06,   [PlanetType.HMC, PlanetType.ROCKY]),
+        "prasinum bioluminescent"   : (1275.0, 475.0, 0.0035,  0.0035,  0.5665, 0.5295, [PlanetType.HMC, PlanetType.METAL_RICH, PlanetType.ROCKY]),
+        "puniceum"                  : (550.0,  150.0, 0.00075, 0.00075, 2.25,   0.35,   [PlanetType.ICY]),
+        "roseum"                    : (410.0,  30.0,  0.003,   0.003,   0.095,  0.051,  [PlanetType.HMC, PlanetType.ROCKY]),
+        "roseum bioluminescent"     : (970.0,  480.0, 0.0035,  0.0035,  1.305,  0.495,  [PlanetType.HMC, PlanetType.METAL_RICH, PlanetType.ROCKY]),
+        "rubeum bioluminescent"     : (895.0,  245.0, 0.0035,  0.0035,  1.17,   0.38,   [PlanetType.HMC, PlanetType.METAL_RICH, PlanetType.ROCKY])
+    }
+
+    return score_variant(species_name, mean_temp_k, pressure_atm, gravity, planet_type, modes)
+
+def score_bacteria_variant(species_name: str, mean_temp_k: float, pressure_atm: float, gravity: float, planet_type: PlanetType) -> float:
+    # Exact Mode values from Canonn Research Group tables
+    # Format: (Target_Temp_K, tolerance_temp Target_Pressure_atm, tolerance_pressure, Target_Gravity_g, tolerance_gravity, PlanetType)
+    modes = {
+        "acies"     : (22.0,    20.0,   0.015,  0.005,  0.4,    0.1,    [PlanetType.ICY]),
+        "alcyoneum" : (168.0,   25.0,   0.001,  0.001,  0.15,   0.05,   [PlanetType.HMC, PlanetType.ROCKY, PlanetType.ICY]),
+        "aurasus"   : (177.0,   25.0,   0.1,    0.05,   0.2,    0.01,   [PlanetType.HMC, PlanetType.ROCKY, PlanetType.ICY]),
+        "bullaris"  : (95.0,    10.0,   0.045,  0.005,  0.05,   0.005,  [PlanetType.ICY]),
+        "cerbrus"   : (180.0,   30.0,   0.05,   0.005,  0.3,    0.05,   [PlanetType.HMC, PlanetType.ROCKY, PlanetType.ICY, PlanetType.ROCKY_ICE]),
+        "informem"  : (75.0,    20.0,   0.01,   0.005,  0.27,   0.05,   [PlanetType.HMC, PlanetType.ICY]),
+        "nebulus"   : (20.0,    15.0,   0.08,   0.03,   0.5,    0.1,    [PlanetType.ICY]),
+        "omentum"   : (30.0,    20.0,   0.005,  0.002,  0.4,    0.1,    [PlanetType.ICY]),
+        "scopulum"  : (30.0,    20.0,   0.005,  0.002,  0.4,    0.1,    [PlanetType.ICY]),
+        "tela"      : (350.0,   50.0,   0.005,  0.002,  0.5,    0.1,    [PlanetType.HMC, PlanetType.ROCKY, PlanetType.ICY]),
+        "verrata"   : (40.0,    20.0,   0.005,  0.002,  0.5,    0.1,    [PlanetType.ICY]),
+        "vesicula"  : (50.0,    20.0,   0.005,  0.002,  0.2,    0.05,   [PlanetType.HMC, PlanetType.ICY]),
+        "volu"      : (170.0,   25.0,   0.05,   0.005,  0.4,    0.1,    [PlanetType.HMC, PlanetType.ICY])
+    }
+
+    return score_variant(species_name, mean_temp_k, pressure_atm, gravity, planet_type, modes)
+
+def score_bark_variant(species_name: str, mean_temp_k: float, pressure_atm: float, gravity: float, planet_type: PlanetType) -> float:
+    # Exact Mode values from Canonn Research Group tables
+    # Format: (Target_Temp_K, tolerance_temp Target_Pressure_atm, tolerance_pressure, Target_Gravity_g, tolerance_gravity)
+    modes = {
+        "mounds"     : (250.0, 45.0, 69.0, 69.0,  0.168, 0.142, [PlanetType.HMC, PlanetType.ICY, PlanetType.ROCKY])
+    }
+
+    return score_variant(species_name, mean_temp_k, pressure_atm, gravity, planet_type, modes)
+
+def score_brain_variant(species_name: str, mean_temp_k: float, pressure_atm: float, gravity: float, planet_type: PlanetType) -> float:
+    # Exact Mode values from Canonn Research Group tables
+    # Format: (Target_Temp_K, tolerance_temp Target_Pressure_atm, tolerance_pressure, Target_Gravity_g, tolerance_gravity)
+    modes = {
+        "aureum"        : (571.0, 269.0, 0.00185, 0.00185,  0.198,  0.162,  [PlanetType.HMC, PlanetType.ROCKY]),
+        "gypseeum"      : (226.0, 26.0,  0.0035,  0.0035,   0.1,    0.06,   [PlanetType.ROCKY]),
+        "lindigoticum"  : (475.0, 25.0,  0.0004,  0.0004,   0.152,  0.108,  [PlanetType.HMC, PlanetType.ROCKY]),
+        "lividum"       : (503.0, 272.0, 0.0004,  0.0004,   0.084,  0.055,  [PlanetType.HMC, PlanetType.ROCKY]),
+        "ostrinum"      : (685.0, 222.0, 0.0004,  0.0004,   0.7675, 0.7325, [PlanetType.HMC, PlanetType.ROCKY, PlanetType.ICY]),
+        "puniceum"      : (748.0, 292.0, 0.0004,  0.0004,   0.82,   0.78,   [PlanetType.HMC, PlanetType.ROCKY]),
+        "roseum"        : (392.5, 277.5, 0.0004,  0.0004,   0.201,  0.174,  [PlanetType.HMC, PlanetType.ROCKY, PlanetType.ICY]),
+        "viride"        : (113.0, 13.0,  0.0004,  0.0004,   0.079,  0.044,  [PlanetType.ROCKY_ICE, PlanetType.ICY])
+    }
+
+    return score_variant(species_name, mean_temp_k, pressure_atm, gravity, planet_type, modes)
+
+def score_cactoida_variant(species_name: str, mean_temp_k: float, pressure_atm: float, gravity: float, planet_type: PlanetType) -> float:
+    # Exact Mode values from Canonn Research Group tables
+    # Format: (Target_Temp_K, tolerance_temp Target_Pressure_atm, tolerance_pressure, Target_Gravity_g, tolerance_gravity)
+    modes = {
+        "cortexum"      : (188.0, 9.0,   0.06,   0.05,   0.2,  0.05, [PlanetType.HMC, PlanetType.ROCKY, PlanetType.ICY]),
+        "lapis"         : (170.0, 15.0,  0.001,  0.001,  0.15, 0.05, [PlanetType.HMC, PlanetType.ROCKY]),
+        "peperatis"     : (170.0, 10.0,  0.0015, 0.007,  0.27, 0.1,  [PlanetType.HMC, PlanetType.ROCKY]),
+        "pullulanta"    : (188.0, 9.0,   0.06,   0.04,   0.15, 0.12, [PlanetType.HMC, PlanetType.ROCKY]),
+        "vermis"        : (250.0, 200.0, 0.05,   0.05,   0.15, 0.12, [PlanetType.HMC, PlanetType.ROCKY])
+    }
+
+    return score_variant(species_name, mean_temp_k, pressure_atm, gravity, planet_type, modes)
+
+def score_clypeus_variant(species_name: str, mean_temp_k: float, pressure_atm: float, gravity: float, planet_type: PlanetType) -> float:
+    # Exact Mode values from Canonn Research Group tables
+    # Format: (Target_Temp_K, tolerance_temp Target_Pressure_atm, tolerance_pressure, Target_Gravity_g, tolerance_gravity)
+    modes = {
+        "lacrimam"     : (320.0, 130.0, 0.085, 0.015,  0.07,  0.031, [PlanetType.HMC, PlanetType.ICY, PlanetType.ROCKY]),
+        "margaritus"   : (310.0, 120.0, 0.085, 0.015,  0.145, 0.105, [PlanetType.HMC, PlanetType.ICY]),
+        "speculumi"    : (321.0, 131.0, 0.085, 0.015,  0.12,  0.085, [PlanetType.HMC, PlanetType.ROCKY])
+    }
+
+    return score_variant(species_name, mean_temp_k, pressure_atm, gravity, planet_type, modes)
+
+def score_concha_variant(species_name: str, mean_temp_k: float, pressure_atm: float, gravity: float, planet_type: PlanetType) -> float:
+    # Exact Mode values from Canonn Research Group tables
+    # Format: (Target_Temp_K, tolerance_temp Target_Pressure_atm, tolerance_pressure, Target_Gravity_g, tolerance_gravity)
+    modes = {
+        "aureolas"      : (165.0, 20.0, 0.005, 0.007,  0.6,   0.6,  [PlanetType.HMC, PlanetType.ROCKY]),
+        "biconcavis"    : (46.0,  7.0,  0.005, 0.005,  0.15,  0.13, [PlanetType.HMC, PlanetType.ROCKY]),
+        "labiata"       : (175.0, 26.0, 0.007, 0.005,  0.15,  0.13, [PlanetType.ROCKY]),
+        "renibus"       : (188.0, 20.0, 0.07,  0.02,   0.045, 0.02, [PlanetType.HMC, PlanetType.ROCKY])
+    }
+
+    return score_variant(species_name, mean_temp_k, pressure_atm, gravity, planet_type, modes)
+
+def score_crystal_variant(species_name: str, mean_temp_k: float, pressure_atm: float, gravity: float, planet_type: PlanetType) -> float:
+    # Exact Mode values from Canonn Research Group tables
+    # Format: (Target_Temp_K, tolerance_temp Target_Pressure_atm, tolerance_pressure, Target_Gravity_g, tolerance_gravity)
+    modes = {
+        "shards"     : (102.0, 22.0, 0.004, 0.004,  0.1055, 0.0805, [PlanetType.HMC, PlanetType.ICY, PlanetType.ROCKY]),
+    }
+
+    return score_variant(species_name, mean_temp_k, pressure_atm, gravity, planet_type, modes)
+
+def score_electricae_variant(species_name: str, mean_temp_k: float, pressure_atm: float, gravity: float, planet_type: PlanetType) -> float:
+    # Exact Mode values from Canonn Research Group tables
+    # Format: (Target_Temp_K, tolerance_temp Target_Pressure_atm, tolerance_pressure, Target_Gravity_g, tolerance_gravity)
+    modes = {
+        "pluma"     : (250.0, 45.0, 0.10,    0.10,    0.168,  0.142,  [PlanetType.ICY]),
+        "radialem"  : (44.5,  15.5, 0.00549, 0.00451, 0.1495, 0.1005, [PlanetType.ICY])
+    }
+
+    return score_variant(species_name, mean_temp_k, pressure_atm, gravity, planet_type, modes)
+
+def score_fonticulua_variant(species_name: str, mean_temp_k: float, pressure_atm: float, gravity: float, planet_type: PlanetType) -> float:
+    # Exact Mode values from Canonn Research Group tables
+    # Format: (Target_Temp_K, tolerance_temp Target_Pressure_atm, tolerance_pressure, Target_Gravity_g, tolerance_gravity)
+    modes = {
+        "campestris"    : (97.0,  47.0, 0.01549,  0.01451,  0.155,  0.105,  [PlanetType.ICY]),
+        "digitos"       : (97.0,  8.0,  0.067,    0.028,    0.0365, 0.0085, [PlanetType.ICY]),
+        "fluctus"       : (150.0, 5.0,  0.035,    0.015,    0.255,  0.015,  [PlanetType.ICY]),
+        "lapida"        : (67.5,  12.5, 0.009495, 0.008505, 0.255,  0.025,  [PlanetType.ICY]),
+        "segmentatus"   : (65.0,  5.0,  0.003,    0.001,    0.27,   0.01,   [PlanetType.ICY]),
+        "upupam"        : (81.0,  11.0, 0.055,    0.035,    0.148,  0.128,  [PlanetType.ICY])
+    }
+
+    return score_variant(species_name, mean_temp_k, pressure_atm, gravity, planet_type, modes)
+
+def score_frutexa_variant(species_name: str, mean_temp_k: float, pressure_atm: float, gravity: float, planet_type: PlanetType) -> float:
+    # Exact Mode values from Canonn Research Group tables
+    # Format: (Target_Temp_K, tolerance_temp Target_Pressure_atm, tolerance_pressure, Target_Gravity_g, tolerance_gravity)
+    modes = {
+        "acus"       : (175.0, 15.0, 0.0255,  0.0245,  0.09,   0.05,   [PlanetType.HMC, PlanetType.ICY, PlanetType.ROCKY]),
+        "collum"     : (135.0, 5.0,  0.00199, 0.00101, 0.255,  0.025,  [PlanetType.HMC, PlanetType.ICY, PlanetType.ROCKY]),
+        "fera"       : (172.0, 18.0, 0.0485,  0.0465,  0.1275, 0.0925, [PlanetType.HMC, PlanetType.ICY, PlanetType.ROCKY]),
+        "flabellum"  : (165.0, 15.0, 0.00274, 0.00176, 0.15,   0.05,   [PlanetType.HMC, PlanetType.ICY, PlanetType.ROCKY]),
+        "flammasis"  : (166.5, 8.5,  0.00174, 0.00076, 0.16,   0.06,   [PlanetType.HMC, PlanetType.ICY, PlanetType.ROCKY]),
+        "metallicum" : (170.0, 25.0, 0.00499, 0.00401, 0.205,  0.065,  [PlanetType.HMC, PlanetType.ICY]),
+        "sponsae"    : (425.0, 25.0, 0.084,   0.014,   0.05,   0.005,  [PlanetType.HMC, PlanetType.ROCKY])
+    }
+
+    return score_variant(species_name, mean_temp_k, pressure_atm, gravity, planet_type, modes)
+
+
+
+
+
+def score_XXX_variant(species_name: str, mean_temp_k: float, pressure_atm: float, gravity: float, planet_type: PlanetType) -> float:
+    # Exact Mode values from Canonn Research Group tables
+    # Format: (Target_Temp_K, tolerance_temp Target_Pressure_atm, tolerance_pressure, Target_Gravity_g, tolerance_gravity)
+    modes = {
+        "XXX"     : (250.0, 45.0, 0.10, 0.10,  0.168, 0.142, [PlanetType.HMC, PlanetType.ICY, PlanetType.ROCKY]),
+    }
+
+    return score_variant(species_name, mean_temp_k, pressure_atm, gravity, planet_type, modes)
+
