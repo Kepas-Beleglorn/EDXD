@@ -5,18 +5,18 @@
 
 ### Features
 * **Show estimated scanned/mapped value** - is it worth firing up the SCO?
+* **Bio-signals & landability** – icons indicate biomasses and whether a body is landable.
+* **Exobiology** - show potential types of biosigns, if any; update on DSS and on foot sampling
+* **System progress** – live counter of scanned / total bodies (belt clusters ignored).
+* **Dual detail panes** – one for the selected row, one for your current in-game target.
 * **Distance from entry point** - time for a hutton-mug of coffee?
 * **Planetary surface materials** – instantly see every deposit in a system.
-* **Bio-signals & landability** – icons indicate biomasses and whether a body is landable.
-* **Dual detail panes** – one for the selected row, one for your current in-game target.
-* **System progress** – live counter of scanned / total bodies (belt clusters ignored).
 * **Dark “ED” theme** – looks at home next to EDMC / EDSM.
 
 #### A more detailed description will be maintained here: [EDXD on edcodex.info](https://edcodex.info/?m=tools&entry=608)
 
 ### Planned:
 * show first discovered (EDSM)
-* show potential types of biosigns, if any; update on DSS and on foot sampling
 * show potential types of geosigns, if any; update on DSS
 * maybe more...
 
