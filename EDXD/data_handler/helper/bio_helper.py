@@ -358,14 +358,14 @@ def get_genus_value(species_localised: str) -> int:
         "Recepta Umbrux": 12934900,
 
         # Sinuous Tuber
-        "Sinuous Tuber Albidum": 3425600,
-        "Sinuous Tuber Blatteum": 1514500,
-        "Sinuous Tuber Caeruleum": 1514500,
-        "Sinuous Tuber Lindigoticum": 1514500,
-        "Sinuous Tuber Prasinum": 1514500,
-        "Sinuous Tuber Roseus": 1514500,
-        "Sinuous Tuber Violaceum": 1514500,
-        "Sinuous Tuber Viride": 1514500,
+        "Albidum Sinuous Tubers": 3425600,
+        "Blatteum Sinuous Tubers": 1514500,
+        "Caeruleum Sinuous Tubers": 1514500,
+        "Lindigoticum Sinuous Tubers": 1514500,
+        "Prasinum Sinuous Tubers": 1514500,
+        "Roseum Sinuous Tubers": 1514500,
+        "Violaceum Sinuous Tubers": 1514500,
+        "Viride Sinuous Tubers": 1514500,
 
         # Stratum
         "Stratum Araneamus": 2448900,

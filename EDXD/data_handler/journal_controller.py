@@ -230,7 +230,7 @@ class JournalController(PausableThread, threading.Thread):
 
         # FSS - body scan in system
         if etype == "Scan":
-            # todo: process ring data properly
+            # todo: #168 process ring data properly
             if body_name.endswith("Ring"):
                 pass # skip for now
             else:
@@ -318,7 +318,7 @@ class JournalController(PausableThread, threading.Thread):
                     first_footfalled = 1
 
         if etype == "SAAScanComplete":
-            # todo: process ring data properly
+            # todo: #168 process ring data properly
             if body_name.endswith("Ring"):
                 pass  # skip for now
             else:
@@ -335,7 +335,7 @@ class JournalController(PausableThread, threading.Thread):
 
         # FSS - scanning of bodies
         if etype == "FSSBodySignals":
-            # todo: process rings properly
+            # todo: #168 process rings properly
             if body_name.endswith("Ring"):
                 pass  # skip for now
             else:
@@ -348,7 +348,7 @@ class JournalController(PausableThread, threading.Thread):
 
         # DSS - mapping of bodies
         if etype == "SAASignalsFound":
-            # todo: process rings properly
+            # todo: #168 process rings properly
             if body_name.endswith("Ring"):
                 pass  # skip for now
             else:
@@ -532,7 +532,7 @@ class JournalController(PausableThread, threading.Thread):
 
         # save/update data
         self.m.total_bodies = total_bodies or self.m.total_bodies
-        # todo: process ring data properly
+        # todo: #168 process ring data properly
         # workaround for empty body type
         if body_type is None and body_id in self.m.bodies:
             body_type = self.m.bodies[body_id].body_type or "🚫 no data 🚫"
@@ -556,7 +556,7 @@ class JournalController(PausableThread, threading.Thread):
                 scandata=scandata,
                 bio_found=bio_found,
                 geo_found=geo_found,
-                # todo: implement rings
+                # todo: #168 implement rings
                 rings=rings_found,
                 total_bodies=total_bodies,
                 radius=radius,
