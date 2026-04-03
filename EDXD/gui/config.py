@@ -38,14 +38,17 @@ class EDXDConfig(DynamicDialog):
         props = WindowProperties.load(WINID, default_height=DEFAULT_HEIGHT_CONFIG, default_width=DEFAULT_WIDTH_CONFIG, default_posx=DEFAULT_POS_X, default_posy=DEFAULT_POS_Y)
         DynamicDialog.__init__(self, parent=parent, style=wx.NO_BORDER | wx.FRAME_SHAPED | wx.STAY_ON_TOP, title=TITLE, win_id=WINID, show_minimize=False, show_maximize=False, show_close=False)
         # 2. Apply geometry
+        min_size = wx.Size(DEFAULT_WIDTH_CONFIG, DEFAULT_HEIGHT_CONFIG)
+        self.SetMinSize(min_size)
+        if props.width < min_size.width:
+            props.width = min_size.width
+        if props.height < min_size.height:
+            props.height = min_size.height
         init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
 
         self.theme = get_theme()
         self.cfg = {}
         self._load_config()
-
-        min_size = wx.Size(DEFAULT_WIDTH_CONFIG, DEFAULT_HEIGHT_CONFIG)
-        self.SetMinSize(min_size)
 
         # Hint to restart when paths change
         self.lbl_restart_hint = wx.StaticText(self.scroll_container, label="\nChanging paths requires restart of EDXD.")

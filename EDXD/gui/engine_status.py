@@ -24,16 +24,20 @@ class EngineStatus(DynamicDialog):
         if props.is_hidden: return
         DynamicDialog.__init__(self, parent=parent, style=wx.NO_BORDER | wx.FRAME_SHAPED | wx.STAY_ON_TOP, title=TITLE, win_id=WINID, show_minimize=False, show_maximize=False, show_close=True)
         # 2. Apply geometry
+        max_height = wx.Size(-1, DEFAULT_HEIGHT_ENGINE_STATUS)
+        min_width = wx.Size(DEFAULT_WIDTH_ENGINE_STATUS, -1)
+        if props.width < min_width.width:
+            props.width = min_width.width
+        if props.height > max_height.height:
+            props.height = max_height.height
+        self.SetMinSize(min_width)
+        self.SetMaxSize(max_height)
+
         init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
 
         self.theme = get_theme()
         self.parent = parent
         self.vessel_type = None
-
-        max_height = wx.Size(-1, DEFAULT_HEIGHT_ENGINE_STATUS)
-        min_width = wx.Size(DEFAULT_WIDTH_ENGINE_STATUS, -1)
-        self.SetMinSize(min_width)
-        self.SetMaxSize(max_height)
 
         grid = wx.BoxSizer(wx.VERTICAL)
 
