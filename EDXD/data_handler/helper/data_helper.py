@@ -197,26 +197,17 @@ def get_colour_gradient_from_probability(probability: float = 0) -> wx.Colour:
     if probability == 0:
         return wx.Colour(20, 20, 20)
 
-    if 0 < probability <= 0.8:
-        return wx.Colour(150, 255, 150)
+    if 0 < probability <= 0.5:
+        return wx.Colour(200, 150, 0)
 
-    if 0.8 < probability <= 2.0:
-        return wx.Colour(0, 200, 0)
+    if 0.5 < probability <= 0.75:
+        return wx.Colour(150, 200, 50)
 
-    if 2.0 < probability <= 2.7:
-        return wx.Colour(255, 190, 25)
+    if 0.75 < probability <= 0.95:
+        return wx.Colour(100, 200, 0)
 
-    if 2.7 < probability <= 4.0:
-        return wx.Colour(255, 150, 25)
-
-    if 4.0 < probability <= 6.0:
-        return wx.Colour(255, 50, 0)
-
-    if 6.0 < probability <= 20:
-        return wx.Colour(200, 0, 0)
-
-    if 20 < probability:
-        return wx.Colour(220, 0, 255)
+    if 0.95 < probability <= 1.0:
+        return wx.Colour(0, 175, 0)
 
     return wx.Colour(0, 0, 255)
 
