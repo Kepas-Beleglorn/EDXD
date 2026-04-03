@@ -66,7 +66,7 @@ class PSPSManualCoordinates(DynamicDialog):
         self.finalize_layout()
 
         # Bindings
-        btn_cancel.Bind(wx.EVT_BUTTON, lambda evt: self.Close())
+        btn_cancel.Bind(wx.EVT_BUTTON, lambda evt: self._on_cancel())
         btn_confirm.Bind(wx.EVT_BUTTON, lambda evt: self._on_confirm())
 
     def set_values(self):
@@ -100,7 +100,9 @@ class PSPSManualCoordinates(DynamicDialog):
         if not self.Validate():
             wx.MessageBox("Please fix the highlighted fields.", "Validation failed", wx.ICON_ERROR)
             return
+        self.Close(True)
 
-        lat = float(self.txt_latitude.GetValue())
-        lon = float(self.txt_longitude.GetValue())
+    def _on_cancel(self):
+        self.txt_latitude.SetValue(f"")
+        self.txt_longitude.SetValue(f"")
         self.Close(True)

@@ -71,16 +71,22 @@ class PSPSButtons(wx.Panel):
         event.Skip()
 
     def _init_psps(self, event):
-        self.parent.pinned_position = self.parent.current_position
+        self.GrandParent.pinned_position = self.GrandParent.current_position
 
     def _init_manual_psps(self, event):
         import EDXD.gui.psps_enter_coordinates as psps_manual
         psps_input = psps_manual.PSPSManualCoordinates(parent=self)
         psps_input.ShowModal()
-        lat = float(psps_input.txt_latitude.GetValue() or 0.0)
-        lon = float(psps_input.txt_longitude.GetValue() or 0.0)
-
-        self.parent.pinned_position = PSPSCoordinates(latitude=lat, longitude=lon)
+        lat = None
+        lon = None
+        if psps_input.txt_latitude.GetValue() != "":
+            lat = float(psps_input.txt_latitude.GetValue())
+        if psps_input.txt_longitude.GetValue() != "":
+            lon = float(psps_input.txt_longitude.GetValue())
+        if lat is None or lon is None:
+            self.GrandParent.pinned_position = None
+        else:
+            self.GrandParent.pinned_position = PSPSCoordinates(latitude=lat, longitude=lon)
 
     def _clear_psps(self, event):
-        self.parent.pinned_position = None
+        self.GrandParent.pinned_position = None
