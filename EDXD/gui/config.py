@@ -10,10 +10,9 @@ from __future__ import annotations
 
 import wx, json
 import subprocess
-import sys
+import sys, os
 
 from wx import Size
-from wx.lib.sized_controls import border
 
 from EDXD.globals import BTN_HEIGHT, BTN_WIDTH, CACHE_DIR, ICONS
 from EDXD.gui.helper.dynamic_dialog import DynamicDialog
@@ -171,9 +170,14 @@ class EDXDConfig(DynamicDialog):
         self.finalize_layout()
 
     def restart_app(self):
-        wx.GetApp().ExitMainLoop()
-        subprocess.Popen([sys.executable] + sys.argv)
-        sys.exit()
+        """Restart the application by replacing the current process."""
+        # Close all wx windows gracefully first
+        for top_level in wx.GetTopLevelWindows():
+            top_level.Close(force=True)
+
+        # Replace current process with new instance
+        os.execv(sys.executable, sys.argv)
+        # Code after execv never runs unless it fails
 
     def _load_config(self):
         self.cfg = json.loads(CFG_FILE.read_text()) if CFG_FILE.exists() else {}
