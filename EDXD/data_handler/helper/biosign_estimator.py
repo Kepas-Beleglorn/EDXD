@@ -248,7 +248,7 @@ def calculate_probability(
     if "Anemone" in species_name:
         score += score_anemone_variant(species_name, mean_temp_k, pressure_atm, gravity, planet_type)
 
-    if "Bacteria" in species_name:
+    if "Bacterium" in species_name:
         score += score_bacteria_variant(species_name, mean_temp_k, pressure_atm, gravity, planet_type)
 
     if "Bark" in species_name:
