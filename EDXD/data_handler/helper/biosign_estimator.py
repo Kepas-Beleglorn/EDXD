@@ -170,7 +170,6 @@ def estimate_system_biosigns(model_bodies: Dict[str, Any]) -> Dict[str, List[Dic
                     if genus_occurrence == 1:
                         prob = 1.0
                     else:
-                        # Inside the loop where you calculate prob:
                         prob = calculate_probability(
                             species_name=species_name,
                             planet_type=pt_enum,
@@ -182,6 +181,18 @@ def estimate_system_biosigns(model_bodies: Dict[str, Any]) -> Dict[str, List[Dic
                             #star_class=star_class_enum,
                             #star_luminosity=star_luminosity_enum
                         )
+                else:
+                    prob = calculate_probability(
+                        species_name=species_name,
+                        planet_type=pt_enum,
+                        # atmosphere=atm_raw,
+                        pressure_atm=pressure_atm,
+                        mean_temp_k=mean_temp,
+                        # volcanism=volc_raw,
+                        gravity=gravity,  # Pass these new args
+                        # star_class=star_class_enum,
+                        # star_luminosity=star_luminosity_enum
+                    )
 
                 results[body_id].append({
                     "body_id": body_id,
