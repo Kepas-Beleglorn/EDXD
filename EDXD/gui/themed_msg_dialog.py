@@ -17,20 +17,20 @@ class ThemedMessageDialog(DynamicDialog):
         # 2. Apply geometry
         init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=caption)
 
-        self.window_box.Add(wx.StaticText(self, label=message), 0, wx.EXPAND | wx.EAST | wx.WEST | wx.SOUTH, RESIZE_MARGIN)
+        self.window_box.Add(wx.StaticText(self.scroll_container, label=message), 0, wx.EXPAND | wx.EAST | wx.WEST | wx.SOUTH, RESIZE_MARGIN)
 
         btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        no_btn = DynamicButton(self, style=wx.ID_NO, label="No", size=(BTN_WIDTH, BTN_HEIGHT))
+        no_btn = DynamicButton(self.scroll_container, style=wx.ID_NO, label="No", size=(BTN_WIDTH, BTN_HEIGHT))
         no_btn.SetName("NO")
         init_widget(no_btn)
-        yes_btn = DynamicButton(self, style=wx.ID_YES, label="Yes", size=(BTN_WIDTH, BTN_HEIGHT))
+        yes_btn = DynamicButton(self.scroll_container, style=wx.ID_YES, label="Yes", size=(BTN_WIDTH, BTN_HEIGHT))
         yes_btn.SetName("YES")
         init_widget(yes_btn)
         btn_sizer.Add(no_btn, 0, wx.ALL, 5)
         btn_sizer.Add(yes_btn, 0, wx.ALL, 5)
         self.window_box.Add(btn_sizer, 0, wx.ALIGN_CENTER | wx.BOTTOM, 10)
 
-        self.SetSizer(self.window_box)
+        self.finalize_layout()
         self.Fit()
 
         self.Bind(wx.EVT_BUTTON, self.on_button, no_btn)
