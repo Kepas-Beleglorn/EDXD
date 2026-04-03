@@ -21,7 +21,7 @@ class SignalPrediction(DynamicDialog):
         # 1. Load saved properties (or use defaults)
         props = WindowProperties.load(win_id, default_height=DEFAULT_HEIGHT, default_width=DEFAULT_WIDTH, default_posx=DEFAULT_POS_X, default_posy=DEFAULT_POS_Y, default_is_hidden=False)
         if props.is_hidden: return
-        DynamicDialog.__init__(self, parent=parent, style=wx.NO_BORDER | wx.FRAME_SHAPED | wx.STAY_ON_TOP, title=title, win_id=win_id, show_minimize=False, show_maximize=False, show_close=True)
+        DynamicDialog.__init__(self, parent=parent, style=wx.NO_BORDER | wx.FRAME_SHAPED | wx.STAY_ON_TOP, title=title, win_id=win_id, show_minimize=False, show_maximize=False, show_close=True, vertical_scroll=True, horizontal_scroll=False)
         # 2. Apply geometry
         init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=win_id)
 
@@ -34,8 +34,7 @@ class SignalPrediction(DynamicDialog):
         # collapsible panels with details
         self.prediction_panels: Dict[str, CollapsiblePanel] = {}
 
-        self.SetSizer(self.window_box)
-
+        self.finalize_layout()
         # noinspection PyTypeChecker
         wx.CallLater(millis=3000, callableObj=self._loading_finished)
 
@@ -59,7 +58,7 @@ class SignalPrediction(DynamicDialog):
         for prediction_key in prediction.keys():
             if prediction_key not in self.prediction_panels.keys():
                 body_name = prediction[prediction_key][0]["body_name"]
-                new_panel = CollapsiblePanel(parent=self, columns=5, label=body_name)
+                new_panel = CollapsiblePanel(parent=self.scroll_container, columns=5, label=body_name)
                 self.prediction_panels[prediction_key] = new_panel
                 self.window_box.Add(self.prediction_panels[prediction_key], 0, wx.EXPAND, RESIZE_MARGIN)
 

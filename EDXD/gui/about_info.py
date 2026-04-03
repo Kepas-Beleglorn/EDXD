@@ -37,52 +37,50 @@ class AboutInfo(DynamicDialog):
         self.parent = parent
 
         # current version
-        self.txt_edxd_version = wx.StaticText(parent=self, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE)
+        self.txt_edxd_version = wx.StaticText(parent=self.scroll_container, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE)
         self.window_box.Add(self.txt_edxd_version, 0, wx.EXPAND | wx.EAST | wx.WEST | wx.NORTH, RESIZE_MARGIN + 10)
 
         # update available?
-        self.txt_edxd_update = wx.StaticText(parent=self, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE)
+        self.txt_edxd_update = wx.StaticText(parent=self.scroll_container, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE)
         self.window_box.Add(self.txt_edxd_update, 0, wx.EXPAND | wx.EAST | wx.WEST, RESIZE_MARGIN + 10)
 
         # project
-        self.txt_edxd_proj = wx.StaticText(parent=self, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE)
+        self.txt_edxd_proj = wx.StaticText(parent=self.scroll_container, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE)
         self.window_box.Add(self.txt_edxd_proj, 0, wx.EXPAND | wx.EAST | wx.WEST | wx.NORTH, RESIZE_MARGIN + 10)
 
         # link to project
-        self.txt_git_proj = LinkLabel(self)
+        self.txt_git_proj = LinkLabel(self.scroll_container)
         self.window_box.Add(self.txt_git_proj, 0, wx.EXPAND | wx.EAST | wx.WEST, RESIZE_MARGIN + 10)
 
         # latest release
-        self.txt_edxd_latest = wx.StaticText(parent=self, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE)
+        self.txt_edxd_latest = wx.StaticText(parent=self.scroll_container, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE)
         self.window_box.Add(self.txt_edxd_latest, 0, wx.EXPAND | wx.EAST | wx.WEST | wx.NORTH, RESIZE_MARGIN + 10)
 
         # link to latest release
-        self.txt_git_release = LinkLabel(self)
+        self.txt_git_release = LinkLabel(self.scroll_container)
         self.window_box.Add(self.txt_git_release, 0, wx.EXPAND | wx.EAST | wx.WEST, RESIZE_MARGIN + 10)
 
         # project on edcodex
-        self.txt_edcodex = wx.StaticText(parent=self,
+        self.txt_edcodex = wx.StaticText(parent=self.scroll_container,
                                              style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE)
         self.window_box.Add(self.txt_edcodex, 0, wx.EXPAND | wx.EAST | wx.WEST | wx.NORTH, RESIZE_MARGIN + 10)
 
         # link to edcodex
-        self.txt_edcodex_tool = LinkLabel(self)
+        self.txt_edcodex_tool = LinkLabel(self.scroll_container)
         self.window_box.Add(self.txt_edcodex_tool, 0, wx.EXPAND | wx.EAST | wx.WEST, RESIZE_MARGIN + 10)
 
         # close button
         hbox = wx.BoxSizer(wx.HORIZONTAL)
-        btn_close = DynamicButton(parent=self, label="Close", size=wx.Size(BTN_WIDTH + self.theme["button_border_width"], BTN_HEIGHT + self.theme["button_border_width"]), draw_border=True)
+        btn_close = DynamicButton(parent=self.scroll_container, label="Close", size=wx.Size(BTN_WIDTH + self.theme["button_border_width"], BTN_HEIGHT + self.theme["button_border_width"]), draw_border=True)
         hbox.Add(btn_close)
         self.window_box.Add(hbox, flag=wx.ALIGN_CENTER | wx.NORTH | wx.SOUTH, border=20)
 
         self.set_values()
 
-        self.SetSizer(self.window_box)
-
         # Bindings
         btn_close.Bind(wx.EVT_BUTTON, lambda evt: self.Close())
 
-        self.Fit()
+        self.finalize_layout()
 
     def set_values(self):
 

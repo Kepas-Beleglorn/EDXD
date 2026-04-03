@@ -1,6 +1,5 @@
 import functools
 import inspect
-
 import wx
 
 from EDXD.globals import logging
@@ -10,10 +9,9 @@ from EDXD.gui.helper.window_properties import WindowProperties
 
 
 def log_call(level=logging.INFO):
-    """Decorator that logs function name and bound arguments."""
     def decorator(fn):
-        logger = logging.getLogger(fn.__module__)   # one logger per module
-        sig = inspect.signature(fn)                 # capture once, not on every call
+        logger = logging.getLogger(fn.__module__)
+        sig = inspect.signature(fn)
 
         @functools.wraps(fn)
         def wrapper(*args, **kwargs):
@@ -23,17 +21,19 @@ def log_call(level=logging.INFO):
             return fn(*args, **kwargs)
 
         return wrapper
+
     return decorator
 
+
 class DynamicDialog(wx.Dialog):
-    from EDXD.globals import RESIZE_MARGIN  # px area at edge/corner for resizing
-    def __init__(self, parent, style, title, win_id, show_minimize: bool = False, show_maximize: bool = False, show_close: bool = False):
+    from EDXD.globals import RESIZE_MARGIN
+
+    def __init__(self, parent, style, title, win_id, show_minimize: bool = False, show_maximize: bool = False, show_close: bool = False, vertical_scroll: bool = False, horizontal_scroll: bool = False):
         super().__init__(parent=parent, title=title, style=style)
-        # todo: exit if hidden
+
         try:
-            self.SetIcons(make_icon_bundle())  # <— plural: SetIcons uses wx.IconBundle
-        except Exception as e:
-            # optional logging
+            self.SetIcons(make_icon_bundle())
+        except Exception:
             pass
 
         self.win_id = win_id
@@ -42,35 +42,82 @@ class DynamicDialog(wx.Dialog):
         self._mouse_start = None
         self._frame_start = None
 
-        # Window box sizer for titlebar + content
-        self.window_box = wx.BoxSizer(wx.VERTICAL)
+        # 1. Main Dialog Sizer (Vertical)
+        self.main_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.SetSizer(self.main_sizer)
 
-        # 1. add custom titlebar
+        # 2. Titlebar (Fixed, direct child of Dialog)
         self.titlebar = CustomTitleBar(parent=self, title=title, show_minimize=show_minimize, show_maximize=show_maximize, show_close=show_close)
-        self.window_box.Add(self.titlebar, 0, wx.EXPAND | wx.EAST | wx.WEST | wx.NORTH, self.RESIZE_MARGIN)
+        self.main_sizer.Add(self.titlebar, 0, wx.EXPAND | wx.EAST | wx.WEST | wx.NORTH, self.RESIZE_MARGIN)
 
+        # 3. The Scrolled Container (Child of Dialog)
+        # This window will handle all the scrolling logic internally
+        self.scroll_container = wx.ScrolledWindow(self)
+        scroll_val_x = 0
+        scroll_val_y = 0
+        if horizontal_scroll:
+            scroll_val_x = 5
+        if vertical_scroll:
+            scroll_val_y = 5
+        self.scroll_container.SetScrollRate(scroll_val_x, scroll_val_y)
+
+        # 4. The Content Sizer (Lives inside the Scrolled Container)
+        # Subclasses add to self.window_box, which is now bound to scroll_container
+        self.window_box = wx.BoxSizer(wx.VERTICAL)
+        self.scroll_container.SetSizer(self.window_box)
+
+        # 5. Add scrolled container to main sizer (expands to fill space)
+        self.main_sizer.Add(self.scroll_container, 1, wx.EXPAND | wx.ALL, self.RESIZE_MARGIN)
+
+        # Bind Resize Events to the DIALOG, not the scrolled window
         self.Bind(wx.EVT_LEFT_DOWN, self.on_mouse_down)
         self.Bind(wx.EVT_LEFT_UP, self.on_mouse_up)
         self.Bind(wx.EVT_MOTION, self.on_mouse_move)
-
         self.Bind(wx.EVT_CLOSE, self.on_close)
 
-    # @log_call()
+    def finalize_layout(self):
+        """
+        Call this at the end of subclass __init__.
+        It calculates the virtual size of the scroll_container.
+        """
+        # Tell the scrolled window to calculate its virtual size based on content
+        self.scroll_container.FitInside()
+        # Layout the sizers
+        self.window_box.Layout()
+        self.main_sizer.Layout()
+        self.Layout()
+
+    # --- Resize Logic (Unchanged logic, operates on Dialog coordinates) ---
+
     def hit_test(self, pos):
-        # Returns direction: 'left', 'right', 'top', 'bottom', or 'corner' (for diagonal)
+        # pos is relative to the Dialog (self) because events are bound to self
         x, y = pos
         w, h = self.GetSize()
         margin = self.RESIZE_MARGIN
+
+        # Safety: Don't allow resizing if clicking near scrollbars of the child
+        # We approximate scrollbar size to avoid interference
+        sb_width = 0
+        #if self.scroll_container.IsScrollbarVisible(wx.VERTICAL):
+        #    sb_width = wx.SystemSettings.GetMetric(wx.SYS_VSCROLL_WIDTH)
+
+        # If mouse is near the right edge where the scrollbar is, ignore 'right' resize
+        # to prevent conflict with scrolling.
+        effective_w = w - sb_width if sb_width > 0 else w
+
         directions = []
         if x < margin: directions.append('left')
-        if x > w - margin: directions.append('right')
+        if x > effective_w - margin: directions.append('right')
         if y < margin: directions.append('top')
         if y > h - margin: directions.append('bottom')
 
         return directions
 
-    # @log_call()
     def on_mouse_down(self, evt):
+        # Only start resizing if we are NOT on the scrollable content area
+        # (Optional: You might want to allow dragging the titlebar to move,
+        # but your current logic is for resizing edges. If you need move logic, add it here.)
+
         directions = self.hit_test(evt.GetPosition())
         if directions:
             self._resizing = True
@@ -79,13 +126,11 @@ class DynamicDialog(wx.Dialog):
             self._frame_start = self.GetSize(), self.GetPosition()
         evt.Skip()
 
-    # @log_call()
     def on_mouse_up(self, evt):
         self._resizing = False
         self._resize_dir = None
         evt.Skip()
 
-    # @log_call()
     def on_mouse_move(self, evt):
         if self._resizing and evt.Dragging() and evt.LeftIsDown():
             dx = evt.GetPosition().x - self._mouse_start.x
@@ -94,24 +139,24 @@ class DynamicDialog(wx.Dialog):
             w, h = size
             x, y = pos
             directions = self._resize_dir
+
             if 'right' in directions:
-                w = max(w + dx, 200)  # 200 = min width
+                w = max(w + dx, 200)
             if 'bottom' in directions:
-                h = max(h + dy, 150)  # 150 = min height
+                h = max(h + dy, 150)
             if 'left' in directions:
                 new_w = max(w - dx, 200)
-                if new_w != w:
-                    x += dx
+                if new_w != w: x += dx
                 w = new_w
             if 'top' in directions:
                 new_h = max(h - dy, 150)
-                if new_h != h:
-                    y += dy
+                if new_h != h: y += dy
                 h = new_h
+
             self.SetSize(wx.Size(w, h))
             self.SetPosition(wx.Point(x, y))
         else:
-            # Change cursor if hovering over edge/corner
+            # Cursor logic
             directions = self.hit_test(evt.GetPosition())
             if directions:
                 if 'left' in directions or 'right' in directions:
@@ -129,7 +174,6 @@ class DynamicDialog(wx.Dialog):
         event.Skip()
 
     def save_geometry(self):
-        # Save geometry
         x, y = self.GetPosition()
         w, h = self.GetSize()
         is_hidden = WindowProperties.load(window_id=self.win_id, default_height=h, default_width=w, default_posx=x, default_posy=y, default_is_hidden=False).is_hidden

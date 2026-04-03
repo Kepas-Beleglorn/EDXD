@@ -9,6 +9,7 @@ from EDXD.gui.helper.gui_dynamic_button import DynamicButton
 from EDXD.gui.helper.gui_handler import init_widget
 from EDXD.gui.helper.theme_handler import get_theme
 from EDXD.gui.helper.window_properties import WindowProperties
+from EDXD.gui.psps_gui import PositionTracker
 from EDXD.utils.float_range_validator import FloatRangeValidator
 
 TITLE = "Enter coordinates"
@@ -33,17 +34,17 @@ class PSPSManualCoordinates(DynamicDialog):
         grid = wx.FlexGridSizer(cols=2, hgap=8, vgap=4)
 
         # latitude
-        self.lbl_latitude = wx.StaticText(parent=self, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE, size=Size(BTN_WIDTH-50, BTN_HEIGHT))
+        self.lbl_latitude = wx.StaticText(parent=self.scroll_container, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE, size=Size(BTN_WIDTH-50, BTN_HEIGHT))
         grid.Add(self.lbl_latitude, 0, wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.BOTTOM, -4)
 
-        self.txt_latitude = wx.TextCtrl(parent=self, style=wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_SIMPLE, size=Size(BTN_WIDTH-50, BTN_HEIGHT), validator=FloatRangeValidator(min_val=-90.0, max_val=90.0))
+        self.txt_latitude = wx.TextCtrl(parent=self.scroll_container, style=wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_SIMPLE, size=Size(BTN_WIDTH-50, BTN_HEIGHT), validator=FloatRangeValidator(min_val=-90.0, max_val=90.0))
         grid.Add(self.txt_latitude, 0, wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.BOTTOM, -4)
 
         # longitude
-        self.lbl_longitude = wx.StaticText(parent=self, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE, size=Size(BTN_WIDTH-50, BTN_HEIGHT))
+        self.lbl_longitude = wx.StaticText(parent=self.scroll_container, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE, size=Size(BTN_WIDTH-50, BTN_HEIGHT))
         grid.Add(self.lbl_longitude, 0, wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.BOTTOM, -4)
 
-        self.txt_longitude = wx.TextCtrl(parent=self, style=wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_SIMPLE, size=Size(BTN_WIDTH-50, BTN_HEIGHT), validator=FloatRangeValidator(min_val=-180.0, max_val=180.0))
+        self.txt_longitude = wx.TextCtrl(parent=self.scroll_container, style=wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_SIMPLE, size=Size(BTN_WIDTH-50, BTN_HEIGHT), validator=FloatRangeValidator(min_val=-180.0, max_val=180.0))
         grid.Add(self.txt_longitude, 0, wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.BOTTOM, -4)
 
 
@@ -51,37 +52,35 @@ class PSPSManualCoordinates(DynamicDialog):
 
         # confirm button
         hbox = wx.BoxSizer(wx.HORIZONTAL)
-        btn_confirm = DynamicButton(parent=self, label="Confirm",
+        btn_confirm = DynamicButton(parent=self.scroll_container, label="Confirm",
                                    size=wx.Size(BTN_WIDTH + self.theme["button_border_width"],
                                                 BTN_HEIGHT + self.theme["button_border_width"]), draw_border=True)
-        btn_cancel = DynamicButton(parent=self, label="Cancel",
+        btn_cancel = DynamicButton(parent=self.scroll_container, label="Cancel",
                                   size=wx.Size(BTN_WIDTH + self.theme["button_border_width"],
                                                BTN_HEIGHT + self.theme["button_border_width"]), draw_border=True)
         hbox.Add(btn_confirm, flag=wx.RIGHT, border=8)
         hbox.Add(btn_cancel)
         self.window_box.Add(hbox, flag=wx.ALIGN_CENTER | wx.ALL, border=10)
 
-        self.SetSizer(self.window_box)
-
         self.set_values()
-
-        self.SetSizer(self.window_box)
+        self.finalize_layout()
 
         # Bindings
         btn_cancel.Bind(wx.EVT_BUTTON, lambda evt: self.Close())
         btn_confirm.Bind(wx.EVT_BUTTON, lambda evt: self._on_confirm())
-        self.Fit()
 
     def set_values(self):
         position = None
-        if self.parent is None or self.parent.parent is None:
+        if self.parent is None or self.parent.GrandParent is None:
             return
 
-        if self.parent.parent.pinned_position is not None:
-            position = self.parent.parent.pinned_position
+        psps_info: PositionTracker = self.parent.GrandParent
 
-        if position is None and self.parent.parent.current_position is not None:
-            position = self.parent.parent.current_position
+        if psps_info.pinned_position is not None:
+            position = psps_info.pinned_position
+
+        if position is None and psps_info.current_position is not None:
+            position = psps_info.current_position
 
         lat = position.latitude if position else None
         lon = position.longitude if position else None

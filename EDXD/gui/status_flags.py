@@ -142,7 +142,7 @@ class StatusFlags(DynamicDialog):
                 if label == "UNKNOWN":
                     break
             btn = DynamicToggleButton(
-                parent=self,
+                parent=self.scroll_container,
                 label=label,
                 is_toggled= False,
                 size=wx.Size(FLAG_BTN_WIDTH, FLAG_BTN_HEIGHT)
@@ -166,7 +166,7 @@ class StatusFlags(DynamicDialog):
                 if label == "UNKNOWN":
                     break
             btn = DynamicToggleButton(
-                parent=self,
+                parent=self.scroll_container,
                 label=label,
                 is_toggled= False,
                 size=wx.Size(FLAG_BTN_WIDTH, FLAG_BTN_HEIGHT)
@@ -175,7 +175,7 @@ class StatusFlags(DynamicDialog):
             grid2.Add(btn, 0, wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.BOTTOM, -4)
         self.window_box.Add(grid2, flag=wx.ALL, border=10)
 
-        self.SetSizer(self.window_box)
+        self.finalize_layout()
         self._refresh_timer = wx.CallLater(millis=500, callableObj=self.render)
         self.Fit()
 

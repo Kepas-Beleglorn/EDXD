@@ -25,7 +25,7 @@ class BodyDetails(DynamicDialog):
         # 1. Load saved properties (or use defaults)
         props = WindowProperties.load(win_id, default_height=DEFAULT_HEIGHT, default_width=DEFAULT_WIDTH, default_posx=DEFAULT_POS_X, default_posy=DEFAULT_POS_Y, default_is_hidden=False)
         if props.is_hidden: return
-        DynamicDialog.__init__(self, parent=parent, style=wx.NO_BORDER | wx.FRAME_SHAPED | wx.STAY_ON_TOP, title=title, win_id=win_id, show_minimize=False, show_maximize=False, show_close=True)
+        DynamicDialog.__init__(self, parent=parent, style=wx.NO_BORDER | wx.FRAME_SHAPED | wx.STAY_ON_TOP, title=title, win_id=win_id, show_minimize=False, show_maximize=False, show_close=True, vertical_scroll=True, horizontal_scroll=False)
         # 2. Apply geometry
         init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=win_id)
 
@@ -38,7 +38,7 @@ class BodyDetails(DynamicDialog):
         self.Bind(wx.EVT_SHOW, self._on_show)
 
         # body name
-        self.lbl_body = wx.StaticText(parent=self)
+        self.lbl_body = wx.StaticText(parent=self.scroll_container)
         self._update_body()
         self.window_box.Add(self.lbl_body, 0, wx.EXPAND | wx.EAST | wx.WEST | wx.SOUTH, RESIZE_MARGIN)
 
@@ -48,32 +48,31 @@ class BodyDetails(DynamicDialog):
 
         # collapsible panels with details
         # general data
-        self.general_panel = CollapsiblePanel(parent=self, columns=2, label="General")
+        self.general_panel = CollapsiblePanel(parent=self.scroll_container, columns=2, label="General")
         self.window_box.Add(self.general_panel, 0, wx.EXPAND, RESIZE_MARGIN)
         self.general_panel.Hide()
 
         # atmosphere data
-        self.atmosphere_panel = CollapsiblePanel(parent=self, columns=3, label="Atmosphere")
+        self.atmosphere_panel = CollapsiblePanel(parent=self.scroll_container, columns=3, label="Atmosphere")
         self.window_box.Add(self.atmosphere_panel, 0, wx.EXPAND, RESIZE_MARGIN)
         self.atmosphere_panel.Hide()
 
         # minerals found
-        self.mat_panel = CollapsiblePanel(parent=self, columns=3, label="Materials")
+        self.mat_panel = CollapsiblePanel(parent=self.scroll_container, columns=3, label="Materials")
         self.window_box.Add(self.mat_panel, 0, wx.EXPAND, RESIZE_MARGIN)
         self.mat_panel.Hide()
 
         # bio signals
-        self.bio_panel = CollapsiblePanel(parent=self, columns=5, label="Biological signals")
+        self.bio_panel = CollapsiblePanel(parent=self.scroll_container, columns=5, label="Biological signals")
         self.window_box.Add(self.bio_panel, 0, wx.EXPAND, RESIZE_MARGIN)
         self.bio_panel.Hide()
 
         # geo signals
-        self.geo_panel = CollapsiblePanel(parent=self, columns=1, label="Geological signals")
+        self.geo_panel = CollapsiblePanel(parent=self.scroll_container, columns=1, label="Geological signals")
         self.window_box.Add(self.geo_panel, 0, wx.EXPAND, RESIZE_MARGIN)
         self.geo_panel.Hide()
 
-        self.SetSizer(self.window_box)
-
+        self.finalize_layout()
         # noinspection PyTypeChecker
         wx.CallLater(millis=3000, callableObj=self._loading_finished)
 

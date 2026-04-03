@@ -48,7 +48,7 @@ class EDXDConfig(DynamicDialog):
         self.SetMinSize(min_size)
 
         # Hint to restart when paths change
-        self.lbl_restart_hint = wx.StaticText(self, label="\nChanging paths requires restart of EDXD.")
+        self.lbl_restart_hint = wx.StaticText(self.scroll_container, label="\nChanging paths requires restart of EDXD.")
         self.window_box.Add(self.lbl_restart_hint, flag=wx.ALL | wx.EXPAND, border=10)
 
         # Config items grid
@@ -58,19 +58,19 @@ class EDXDConfig(DynamicDialog):
         self.grid_paths.AddGrowableCol(1)
 
         # Journal directory label
-        self.lbl_journal_dir = wx.StaticText(self, label="Journal file directory:")
+        self.lbl_journal_dir = wx.StaticText(self.scroll_container, label="Journal file directory:")
         self.grid_paths.Add(self.lbl_journal_dir, flag=wx.ALIGN_CENTER_VERTICAL)
 
         # Journal directory file picker
-        self.journal_dir_picker = DirPicker(self, style=wx.DIRP_USE_TEXTCTRL)
+        self.journal_dir_picker = DirPicker(self.scroll_container, style=wx.DIRP_USE_TEXTCTRL)
         self.grid_paths.Add(self.journal_dir_picker, flag=wx.EXPAND)
 
         # System cache directory label
-        self.lbl_system_cache_dir = wx.StaticText(self, label="System cache directory:")
+        self.lbl_system_cache_dir = wx.StaticText(self.scroll_container, label="System cache directory:")
         self.grid_paths.Add(self.lbl_system_cache_dir, flag=wx.ALIGN_CENTER_VERTICAL)
 
         # System cache directory file picker
-        self.system_cache_dir_picker = DirPicker(self, style=wx.DIRP_USE_TEXTCTRL)
+        self.system_cache_dir_picker = DirPicker(self.scroll_container, style=wx.DIRP_USE_TEXTCTRL)
         self.journal_dir_picker.SetPath(self.cfg.get("cache_dir", ""))
         self.grid_paths.Add(self.system_cache_dir_picker, flag=wx.EXPAND)
 
@@ -82,19 +82,19 @@ class EDXDConfig(DynamicDialog):
         self.grid_options.AddGrowableCol(2)
 
         # worthwhile threshold for indicator in main window
-        self.lbl_worthwhile_threshold = wx.StaticText(self, label=f"\nMinimum value to show worthwhile indicator ({ICONS["worthwhile"]}) on a body.")
+        self.lbl_worthwhile_threshold = wx.StaticText(self.scroll_container, label=f"\nMinimum value to show worthwhile indicator ({ICONS["worthwhile"]}) on a body.")
         self.grid_options.Add(self.lbl_worthwhile_threshold, flag=wx.ALL | wx.EXPAND, border=10)
-        self.txt_worthwhile_threshold = wx.TextCtrl(parent=self, style=wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_SIMPLE, size=Size(BTN_WIDTH, BTN_HEIGHT),
+        self.txt_worthwhile_threshold = wx.TextCtrl(parent=self.scroll_container, style=wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_SIMPLE, size=Size(BTN_WIDTH, BTN_HEIGHT),
                                                     validator=PositiveIntFormatterValidator())
         init_widget(self.txt_worthwhile_threshold)
         self.grid_options.Add(self.txt_worthwhile_threshold, flag=wx.ALL | wx.EXPAND, border=10)
-        self.grid_options.Add(wx.StaticText(self, label=""), 0, wx.ALIGN_LEFT | wx.EXPAND, 5)
+        self.grid_options.Add(wx.StaticText(self.scroll_container, label=""), 0, wx.ALIGN_LEFT | wx.EXPAND, 5)
 
         # Add the grid to your main sizer
         self.window_box.Add(self.grid_options, flag=wx.ALL | wx.EXPAND, border=10)
 
         # A bit of explanation of the panel toggle
-        self.lbl_panel_toggle_hint = wx.StaticText(self, label="\nToggle visibility of panels you want to use. Main window is always on.")
+        self.lbl_panel_toggle_hint = wx.StaticText(self.scroll_container, label="\nToggle visibility of panels you want to use. Main window is always on.")
         self.window_box.Add(self.lbl_panel_toggle_hint, flag=wx.ALL | wx.EXPAND, border=10)
 
         # set defaults
@@ -131,7 +131,7 @@ class EDXDConfig(DynamicDialog):
         self.window_buttons = {}
         for i in range(len(self.window_identifiers)):
             btn = DynamicToggleButton(
-                parent=self,
+                parent=self.scroll_container,
                 label=f"{self.window_identifiers[i][1]}",
                 is_toggled=not self.cfg.get(self.window_identifiers[i][0], {}).get("is_hidden", False),
                 size=wx.Size(BTN_WIDTH, BTN_HEIGHT)
@@ -148,12 +148,12 @@ class EDXDConfig(DynamicDialog):
         self.grid_save_close.AddGrowableCol(1)
 
         # Save button
-        self.btn_save_and_close = DynamicButton(parent=self, label="Save and close settings",
+        self.btn_save_and_close = DynamicButton(parent=self.scroll_container, label="Save and close settings",
                                    size=wx.Size(BTN_WIDTH + self.theme["button_border_width"],
                                                 BTN_HEIGHT + self.theme["button_border_width"]), draw_border=True)
         self.grid_save_close.Add(self.btn_save_and_close, flag=wx.EXPAND)
 
-        self.btn_cancel = DynamicButton(parent=self, label="Discard changes and close settings",
+        self.btn_cancel = DynamicButton(parent=self.scroll_container, label="Discard changes and close settings",
                                                 size=wx.Size(BTN_WIDTH + self.theme["button_border_width"],
                                                              BTN_HEIGHT + self.theme["button_border_width"]),
                                                 draw_border=True)
@@ -165,8 +165,7 @@ class EDXDConfig(DynamicDialog):
         self.btn_save_and_close.Bind(wx.EVT_BUTTON, self._save_config)
         self.btn_cancel.Bind(wx.EVT_BUTTON, lambda evt: self.Close())
 
-        # Set the main sizer
-        self.SetSizer(self.window_box)
+        self.finalize_layout()
 
     def restart_app(self):
         wx.GetApp().ExitMainLoop()

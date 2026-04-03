@@ -77,8 +77,8 @@ class PSPSButtons(wx.Panel):
         import EDXD.gui.psps_enter_coordinates as psps_manual
         psps_input = psps_manual.PSPSManualCoordinates(parent=self)
         psps_input.ShowModal()
-        lat = float(psps_input.txt_latitude.GetValue())
-        lon = float(psps_input.txt_longitude.GetValue())
+        lat = float(psps_input.txt_latitude.GetValue() or 0.0)
+        lon = float(psps_input.txt_longitude.GetValue() or 0.0)
 
         self.parent.pinned_position = PSPSCoordinates(latitude=lat, longitude=lon)
 

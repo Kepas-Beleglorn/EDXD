@@ -38,25 +38,26 @@ class EngineStatus(DynamicDialog):
         grid = wx.BoxSizer(wx.VERTICAL)
 
         # Fuel level (label)
-        self.lbl_fuel_level = wx.StaticText(parent=self, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE, size=Size(DEFAULT_WIDTH_ENGINE_STATUS-50, BTN_HEIGHT))
+        self.lbl_fuel_level = wx.StaticText(parent=self.scroll_container, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE, size=Size(DEFAULT_WIDTH_ENGINE_STATUS-50, BTN_HEIGHT))
+        init_widget(self.lbl_fuel_level)
         grid.Add(self.lbl_fuel_level, 0, wx.EXPAND | wx.ALL, -4)
 
         # fuel level (gauge)
-        self.pnl_fuel_gauge = FuelGauge(parent=self, show_scale=True, warning_threshold=self.parent.prefs.get("fuel_low_threshold", DEFAULT_FUEL_LOW_THRESHOLD))
+        self.pnl_fuel_gauge = FuelGauge(parent=self.scroll_container, show_scale=True, warning_threshold=self.parent.prefs.get("fuel_low_threshold", DEFAULT_FUEL_LOW_THRESHOLD))
         grid.Add(self.pnl_fuel_gauge, 0, wx.EXPAND | wx.ALL, -4)
 
         # spacer
-        self.lbl_spacer = wx.StaticText(parent=self, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE, size=Size(DEFAULT_WIDTH_ENGINE_STATUS-50, BTN_HEIGHT))
+        self.lbl_spacer = wx.StaticText(parent=self.scroll_container, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE, size=Size(DEFAULT_WIDTH_ENGINE_STATUS-50, BTN_HEIGHT))
         grid.Add(self.lbl_spacer, 0, wx.EXPAND | wx.ALL, -4)
 
         # FSD supercharged state
-        self.fsd_indicator = FSDIndicator(parent=self, size=wx.Size(-1, 100))
+        self.fsd_indicator = FSDIndicator(parent=self.scroll_container, size=wx.Size(-1, 100))
         self.fsd_indicator.set_text("FSD STATUS")
 
         grid.Add(self.fsd_indicator, 0, wx.CENTER | wx.EXPAND | wx.ALL, 5)
 
         # spacer
-        self.lbl_fsd_injection = wx.StaticText(parent=self,
+        self.lbl_fsd_injection = wx.StaticText(parent=self.scroll_container,
                                                style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE,
                                                size=Size(DEFAULT_WIDTH_ENGINE_STATUS, BTN_HEIGHT))
         grid.Add(self.lbl_fsd_injection, 0, wx.CENTER | wx.EXPAND | wx.ALL, -4)
@@ -64,7 +65,7 @@ class EngineStatus(DynamicDialog):
         self.window_box.Add(grid, flag=wx.ALL | wx.EXPAND, border=10)
         self.set_values()
 
-        self.SetSizer(self.window_box)
+        self.finalize_layout()
 
         self.render()
 

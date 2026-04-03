@@ -46,7 +46,7 @@ class MineralsFilter(DynamicDialog):
         grid = wx.FlexGridSizer(cols=4, hgap=8, vgap=4)
         for mat in RAW_MATS:
             btn = DynamicToggleButton(
-                parent=self,
+                parent=self.scroll_container,
                 label=mat.title(),
                 is_toggled=self.prefs.get("mat_sel", {}).get(mat, True),
                 size=wx.Size(MINERAL_BTN_WIDTH, BTN_HEIGHT)
@@ -57,13 +57,13 @@ class MineralsFilter(DynamicDialog):
 
         # (De)select all and Apply buttons
         hbox = wx.BoxSizer(wx.HORIZONTAL)
-        btn_toggle = DynamicButton(parent=self, label="(De-)select all", size=wx.Size(BTN_WIDTH + self.theme["button_border_width"], BTN_HEIGHT + self.theme["button_border_width"]), draw_border=True)
-        btn_apply = DynamicButton(parent=self, label="Apply filter", size=wx.Size(BTN_WIDTH + self.theme["button_border_width"], BTN_HEIGHT + self.theme["button_border_width"]), draw_border=True)
+        btn_toggle = DynamicButton(parent=self.scroll_container, label="(De-)select all", size=wx.Size(BTN_WIDTH + self.theme["button_border_width"], BTN_HEIGHT + self.theme["button_border_width"]), draw_border=True)
+        btn_apply = DynamicButton(parent=self.scroll_container, label="Apply filter", size=wx.Size(BTN_WIDTH + self.theme["button_border_width"], BTN_HEIGHT + self.theme["button_border_width"]), draw_border=True)
         hbox.Add(btn_toggle, flag=wx.RIGHT, border=8)
         hbox.Add(btn_apply)
         self.window_box.Add(hbox, flag=wx.ALIGN_CENTER | wx.ALL, border=10)
 
-        self.SetSizer(self.window_box)
+        self.finalize_layout()
 
         # Bindings
         btn_toggle.Bind(wx.EVT_BUTTON, self.on_toggle_all)
