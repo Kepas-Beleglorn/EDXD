@@ -71,7 +71,7 @@ def estimate_system_biosigns(model_bodies: Dict[str, Any]) -> Dict[str, List[Dic
         mean_temp = getattr(body, 'mean_temp', 0.0)
         distance_ls = getattr(body, 'distance', None)
         body_name = getattr(body, 'body_name', body_id)
-        pressure_atm = getattr(body, 'pressure', 0.0)
+        pressure_atm = dh.pressure_as_atm_from_pascals(getattr(body, 'pressure', 0.0))
 
         # 3. Check DSS & Codex Data
         bio_found_data = getattr(body, 'bio_found', {})
