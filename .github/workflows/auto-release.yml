@@ -205,16 +205,36 @@ jobs:
       - name: List downloaded files
         run: ls -R dist
 
-      - name: Create or update GitHub Release (draft)
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ needs.check-version-commit.outputs.tag }}
-          name: "EDXD ${{ needs.check-version-commit.outputs.title }}"
-          body_path: RELEASE_NOTES.md
-          draft: false
-          make_latest: true
-          files: |
-            dist/**/*.tar.gz
-            dist/**/*.zip
+      - name: Create GitHub Release via API
         env:
-          token: ${{ secrets.PERSONAL_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
+        run: |
+          TAG="${{ needs.check-version-commit.outputs.tag }}"
+          TITLE="EDXD ${{ needs.check-version-commit.outputs.title }}"
+          BODY=$(cat RELEASE_NOTES.md)
+
+          # Create the release using the GitHub API
+          curl -X POST \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/Kepas-Beleglorn/EDXD/releases \
+            -d '{
+              "tag_name": "'"$TAG"'",
+              "name": "'"$TITLE"'",
+              "body": "'"$BODY"'",
+              "draft": false,
+              "prerelease": false
+            }'
+
+          # Upload assets
+          for asset in dist/**/*.tar.gz dist/**/*.zip; do
+            if [ -f "$asset" ]; then
+              filename=$(basename "$asset")
+              curl -X POST \
+                -H "Authorization: token $GITHUB_TOKEN" \
+                -H "Content-Type: application/octet-stream" \
+                --data-binary @"$asset" \
+                "https://uploads.github.com/repos/Kepas-Beleglorn/EDXD/releases/assets?name=$filename" \
+                --header "Accept: application/vnd.github.v3+json"
+            fi
+          done
