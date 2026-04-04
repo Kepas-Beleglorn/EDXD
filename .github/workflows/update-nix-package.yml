@@ -41,8 +41,19 @@ jobs:
           hash="$(nix flake prefetch --json github:${{ env.GITHUB_REPOSITORY }}/${{ env.GITHUB_SHA }} | jq -r '.hash')"
           tag="$(basename ${{ env.GITHUB_REF }})"
 
+          # Use nix flake to build the package
+          nix build "github:${{ env.GITHUB_REPOSITORY }}/${{ env.GITHUB_SHA }}#default"
+
+          # Update default.nix with the new hash and tag
           sed -i 's|^  version = ".*";|  version = "'"$tag"'";|' default.nix
           sed -i 's|^\s*hash = ".*";|    hash = "'"$hash"'";|' default.nix
+
+          # Commit and push the changes
+          git config --global user.name "Kepas-Beleglorn"
+          git config --global user.email "your-email@example.com"
+          git add default.nix
+          git commit -m "Update nix flake [skip ci]"
+          git push
 
       - name: Build
         run: nix build

@@ -1,97 +1,73 @@
-{
-  fetchFromGitHub,
-  buildPythonPackage,
-  setuptools,
-  wheel,
+{ pkgs ? import <nixpkgs> {}, python ? python3 }:
+let
+  my-python-pkg = python.pkgs.buildPythonPackage rec {
+    pname = "ed-eXploration-dashboard";
+    version = "v0.8.0.0";
 
-  # Wayland / GTK stack
-  wayland,
-  libxkbcommon,
-  gtk3,
-  glib,
-  nss,
-  nspr,
-  cairo,
-  pango,
-  harfbuzz,
+    src = pkgs.fetchFromGitHub {
+      owner = "Kepas-Beleglorn";
+      repo = "EDXD";
+      rev = version;
+      hash = "sha256-d1bHkqeK3uX49QY5QqNklhjNEZ1Xc2BAQIsDPedbTtg=";
+    };
 
-  # X11 / XCB stack
-  xorg,
+    preBuild = ''
+      echo 'VERSION = "${version}"' > EDXD/_version.py
+    '';
 
-  # zlib (libz.so.1)
-  zlib,
+    # do not run tests
+    doCheck = false;
 
-  # Requirements
-  tomli,
-  watchdog,
-  wxpython,
-  filelock,
-}:
-buildPythonPackage rec {
-  pname = "ed-eXploration-dashboard";
-  version = "v0.8.0.0";
+    # specific to buildPythonPackage, see its reference
+    pyproject = true;
+    build-system = [
+      python.pkgs.setuptools
+      python.pkgs.wheel
+    ];
 
-  src = fetchFromGitHub {
-    owner = "Kepas-Beleglorn";
-    repo = "EDXD";
-    rev = version;
-    hash = "sha256-d1bHkqeK3uX49QY5QqNklhjNEZ1Xc2BAQIsDPedbTtg=";
+    buildInputs = [
+      # Wayland / GTK stack
+      pkgs.wayland
+      pkgs.libxkbcommon
+      pkgs.gtk3
+      pkgs.glib
+      pkgs.nss
+      pkgs.nspr
+      pkgs.cairo
+      pkgs.pango
+      pkgs.harfbuzz
+
+      # X11 / XCB stack
+      pkgs.xorg.libX11
+      pkgs.xorg.libXcursor
+      pkgs.xorg.libXrandr
+      pkgs.xorg.libXi
+      pkgs.xorg.libXrender
+      pkgs.xorg.libXext
+      pkgs.xorg.libXfixes
+      pkgs.xorg.libxcb
+      pkgs.xorg.xcbutil
+      pkgs.xorg.xcbutilimage
+      pkgs.xorg.xcbutilkeysyms
+      pkgs.xorg.xcbutilwm
+
+      # zlib (libz.so.1)
+      pkgs.zlib
+
+      # Requirements
+      python.pkgs.tomli
+      python.pkgs.watchdog
+      python.pkgs.wxpython  # Use the overridden wxpython from the flake
+      python.pkgs.filelock
+    ];
+
+    propagatedBuildInputs = [
+      python.pkgs.tomli
+      python.pkgs.watchdog
+      python.pkgs.wxpython  # Use the overridden wxpython from the flake
+      python.pkgs.filelock
+    ];
   };
-
-  preBuild = ''
-    echo 'VERSION = "${version}"' > EDXD/_version.py
-  '';
-
-  # do not run tests
-  doCheck = false;
-
-  # specific to buildPythonPackage, see its reference
-  pyproject = true;
-  build-system = [
-    setuptools
-    wheel
-  ];
-
-  buildInputs = [
-    # Wayland / GTK stack
-    wayland
-    libxkbcommon
-    gtk3
-    glib
-    nss
-    nspr
-    cairo
-    pango
-    harfbuzz
-
-    # X11 / XCB stack
-    xorg.libX11
-    xorg.libXcursor
-    xorg.libXrandr
-    xorg.libXi
-    xorg.libXrender
-    xorg.libXext
-    xorg.libXfixes
-    xorg.libxcb
-    xorg.xcbutil
-    xorg.xcbutilimage
-    xorg.xcbutilkeysyms
-    xorg.xcbutilwm
-
-    # zlib (libz.so.1)
-    zlib
-
-    # Requirements
-    tomli
-    watchdog
-    wxpython
-    filelock
-  ];
-
-  propagatedBuildInputs = [
-    tomli
-    watchdog
-    wxpython
-    filelock
-  ];
-}
+in
+  my-python-pkg
+  
