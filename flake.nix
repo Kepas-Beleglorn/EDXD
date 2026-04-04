@@ -21,7 +21,7 @@
                     src = final.fetchFromGitHub {
                       owner = "wxWidgets";
                       repo = "Phoenix";
-                      rev = "wxPython-4.2.5";
+                      rev = "wxPython-4.2.4";
                       hash = "sha256-44e836d1bccd99c38790bb034b6ecf70d9060f6734320560f7c4b0d006144793";
                     };
                     # wxPython 4.2.5 from GitHub source may need build flags
