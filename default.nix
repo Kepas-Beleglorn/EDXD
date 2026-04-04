@@ -1,4 +1,4 @@
-{ pkgs ? import <nixpkgs> {}, python ? python3 }:
+{ pkgs, python }:
 let
   my-python-pkg = python.pkgs.buildPythonPackage rec {
     pname = "ed-eXploration-dashboard";
@@ -15,10 +15,8 @@ let
       echo 'VERSION = "${version}"' > EDXD/_version.py
     '';
 
-    # do not run tests
     doCheck = false;
 
-    # specific to buildPythonPackage, see its reference
     pyproject = true;
     build-system = [
       python.pkgs.setuptools
@@ -57,17 +55,16 @@ let
       # Requirements
       python.pkgs.tomli
       python.pkgs.watchdog
-      python.pkgs.wxpython  # Use the overridden wxpython from the flake
+      python.pkgs.wxpython
       python.pkgs.filelock
     ];
 
     propagatedBuildInputs = [
       python.pkgs.tomli
       python.pkgs.watchdog
-      python.pkgs.wxpython  # Use the overridden wxpython from the flake
+      python.pkgs.wxpython
       python.pkgs.filelock
     ];
   };
 in
   my-python-pkg
-  

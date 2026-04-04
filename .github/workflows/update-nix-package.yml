@@ -41,7 +41,7 @@ jobs:
           hash="$(nix flake prefetch --json github:${{ env.GITHUB_REPOSITORY }}/${{ env.GITHUB_SHA }} | jq -r '.hash')"
           tag="$(basename ${{ env.GITHUB_REF }})"
 
-          # Use nix flake to build the package
+          # Build using the flake
           nix build "github:${{ env.GITHUB_REPOSITORY }}/${{ env.GITHUB_SHA }}#default"
 
           # Update default.nix with the new hash and tag
