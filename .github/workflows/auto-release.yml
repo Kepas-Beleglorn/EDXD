@@ -211,7 +211,8 @@ jobs:
         run: |
           TAG="${{ needs.check-version-commit.outputs.tag }}"
           TITLE="EDXD ${{ needs.check-version-commit.outputs.title }}"
-          BODY=$(cat RELEASE_NOTES.md)
+          # Escape newlines and quotes in the body
+          BODY=$(jq -Rs '.' RELEASE_NOTES.md)
 
           # Create the release using the GitHub API
           curl -X POST \
@@ -221,7 +222,7 @@ jobs:
             -d '{
               "tag_name": "'"$TAG"'",
               "name": "'"$TITLE"'",
-              "body": "'"$BODY"'",
+              "body": '"$BODY"',
               "draft": false,
               "prerelease": false
             }'
@@ -230,11 +231,15 @@ jobs:
           for asset in dist/**/*.tar.gz dist/**/*.zip; do
             if [ -f "$asset" ]; then
               filename=$(basename "$asset")
+              # Get the release ID from the previous response
+              RELEASE_ID=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+                "https://api.github.com/repos/Kepas-Beleglorn/EDXD/releases/tags/$TAG" | jq -r '.id')
+
               curl -X POST \
                 -H "Authorization: token $GITHUB_TOKEN" \
                 -H "Content-Type: application/octet-stream" \
                 --data-binary @"$asset" \
-                "https://uploads.github.com/repos/Kepas-Beleglorn/EDXD/releases/assets?name=$filename" \
+                "https://uploads.github.com/repos/Kepas-Beleglorn/EDXD/releases/$RELEASE_ID/assets?name=$filename" \
                 --header "Accept: application/vnd.github.v3+json"
             fi
           done
