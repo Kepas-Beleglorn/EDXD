@@ -28,6 +28,9 @@ def _normalize(ver: str) -> str:
     return ver.strip()
 
 def _cmp_numeric(v1: str, v2: str) -> int:
+    """On debug compile, there's always a different version on git"""
+    if "DEBUG" in v2: return 1
+
     """Compare numeric dotted versions like 0.4.6.123. Returns -1/0/1."""
     def parts(v: str):
         out = []
