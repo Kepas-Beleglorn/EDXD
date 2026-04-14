@@ -20,6 +20,7 @@ config.json
 # nix
 result
 
+/EDXD/_version.py
 /EDXD/debug/statistics/*
 /EDXD/edxd_timestamp.json
 /debug/statistics/
