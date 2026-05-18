@@ -39,6 +39,7 @@ class StarClass(Enum):
     K_OrangeGiant = "K_OrangeGiant"
     M_RedGiant = "M_RedGiant"
     M_RedSuperGiant = "M_RedSuperGiant"
+    B_BlueWhiteSuperGiant = "B_BlueWhiteSuperGiant"
 
 class StarLuminosity(Enum):
     I = "I"

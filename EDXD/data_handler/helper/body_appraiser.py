@@ -9,6 +9,7 @@ star_types = {
 
     'B': 2,
     'B_BlueSuperGiant': 201,
+    'B_BlueWhiteSuperGiant': 202,
 
     'A': 3,
     'A_BlueWhiteSuperGiant': 301,
