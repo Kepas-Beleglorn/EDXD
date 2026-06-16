@@ -73,6 +73,11 @@ class BodyDetails(DynamicDialog):
         self.window_box.Add(self.geo_panel, 0, wx.EXPAND, RESIZE_MARGIN)
         self.geo_panel.Hide()
 
+        # rings signals
+        self.rings_panel = CollapsiblePanel(parent=self.scroll_container, columns=2, label="Planetary rings")
+        self.window_box.Add(self.rings_panel, 0, wx.EXPAND, RESIZE_MARGIN)
+        self.rings_panel.Hide()
+
         self.finalize_layout()
         # noinspection PyTypeChecker
         wx.CallLater(millis=3000, callableObj=self._loading_finished)
@@ -89,6 +94,7 @@ class BodyDetails(DynamicDialog):
         self.mat_panel.reset_table()
         self.bio_panel.reset_table()
         self.geo_panel.reset_table()
+        self.rings_panel.reset_table()
         self.body = body
 
         if self.body is None:
@@ -97,6 +103,7 @@ class BodyDetails(DynamicDialog):
             self.mat_panel.Hide()
             self.bio_panel.Hide()
             self.geo_panel.Hide()
+            self.rings_panel.Hide()
         else:
             psps = PSPS(current_position, self.body.radius)
             self._update_general()
@@ -104,6 +111,7 @@ class BodyDetails(DynamicDialog):
             self._update_materials(filters)
             self._update_bio_signals(psps=psps, current_heading=current_heading, current_position=current_position)
             self._update_geo_signals()
+            self._update_rings()
 
         if not self.IsShown():
             self.Show()
@@ -373,9 +381,41 @@ class BodyDetails(DynamicDialog):
                 self._set_distance_color(label=lbl_range_2, range_min=bio_range, range_current=range_raw_two)
                 self.bio_panel.add_table_item("")
 
-        if self.geo_panel.IsShown():
+        if self.bio_panel.IsShown():
             # Force a layout update
-            self.geo_panel.force_render()
+            self.bio_panel.force_render()
+
+    def _update_rings(self):
+        if not self.body.has_rings:
+            self.rings_panel.Hide()
+            return
+
+        if self.body.has_rings and not self.rings_panel.IsShown():
+            self.rings_panel.Show()
+
+        self.rings_panel.header_label.SetLabel("Planetary rings")
+
+        for ring_id in self.body.rings:
+            ring_name = self.body.rings[ring_id].body_name
+            ring_class = self.body.rings[ring_id].ring_class
+
+            self.rings_panel.add_table_item(ring_name)
+            self.rings_panel.add_table_item("")
+
+            self.rings_panel.add_table_item(f"{' ' * 4}Ring Class:{' ' * 8}{t2h.get_clean_ring_class(ring_class)}")
+            self.rings_panel.add_table_item("")
+
+            if self.body.rings[ring_id].signals:
+                self.rings_panel.add_table_item(f"{' ' * 4}Hotspots")
+                self.rings_panel.add_table_item("")
+                for sig_item in self.body.rings[ring_id].signals:
+                    self.rings_panel.add_table_item(f"{' ' * 8}{sig_item["Type"]}")
+                    self.rings_panel.add_table_item(str(sig_item["Count"]))
+
+
+        if self.rings_panel.IsShown():
+            # Force a layout update
+            self.rings_panel.force_render()
 
     @staticmethod
     def _set_g_force_colour(label: wx.StaticText = None, g_force: float = 0.0):

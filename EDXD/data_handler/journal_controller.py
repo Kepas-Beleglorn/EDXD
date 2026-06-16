@@ -262,7 +262,7 @@ class JournalController(PausableThread, threading.Thread):
                         body_id=final_ring_id,
                         body_name=rings_found_dict.body_name or ring_name,
                         ring_class=rings_found_dict.ring_class or "",
-                        signals = rings_found_dict.signals or {}
+                        signals=rings_found_dict.signals or {}
                     )
 
                 # clean up the mess from previous scans without proper body ID for the ring
@@ -305,7 +305,7 @@ class JournalController(PausableThread, threading.Thread):
                                     journal_ring_id = dict_ring_item.body_id
                                     break
 
-                            ring = Ring(body_id=journal_ring_id, body_name=journal_ring_name, signals={})
+                            ring = Ring(body_id=journal_ring_id, body_name=journal_ring_name, ring_class=dict_ring_item.ring_class or journal_ring_class, signals=dict_ring_item.signals or {})
                             rings_found[journal_ring_id] = ring
 
                 if evt.get("SurfacePressure"):

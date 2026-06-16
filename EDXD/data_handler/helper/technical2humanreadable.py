@@ -13,3 +13,15 @@ def get_clean_body_type(raw_body_type: str) -> str:
         return "Supermassive Black Hole"
 
     return raw_body_type
+
+def get_clean_ring_class(raw_ring_class: str) -> str:
+    if raw_ring_class == "eRingClass_Icy":
+        return "Icy"
+    if raw_ring_class == "eRingClass_MetalRich":
+        return "Metal Rich"
+    if raw_ring_class == "eRingClass_Metalic":
+        return "Metallic"
+    if raw_ring_class == "eRingClass_Rocky":
+        return "Rocky"
+
+    return raw_ring_class
