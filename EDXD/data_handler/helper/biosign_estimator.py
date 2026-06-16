@@ -148,8 +148,6 @@ def estimate_system_biosigns(model_bodies: Dict[str, Any]) -> Dict[str, List[Dic
                 # Special Anemone/Clypeus handling
                 if "Anemone" in sp and "Clypeus" in allowed_prefixes: matches = True
                 if matches: final_species.append(sp)
-
-
         else:
             # PRE-SCAN PHASE: Keep all physics candidates
             final_species = potential_species
@@ -157,6 +155,12 @@ def estimate_system_biosigns(model_bodies: Dict[str, Any]) -> Dict[str, List[Dic
         # 6. Enrich Results
         if final_species:
             results[body_id] = []
+
+            #237 - check if confirmed species are all present in final_species and append if not
+            for conf_species in confirmed_species_names:
+                if not conf_species in final_species:
+                    final_species.append(conf_species)
+
             for species_name in final_species:
                 # If confirmed, probability is 100%, otherwise calculate.
                 prob = 0.0
