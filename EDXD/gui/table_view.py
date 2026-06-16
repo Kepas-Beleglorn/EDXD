@@ -9,6 +9,7 @@ from EDXD.data_handler.model import Body, FlatRowDataMainWindow
 from EDXD.globals import SYMBOL, logging, RAW_MATS, ICONS, log_call, DEBUG_MODE, log_context, \
     DEFAULT_WORTHWHILE_THRESHOLD
 from EDXD.utils.clipboard import copy_text_to_clipboard
+import EDXD.data_handler.helper.technical2humanreadable as t2h
 
 
 class BodiesTable(gridlib.Grid):
@@ -207,7 +208,7 @@ class BodiesTable(gridlib.Grid):
                             ICONS["status_target"]      if flat_body_data.body_id == target_body_id else
                             ICONS["status_selected"]    if flat_body_data.body_id == selected_body_id else
                             "", 0),
-                    "body_type"         : (f"{flat_body_data.body_type}", flat_body_data.body_type.lower()),
+                    "body_type"         : (f"{t2h.get_clean_body_type(flat_body_data.body_type)}", flat_body_data.body_type.lower()),
                     "scoopable"         : (f"{ICONS['scoopable']}"  if flat_body_data.scoopable else "", (0 if flat_body_data.scoopable else 1)),
                     "body"              : (body.body_name, body.body_name.lower()),
                     "distance"          : (f"{flat_body_data.distance:,.0f} Ls" if flat_body_data.distance is not None else "", flat_body_data.distance),

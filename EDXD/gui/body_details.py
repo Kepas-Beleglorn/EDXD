@@ -16,6 +16,7 @@ from EDXD.utils.clipboard import copy_text_to_clipboard
 from EDXD.gui.helper.collapsible_panel import CollapsiblePanel
 import EDXD.data_handler.helper.data_helper as dh
 import EDXD.data_handler.helper.bio_helper as bh
+import EDXD.data_handler.helper.technical2humanreadable as t2h
 
 TITLE = "BODY DETAILS"
 WINID = "BODY_DETAILS"
@@ -152,7 +153,7 @@ class BodyDetails(DynamicDialog):
             self.general_panel.Show()
 
         self.general_panel.add_table_item("Type")
-        self.general_panel.add_table_item(f"  {self.body.body_type}")
+        self.general_panel.add_table_item(f"  {t2h.get_clean_body_type(self.body.body_type)}")
         self.general_panel.add_table_item("Mapped value")
         self.general_panel.add_table_item(f"  {self.body.estimated_value:,} Cr")
         self.general_panel.add_table_item("Distance")
