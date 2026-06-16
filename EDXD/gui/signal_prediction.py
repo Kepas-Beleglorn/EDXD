@@ -57,7 +57,12 @@ class SignalPrediction(DynamicDialog):
         # add more panels
         for prediction_key in prediction.keys():
             if prediction_key not in self.prediction_panels.keys():
-                body_name = prediction[prediction_key][0]["body_name"]
+                signal_count = prediction[prediction_key][0]["present_signal_count"]
+                signal_suffix = "signal"
+                if signal_count > 1:
+                    signal_suffix = "signals"
+                body_name = prediction[prediction_key][0]["body_name"] + "   (" + str(signal_count) + " " + signal_suffix + ")"
+
                 new_panel = CollapsiblePanel(parent=self.scroll_container, columns=5, label=body_name)
                 self.prediction_panels[prediction_key] = new_panel
                 self.window_box.Add(self.prediction_panels[prediction_key], 0, wx.EXPAND, RESIZE_MARGIN)

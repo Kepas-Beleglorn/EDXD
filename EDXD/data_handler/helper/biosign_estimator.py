@@ -72,6 +72,7 @@ def estimate_system_biosigns(model_bodies: Dict[str, Any]) -> Dict[str, List[Dic
         distance_ls = getattr(body, 'distance', None)
         body_name = getattr(body, 'body_name', body_id)
         pressure_atm = dh.pressure_as_atm_from_pascals(getattr(body, 'pressure', 0.0))
+        present_signal_count = getattr(body, 'biosignals', 0)
 
         # 3. Check DSS & Codex Data
         bio_found_data = getattr(body, 'bio_found', {})
@@ -201,6 +202,7 @@ def estimate_system_biosigns(model_bodies: Dict[str, Any]) -> Dict[str, List[Dic
                 results[body_id].append({
                     "body_id": body_id,
                     "body_name": body_name,
+                    "present_signal_count": present_signal_count,
                     "name": species_name,
                     "base_value": get_genus_value(species_name),
                     "scan_range": get_scan_range_for_species(species_name),
