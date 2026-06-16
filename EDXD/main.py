@@ -81,6 +81,7 @@ def main():
     journal_controller.start()
 
     cfg.setdefault("land", False)
+    cfg.setdefault("ringed", False)
     cfg.setdefault("mat_sel", {m: True for m in RAW_MATS})
     if "worthwhile_threshold" not in cfg.keys():
         cfg["worthwhile_threshold"] = DEFAULT_WORTHWHILE_THRESHOLD

@@ -101,6 +101,12 @@ class MainFrame(DynamicFrame):
         self.options.chk_landable.Bind(wx.EVT_BUTTON, self._toggle_land)
         self._selected = None  # currently clicked body name
 
+        # noinspection PyTypeChecker
+        self._refresh_timer = wx.CallLater(millis=500, callableObj=self._refresh)
+        self.options.chk_ringed.SetToggle(self.prefs["ringed"])
+        self.options.chk_ringed.Bind(wx.EVT_BUTTON, self._toggle_ringed)
+        self._selected = None  # currently clicked body name
+
         # initialise sub windows
         self._init_panels()
 
@@ -243,6 +249,15 @@ class MainFrame(DynamicFrame):
         self._refresh()
         pass
 
+    def _toggle_ringed(self, event):
+        # Call the toggle button's handler so its visuals/state update
+        if hasattr(self.options.chk_ringed, "on_toggle"):
+            self.options.chk_ringed.on_toggle(event)
+        self.prefs["ringed"] = self.options.chk_ringed.GetToggle()
+        self.prefs["save"]()
+        self._refresh()
+        pass
+
     def _row_clicked(self, body_id: str):
         self._selected = body_id
         self.model.selected_body_id = body_id
@@ -312,6 +327,7 @@ class MainFrame(DynamicFrame):
             bodies=self.model.snapshot_bodies(),
             filters=self.prefs["mat_sel"],
             landable_only=self.prefs["land"],
+            ringed_only=self.prefs["ringed"],
             selected_body_id=self._selected,
             target_body_id=self.model.target_body_id
         )

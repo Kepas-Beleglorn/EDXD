@@ -52,6 +52,11 @@ class MainWindowOptions(wx.Panel):
         margin = self.theme["button_border_margin"] + self.theme["button_border_width"]
         options_box.Add(self.chk_landable, 0, wx.ALIGN_CENTER_VERTICAL | wx.TOP | wx.BOTTOM, margin)
 
+        # Checkbox for "ringed"
+        self.chk_ringed = DynamicToggleButton(parent=self, label="Show only ringed bodies", size=wx.Size(BTN_WIDTH + self.theme["button_border_width"], BTN_HEIGHT + self.theme["button_border_width"]), draw_border=True, is_toggled=self.parent.prefs["ringed"])
+        margin = self.theme["button_border_margin"] + self.theme["button_border_width"]
+        options_box.Add(self.chk_ringed, 0, wx.ALIGN_CENTER_VERTICAL | wx.TOP | wx.BOTTOM, margin)
+
         # Call mineral filter
         self.btn_set_mineral_filter = DynamicButton(parent=self, label="Set mineral filter", size=wx.Size(BTN_WIDTH + self.theme["button_border_width"], BTN_HEIGHT + self.theme["button_border_width"]), draw_border=True)
         margin = self.theme["button_border_margin"] + self.theme["button_border_width"]

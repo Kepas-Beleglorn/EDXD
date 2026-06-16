@@ -157,11 +157,12 @@ class BodiesTable(gridlib.Grid):
             bodies: Dict[str, Body],
             filters: Dict[str, bool],
             landable_only: bool,
+            ringed_only: bool,
             selected_body_id: str,
             target_body_id: str
     ):
         visible_mats = [m for m, on in filters.items() if on]
-        display_cols = ["body_id", "status", "body_type", "information", "body", "distance", "land", "atmosphere", "g_force", "first_footfalled",
+        display_cols = ["body_id", "status", "body_type", "body", "distance", "information", "land", "atmosphere", "g_force", "first_footfalled",
                         "bio", "geo", "value", "worthwhile", "first_discovered", "mapped",
                         "first_mapped"] + visible_mats
 
@@ -198,6 +199,8 @@ class BodiesTable(gridlib.Grid):
         for body_id, body in bodies.items():
             if landable_only and not getattr(body, "landable", False):
                 continue
+            if ringed_only and not getattr(body, "has_rings", False):
+                continue
             try:
                 flat_body_data = FlatRowDataMainWindow(body_to_parse=body)
 
@@ -209,6 +212,8 @@ class BodiesTable(gridlib.Grid):
                             ICONS["status_selected"]    if flat_body_data.body_id == selected_body_id else
                             "", 0),
                     "body_type"         : (f"{t2h.get_clean_body_type(flat_body_data.body_type)}", flat_body_data.body_type.lower()),
+                    "body"              : (body.body_name, body.body_name.lower()),
+                    "distance"          : (f"{flat_body_data.distance:,.0f} Ls" if flat_body_data.distance is not None else "", flat_body_data.distance),
                     "information"       : (
                                 ICONS['scoopable'] if flat_body_data.scoopable else
                                 ICONS['has_rings'] if flat_body_data.has_rings else
@@ -218,8 +223,6 @@ class BodiesTable(gridlib.Grid):
                                     1 if flat_body_data.has_rings else
                                     2)
                             ),
-                    "body"              : (body.body_name, body.body_name.lower()),
-                    "distance"          : (f"{flat_body_data.distance:,.0f} Ls" if flat_body_data.distance is not None else "", flat_body_data.distance),
                     "land"              : (f"{ICONS['landable']}" if flat_body_data.landable   else "", (0 if flat_body_data.landable  else 1)),
                     "atmosphere"        : (f"{ICONS['atmosphere_present']}" if flat_body_data.atmosphere != "" else "", (0 if flat_body_data.atmosphere != "" else 1)),
                     "g_force"           : (dh.format_gravity(flat_body_data.g_force) if flat_body_data.g_force is not None else "", flat_body_data.g_force),
