@@ -269,7 +269,7 @@ class JournalController(PausableThread, threading.Thread):
 
                 if body_type is None and "Belt Cluster" in body_name:
                     body_type = "Belt Cluster"
-                scoopable = body_type in ["K", "G", "B", "F", "O", "A", "M"]
+                scoopable = body_type[0] in ["K", "G", "B", "F", "O", "A", "M"]
                 materials = {m["Name"]: m["Percent"] for m in evt.get("Materials", [])}
                 parents = evt.get("Parents", [])
 
