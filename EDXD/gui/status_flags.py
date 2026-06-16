@@ -16,7 +16,7 @@ from EDXD.gui.helper.gui_handler import init_widget
 from EDXD.gui.helper.theme_handler import get_theme
 from EDXD.gui.helper.window_properties import WindowProperties
 
-TITLE = "Status Flags"
+TITLE = "Ship's System Status"
 WINID = "STATUS_FLAGS"
 FLAG_BTN_WIDTH = 270
 FLAG_BTN_HEIGHT = 45

@@ -127,7 +127,7 @@ class EDXDConfig(DynamicDialog):
             ["PSPS",                    "Planetary Surface Positioning System"],
             ["ENGINE_STATUS",           "Engine status"],
             ["BIOSIGNAL_PREDICTION",    "Biosignal prediction"],
-            ["STATUS_FLAGS",            "Status flags"]
+            ["STATUS_FLAGS",            "Ship's System Status"]
         ]
 
         self.window_buttons = {}
