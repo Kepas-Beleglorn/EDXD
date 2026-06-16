@@ -19,7 +19,7 @@ class BodiesTable(gridlib.Grid):
         super().__init__(parent)
 
         self.parent = parent
-        self._all_cols = ["body_id", "status", "body_type", "scoopable", "body", "distance", "land", "atmosphere", "g_force", "first_footfalled",
+        self._all_cols = ["body_id", "status", "body_type", "information", "body", "distance", "land", "atmosphere", "g_force", "first_footfalled",
                           "bio", "geo", "value", "worthwhile", "first_discovered", "mapped", "first_mapped"] + list(
             RAW_MATS)
         # At the top of your class, after self._all_cols:
@@ -27,7 +27,7 @@ class BodiesTable(gridlib.Grid):
             "body_id"           : "BodyID",
             "status"            : ICONS["status_header"],
             "body_type"         : "Type",
-            "scoopable"         : ICONS["scoopable"],
+            "information"       : ICONS["information"],
             "body"              : "Body",
             "distance"          : "Distance",
             "land"              : ICONS["landable"],
@@ -59,7 +59,7 @@ class BodiesTable(gridlib.Grid):
             "body_id"           : "BodyID",
             "status"            : "Selected or targeted",
             "body_type"         : "Type of body or star",
-            "scoopable"         : "Star is scoopable",
+            "information"       : "Additional information like scoopable or rings present",
             "body"              : "Bodies in current system",
             "distance"          : "Distance from entry point",
             "land"              : "Landable",
@@ -109,7 +109,7 @@ class BodiesTable(gridlib.Grid):
         # Use the displayed columns for correct column mapping
         col = event.GetCol()
         colname = self._display_cols[col]
-        if colname in ["status", "body_type", "scoopable", "body_id"]:
+        if colname in ["status", "body_type", "information", "body_id"]:
             event.Skip()
             return
         if self.sort_col == colname:
@@ -161,7 +161,7 @@ class BodiesTable(gridlib.Grid):
             target_body_id: str
     ):
         visible_mats = [m for m, on in filters.items() if on]
-        display_cols = ["body_id", "status", "body_type", "scoopable", "body", "distance", "land", "atmosphere", "g_force", "first_footfalled",
+        display_cols = ["body_id", "status", "body_type", "information", "body", "distance", "land", "atmosphere", "g_force", "first_footfalled",
                         "bio", "geo", "value", "worthwhile", "first_discovered", "mapped",
                         "first_mapped"] + visible_mats
 
@@ -180,7 +180,7 @@ class BodiesTable(gridlib.Grid):
                 attr_left = gridlib.GridCellAttr()
                 attr_left.SetAlignment(wx.ALIGN_CENTER, wx.ALIGN_CENTER)
                 self.SetColAttr(i, attr_left)
-            elif colname in ("land", "bio", "geo", "status", "scoopable", "worthwhile", "mapped", "first_discovered",
+            elif colname in ("land", "bio", "geo", "status", "information", "worthwhile", "mapped", "first_discovered",
                              "first_mapped", "first_footfalled"):
                 attr_center = gridlib.GridCellAttr()
                 attr_center.SetAlignment(wx.ALIGN_CENTER, wx.ALIGN_CENTER)
@@ -209,7 +209,15 @@ class BodiesTable(gridlib.Grid):
                             ICONS["status_selected"]    if flat_body_data.body_id == selected_body_id else
                             "", 0),
                     "body_type"         : (f"{t2h.get_clean_body_type(flat_body_data.body_type)}", flat_body_data.body_type.lower()),
-                    "scoopable"         : (f"{ICONS['scoopable']}"  if flat_body_data.scoopable else "", (0 if flat_body_data.scoopable else 1)),
+                    "information"       : (
+                                ICONS['scoopable'] if flat_body_data.scoopable else
+                                ICONS['has_rings'] if flat_body_data.has_rings else
+                                "",
+                                (
+                                    0 if flat_body_data.scoopable else
+                                    1 if flat_body_data.has_rings else
+                                    2)
+                            ),
                     "body"              : (body.body_name, body.body_name.lower()),
                     "distance"          : (f"{flat_body_data.distance:,.0f} Ls" if flat_body_data.distance is not None else "", flat_body_data.distance),
                     "land"              : (f"{ICONS['landable']}" if flat_body_data.landable   else "", (0 if flat_body_data.landable  else 1)),
@@ -330,7 +338,7 @@ class BodiesTable(gridlib.Grid):
                 self.SetColSize(i, 60)
             elif colname == "value":
                 self.SetColSize(i, 100)
-            elif colname in ("land", "atmosphere", "scoopable", "worthwhile", "mapped", "first_discovered", "first_mapped",
+            elif colname in ("land", "atmosphere", "information", "worthwhile", "mapped", "first_discovered", "first_mapped",
                              "first_footfalled"):
                 self.SetColSize(i, 30)
             elif colname == "body_id":

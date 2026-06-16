@@ -61,6 +61,7 @@ class Body:
     biosignals      : int = 0
     geosignals      : int = 0
     estimated_value : int = 0
+    has_rings       : bool = False
     rings           : Dict[str, Ring] = field(default_factory=dict)
     radius          : float = 0.0
     mapped          : bool = False
@@ -99,6 +100,7 @@ class Body:
 class Ring:
     body_id     : str
     body_name   : str = ""
+    ring_class  : str = ""
     signals     : Dict[str, int] = field(default_factory=dict)
 
     def __post_init__(self):
@@ -177,6 +179,7 @@ class FlatRowDataMainWindow:
     body_id         : str = None
     body_type       : str = None
     scoopable       : bool = False
+    has_rings       : bool = False
     body            : str = None
     distance        : float = 0.0
     landable        : bool = False
@@ -200,6 +203,7 @@ class FlatRowDataMainWindow:
             self.body_id            = getattr(self.body_to_parse, 'body_id', self.body_id)
             self.body_type          = getattr(self.body_to_parse, 'body_type', self.body_type)
             self.scoopable          = getattr(self.body_to_parse, 'scoopable', self.scoopable)
+            self.has_rings          = getattr(self.body_to_parse, 'has_rings', self.has_rings)
             self.body               = getattr(self.body_to_parse, 'body_name', self.body)
             self.distance           = getattr(self.body_to_parse, 'distance', self.distance)
             self.landable           = getattr(self.body_to_parse, 'landable', self.landable)
@@ -297,6 +301,7 @@ class Model:
                 bio_dict            = body_properties.get("bio_found", {})
                 geo_dict            = body_properties.get("geo_found", {})
                 estimated_value     = body_properties.get("estimated_value", 0)
+                has_rings           = body_properties.get("has_rings", False)
                 rings_dict          = body_properties.get("rings", {})
                 radius              = body_properties.get("radius", 0.0)
                 mapped              = body_properties.get("mapped", False)
@@ -335,6 +340,7 @@ class Model:
                     bio_found=bio_found,
                     geo_found=geo_found,
                     estimated_value=estimated_value,
+                    has_rings=has_rings,
                     rings=rings_found,
                     radius=radius,
                     mapped=mapped,
@@ -357,7 +363,7 @@ class Model:
 
     def update_body(self, systemaddress: int, body_id: str, body_name: str = None, body_type: str = None, is_star: bool = None, scoopable: bool = None, distance: int = None, landable: bool = None,
                     biosignals: int = None, geosignals: int = None, materials: Dict[str, float] = None, scandata = None,
-                    bio_found: Dict[str, Genus] = None, geo_found: Dict[str, CodexEntry] = None, rings: Dict[str, Ring] = None, total_bodies: int = None, radius: float = 0.0, mapped: bool = False,
+                    bio_found: Dict[str, Genus] = None, geo_found: Dict[str, CodexEntry] = None, has_rings: bool = False, rings: Dict[str, Ring] = None, total_bodies: int = None, radius: float = 0.0, mapped: bool = False,
                     geo_complete: bool = False, geo_scanned: int = 0, bio_complete: bool = False, bio_scanned: int = 0,
                     first_discovered: int = 0, first_mapped: int = 0, first_footfalled: int = 0, g_force: float = 0.0, atmosphere: Atmosphere = None,
                     mean_temp: float = 0.0, luminosity: str = "", raw_luminosity: str = "", volcanism: str = "", present_life: str = "", parents: List[Dict[str, int]] = None, pressure: float = 0.0
@@ -381,6 +387,7 @@ class Model:
                 body.geosignals         = geosignals        or body.geosignals          or 0
                 body.bio_found          = bio_found         or body.bio_found           or {}
                 body.geo_found          = geo_found         or body.geo_found           or {}
+                body.has_rings          = has_rings         or body.has_rings           or False
                 body.rings              = rings             or body.rings               or {}
                 body.radius             = radius            or body.radius              or 0
                 body.mapped             = mapped            or body.mapped              or False
@@ -471,6 +478,7 @@ class Model:
                         for geoid, geo in body.geo_found.items()
                     },
                     "estimated_value"   : body.estimated_value,
+                    "has_rings"         : body.has_rings,
                     "rings"             : {
                         ringid:
                             ring.to_dict()

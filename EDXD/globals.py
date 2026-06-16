@@ -196,9 +196,9 @@ RAW_MATS: List[str] = sorted([
 # -----------------------------------------------------------------------
 # Icons for table in main window and detail panels
 ICONS = {
-    "status_header"         : "🎯🖱",
+    "status_header"         : "🎯🖱️",
     "status_target"         : "🎯",
-    "status_selected"       : "🖱",
+    "status_selected"       : "🖱️",
     "scoopable"             : "⛽",
     "landable"              : "🛬",
     "biosigns"              : "🌿",
@@ -220,7 +220,9 @@ ICONS = {
     "col_first_discovered"  : "🔭",
     "col_first_mapped"      : "🛰️",
     "col_first_footfalled"  : "🕺🏽",
-    "atmosphere_present"    : "☁️"
+    "atmosphere_present"    : "☁️",
+    "information"           : "ℹ️",
+    "has_rings"             : "🪐"
 }
 
 # -----------------------------------------------------------------------

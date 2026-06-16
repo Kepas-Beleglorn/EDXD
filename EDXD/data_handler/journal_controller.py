@@ -172,6 +172,7 @@ class JournalController(PausableThread, threading.Thread):
         is_star         = None
         radius          = None
         scoopable       = None
+        has_rings       = None
         distance        = None
         landable        = None
         g_force         = None
@@ -230,15 +231,82 @@ class JournalController(PausableThread, threading.Thread):
 
         # FSS - body scan in system
         if etype == "Scan":
-            # todo: #168 process ring data properly
             if body_name.endswith("Ring"):
-                pass # skip for now
+                ring_id = body_id
+                ring_name = body_name
+                bodyid_int = int(evt.get("Parents")[0]["Planet"])
+                body_id = bip + str(bodyid_int)
+                body_name = None
+                scandata = None
+
+                ring_id_is_name = False
+                rings_found_dict = {}
+                if body_id in self.m.bodies:
+                    # do we have a proper ring ID?
+                    if ring_id in self.m.bodies[body_id].rings:
+                        rings_found_dict = self.m.bodies[body_id].rings[ring_id]
+
+                    # or is it still the rings name?
+                    if ring_name in self.m.bodies[body_id].rings:
+                        rings_found_dict = self.m.bodies[body_id].rings[ring_name]
+                        ring_id_is_name = True
+
+                if rings_found_dict == {}:
+                    ring = Ring(body_id=ring_id, body_name=ring_name, signals={})
+                else:
+                    if ring_id_is_name:
+                        final_ring_id = ring_id
+                    else:
+                        final_ring_id = rings_found_dict.body_id
+                    ring = Ring(
+                        body_id=final_ring_id,
+                        body_name=rings_found_dict.body_name or ring_name,
+                        ring_class=rings_found_dict.ring_class or "",
+                        signals = rings_found_dict.signals or {}
+                    )
+
+                # clean up the mess from previous scans without proper body ID for the ring
+                if ring_id_is_name:
+                    rings_found.pop(ring_name, None)
+
+                rings_found[ring_id] = ring
             else:
                 distance = evt.get("DistanceFromArrivalLS")
                 landable = evt.get("Landable")
                 body_type = evt.get("PlanetClass") or evt.get("StarType")
                 is_star = evt.get("StarType") is not None
                 radius = evt.get("Radius")
+
+                # Rings of stars are belt clusters. we don't handle them as actual rings
+                if evt.get("Rings") and not "StarType" in evt:
+                    has_rings = True
+                    # this is the first event mentioning rings
+                    # this is the only event that provides information about the rings composition/type
+                    # iterate all found rings and add them with dummy body_ids to the planets ring-list
+                    all_rings_found_dict = {}
+                    if body_id in self.m.bodies:
+                        all_rings_found_dict = self.m.bodies[body_id].rings
+
+                    if all_rings_found_dict == {}:
+                        # add all new found rings
+                        for journal_ring in evt.get("Rings"):
+                            journal_ring_name = journal_ring.get("Name")
+                            journal_ring_class = journal_ring.get("RingClass")
+                            ring = Ring(body_id=journal_ring_name, body_name=journal_ring_name, ring_class=journal_ring_class, signals={})
+                            rings_found[journal_ring_name] = ring
+                    else:
+                        # update already known rings
+                        for journal_ring in evt.get("Rings"):
+                            journal_ring_name = journal_ring.get("Name")
+                            journal_ring_id = journal_ring_name
+                            for dict_ring in all_rings_found_dict:
+                                dict_ring_item = all_rings_found_dict[dict_ring]
+                                if dict_ring_item.body_name == journal_ring_name:
+                                    journal_ring_id = dict_ring_item.body_id
+                                    break
+
+                            ring = Ring(body_id=journal_ring_id, body_name=journal_ring_name, signals={})
+                            rings_found[journal_ring_id] = ring
 
                 if evt.get("SurfacePressure"):
                     pressure = evt.get("SurfacePressure")
@@ -319,15 +387,57 @@ class JournalController(PausableThread, threading.Thread):
                     first_footfalled = 1
 
         if etype == "SAAScanComplete":
-            # todo: #168 process ring data properly
             if body_name.endswith("Ring"):
-                pass  # skip for now
+                # determine parent body by name (PLANET NAME XXX< A Ring>) -> the < A Ring> must be purged from body_name to get the parent body
+                # This is the first event that provides the BodyID of the ring
+                parent_body_name = " ".join(body_name.split()[:-2])
+                ring_id = body_id
+                ring_name = body_name
+
+                for body_item in self.m.bodies:
+                    if self.m.bodies[body_item].body_name == parent_body_name:
+                        body_id = self.m.bodies[body_item].body_id
+                        break
+                body_name = None
+                scandata = None
+
+                ring_id_is_name = False
+                rings_found_dict = {}
+                if body_id in self.m.bodies:
+                    # do we have a proper ring ID?
+                    if ring_id in self.m.bodies[body_id].rings:
+                        rings_found_dict = self.m.bodies[body_id].rings[ring_id]
+
+                    # or is it still the rings name?
+                    if ring_name in self.m.bodies[body_id].rings:
+                        rings_found_dict = self.m.bodies[body_id].rings[ring_name]
+                        ring_id_is_name = True
+
+                if rings_found_dict == {}:
+                    ring = Ring(body_id=ring_id, body_name=ring_name, signals={})
+                else:
+                    if ring_id_is_name:
+                        final_ring_id = ring_id
+                    else:
+                        final_ring_id = rings_found_dict.body_id
+                    ring = Ring(
+                        body_id=final_ring_id,
+                        body_name=rings_found_dict.body_name or ring_name,
+                        ring_class=rings_found_dict.ring_class or "",
+                        signals=rings_found_dict.signals or {}
+                    )
+
+                # clean up the mess from previous scans without proper body ID for the ring
+                if ring_id_is_name:
+                    rings_found.pop(ring_name, None)
+
+                rings_found[ring_id] = ring
             else:
                 mapped = True
 
                 # Is that thing mapped?
                 if not evt.get("WasMapped"):
-                    # It could be I've been there, but haven't sold the mapping data yet. Or, I'm teh first to ever map that thing.
+                    # It could be I've been there, but haven't sold the mapping data yet. Or, I'm the first to ever map that thing.
                     if first_mapped == 0:
                         first_mapped = 2
                 else:
@@ -336,8 +446,8 @@ class JournalController(PausableThread, threading.Thread):
 
         # FSS - scanning of bodies
         if etype == "FSSBodySignals":
-            # todo: #168 process rings properly
             if body_name.endswith("Ring"):
+                # todo: #168 process rings properly
                 pass  # skip for now
             else:
                 for signal in evt.get("Signals", []):
@@ -349,9 +459,50 @@ class JournalController(PausableThread, threading.Thread):
 
         # DSS - mapping of bodies
         if etype == "SAASignalsFound":
-            # todo: #168 process rings properly
             if body_name.endswith("Ring"):
-                pass  # skip for now
+                ring_id = body_id
+                ring_name = body_name
+                parent_body_name = " ".join(body_name.split()[:-2])
+                for body_item in self.m.bodies:
+                    if self.m.bodies[body_item].body_name == parent_body_name:
+                        body_id = self.m.bodies[body_item].body_id
+                        break
+
+                body_name = None
+                scandata = None
+                journal_signals = evt.get("Signals")
+                ring_id_is_name = False
+                rings_found_dict = {}
+                if body_id in self.m.bodies:
+                    # do we have a proper ring ID?
+                    if ring_id in self.m.bodies[body_id].rings:
+                        rings_found_dict = self.m.bodies[body_id].rings[ring_id]
+
+                    # or is it still the rings name?
+                    if ring_name in self.m.bodies[body_id].rings:
+                        rings_found_dict = self.m.bodies[body_id].rings[ring_name]
+                        ring_id_is_name = True
+
+                if rings_found_dict == {}:
+                    ring = Ring(body_id=ring_id, body_name=ring_name, signals=journal_signals)
+                else:
+                    if ring_id_is_name:
+                        final_ring_id = ring_id
+                    else:
+                        final_ring_id = rings_found_dict.body_id
+                    ring = Ring(
+                        body_id=final_ring_id,
+                        body_name=rings_found_dict.body_name or ring_name,
+                        ring_class=rings_found_dict.ring_class or "",
+                        signals=rings_found_dict.signals or journal_signals
+                    )
+
+                # clean up the mess from previous scans without proper body ID for the ring
+                if ring_id_is_name:
+                    rings_found.pop(ring_name, None)
+
+                rings_found[ring_id] = ring
+
             else:
                 for signal in evt.get("Signals", []):
                     if signal.get("Type") == "$SAA_SignalType_Biological;":
@@ -533,7 +684,6 @@ class JournalController(PausableThread, threading.Thread):
 
         # save/update data
         self.m.total_bodies = total_bodies or self.m.total_bodies
-        # todo: #168 process ring data properly
         # workaround for empty body type
         if body_type is None and body_id in self.m.bodies:
             body_type = self.m.bodies[body_id].body_type or "🚫 no data 🚫"
@@ -557,7 +707,7 @@ class JournalController(PausableThread, threading.Thread):
                 scandata=scandata,
                 bio_found=bio_found,
                 geo_found=geo_found,
-                # todo: #168 implement rings
+                has_rings=has_rings,
                 rings=rings_found,
                 total_bodies=total_bodies,
                 radius=radius,
