@@ -88,8 +88,8 @@ class BodiesTable(gridlib.Grid):
         self.Bind(gridlib.EVT_GRID_SELECT_CELL, self._on_select)
         self._on_select_cb = on_select
         # Tooltips
-        self._tip_win = None
-        self._tip_col = None
+        #self._tip_win = None
+        #self._tip_col = None
         self.Bind(gridlib.EVT_GRID_RANGE_SELECT, self._on_range_select)
         self.Bind(wx.EVT_KEY_DOWN, self._on_key_down)
         self.GetGridColLabelWindow().Bind(wx.EVT_MOTION, self._show_tip)
@@ -307,7 +307,8 @@ class BodiesTable(gridlib.Grid):
         self.ClearSelection()
 
         # freeze columns for scrolling
-        self.FreezeTo(row=0, col=freeze_col)
+        #ToDo: #248 - fix broken tooltips when using frozen columns
+        #self.FreezeTo(row=0, col=freeze_col)
 
         # colorise G-force
         self._set_g_force_color()
