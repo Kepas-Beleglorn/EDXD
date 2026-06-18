@@ -19,17 +19,18 @@ class BodiesTable(gridlib.Grid):
         super().__init__(parent)
 
         self.parent = parent
-        self._all_cols = ["body_id", "status", "body_type", "information", "body", "distance", "land", "atmosphere", "g_force", "first_footfalled",
-                          "bio", "geo", "value", "worthwhile", "first_discovered", "mapped", "first_mapped"] + list(
-            RAW_MATS)
+        self._all_cols = ["body_id", "status", "body_type", "scoopable", "body", "distance", "has_rings", "ring_hotspots", "land", "atmosphere", "g_force", "first_footfalled",
+                          "bio", "geo", "value", "worthwhile", "first_discovered", "mapped", "first_mapped"] + list(RAW_MATS)
         # At the top of your class, after self._all_cols:
         self._headers = {
             "body_id"           : "BodyID",
             "status"            : ICONS["status_header"],
             "body_type"         : "Type",
-            "information"       : ICONS["information"],
+            "scoopable"         : ICONS["scoopable"],
             "body"              : "Body",
             "distance"          : "Distance",
+            "has_rings"         : ICONS["has_rings"],
+            "ring_hotspots"     : ICONS["ring_hotspots"],
             "land"              : ICONS["landable"],
             "atmosphere"        : ICONS["atmosphere_present"],
             "g_force"           : "Gravity",
@@ -59,9 +60,11 @@ class BodiesTable(gridlib.Grid):
             "body_id"           : "BodyID",
             "status"            : "Selected or targeted",
             "body_type"         : "Type of body or star",
-            "information"       : "Additional information like scoopable or rings present",
+            "scoopable"         : "Star is scoopable",
             "body"              : "Bodies in current system",
             "distance"          : "Distance from entry point",
+            "has_rings"         : "Body has rings",
+            "ring_hotspots"     : "Hotspots found within rings",
             "land"              : "Landable",
             "atmosphere"        : "Atmosphere present",
             "g_force"           : "Surface gravity",
@@ -72,7 +75,7 @@ class BodiesTable(gridlib.Grid):
             "worthwhile"        : "Worthwhile mapping data",
             "first_discovered"  : "First discovered",
             "mapped"            : "Body was mapped",
-            "first_mapped"      : "First mapped"
+            "first_mapped"      : "First mapped",
         })
 
         self._prepare_columns(display_cols=self._all_cols)
@@ -109,7 +112,7 @@ class BodiesTable(gridlib.Grid):
         # Use the displayed columns for correct column mapping
         col = event.GetCol()
         colname = self._display_cols[col]
-        if colname in ["status", "body_type", "information", "body_id"]:
+        if colname in ["status", "body_type", "scoopable", "body_id"]:
             event.Skip()
             return
         if self.sort_col == colname:
@@ -162,7 +165,7 @@ class BodiesTable(gridlib.Grid):
             target_body_id: str
     ):
         visible_mats = [m for m, on in filters.items() if on]
-        display_cols = ["body_id", "status", "body_type", "body", "distance", "information", "land", "atmosphere", "g_force", "first_footfalled",
+        display_cols = ["body_id", "status", "body_type", "scoopable", "body", "distance", "has_rings", "ring_hotspots", "land", "atmosphere", "g_force", "first_footfalled",
                         "bio", "geo", "value", "worthwhile", "first_discovered", "mapped",
                         "first_mapped"] + visible_mats
 
@@ -181,7 +184,7 @@ class BodiesTable(gridlib.Grid):
                 attr_left = gridlib.GridCellAttr()
                 attr_left.SetAlignment(wx.ALIGN_CENTER, wx.ALIGN_CENTER)
                 self.SetColAttr(i, attr_left)
-            elif colname in ("land", "bio", "geo", "status", "information", "worthwhile", "mapped", "first_discovered",
+            elif colname in ("land", "bio", "geo", "status", "scoopable", "has_rings", "ring_hotspots", "worthwhile", "mapped", "first_discovered",
                              "first_mapped", "first_footfalled"):
                 attr_center = gridlib.GridCellAttr()
                 attr_center.SetAlignment(wx.ALIGN_CENTER, wx.ALIGN_CENTER)
@@ -212,16 +215,27 @@ class BodiesTable(gridlib.Grid):
                             ICONS["status_selected"]    if flat_body_data.body_id == selected_body_id else
                             "", 0),
                     "body_type"         : (f"{t2h.get_clean_body_type(flat_body_data.body_type)}", flat_body_data.body_type.lower()),
-                    "body"              : (body.body_name, body.body_name.lower()),
-                    "distance"          : (f"{flat_body_data.distance:,.0f} Ls" if flat_body_data.distance is not None else "", flat_body_data.distance),
-                    "information"       : (
+                    "scoopable"       : (
                                 ICONS['scoopable'] if flat_body_data.scoopable else
-                                ICONS['has_rings'] if flat_body_data.has_rings else
                                 "",
                                 (
                                     0 if flat_body_data.scoopable else
-                                    1 if flat_body_data.has_rings else
-                                    2)
+                                    1)
+                            ),"body"              : (body.body_name, body.body_name.lower()),
+                    "distance"          : (f"{flat_body_data.distance:,.0f} Ls" if flat_body_data.distance is not None else "", flat_body_data.distance),
+                    "has_rings"       : (
+                                ICONS['has_rings'] if flat_body_data.has_rings else
+                                "",
+                                (
+                                    0 if flat_body_data.has_rings else
+                                    1)
+                            ),
+                    "ring_hotspots"       : (
+                                ICONS['ring_hotspots'] if dh.rings_have_hotspots(body) else
+                                "",
+                                (
+                                    0 if flat_body_data.has_rings else
+                                    1)
                             ),
                     "land"              : (f"{ICONS['landable']}" if flat_body_data.landable   else "", (0 if flat_body_data.landable  else 1)),
                     "atmosphere"        : (f"{ICONS['atmosphere_present']}" if flat_body_data.atmosphere != "" else "", (0 if flat_body_data.atmosphere != "" else 1)),
@@ -341,7 +355,7 @@ class BodiesTable(gridlib.Grid):
                 self.SetColSize(i, 60)
             elif colname == "value":
                 self.SetColSize(i, 100)
-            elif colname in ("land", "atmosphere", "information", "worthwhile", "mapped", "first_discovered", "first_mapped",
+            elif colname in ("land", "atmosphere", "scoopable", "has_rings", "ring_hotspots", "worthwhile", "mapped", "first_discovered", "first_mapped",
                              "first_footfalled"):
                 self.SetColSize(i, 30)
             elif colname == "body_id":

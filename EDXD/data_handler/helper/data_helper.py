@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-#from fontTools.ttLib.tables.C_P_A_L_ import Color
+#from EDXD.data_handler.model import Body
 
 from EDXD.data_handler.vessel_status import ShipStatus
 from EDXD.globals import log_context, logging
@@ -345,3 +345,9 @@ def ensure_ship_status_file(ship_status_file, ship_status):
 
 def add_spaces_to_camel_case(s):
     return re.sub(r'(?<!^)(?=[A-Z])', ' ', s)
+
+def rings_have_hotspots(body) -> bool:
+    for ring in body.rings:
+        if body.rings[ring].signals:
+            return True
+    return False

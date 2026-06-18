@@ -221,8 +221,8 @@ ICONS = {
     "col_first_mapped"      : "🛰️",
     "col_first_footfalled"  : "🕺🏽",
     "atmosphere_present"    : "☁️",
-    "information"           : "ℹ️",
-    "has_rings"             : "🪐"
+    "has_rings"             : "🪐",
+    "ring_hotspots"         : "⛏️"
 }
 
 # -----------------------------------------------------------------------
