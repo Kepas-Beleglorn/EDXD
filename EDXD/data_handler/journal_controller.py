@@ -241,6 +241,7 @@ class JournalController(PausableThread, threading.Thread):
 
                 ring_id_is_name = False
                 rings_found_dict = {}
+                rings_found = self.m.bodies[body_id].rings
                 if body_id in self.m.bodies:
                     # do we have a proper ring ID?
                     if ring_id in self.m.bodies[body_id].rings:
@@ -403,6 +404,7 @@ class JournalController(PausableThread, threading.Thread):
 
                 ring_id_is_name = False
                 rings_found_dict = {}
+                rings_found = self.m.bodies[body_id].rings
                 if body_id in self.m.bodies:
                     # do we have a proper ring ID?
                     if ring_id in self.m.bodies[body_id].rings:
@@ -470,6 +472,7 @@ class JournalController(PausableThread, threading.Thread):
 
                 body_name = None
                 scandata = None
+                rings_found = self.m.bodies[body_id].rings
                 journal_signals = evt.get("Signals")
                 ring_id_is_name = False
                 rings_found_dict = {}

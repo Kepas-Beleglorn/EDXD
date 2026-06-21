@@ -414,8 +414,8 @@ class BodyDetails(DynamicDialog):
                 self.rings_panel.add_table_item(f"{' ' * 4}Hotspots")
                 self.rings_panel.add_table_item("")
                 for sig_item in self.body.rings[ring_id].signals:
-                    self.rings_panel.add_table_item(f"{' ' * 8}{sig_item["Type"]}")
-                    self.rings_panel.add_table_item(str(sig_item["Count"]))
+                    self.rings_panel.add_table_item(f"{' ' * 8}{t2h.get_hotspot_type(sig_item["Type"])}")
+                    self.rings_panel.add_table_item(f"  {str(sig_item["Count"])}")
 
 
         if self.rings_panel.IsShown():

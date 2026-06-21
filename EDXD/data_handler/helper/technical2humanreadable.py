@@ -25,3 +25,9 @@ def get_clean_ring_class(raw_ring_class: str) -> str:
         return "Rocky"
 
     return raw_ring_class
+
+def get_hotspot_type(raw_hotspot_type: str) -> str:
+    if raw_hotspot_type == "LowTemperatureDiamond":
+        return "Low Temperature Diamonds"
+
+    return raw_hotspot_type
