@@ -215,6 +215,9 @@ class JournalController(PausableThread, threading.Thread):
                 body_name = evt.get("Body")
             if body_name is None and body_id in self.m.bodies:
                 body_name = self.m.bodies[body_id].body_name
+            if etype == "ScanBaryCentre":
+                body_name = "BARY_CENTRE"
+                body_type = "BARY_CENTRE"
 
         # initialise first_*
         # 0 - no data yet

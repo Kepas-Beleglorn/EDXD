@@ -204,6 +204,8 @@ class BodiesTable(gridlib.Grid):
                 continue
             if ringed_only and not getattr(body, "has_rings", False):
                 continue
+            if body.body_type == "BARY_CENTRE":
+                continue
             try:
                 flat_body_data = FlatRowDataMainWindow(body_to_parse=body)
 
