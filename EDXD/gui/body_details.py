@@ -7,7 +7,7 @@ import wx
 
 from EDXD.data_handler.model import Body, Atmosphere
 from EDXD.data_handler.planetary_surface_positioning_system import PSPSCoordinates, PSPS
-from EDXD.globals import DEFAULT_HEIGHT, DEFAULT_WIDTH, DEFAULT_POS_Y, DEFAULT_POS_X, RESIZE_MARGIN, ICONS
+from EDXD.globals import DEFAULT_HEIGHT, DEFAULT_WIDTH, DEFAULT_POS_Y, DEFAULT_POS_X, RESIZE_MARGIN, ICONS, DEFAULT_WORTHWHILE_THRESHOLD
 from EDXD.gui.helper.dynamic_dialog import DynamicDialog
 from EDXD.gui.helper.gui_handler import init_widget
 from EDXD.gui.helper.theme_handler import get_theme
@@ -30,6 +30,7 @@ class BodyDetails(DynamicDialog):
         # 2. Apply geometry
         init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=win_id)
 
+        self.parent = parent
         self.body = None
 
         self.theme = get_theme()
@@ -160,9 +161,13 @@ class BodyDetails(DynamicDialog):
         if not self.general_panel.IsShown():
             self.general_panel.Show()
 
+        worthwhile_prefix = ""
+        if self.body.estimated_value >= self.parent.prefs.get("worthwhile_threshold", DEFAULT_WORTHWHILE_THRESHOLD):
+            worthwhile_prefix = ICONS["worthwhile"]
+
         self.general_panel.add_table_item("Type")
         self.general_panel.add_table_item(f"  {t2h.get_clean_body_type(self.body.body_type)}")
-        self.general_panel.add_table_item("Mapped value")
+        self.general_panel.add_table_item(f"Mapped value       {worthwhile_prefix}")
         self.general_panel.add_table_item(f"  {self.body.estimated_value:,} Cr")
         self.general_panel.add_table_item("Distance")
         self.general_panel.add_table_item(f"  {self.body.distance:,.0f} Ls")
