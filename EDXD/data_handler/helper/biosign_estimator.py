@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import List, Optional, Dict, Any
 from EDXD.data_handler.helper.system_params import (
     StarClass, StarLuminosity, PlanetType,
@@ -10,12 +11,16 @@ from EDXD.data_handler.helper.bio_helper import (
 )
 
 import EDXD.data_handler.helper.data_helper as dh
+#from EDXD.data_handler.model import Body
 
 STR_LIST_NONE = {None, "", "None", "none"}
 
-# ---------------------------------------------------------------------------
-# Updated Estimator
-# ---------------------------------------------------------------------------
+@dataclass
+class Star:
+    star_id: int
+    star_class_enum: StarClass
+    star_luminosity_enum: StarLuminosity
+
 
 def estimate_system_biosigns(model_bodies: Dict[str, Any]) -> Dict[str, List[Dict]]:
     results = {}
@@ -26,29 +31,8 @@ def estimate_system_biosigns(model_bodies: Dict[str, Any]) -> Dict[str, List[Dic
     system_has_water_giant = False
     system_has_gas_giant_with_water_life = False
     system_has_gas_giant_with_ammonia_life = False
-    star_class_enum = None
-    star_luminosity_enum = None
 
-    for b in model_bodies.values():
-        b_type = b.body_type if isinstance(b.body_type, str) else str(b.body_type)
-        if b_type == "Earthlike body": system_has_earth_like = True
-        if b_type == "Ammonia world": system_has_ammonia_world = True
-        if b_type == "Water world": system_has_water_giant = True
-        if "water based life" in b_type.lower(): system_has_gas_giant_with_water_life = True
-        if "ammonia based life" in b_type.lower(): system_has_gas_giant_with_ammonia_life = True
-
-        is_star = b.is_star
-
-        # TODO: #221 create dictionary with star-ID (body_XX), star class and luminosity.
-        #       Body should be able to determine it's parent stars via body_XX
-        if is_star and star_class_enum is None:
-            s_type = b.body_type
-            star_class_enum = _safe_get_enum(s_type, StarClass, None)
-            if star_class_enum is None and "_" in s_type:
-                star_class_enum = _safe_get_enum(s_type.split("_")[0], StarClass, None)
-            lum_raw = getattr(b, 'luminosity', None) or getattr(b, 'raw_luminosity', None)
-            if lum_raw:
-                star_luminosity_enum = _safe_get_enum(dh.get_clean_luminosity(lum_raw), StarLuminosity, None)
+    potential_parent_stars: Dict[int, Star] = _get_system_stars(model_bodies)
 
     in_nebula = False
 
@@ -60,6 +44,13 @@ def estimate_system_biosigns(model_bodies: Dict[str, Any]) -> Dict[str, List[Dic
             continue
 
         # TODO: #221 get current body's parent star(s)
+        body_parent_stars: Dict[int, Star] = {}
+        for parent_item in getattr(body, 'parents', {}):
+            if list(parent_item.keys())[0] == "Star":
+                try:
+                    body_parent_stars[list(parent_item.values())[0]] = potential_parent_stars[list(parent_item.values())[0]]
+                except KeyError:
+                    print(f"Missing parent star for {body_id}: {parent_item}")
 
         # 2. Map Body Data
         atm_raw = _safe_get_atmosphere_type(body.atmosphere)
@@ -69,7 +60,8 @@ def estimate_system_biosigns(model_bodies: Dict[str, Any]) -> Dict[str, List[Dic
 
         gravity = getattr(body, 'g_force', 0.0)
         mean_temp = getattr(body, 'mean_temp', 0.0)
-        distance_ls = getattr(body, 'distance', None)
+        distance_from_parent_star = getattr(body, 'parent_distance', None)
+        distance_ls = dh.km_to_ls(distance_from_parent_star)
         body_name = getattr(body, 'body_name', body_id)
         pressure_atm = dh.pressure_as_atm_from_pascals(getattr(body, 'pressure', 0.0))
         present_signal_count = getattr(body, 'biosignals', 0)
@@ -108,7 +100,6 @@ def estimate_system_biosigns(model_bodies: Dict[str, Any]) -> Dict[str, List[Dic
         try:
             potential_species = estimate_biosigns(
                 planet_type=pt_enum, atmosphere=atm_raw, mean_temp_k=mean_temp,
-                star_class=star_class_enum, star_luminosity=star_luminosity_enum,
                 volcanism=volc_raw, gravity=gravity, in_nebula=in_nebula,
                 system_has_earth_like=system_has_earth_like,
                 system_has_ammonia_world=system_has_ammonia_world,
@@ -116,6 +107,7 @@ def estimate_system_biosigns(model_bodies: Dict[str, Any]) -> Dict[str, List[Dic
                 system_has_gas_giant_with_water_life=system_has_gas_giant_with_water_life,
                 system_has_gas_giant_with_ammonia_life=system_has_gas_giant_with_ammonia_life,
                 distance_from_star_ls=distance_ls,
+                parent_stars=body_parent_stars,
             )
         except Exception as e:
             print(f"Error estimating {body_id}: {e}")
@@ -131,8 +123,7 @@ def estimate_system_biosigns(model_bodies: Dict[str, Any]) -> Dict[str, List[Dic
             for sp in potential_species:
                 if any(sp.startswith(p) for p in scanned_genus_species_localised):
                     final_species.append(sp)
-                # Optional: If you want to keep "theoretical" siblings until 100% complete,
-                # you can skip the 'else' block. But usually, 1 species found = others impossible.
+
         if scanned_genus_localised:
             # DSS PHASE (Genus known, species unknown): Filter by Genus Prefix (as before)
             allowed_prefixes = set()
@@ -214,6 +205,33 @@ def estimate_system_biosigns(model_bodies: Dict[str, Any]) -> Dict[str, List[Dic
                 })
 
     return results
+
+def _get_system_stars(model_bodies: Dict[str, Any]) -> Dict[int, Star]:
+    parent_stars: Dict[int, Star] = {}
+    for b in model_bodies.values():
+        b_type = b.body_type if isinstance(b.body_type, str) else str(b.body_type)
+        if b_type == "Earthlike body": system_has_earth_like = True
+        if b_type == "Ammonia world": system_has_ammonia_world = True
+        if b_type == "Water world": system_has_water_giant = True
+        if "water based life" in b_type.lower(): system_has_gas_giant_with_water_life = True
+        if "ammonia based life" in b_type.lower(): system_has_gas_giant_with_ammonia_life = True
+
+        is_star = b.is_star
+        if is_star:
+            star_id : int = int(getattr(b, 'body_id', None).split("_")[1])
+            star_luminosity_enum = None
+            s_type = b.body_type
+            star_class_enum = _safe_get_enum(s_type, StarClass, None)
+            if star_class_enum is None and "_" in s_type:
+                star_class_enum = _safe_get_enum(s_type.split("_")[0], StarClass, None)
+            lum_raw = getattr(b, 'luminosity', None) or getattr(b, 'raw_luminosity', None)
+            if lum_raw:
+                star_luminosity_enum = _safe_get_enum(dh.get_clean_luminosity(lum_raw), StarLuminosity, None)
+
+            parent_star = Star(int(star_id), star_class_enum, star_luminosity_enum)
+            parent_stars[star_id] = parent_star
+
+    return parent_stars
 
 # ... [Keep _safe_get_atmosphere_type, _safe_get_enum, calculate_probability, estimate_biosigns from previous steps] ...
 def _safe_get_atmosphere_type(body_atmosphere: Any) -> str:
@@ -313,337 +331,341 @@ def calculate_probability(
 
 def estimate_biosigns(
         planet_type: PlanetType, atmosphere: str, mean_temp_k: float,
-        star_class: Optional[StarClass] = None, star_luminosity: Optional[StarLuminosity] = None,
         volcanism: Optional[str] = None, gravity: Optional[float] = None,
         in_nebula: bool = False, system_has_earth_like: bool = False,
         system_has_ammonia_world: bool = False, system_has_water_giant: bool = False,
         system_has_gas_giant_with_water_life: bool = False,
         system_has_gas_giant_with_ammonia_life: bool = False,
         distance_from_star_ls: Optional[float] = None,
+        parent_stars: Optional[Dict[int, Star]] = None,
 ) -> List[str]:
     possible_species: List[str] = []
 
-    # Aleoida
-    if "thin" in atmosphere and planet_type in PT_GROUP_HMC_ROCKY and gravity is not None and gravity <= 0.28:
-        if "carbon dioxide" in atmosphere:
-            if 175 <= mean_temp_k <= 180:
-                possible_species.append("Aleoida Arcus")
-            if 179 <= mean_temp_k <= 190:
-                possible_species.append("Aleoida Coronamus")
-            if 190 <= mean_temp_k <= 197:
-                possible_species.append("Aleoida Gravis")
-        if "ammonia" in atmosphere:
-            if 152 <= mean_temp_k <= 177:
-                possible_species.append("Aleoida Laminiae")
-            if 170 <= mean_temp_k <= 177:
-                possible_species.append("Aleoida Spica")
+    for parent_star_id, parent_star in parent_stars.items():
+        star_class = parent_star.star_class_enum
+        star_luminosity = parent_star.star_luminosity_enum
 
-    # Amphora Plant
-    if (
-            atmosphere in {None, "", "None", "none"} and StarClass.A == star_class and
-            (
-                    system_has_earth_like or
-                    system_has_ammonia_world or
-                    system_has_water_giant or
-                    system_has_gas_giant_with_water_life or
-                    system_has_gas_giant_with_ammonia_life
-            )
-    ):
-        possible_species.append("Amphora Plant")
+        # Aleoida
+        if "thin" in atmosphere and planet_type in PT_GROUP_HMC_ROCKY and gravity is not None and gravity <= 0.28:
+            if "carbon dioxide" in atmosphere:
+                if 175 <= mean_temp_k <= 180:
+                    possible_species.append("Aleoida Arcus")
+                if 179 <= mean_temp_k <= 190:
+                    possible_species.append("Aleoida Coronamus")
+                if 190 <= mean_temp_k <= 197:
+                    possible_species.append("Aleoida Gravis")
+            if "ammonia" in atmosphere:
+                if 152 <= mean_temp_k <= 177:
+                    possible_species.append("Aleoida Laminiae")
+                if 170 <= mean_temp_k <= 177:
+                    possible_species.append("Aleoida Spica")
 
-    # Anemone (Mapped to Clypeus genus)
-    if star_class in [StarClass.A, StarClass.B, StarClass.O]:
-        if star_class == StarClass.A:
-            if star_luminosity == StarLuminosity.III:
-                if planet_type == PlanetType.ROCKY: possible_species.append("Croceum Anemone")
-                if planet_type in [PlanetType.METAL_RICH, PlanetType.HMC]: possible_species.append("Rubeum Bioluminescent Anemone")
-        if star_class == StarClass.B:
-            if star_luminosity in [StarLuminosity.I, StarLuminosity.II, StarLuminosity.III] and planet_type in [PlanetType.METAL_RICH, PlanetType.HMC]:
-                possible_species.extend("Roseum Bioluminescent Anemone")
-            if star_luminosity in [StarLuminosity.I, StarLuminosity.II, StarLuminosity.III] and planet_type in [PlanetType.ROCKY]:
-                possible_species.extend("Roseum Anemone")
-            if star_luminosity in [StarLuminosity.IV, StarLuminosity.V] and planet_type in [PlanetType.METAL_RICH, PlanetType.HMC]:
-                possible_species.append("Blatteum Bioluminescent Anemone")
-            if star_luminosity in [StarLuminosity.IV, StarLuminosity.V] and planet_type in [PlanetType.ROCKY]:
-                possible_species.append("Luteolum Anemone")
-            if star_luminosity == StarLuminosity.VI:
-                if planet_type in [PlanetType.METAL_RICH, PlanetType.HMC]: possible_species.append("Rubeum Bioluminescent Anemone")
-                if planet_type == PlanetType.ROCKY: possible_species.append("Croceum Anemone")
-        if star_class == StarClass.O:
-            if planet_type in [PlanetType.ROCKY_ICE, PlanetType.ICY]:
-                possible_species.append("Puniceum Anemone")
-            if planet_type in [PlanetType.METAL_RICH, PlanetType.HMC, PlanetType.ROCKY]:
-                possible_species.append("Prasinum Bioluminescent Anemone")
-
-    # Bacterium
-    if "thin" in atmosphere:
-        if "helium" in atmosphere:
-            possible_species.append("Bacterium Nebulus")
-        if "neon" in atmosphere:
-            if any(opt in volcanism for opt in ("nitrogen", "ammonia")):
-                possible_species.append("Bacterium Omentum")
-            elif any(opt in volcanism for opt in ("carbon", "methane")):
-                possible_species.append("Bacterium Scopulum")
-            elif "water" in volcanism:
-                possible_species.append("Bacterium Verrata")
-            else:
-                possible_species.append("Bacterium Acies")
-        if "methane" in atmosphere:
-            possible_species.append("Bacterium Bullaris")
-        if "argon" in atmosphere:
-            possible_species.append("Bacterium Vesicula")
-        if "nitrogen" in atmosphere:
-            possible_species.append("Bacterium Informem")
-        if "oxygen" in atmosphere:
-            possible_species.append("Bacterium Volu")
-        if "ammonia" in atmosphere:
-            possible_species.append("Bacterium Alcyoneum")
-        if "carbon" in atmosphere:
-            possible_species.append("Bacterium Aurasus")
-        if any(opt in atmosphere for opt in ("water", "sulfur")):
-            possible_species.append("Bacterium Cerbrus")
-        if any(opt in volcanism for opt in ("helium", "metallic", "silicate")):
-            possible_species.append("Bacterium Tela")
-
-    # Bark Mound
-    if (atmosphere in STR_LIST_NONE
-            and (in_nebula or (volcanism not in STR_LIST_NONE))):
-        possible_species.append("Bark Mound")
-
-    # Brain Tree
-    if volcanism not in STR_LIST_NONE and atmosphere in STR_LIST_NONE:
-        if 200 <= mean_temp_k <= 500:
-            possible_species.append("Brain Tree Roseum")
-        if system_has_earth_like or system_has_gas_giant_with_water_life:
-            if planet_type in [PlanetType.METAL_RICH, PlanetType.HMC] and 300 <= mean_temp_k <= 500:
-                possible_species.append("Brain Tree Aureum")
-            if planet_type == PlanetType.ROCKY and 200 <= mean_temp_k <= 300:
-                possible_species.append("Brain Tree Gypseeum")
-            if planet_type in [PlanetType.HMC, PlanetType.ROCKY] and 300 <= mean_temp_k <= 500:
-                possible_species.append("Brain Tree Lindigoticum")
-            if planet_type == PlanetType.ROCKY and 300 <= mean_temp_k <= 500:
-                possible_species.append("Brain Tree Lividum")
-            if planet_type in [PlanetType.METAL_RICH, PlanetType.HMC]:
-                possible_species.extend(["Brain Tree Ostrinum", "Brain Tree Puniceum"])
-            if planet_type == PlanetType.ROCKY_ICE and 100 <= mean_temp_k <= 270:
-                possible_species.append("Brain Tree Viride")
-
-    # Cactoida
-    if "thin" in atmosphere and planet_type in PT_GROUP_HMC_ROCKY and gravity and gravity <= 0.28:
+        # Amphora Plant
         if (
-                ("carbon" in atmosphere and "rich" not in atmosphere)
-                or ("rich" in atmosphere and 180 <= mean_temp_k <= 195)
+                atmosphere in {None, "", "None", "none"} and StarClass.A == star_class and
+                (
+                        system_has_earth_like or
+                        system_has_ammonia_world or
+                        system_has_water_giant or
+                        system_has_gas_giant_with_water_life or
+                        system_has_gas_giant_with_ammonia_life
+                )
         ):
-            possible_species.extend(["Cactoida Cortexum", "Cactoida Pullulanta"])
-        if "ammonia" in atmosphere:
-            possible_species.extend(["Cactoida Lapis", "Cactoida Peperatis"])
-        if "water" in atmosphere:
-            possible_species.append("Cactoida Vermis")
+            possible_species.append("Amphora Plant")
 
-    # Clypeus
-    if (planet_type in PT_GROUP_HMC_ROCKY
-            and ("thin" in atmosphere and any(opt in atmosphere for opt in ("water", "carbon")))
-            and mean_temp_k > 190 and gravity and gravity <= 0.27):
-        possible_species.extend(["Clypeus Lacrimam", "Clypeus Margaritus"])
-        # TODO: #221 Determine distance from parent star. currently the distance is just the one from the system entry point
-        if distance_from_star_ls and distance_from_star_ls > 2500:
-            possible_species.append("Clypeus Speculumi")
+        # Anemone (Mapped to Clypeus genus)
+        if star_class in [StarClass.A, StarClass.B, StarClass.O]:
+            if star_class == StarClass.A:
+                if star_luminosity == StarLuminosity.III:
+                    if planet_type == PlanetType.ROCKY: possible_species.append("Croceum Anemone")
+                    if planet_type in [PlanetType.METAL_RICH, PlanetType.HMC]: possible_species.append("Rubeum Bioluminescent Anemone")
+            if star_class == StarClass.B:
+                if star_luminosity in [StarLuminosity.I, StarLuminosity.II, StarLuminosity.III] and planet_type in [PlanetType.METAL_RICH, PlanetType.HMC]:
+                    possible_species.extend("Roseum Bioluminescent Anemone")
+                if star_luminosity in [StarLuminosity.I, StarLuminosity.II, StarLuminosity.III] and planet_type in [PlanetType.ROCKY]:
+                    possible_species.extend("Roseum Anemone")
+                if star_luminosity in [StarLuminosity.IV, StarLuminosity.V] and planet_type in [PlanetType.METAL_RICH, PlanetType.HMC]:
+                    possible_species.append("Blatteum Bioluminescent Anemone")
+                if star_luminosity in [StarLuminosity.IV, StarLuminosity.V] and planet_type in [PlanetType.ROCKY]:
+                    possible_species.append("Luteolum Anemone")
+                if star_luminosity == StarLuminosity.VI:
+                    if planet_type in [PlanetType.METAL_RICH, PlanetType.HMC]: possible_species.append("Rubeum Bioluminescent Anemone")
+                    if planet_type == PlanetType.ROCKY: possible_species.append("Croceum Anemone")
+            if star_class == StarClass.O:
+                if planet_type in [PlanetType.ROCKY_ICE, PlanetType.ICY]:
+                    possible_species.append("Puniceum Anemone")
+                if planet_type in [PlanetType.METAL_RICH, PlanetType.HMC, PlanetType.ROCKY]:
+                    possible_species.append("Prasinum Bioluminescent Anemone")
 
-    # Concha
-    if planet_type in PT_GROUP_HMC_ROCKY and (gravity and gravity <= 0.28) and "thin" in atmosphere:
-        if "ammonia" in atmosphere:
-            possible_species.append("Concha Aureolas")
-        if "nitrogen" in atmosphere:
-            possible_species.append("Concha Biconcavis")
-        if "carbon" in atmosphere:
-            if mean_temp_k < 190:
-                possible_species.append("Concha Labiata")
-            if 180 <= mean_temp_k <= 195:
-                possible_species.append("Concha Renibus")
-        if "water" in atmosphere:
-            possible_species.append("Concha Renibus")
+        # Bacterium
+        if "thin" in atmosphere:
+            if "helium" in atmosphere:
+                possible_species.append("Bacterium Nebulus")
+            if "neon" in atmosphere:
+                if any(opt in volcanism for opt in ("nitrogen", "ammonia")):
+                    possible_species.append("Bacterium Omentum")
+                elif any(opt in volcanism for opt in ("carbon", "methane")):
+                    possible_species.append("Bacterium Scopulum")
+                elif "water" in volcanism:
+                    possible_species.append("Bacterium Verrata")
+                else:
+                    possible_species.append("Bacterium Acies")
+            if "methane" in atmosphere:
+                possible_species.append("Bacterium Bullaris")
+            if "argon" in atmosphere:
+                possible_species.append("Bacterium Vesicula")
+            if "nitrogen" in atmosphere:
+                possible_species.append("Bacterium Informem")
+            if "oxygen" in atmosphere:
+                possible_species.append("Bacterium Volu")
+            if "ammonia" in atmosphere:
+                possible_species.append("Bacterium Alcyoneum")
+            if "carbon" in atmosphere:
+                possible_species.append("Bacterium Aurasus")
+            if any(opt in atmosphere for opt in ("water", "sulfur")):
+                possible_species.append("Bacterium Cerbrus")
+            if any(opt in volcanism for opt in ("helium", "metallic", "silicate")):
+                possible_species.append("Bacterium Tela")
 
-    # Crystalline Shard
-    if (atmosphere in STR_LIST_NONE
-            and star_class in [StarClass.A,
-                               StarClass.F,
-                               StarClass.G,
-                               StarClass.K,
-                               StarClass.M,
-                               StarClass.S]
-            and (system_has_earth_like
-                 or system_has_ammonia_world
-                 or system_has_water_giant
-                 or system_has_gas_giant_with_water_life
-                 or system_has_gas_giant_with_ammonia_life)
-            and (distance_from_star_ls is None or distance_from_star_ls > 12000)):
-        # TODO: #221 Determine distance from parent star. currently the distance is just the one from the system entry point
-        possible_species.append("Crystalline Shard")
+        # Bark Mound
+        if (atmosphere in STR_LIST_NONE
+                and (in_nebula or (volcanism not in STR_LIST_NONE))):
+            possible_species.append("Bark Mound")
 
-    # Electricae
-    if planet_type == PlanetType.ICY and ("thin" in atmosphere and any(opt in atmosphere for opt in ("helium", "neon", "argon"))) and gravity and gravity <= 0.28:
-        if ((star_class == StarClass.A and star_luminosity in [StarLuminosity.V, StarLuminosity.VI, StarLuminosity.VII])
-                or star_class in [StarClass.O, StarClass.B, StarClass.N, StarClass.BlackHole, *SC_WHITE_DWARFS]):
-            possible_species.append("Electricae Pluma")
-        if in_nebula:
-            possible_species.append("Electricae Radialem")
+        # Brain Tree
+        if volcanism not in STR_LIST_NONE and atmosphere in STR_LIST_NONE:
+            if 200 <= mean_temp_k <= 500:
+                possible_species.append("Brain Tree Roseum")
+            if system_has_earth_like or system_has_gas_giant_with_water_life:
+                if planet_type in [PlanetType.METAL_RICH, PlanetType.HMC] and 300 <= mean_temp_k <= 500:
+                    possible_species.append("Brain Tree Aureum")
+                if planet_type == PlanetType.ROCKY and 200 <= mean_temp_k <= 300:
+                    possible_species.append("Brain Tree Gypseeum")
+                if planet_type in [PlanetType.HMC, PlanetType.ROCKY] and 300 <= mean_temp_k <= 500:
+                    possible_species.append("Brain Tree Lindigoticum")
+                if planet_type == PlanetType.ROCKY and 300 <= mean_temp_k <= 500:
+                    possible_species.append("Brain Tree Lividum")
+                if planet_type in [PlanetType.METAL_RICH, PlanetType.HMC]:
+                    possible_species.extend(["Brain Tree Ostrinum", "Brain Tree Puniceum"])
+                if planet_type == PlanetType.ROCKY_ICE and 100 <= mean_temp_k <= 270:
+                    possible_species.append("Brain Tree Viride")
 
-    # Fonticulua
-    if atmosphere and "thin" in atmosphere and planet_type in PT_GROUP_ICE and gravity and gravity <= 0.28:
-        if "neon" in atmosphere:
-            possible_species.append("Fonticulua Segmentatus")
-        if "methane" in atmosphere:
-            possible_species.append("Fonticulua Digitos")
-        if "argon" in atmosphere:
-            if "rich" in atmosphere:
-                possible_species.append("Fonticulua Upupam")
-            else:
-                possible_species.append("Fonticulua Campestris")
-        if "nitrogen" in atmosphere:
-            possible_species.append("Fonticulua Lapida")
-        if "oxygen" in atmosphere:
-            possible_species.append("Fonticulua Fluctus")
+        # Cactoida
+        if "thin" in atmosphere and planet_type in PT_GROUP_HMC_ROCKY and gravity and gravity <= 0.28:
+            if (
+                    ("carbon" in atmosphere and "rich" not in atmosphere)
+                    or ("rich" in atmosphere and 180 <= mean_temp_k <= 195)
+            ):
+                possible_species.extend(["Cactoida Cortexum", "Cactoida Pullulanta"])
+            if "ammonia" in atmosphere:
+                possible_species.extend(["Cactoida Lapis", "Cactoida Peperatis"])
+            if "water" in atmosphere:
+                possible_species.append("Cactoida Vermis")
 
-    # Frutexa
-    if "thin" in atmosphere:
-        if "ammonia" in atmosphere:
-            if planet_type == PlanetType.ROCKY:
-                possible_species.extend(["Frutexa Flabellum", "Frutexa Flammasis"])
-            if planet_type == PlanetType.HMC:
-                possible_species.append("Frutexa Metallicum")
-        if "carbon" in atmosphere and mean_temp_k < 195:
-            if planet_type == PlanetType.ROCKY:
-                possible_species.extend(["Frutexa Fera", "Frutexa Acus"])
-            if planet_type == PlanetType.HMC:
-                possible_species.append("Frutexa Metallicum")
-        if "sulfur" in atmosphere:
-            possible_species.append("Frutexa Collum")
-        if "water" in atmosphere and planet_type == PlanetType.ROCKY:
-            possible_species.append("Frutexa Sponsae")
-
-    # Fumerola
-    if volcanism not in STR_LIST_NONE and "thin" in atmosphere and gravity and gravity <= 0.28:
-        if (planet_type in PT_GROUP_ICE
-                and "water" in volcanism):
-            possible_species.append("Fumerola Aquatis")
-        if (planet_type in PT_GROUP_ICE
-                and any(opt in volcanism for opt in ("methane", "carbon"))):
-            possible_species.append("Fumerola Carbosis")
+        # Clypeus
         if (planet_type in PT_GROUP_HMC_ROCKY
-                and any(opt in volcanism for opt in ("metallic", "rocky", "silicate"))):
-            possible_species.append("Fumerola Extremus")
-        if (planet_type in PT_GROUP_ICE
-                and any(opt in volcanism for opt in ("nitrogen", "ammonia"))):
-            possible_species.append("Fumerola Nitris")
+                and ("thin" in atmosphere and any(opt in atmosphere for opt in ("water", "carbon")))
+                and mean_temp_k > 190 and gravity and gravity <= 0.27):
+            possible_species.extend(["Clypeus Lacrimam", "Clypeus Margaritus"])
+            # TODO: #221 Determine distance from parent star. currently the distance is just the one from the system entry point
+            if distance_from_star_ls and distance_from_star_ls > 2500:
+                possible_species.append("Clypeus Speculumi")
 
-    # Fungoida
-    if gravity and gravity <= 0.28 and "thin" in atmosphere:
-        if any(opt in atmosphere for opt in ("methane", "ammonia")):
-            possible_species.append("Fungoida Setisis")
-        if "argon" in atmosphere:
-            possible_species.append("Fungoida Bullarum")
-        if ("water" in atmosphere
-                or ("carbon" in atmosphere and 180 <= mean_temp_k <= 195)):
-            possible_species.extend(["Fungoida Gelata", "Fungoida Stabitis"])
-
-    # Osseus
-    if "thin" in atmosphere and gravity and gravity <= 0.28:
-        if (planet_type == PlanetType.ROCKY_ICE
-                and any(opt in atmosphere for opt in ("methane", "argon", "nitrogen"))):
-            possible_species.append("Osseus Pumice")
-        if planet_type in PT_GROUP_HMC_ROCKY:
+        # Concha
+        if planet_type in PT_GROUP_HMC_ROCKY and (gravity and gravity <= 0.28) and "thin" in atmosphere:
+            if "ammonia" in atmosphere:
+                possible_species.append("Concha Aureolas")
+            if "nitrogen" in atmosphere:
+                possible_species.append("Concha Biconcavis")
             if "carbon" in atmosphere:
+                if mean_temp_k < 190:
+                    possible_species.append("Concha Labiata")
                 if 180 <= mean_temp_k <= 195:
-                    possible_species.extend(["Osseus Cornibus", "Osseus Pellebantus"])
-                if 180 >= mean_temp_k <= 190:
-                    possible_species.append("Osseus Fractus")
+                    possible_species.append("Concha Renibus")
             if "water" in atmosphere:
-                possible_species.append("Osseus Discus")
+                possible_species.append("Concha Renibus")
+
+        # Crystalline Shard
+        if (atmosphere in STR_LIST_NONE
+                and star_class in [StarClass.A,
+                                   StarClass.F,
+                                   StarClass.G,
+                                   StarClass.K,
+                                   StarClass.M,
+                                   StarClass.S]
+                and (system_has_earth_like
+                     or system_has_ammonia_world
+                     or system_has_water_giant
+                     or system_has_gas_giant_with_water_life
+                     or system_has_gas_giant_with_ammonia_life)
+                and (distance_from_star_ls is None or distance_from_star_ls > 12000)):
+            # TODO: #221 Determine distance from parent star. currently the distance is just the one from the system entry point
+            possible_species.append("Crystalline Shard")
+
+        # Electricae
+        if planet_type == PlanetType.ICY and ("thin" in atmosphere and any(opt in atmosphere for opt in ("helium", "neon", "argon"))) and gravity and gravity <= 0.28:
+            if ((star_class == StarClass.A and star_luminosity in [StarLuminosity.V, StarLuminosity.VI, StarLuminosity.VII])
+                    or star_class in [StarClass.O, StarClass.B, StarClass.N, StarClass.BlackHole, *SC_WHITE_DWARFS]):
+                possible_species.append("Electricae Pluma")
+            if in_nebula:
+                possible_species.append("Electricae Radialem")
+
+        # Fonticulua
+        if atmosphere and "thin" in atmosphere and planet_type in PT_GROUP_ICE and gravity and gravity <= 0.28:
+            if "neon" in atmosphere:
+                possible_species.append("Fonticulua Segmentatus")
+            if "methane" in atmosphere:
+                possible_species.append("Fonticulua Digitos")
+            if "argon" in atmosphere:
+                if "rich" in atmosphere:
+                    possible_species.append("Fonticulua Upupam")
+                else:
+                    possible_species.append("Fonticulua Campestris")
+            if "nitrogen" in atmosphere:
+                possible_species.append("Fonticulua Lapida")
+            if "oxygen" in atmosphere:
+                possible_species.append("Fonticulua Fluctus")
+
+        # Frutexa
+        if "thin" in atmosphere:
             if "ammonia" in atmosphere:
-                possible_species.append("Osseus Spiralis")
-
-    # Recepta
-    if "thin sulfur" in atmosphere and gravity and gravity < 0.28:
-        if planet_type in PT_GROUP_ICE:
-            possible_species.append("Recepta Conditivus")
-        if planet_type in PT_GROUP_HMC_ROCKY:
-            possible_species.append("Recepta Deltahedronix")
-        if planet_type in [*PT_GROUP_HMC_ROCKY, *PT_GROUP_ICE]:
-            possible_species.append("Recepta Umbrux")
-
-    # Sinuous Tuber
-    if volcanism not in STR_LIST_NONE and atmosphere in STR_LIST_NONE:
-        if "silicate magma" in volcanism:
-            possible_species.append("Sinuous Tuber Roseus")
-        if planet_type == PlanetType.ROCKY:
-            possible_species.extend(["Sinuous Tuber Albidum", "Sinuous Tuber Caeruleum", "Sinuous Tuber Lindigoticum"])
-        if planet_type in [PlanetType.METAL_RICH, PlanetType.HMC]:
-            possible_species.extend(["Sinuous Tuber Blatteum", "Sinuous Tuber Prasinum", "Sinuous Tuber Violaceum", "Sinuous Tuber Viride"])
-
-    # Stratum
-    if "thin" in atmosphere:
-        if (planet_type == PlanetType.HMC
-                and mean_temp_k > 165):
-            possible_species.append("Stratum Tectonicas")
-        if planet_type == PlanetType.ROCKY:
-            if "ammonia" in atmosphere and mean_temp_k > 165:
-                possible_species.extend(["Stratum Paleas", "Stratum Laminamus"])
-            if "water" in atmosphere:
-                possible_species.append("Stratum Paleas")
-            if "carbon" in atmosphere:
-                if mean_temp_k > 165:
-                    possible_species.append("Stratum Paleas")
-                if mean_temp_k > 190:
-                    possible_species.extend(["Stratum Cucumisis", "Stratum Frigus"])
-                if 165 <= mean_temp_k <= 190:
-                    possible_species.extend(["Stratum Limaxus", "Stratum Excutitus"])
+                if planet_type == PlanetType.ROCKY:
+                    possible_species.extend(["Frutexa Flabellum", "Frutexa Flammasis"])
+                if planet_type == PlanetType.HMC:
+                    possible_species.append("Frutexa Metallicum")
+            if "carbon" in atmosphere and mean_temp_k < 195:
+                if planet_type == PlanetType.ROCKY:
+                    possible_species.extend(["Frutexa Fera", "Frutexa Acus"])
+                if planet_type == PlanetType.HMC:
+                    possible_species.append("Frutexa Metallicum")
             if "sulfur" in atmosphere:
-                if mean_temp_k > 165:
-                    possible_species.append("Stratum Araneamus")
-                if mean_temp_k > 190:
-                    possible_species.extend(["Stratum Cucumisis", "Stratum Frigus"])
-                if 165 <= mean_temp_k <= 190:
-                    possible_species.extend(["Stratum Limaxus", "Stratum Excutitus"])
+                possible_species.append("Frutexa Collum")
+            if "water" in atmosphere and planet_type == PlanetType.ROCKY:
+                possible_species.append("Frutexa Sponsae")
 
-    # Tubus
-    if "thin" in atmosphere and gravity and gravity <= 0.16:
-        if planet_type == PlanetType.HMC and any(opt in atmosphere for opt in ("ammonia", "carbon")):
-            possible_species.append("Tubus Sororibus")
-        if planet_type == PlanetType.ROCKY:
-            if "ammonia" in atmosphere:
-                possible_species.append("Tubus Rosarium")
+        # Fumerola
+        if volcanism not in STR_LIST_NONE and "thin" in atmosphere and gravity and gravity <= 0.28:
+            if (planet_type in PT_GROUP_ICE
+                    and "water" in volcanism):
+                possible_species.append("Fumerola Aquatis")
+            if (planet_type in PT_GROUP_ICE
+                    and any(opt in volcanism for opt in ("methane", "carbon"))):
+                possible_species.append("Fumerola Carbosis")
+            if (planet_type in PT_GROUP_HMC_ROCKY
+                    and any(opt in volcanism for opt in ("metallic", "rocky", "silicate"))):
+                possible_species.append("Fumerola Extremus")
+            if (planet_type in PT_GROUP_ICE
+                    and any(opt in volcanism for opt in ("nitrogen", "ammonia"))):
+                possible_species.append("Fumerola Nitris")
+
+        # Fungoida
+        if gravity and gravity <= 0.28 and "thin" in atmosphere:
+            if any(opt in atmosphere for opt in ("methane", "ammonia")):
+                possible_species.append("Fungoida Setisis")
+            if "argon" in atmosphere:
+                possible_species.append("Fungoida Bullarum")
+            if ("water" in atmosphere
+                    or ("carbon" in atmosphere and 180 <= mean_temp_k <= 195)):
+                possible_species.extend(["Fungoida Gelata", "Fungoida Stabitis"])
+
+        # Osseus
+        if "thin" in atmosphere and gravity and gravity <= 0.28:
+            if (planet_type == PlanetType.ROCKY_ICE
+                    and any(opt in atmosphere for opt in ("methane", "argon", "nitrogen"))):
+                possible_species.append("Osseus Pumice")
+            if planet_type in PT_GROUP_HMC_ROCKY:
+                if "carbon" in atmosphere:
+                    if 180 <= mean_temp_k <= 195:
+                        possible_species.extend(["Osseus Cornibus", "Osseus Pellebantus"])
+                    if 180 >= mean_temp_k <= 190:
+                        possible_species.append("Osseus Fractus")
+                if "water" in atmosphere:
+                    possible_species.append("Osseus Discus")
+                if "ammonia" in atmosphere:
+                    possible_species.append("Osseus Spiralis")
+
+        # Recepta
+        if "thin sulfur" in atmosphere and gravity and gravity < 0.28:
+            if planet_type in PT_GROUP_ICE:
+                possible_species.append("Recepta Conditivus")
+            if planet_type in PT_GROUP_HMC_ROCKY:
+                possible_species.append("Recepta Deltahedronix")
+            if planet_type in [*PT_GROUP_HMC_ROCKY, *PT_GROUP_ICE]:
+                possible_species.append("Recepta Umbrux")
+
+        # Sinuous Tuber
+        if volcanism not in STR_LIST_NONE and atmosphere in STR_LIST_NONE:
+            if "silicate magma" in volcanism:
+                possible_species.append("Sinuous Tuber Roseus")
+            if planet_type == PlanetType.ROCKY:
+                possible_species.extend(["Sinuous Tuber Albidum", "Sinuous Tuber Caeruleum", "Sinuous Tuber Lindigoticum"])
+            if planet_type in [PlanetType.METAL_RICH, PlanetType.HMC]:
+                possible_species.extend(["Sinuous Tuber Blatteum", "Sinuous Tuber Prasinum", "Sinuous Tuber Violaceum", "Sinuous Tuber Viride"])
+
+        # Stratum
+        if "thin" in atmosphere:
+            if (planet_type == PlanetType.HMC
+                    and mean_temp_k > 165):
+                possible_species.append("Stratum Tectonicas")
+            if planet_type == PlanetType.ROCKY:
+                if "ammonia" in atmosphere and mean_temp_k > 165:
+                    possible_species.extend(["Stratum Paleas", "Stratum Laminamus"])
+                if "water" in atmosphere:
+                    possible_species.append("Stratum Paleas")
+                if "carbon" in atmosphere:
+                    if mean_temp_k > 165:
+                        possible_species.append("Stratum Paleas")
+                    if mean_temp_k > 190:
+                        possible_species.extend(["Stratum Cucumisis", "Stratum Frigus"])
+                    if 165 <= mean_temp_k <= 190:
+                        possible_species.extend(["Stratum Limaxus", "Stratum Excutitus"])
+                if "sulfur" in atmosphere:
+                    if mean_temp_k > 165:
+                        possible_species.append("Stratum Araneamus")
+                    if mean_temp_k > 190:
+                        possible_species.extend(["Stratum Cucumisis", "Stratum Frigus"])
+                    if 165 <= mean_temp_k <= 190:
+                        possible_species.extend(["Stratum Limaxus", "Stratum Excutitus"])
+
+        # Tubus
+        if "thin" in atmosphere and gravity and gravity <= 0.16:
+            if planet_type == PlanetType.HMC and any(opt in atmosphere for opt in ("ammonia", "carbon")):
+                possible_species.append("Tubus Sororibus")
+            if planet_type == PlanetType.ROCKY:
+                if "ammonia" in atmosphere:
+                    possible_species.append("Tubus Rosarium")
+                if "carbon" in atmosphere:
+                    possible_species.append("Tubus Cavas")
+                if "carbon" in atmosphere and 160 <= mean_temp_k <= 190:
+                    possible_species.extend(["Tubus Compagibus", "Tubus Conifer"])
+
+        # Tussock
+        if planet_type in [PlanetType.ROCKY, PlanetType.HMC] and "thin" in atmosphere and gravity and gravity <= 0.28:
             if "carbon" in atmosphere:
-                possible_species.append("Tubus Cavas")
-            if "carbon" in atmosphere and 160 <= mean_temp_k <= 190:
-                possible_species.extend(["Tubus Compagibus", "Tubus Conifer"])
-
-    # Tussock
-    if planet_type in [PlanetType.ROCKY, PlanetType.HMC] and "thin" in atmosphere and gravity and gravity <= 0.28:
-        if "carbon" in atmosphere:
-            if 175 <= mean_temp_k <= 180:
-                possible_species.append("Tussock Albata")
-            if 180 <= mean_temp_k <= 190:
-                possible_species.append("Tussock Caputus")
-            if 160 <= mean_temp_k <= 170:
-                possible_species.append("Tussock Ignis")
-            if 145 <= mean_temp_k <= 155:
-                possible_species.append("Tussock Pennata")
-            if mean_temp_k < 195:
-                possible_species.extend(["Tussock Pennatis", "Tussock Propagito"])
-            if 170 <= mean_temp_k <= 175:
-                possible_species.append("Tussock Serrati")
-            if 190 <= mean_temp_k <= 195:
-                possible_species.append("Tussock Triticum")
-            if 155 <= mean_temp_k <= 160:
-                possible_species.append("Tussock Ventusa")
-        if any(opt in atmosphere for opt in ("methane", "argon")):
-            possible_species.append("Tussock Capillum")
-        if "ammonia" in atmosphere:
-            possible_species.extend(["Tussock Catena", "Tussock Cultro", "Tussock Divisa"])
-        if "sulfur" in atmosphere:
-            possible_species.append("Tussock Stigmasis")
-        if "water" in atmosphere:
-            possible_species.append("Tussock Virgam")
+                if 175 <= mean_temp_k <= 180:
+                    possible_species.append("Tussock Albata")
+                if 180 <= mean_temp_k <= 190:
+                    possible_species.append("Tussock Caputus")
+                if 160 <= mean_temp_k <= 170:
+                    possible_species.append("Tussock Ignis")
+                if 145 <= mean_temp_k <= 155:
+                    possible_species.append("Tussock Pennata")
+                if mean_temp_k < 195:
+                    possible_species.extend(["Tussock Pennatis", "Tussock Propagito"])
+                if 170 <= mean_temp_k <= 175:
+                    possible_species.append("Tussock Serrati")
+                if 190 <= mean_temp_k <= 195:
+                    possible_species.append("Tussock Triticum")
+                if 155 <= mean_temp_k <= 160:
+                    possible_species.append("Tussock Ventusa")
+            if any(opt in atmosphere for opt in ("methane", "argon")):
+                possible_species.append("Tussock Capillum")
+            if "ammonia" in atmosphere:
+                possible_species.extend(["Tussock Catena", "Tussock Cultro", "Tussock Divisa"])
+            if "sulfur" in atmosphere:
+                possible_species.append("Tussock Stigmasis")
+            if "water" in atmosphere:
+                possible_species.append("Tussock Virgam")
 
     return possible_species
 

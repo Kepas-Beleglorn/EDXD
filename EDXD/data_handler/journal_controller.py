@@ -51,7 +51,7 @@ class JournalController(PausableThread, threading.Thread):
 
     def get_parent_star_ids(self, body_name: str, body_parents: List[Dict[str, int]]) -> List[Dict[str, int]]:
         parent_stars: List[Dict[str, int]] = body_parents
-
+        # ToDo: #221 - Get parent stars for moons, too
         # is it a planet orbiting one or more stars?
         if not body_name.split(" ")[-1].isdigit():
             return parent_stars
@@ -215,6 +215,7 @@ class JournalController(PausableThread, threading.Thread):
         raw_luminosity  = None
         volcanism       = None
         present_life    = None
+        parent_distance = None
         pressure        = None
 
         materials       = {}
@@ -301,6 +302,7 @@ class JournalController(PausableThread, threading.Thread):
 
                 rings_found[ring_id] = ring
             else:
+                parent_distance = evt.get("SemiMajorAxis")
                 distance = evt.get("DistanceFromArrivalLS")
                 landable = evt.get("Landable")
                 body_type = evt.get("PlanetClass") or evt.get("StarType")
@@ -761,6 +763,7 @@ class JournalController(PausableThread, threading.Thread):
                 volcanism=volcanism,
                 present_life=present_life,
                 parents=parents,
+                parent_distance=parent_distance,
                 pressure=pressure
             )
 

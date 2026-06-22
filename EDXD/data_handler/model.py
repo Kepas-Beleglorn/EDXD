@@ -80,6 +80,7 @@ class Body:
     volcanism       : str = ""
     present_life    : str = ""
     parents         : List[Dict[str, int]] = field(default_factory=list)
+    parent_distance : float = 0.0
     pressure        : float = 0.0
 
     def __post_init__(self):
@@ -319,6 +320,7 @@ class Model:
                 volcanism           = body_properties.get("volcanism", "")
                 present_life        = body_properties.get("present_life", "")
                 parents             = body_properties.get("parents", [])
+                parent_distance     = body_properties.get("parent_distance", 0.0)
                 pressure            = body_properties.get("pressure", 0.0)
 
                 bio_found = {k: Genus.from_dict(v) if isinstance(v, dict) else v for k, v in bio_dict.items()}
@@ -358,6 +360,7 @@ class Model:
                     volcanism=volcanism,
                     present_life=present_life,
                     parents=parents,
+                    parent_distance=parent_distance,
                     pressure=pressure
                 )
 
@@ -366,7 +369,7 @@ class Model:
                     bio_found: Dict[str, Genus] = None, geo_found: Dict[str, CodexEntry] = None, has_rings: bool = False, rings: Dict[str, Ring] = None, total_bodies: int = None, radius: float = 0.0, mapped: bool = False,
                     geo_complete: bool = False, geo_scanned: int = 0, bio_complete: bool = False, bio_scanned: int = 0,
                     first_discovered: int = 0, first_mapped: int = 0, first_footfalled: int = 0, g_force: float = 0.0, atmosphere: Atmosphere = None,
-                    mean_temp: float = 0.0, luminosity: str = "", raw_luminosity: str = "", volcanism: str = "", present_life: str = "", parents: List[Dict[str, int]] = None, pressure: float = 0.0
+                    mean_temp: float = 0.0, luminosity: str = "", raw_luminosity: str = "", volcanism: str = "", present_life: str = "", parents: List[Dict[str, int]] = None, parent_distance: float = 0.0, pressure: float = 0.0
                     ):
         with self.lock:
             self.system_addr = systemaddress
@@ -405,6 +408,7 @@ class Model:
                 body.volcanism          = volcanism         or body.volcanism           or ""
                 body.present_life       = present_life      or body.present_life        or ""
                 body.parents            = parents           or body.parents             or []
+                body.parent_distance    = parent_distance   or body.parent_distance     or 0.0
                 body.pressure           = pressure          or body.pressure            or 0.0
 
                 if materials is not None:
@@ -491,6 +495,7 @@ class Model:
                     "volcanism"         : body.volcanism,
                     "present_life"      : body.present_life,
                     "parents"           : body.parents,
+                    "parent_distance"   : body.parent_distance,
                     "pressure"          : body.pressure,
                 }
                 for body_id, body in self.bodies.items()

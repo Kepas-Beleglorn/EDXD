@@ -351,3 +351,7 @@ def rings_have_hotspots(body) -> bool:
         if body.rings[ring].signals:
             return True
     return False
+
+def km_to_ls(kilometers):
+    SPEED_OF_LIGHT_KM_S = 299792.458
+    return kilometers / SPEED_OF_LIGHT_KM_S
