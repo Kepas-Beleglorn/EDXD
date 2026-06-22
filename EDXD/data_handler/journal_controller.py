@@ -49,6 +49,32 @@ class JournalController(PausableThread, threading.Thread):
         genus_id = re.sub(r'_\d+_[^_]+(?=_Name;)', '_Genus', genus_id)
         return genus_id
 
+    def get_parent_star_ids(self, body_name: str, body_parents: List[Dict[str, int]]) -> List[Dict[str, int]]:
+        parent_stars: List[Dict[str, int]] = body_parents
+
+        # is it a planet orbiting one or more stars?
+        if not body_name.split(" ")[-1].isdigit():
+            return parent_stars
+
+        # does the planet already have Stars listed as parents?
+        for body_parent in parent_stars:
+            if list(body_parent)[0] == "Star":
+                return parent_stars
+
+        body_name_star_hint = body_name.split(" ")[-2]
+        system_name = self.m.system_name
+
+        for i in range(0, len(body_name_star_hint), 1):
+            star_name = system_name + " " + body_name_star_hint[i]
+            for body_id in self.m.bodies:
+                body = self.m.bodies[body_id]
+                if not body.is_star:
+                    continue
+                if body.body_name == star_name:
+                    parent_stars.append({str("Star"): int(body_id.split("_")[-1])})
+
+        return parent_stars
+
     def process_event(self, evt, update_gui: bool, set_timestamp: bool = True):
         etype = evt.get("event")
 
@@ -291,6 +317,8 @@ class JournalController(PausableThread, threading.Thread):
                     if body_id in self.m.bodies:
                         all_rings_found_dict = self.m.bodies[body_id].rings
 
+                    journal_ring_class = ""
+
                     if all_rings_found_dict == {}:
                         # add all new found rings
                         for journal_ring in evt.get("Rings"):
@@ -345,6 +373,7 @@ class JournalController(PausableThread, threading.Thread):
                     scoopable = body_type[0] in ["K", "G", "B", "F", "O", "A", "M"]
                 materials = {m["Name"]: m["Percent"] for m in evt.get("Materials", [])}
                 parents = evt.get("Parents", [])
+                parents = self.get_parent_star_ids(body_name, parents)
 
                 # first analyse data during FSS
                 if evt.get("ScanType") in {"AutoScan", "Detailed"}:
