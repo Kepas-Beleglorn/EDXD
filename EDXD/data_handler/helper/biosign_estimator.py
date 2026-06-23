@@ -142,7 +142,7 @@ def estimate_system_biosigns(model_bodies: Dict[str, Body]) -> Dict[str, List[Di
                     allowed_prefixes.add(item)
             for sp in potential_species:
                 for p in allowed_prefixes:
-                    matches = sp==p
+                    matches = p in sp
                     # Special Anemone/Clypeus handling
                     if "Anemone" in sp:
                         matches = True
