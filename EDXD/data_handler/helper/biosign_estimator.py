@@ -141,10 +141,19 @@ def estimate_system_biosigns(model_bodies: Dict[str, Body]) -> Dict[str, List[Di
                 if not is_confirmed:
                     allowed_prefixes.add(item)
             for sp in potential_species:
-                matches = any(sp.startswith(p) for p in allowed_prefixes)
-                # Special Anemone/Clypeus handling
-                if "Anemone" in sp and "Clypeus" in allowed_prefixes: matches = True
-                if matches: final_species.append(sp)
+                for p in allowed_prefixes:
+                    matches = sp==p
+                    # Special Anemone/Clypeus handling
+                    if "Anemone" in sp:
+                        matches = True
+                    if "Sinuous Tubers" in sp:
+                        matches = True
+                    if "Clypeus" in allowed_prefixes:
+                        matches = True
+
+                    if matches and sp not in final_species:
+                        final_species.append(sp)
+
         else:
             # PRE-SCAN PHASE: Keep all physics candidates
             final_species = potential_species
@@ -162,6 +171,8 @@ def estimate_system_biosigns(model_bodies: Dict[str, Body]) -> Dict[str, List[Di
                 # If confirmed, probability is 100%, otherwise calculate.
                 prob = 0.0
                 if species_name in confirmed_species_names or any(species_name.startswith(p) for p in scanned_genus_localised):
+                    if "Sinuous Tubers" in species_name and species_name not in confirmed_species_names:
+                        continue
                     # check if found species is already unique in list
                     current_genus = species_name.split(" ")[0]
                     genus_occurrence = 0
@@ -174,25 +185,19 @@ def estimate_system_biosigns(model_bodies: Dict[str, Body]) -> Dict[str, List[Di
                         prob = calculate_probability(
                             species_name=species_name,
                             planet_type=pt_enum,
-                            #atmosphere=atm_raw,
                             pressure_atm=pressure_atm,
                             mean_temp_k=mean_temp,
-                            #volcanism=volc_raw,
-                            gravity=gravity,  # Pass these new args
-                            #star_class=star_class_enum,
-                            #star_luminosity=star_luminosity_enum
+                            gravity=gravity
                         )
                 else:
+                    if "Sinuous Tubers" in species_name and species_name not in confirmed_species_names:
+                        continue
                     prob = calculate_probability(
                         species_name=species_name,
                         planet_type=pt_enum,
-                        # atmosphere=atm_raw,
                         pressure_atm=pressure_atm,
                         mean_temp_k=mean_temp,
-                        # volcanism=volc_raw,
-                        gravity=gravity,  # Pass these new args
-                        # star_class=star_class_enum,
-                        # star_luminosity=star_luminosity_enum
+                        gravity=gravity
                     )
 
                 results[body_id].append({
@@ -204,7 +209,7 @@ def estimate_system_biosigns(model_bodies: Dict[str, Body]) -> Dict[str, List[Di
                     "scan_range": get_scan_range_for_species(species_name),
                     "probability": round(prob, 2),
                     "confirmed_by_dss": scanned_genus_localised,  # True if only genus known
-                    "confirmed_by_codex": species_name in scanned_genus_localised,  # True if exact species known
+                    "confirmed_by_codex": species_name in confirmed_species_names,  # True if exact species known
                     "variant_color": confirmed_variants.get(species_name),  # e.g. "Green"
                     "dss_complete": body.bio_complete
                 })
@@ -292,7 +297,7 @@ def calculate_probability(
 ) -> float:
     # Calculates a relative probability score (0.5 to 1.0).
     # Hard pre-checks already done at this point
-    score = 0.5
+    score = 0.25
 
     if "Aleoida" in species_name:
         score += score_aleoida_variant(species_name, mean_temp_k, pressure_atm, gravity, planet_type)
@@ -498,7 +503,6 @@ def estimate_biosigns(
                 and ("thin" in atmosphere and any(opt in atmosphere for opt in ("water", "carbon")))
                 and mean_temp_k > 190 and gravity and gravity <= 0.27):
             possible_species.extend(["Clypeus Lacrimam", "Clypeus Margaritus"])
-            # TODO: #221 Determine distance from parent star. currently the distance is just the one from the system entry point
             if distance_from_star_ls and distance_from_star_ls > 2500:
                 possible_species.append("Clypeus Speculumi")
 
@@ -530,7 +534,7 @@ def estimate_biosigns(
                      or system_has_gas_giant_with_water_life
                      or system_has_gas_giant_with_ammonia_life)
                 and (distance_from_star_ls is None or distance_from_star_ls > 12000)):
-            # TODO: #221 Determine distance from parent star. currently the distance is just the one from the system entry point
+
             possible_species.append("Crystalline Shard")
 
         # Electricae
@@ -627,11 +631,11 @@ def estimate_biosigns(
         # Sinuous Tuber
         if volcanism not in STR_LIST_NONE and atmosphere in STR_LIST_NONE:
             if "silicate magma" in volcanism:
-                possible_species.append("Sinuous Tuber Roseus")
+                possible_species.append("Roseum Sinuous Tubers")
             if planet_type == PlanetType.ROCKY:
-                possible_species.extend(["Sinuous Tuber Albidum", "Sinuous Tuber Caeruleum", "Sinuous Tuber Lindigoticum"])
+                possible_species.extend(["Albidum Sinuous Tubers", "Caeruleum Sinuous Tubers", "Lindigoticum Sinuous Tubers"])
             if planet_type in [PlanetType.METAL_RICH, PlanetType.HMC]:
-                possible_species.extend(["Sinuous Tuber Blatteum", "Sinuous Tuber Prasinum", "Sinuous Tuber Violaceum", "Sinuous Tuber Viride"])
+                possible_species.extend(["Blatteum Sinuous Tubers", "Prasinum Sinuous Tubers", "Violaceum Sinuous Tubers", "Viride Sinuous Tubers"])
 
         # Stratum
         if "thin" in atmosphere:
@@ -720,30 +724,24 @@ def score_variant(species_name: str, mean_temp_k: float, pressure_atm: float, gr
 
     # Check planet type(s)
     if planet_type in target_planet_type:
-        score += 0.075
+        score += 0.25
     else:
-        score += 0.025
+        score += 0.1
 
     # Check Temperature (Tolerance: ±{tolerance_temp} K)
     if target_temp is not None:
         if abs(mean_temp_k - target_temp) <= tolerance_temp:
-            score += 0.1
-        else:
-            score += 0.05
+            score += 0.16
 
     # Check Pressure (Tolerance: ±{tolerance_pressure} atm)
     if target_press is not None:
         if abs(pressure_atm - target_press) <= tolerance_pressure:
-            score += 0.1
-        else:
-            score += 0.05
+            score += 0.16
 
     # Check Gravity (Tolerance: ±{tolerance_gravity} g)
     if target_grav is not None:
         if abs(gravity - target_grav) <= tolerance_gravity:
-            score += 0.1
-        else:
-            score += 0.05
+            score += 0.16
 
     return score
 

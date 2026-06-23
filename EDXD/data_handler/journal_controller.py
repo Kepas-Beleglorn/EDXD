@@ -38,6 +38,7 @@ class JournalController(PausableThread, threading.Thread):
         replacements = {
             "SphereEFGH":   "Sphere",
             "TubeABCD"  :   "Tube",
+            "TubeEFGH"  :   "Tube",
             # Add other mappings as needed
         }
 
@@ -161,7 +162,7 @@ class JournalController(PausableThread, threading.Thread):
         #141: don't load system data of FSDTarget, if targeted system has been visited before.
         #137: reset_system no longer uses <evt.get("Name")>, as this NEVER holds the systems name
         if etype != "FSDTarget":
-            systemaddress = int(evt.get("SystemAddress"))
+            systemaddress = evt.get("SystemAddress")
             total_bodies = None
             if systemaddress is not None:
                 self.m.total_bodies = None
@@ -489,6 +490,7 @@ class JournalController(PausableThread, threading.Thread):
         if etype == "FSSBodySignals":
             if body_name.endswith("Ring"):
                 # todo: #168 process rings properly
+                print(f"Ring processing on FSSBodySignals - relevant? -> {body_id}: {body_name}")
                 pass  # skip for now
             else:
                 for signal in evt.get("Signals", []):
@@ -648,6 +650,7 @@ class JournalController(PausableThread, threading.Thread):
             scantype = evt.get("ScanType")
             genus_id = evt.get("Genus")
             species_id = evt.get("Species")
+
             # generalize genus ID
             genus_id = self.normalize_genus(genus_id) # re.sub(r'_\d+_[^_]+(?=_Name;)', '_Genus', genus_id)
             genus_localised = evt.get("Genus_Localised")

@@ -94,6 +94,7 @@ class SignalPrediction(DynamicDialog):
         for item in body_data:
             genus_name: str = item["name"]
             genus_variant: str = item["variant_color"] or ""
+            if genus_variant == "Unknown": genus_variant = ""
             genus_probability: float = item["probability"]
             genus_value: int = item["base_value"]
             prediction_panel.add_table_item(f"  {genus_name}")
