@@ -21,6 +21,7 @@ class FuelGauge(wx.Panel):
 
         self._range = max(1, gauge_range)
         self._level = max(0, min(level, self._range))
+        self._level_reservoir = max(0, min(level, self._range))
         self._warning_threshold = warning_threshold
         self._show_scale = show_scale
 
@@ -54,8 +55,20 @@ class FuelGauge(wx.Panel):
         self.UpdateTimer()
         self.Refresh(False)
 
+    def SetReservoirLevel(self, level):
+        """Set the current fuel value (0...range)."""
+        level = max(0, min(level, self._range))
+        if level == self._level_reservoir:
+            return
+        self._level_reservoir = level
+        self.UpdateTimer()
+        self.Refresh(False)
+
     def GetLevel(self):
         return self._level
+
+    def GetResrvoirLevel(self):
+        return self._level_reservoir
 
     def SetWarningThreshold(self, threshold):
         """Set warning threshold in percent (0..100)."""
@@ -104,6 +117,20 @@ class FuelGauge(wx.Panel):
         if self._show_scale:
             top_offset = 16   # space for top labels
             bottom_offset = 16  # for bottom labels
+        return wx.Rect(
+            rect.x + padding,
+            rect.y + padding + top_offset,
+            rect.width - 2 * padding,
+            rect.height - 2 * padding - top_offset - bottom_offset,
+        )
+
+    def _get_res_bar_rect(self, rect):
+        padding = 6
+        top_offset = 0
+        bottom_offset = 0
+        if self._show_scale:
+            top_offset = -4  # space for top labels
+            bottom_offset = -4  # for bottom labels
         return wx.Rect(
             rect.x + padding,
             rect.y + padding + top_offset,
@@ -174,6 +201,34 @@ class FuelGauge(wx.Panel):
             gc.SetClippingRegion(bar_rect)
             gc.DrawRoundedRectangle(
                 fill_rect.x, fill_rect.y, fill_rect.width, fill_rect.height, radius
+            )
+            gc.DestroyClippingRegion()
+
+        # only in ship
+        # ToDo: check if reservoir applies for SLF, too
+        if self._level_reservoir > 0:
+            reservoir_fraction = self._level_reservoir / float(self._range)
+            res_rect = wx.Rect(0, bar_rect.y + bar_rect.height, width, 8)
+            res_bar_rect = self._get_res_bar_rect(res_rect)
+            res_radius = min(res_bar_rect.height // 2, 4)
+            gc.SetBrush(wx.Brush(wx.Colour(40, 40, 40)))
+            gc.SetPen(wx.Pen(wx.Colour(90, 90, 90), 1))
+            gc.DrawRoundedRectangle(
+                res_bar_rect.x, res_bar_rect.y, res_bar_rect.width, res_bar_rect.height, res_radius
+            )
+
+            res_fill_width = max(2, int(res_bar_rect.width * reservoir_fraction))
+            res_fill_rect = wx.Rect(
+                res_bar_rect.x, res_bar_rect.y, res_fill_width, res_bar_rect.height
+            )
+            col = self._fraction_to_color(reservoir_fraction, brightness)
+            gc.SetBrush(wx.Brush(col))
+            gc.SetPen(wx.Pen(col))
+
+            # clip to bar rect for rounded effect
+            gc.SetClippingRegion(res_bar_rect)
+            gc.DrawRoundedRectangle(
+                res_fill_rect.x, res_fill_rect.y, res_fill_rect.width, res_fill_rect.height, res_radius
             )
             gc.DestroyClippingRegion()
 

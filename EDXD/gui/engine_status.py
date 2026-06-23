@@ -86,6 +86,8 @@ class EngineStatus(DynamicDialog):
 
     def render(self, fuel_current_main: float = 0, fuel_current_reservoir: float = 0, fuel_capacity_main: float = 0, fuel_capacity_reservoir: float = 0, vehicle: str = "ship"):
         fuel_capacity_total = 0
+        reservoir_fuel_level = 0
+        fuel_level = 0
         if vehicle == VESSEL_SHIP:
             fuel_capacity_total = fuel_capacity_main + fuel_capacity_reservoir
         if vehicle == VESSEL_EV:
@@ -97,9 +99,15 @@ class EngineStatus(DynamicDialog):
 
         self.vessel_type = vehicle
         if fuel_capacity_total > 0:
-            total_fuel = fuel_current_main + fuel_current_reservoir
-            fuel_level = float(total_fuel / fuel_capacity_total) * 100
-            self.pnl_fuel_gauge.SetLevel(fuel_level)
+            if self.vessel_type == VESSEL_SHIP:
+                reservoir_fuel_level = float(fuel_current_reservoir / fuel_capacity_reservoir) * 100
+                fuel_level = float(fuel_current_main / fuel_capacity_main) * 100
+            else:
+                total_fuel = fuel_current_main + fuel_current_reservoir
+                fuel_level = float(total_fuel / fuel_capacity_total) * 100
+
+        self.pnl_fuel_gauge.SetLevel(fuel_level)
+        self.pnl_fuel_gauge.SetReservoirLevel(reservoir_fuel_level)
 
         self.set_values()
         if not self.IsShown():
@@ -121,7 +129,6 @@ class EngineStatus(DynamicDialog):
             self.lbl_fsd_injection.Hide()
 
     def set_values(self):
-        print(DateTime.UNow())
         self.lbl_fuel_level.SetLabelText(f"Fuel level - {self.vessel_type}")
 
         if self.parent.model is None or self.parent.model.ship_status is None or self.parent.model.ship_status.jet_cone_boost_factor is None:
