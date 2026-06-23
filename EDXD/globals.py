@@ -169,6 +169,8 @@ VESSEL_SLF = "fighter"
 VESSEL_SRV = "SRV"
 VESSEL_EV = "EV suit"
 
+SCO_COOLDOWN = 9
+
 # -----------------------------------------------------------------------
 # symbol lookup for display in table_view.py
 SYMBOL = {

@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import time
 import wx
-from wx import Size
+from wx import Size, DateTime
+from wx._core import TimeSpan
 
 from EDXD.globals import BTN_HEIGHT, DEFAULT_FUEL_LOW_THRESHOLD
 from EDXD.gui.helper.dynamic_dialog import DynamicDialog
@@ -14,7 +16,7 @@ from EDXD.gui.helper.window_properties import WindowProperties
 TITLE = "Engine status"
 WINID = "ENGINE_STATUS"
 
-from EDXD.globals import DEFAULT_HEIGHT_ENGINE_STATUS, DEFAULT_WIDTH_ENGINE_STATUS, DEFAULT_POS_Y, DEFAULT_POS_X, VESSEL_SLF, VESSEL_SRV, VESSEL_EV, VESSEL_SHIP
+from EDXD.globals import DEFAULT_HEIGHT_ENGINE_STATUS, DEFAULT_WIDTH_ENGINE_STATUS, DEFAULT_POS_Y, DEFAULT_POS_X, VESSEL_SLF, VESSEL_SRV, VESSEL_EV, VESSEL_SHIP, SCO_COOLDOWN
 
 # ---------------------------------------------------------------------------
 class EngineStatus(DynamicDialog):
@@ -38,6 +40,9 @@ class EngineStatus(DynamicDialog):
         self.theme = get_theme()
         self.parent = parent
         self.vessel_type = None
+        self.last_sco_state = False
+        self.sco_cooldown_end_time: DateTime = None
+        self.sco_cooldown_duration: TimeSpan = TimeSpan(hours=0, min=0, sec=SCO_COOLDOWN, msec=0)
 
         grid = wx.BoxSizer(wx.VERTICAL)
 
@@ -60,7 +65,13 @@ class EngineStatus(DynamicDialog):
 
         grid.Add(self.fsd_indicator, 0, wx.CENTER | wx.EXPAND | wx.ALL, 5)
 
-        # spacer
+        # SCO status
+        self.lbl_sco_status = wx.StaticText(parent=self.scroll_container,
+                                               style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE,
+                                               size=Size(DEFAULT_WIDTH_ENGINE_STATUS, BTN_HEIGHT))
+        grid.Add(self.lbl_sco_status, 0, wx.CENTER | wx.EXPAND | wx.ALL, -4)
+
+        # FSD injection
         self.lbl_fsd_injection = wx.StaticText(parent=self.scroll_container,
                                                style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE,
                                                size=Size(DEFAULT_WIDTH_ENGINE_STATUS, BTN_HEIGHT))
@@ -98,6 +109,7 @@ class EngineStatus(DynamicDialog):
         if vehicle == VESSEL_SHIP:
             self.pnl_fuel_gauge.Show()
             self.fsd_indicator.Show()
+            self.lbl_sco_status.Show()
             self.lbl_fsd_injection.Show()
         else:
             if vehicle == VESSEL_EV:
@@ -105,9 +117,11 @@ class EngineStatus(DynamicDialog):
             else:
                 self.pnl_fuel_gauge.Show()
             self.fsd_indicator.Hide()
+            self.lbl_sco_status.Hide()
             self.lbl_fsd_injection.Hide()
 
     def set_values(self):
+        print(DateTime.UNow())
         self.lbl_fuel_level.SetLabelText(f"Fuel level - {self.vessel_type}")
 
         if self.parent.model is None or self.parent.model.ship_status is None or self.parent.model.ship_status.jet_cone_boost_factor is None:
@@ -121,3 +135,22 @@ class EngineStatus(DynamicDialog):
             self.lbl_fsd_injection.SetLabelText("")
         else:
             self.lbl_fsd_injection.SetLabelText(f"FSD injection active: +{self.parent.model.ship_status.fsd_injection_factor * 100}%")
+
+        if self.parent.model is None or self.parent.model.ship_status is None:
+            self.lbl_sco_status.SetLabelText("")
+        else:
+            t_now: DateTime = DateTime.UNow()
+            if (self.parent.model.flags2 & pow(2, 20)) == 0:
+                if self.last_sco_state:
+                    self.last_sco_state = False
+                    self.sco_cooldown_end_time = t_now.Add(self.sco_cooldown_duration)
+
+                if t_now and self.sco_cooldown_end_time:
+                    if self.sco_cooldown_end_time >= t_now:
+                        self.lbl_sco_status.SetLabelText(f"SCO cooldown in progress - remaining duration: {self.sco_cooldown_end_time.Subtract(t_now).GetMilliseconds()/1000} seconds")
+                    else:
+                        self.lbl_sco_status.SetLabelText(f"SCO ready")
+            else:
+                self.last_sco_state = True
+                self.lbl_sco_status.SetLabelText(f"SCO ⚠️ active ⚠️")
+
