@@ -125,12 +125,12 @@ class FuelGauge(wx.Panel):
         )
 
     def _get_res_bar_rect(self, rect):
-        padding = 6
+        padding = 8
         top_offset = 0
         bottom_offset = 0
         if self._show_scale:
-            top_offset = -4  # space for top labels
-            bottom_offset = -4  # for bottom labels
+            top_offset = -6  # space for top labels
+            bottom_offset = -6 # for bottom labels
         return wx.Rect(
             rect.x + padding,
             rect.y + padding + top_offset,
