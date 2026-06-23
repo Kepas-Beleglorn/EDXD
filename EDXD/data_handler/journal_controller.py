@@ -51,9 +51,15 @@ class JournalController(PausableThread, threading.Thread):
 
     def get_parent_star_ids(self, body_name: str, body_parents: List[Dict[str, int]]) -> List[Dict[str, int]]:
         parent_stars: List[Dict[str, int]] = body_parents
-        # ToDo: #221 - Get parent stars for moons, too
-        # is it a planet orbiting one or more stars?
-        if not body_name.split(" ")[-1].isdigit():
+        system_name = self.m.system_name
+        body_name_without_system = body_name.removeprefix(system_name).strip()
+
+        # If body name is empty after removing the system name from it, we are in a single star system. So nothing to do here
+        if len(body_name_without_system) == 0:
+            return parent_stars
+
+        # If body has only one part (e.g. "A", not "A 1" or A 1 a" and so on) it is a star itself
+        if len(body_name_without_system.split(" ")) == 1:
             return parent_stars
 
         # does the planet already have Stars listed as parents?
@@ -61,8 +67,7 @@ class JournalController(PausableThread, threading.Thread):
             if list(body_parent)[0] == "Star":
                 return parent_stars
 
-        body_name_star_hint = body_name.split(" ")[-2]
-        system_name = self.m.system_name
+        body_name_star_hint = body_name_without_system.split(" ")[0]
 
         for i in range(0, len(body_name_star_hint), 1):
             star_name = system_name + " " + body_name_star_hint[i]
@@ -156,7 +161,7 @@ class JournalController(PausableThread, threading.Thread):
         #141: don't load system data of FSDTarget, if targeted system has been visited before.
         #137: reset_system no longer uses <evt.get("Name")>, as this NEVER holds the systems name
         if etype != "FSDTarget":
-            systemaddress = evt.get("SystemAddress")
+            systemaddress = int(evt.get("SystemAddress"))
             total_bodies = None
             if systemaddress is not None:
                 self.m.total_bodies = None
@@ -192,33 +197,33 @@ class JournalController(PausableThread, threading.Thread):
             self.m.total_bodies = evt.get("Count")
             total_bodies = self.m.total_bodies
         # initialize all parameters for update_body
-        body_id         = None
-        body_name       = None
-        body_type       = None
-        is_star         = None
-        radius          = None
-        scoopable       = None
-        has_rings       = None
-        distance        = None
-        landable        = None
-        g_force         = None
-        biosignals      = None
-        geosignals      = None
-        mapped          = None
-        geo_complete    = None
-        geo_scanned     = None
-        bio_complete    = None
-        bio_scanned     = None
-        atmosphere      = None
-        mean_temp       = None
-        luminosity      = None
-        raw_luminosity  = None
-        volcanism       = None
-        present_life    = None
-        parent_distance = None
-        pressure        = None
+        body_id                 = None
+        body_name               = None
+        body_type               = None
+        is_star                 = None
+        radius                  = None
+        scoopable               = None
+        has_rings               = None
+        distance                = None
+        landable                = None
+        g_force                 = None
+        biosignals              = None
+        geosignals              = None
+        mapped                  = None
+        geo_complete            = None
+        geo_scanned             = None
+        bio_complete            = None
+        bio_scanned             = None
+        atmosphere              = None
+        mean_temp               = None
+        luminosity              = None
+        raw_luminosity          = None
+        volcanism               = None
+        present_life            = None
+        parent_distance         = None
+        pressure                = None
 
-        materials       = {}
+        materials               = {}
 
         parents:        List[Dict[str, int]]    = []
         bio_found:      Dict[str, Genus]        = {}

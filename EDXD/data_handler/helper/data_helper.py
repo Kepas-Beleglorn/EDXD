@@ -6,8 +6,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-#from EDXD.data_handler.model import Body
-
 from EDXD.data_handler.vessel_status import ShipStatus
 from EDXD.globals import log_context, logging
 

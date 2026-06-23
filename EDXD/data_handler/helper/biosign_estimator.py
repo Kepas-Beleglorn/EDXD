@@ -1,3 +1,5 @@
+import EDXD.data_handler.helper.data_helper as dh
+
 from dataclasses import dataclass
 from typing import List, Optional, Dict, Any
 from EDXD.data_handler.helper.system_params import (
@@ -10,8 +12,9 @@ from EDXD.data_handler.helper.bio_helper import (
     get_scan_range_for_species
 )
 
-import EDXD.data_handler.helper.data_helper as dh
-#from EDXD.data_handler.model import Body
+from EDXD.data_handler.model import Body
+from EDXD.globals import BODY_ID_PREFIX
+bip = BODY_ID_PREFIX
 
 STR_LIST_NONE = {None, "", "None", "none"}
 
@@ -22,7 +25,7 @@ class Star:
     star_luminosity_enum: StarLuminosity
 
 
-def estimate_system_biosigns(model_bodies: Dict[str, Any]) -> Dict[str, List[Dict]]:
+def estimate_system_biosigns(model_bodies: Dict[str, Body]) -> Dict[str, List[Dict]]:
     results = {}
 
     # 1. System Flags (Same as before)
@@ -36,38 +39,40 @@ def estimate_system_biosigns(model_bodies: Dict[str, Any]) -> Dict[str, List[Dic
 
     in_nebula = False
 
-    for body_id, body in model_bodies.items():
-        if not getattr(body, 'landable', False):
+    for body_id in model_bodies:
+        body: Body = model_bodies[body_id]
+        if not body.landable:
             continue
 
-        if not getattr(body, 'biosignals', None):
+        if not body.biosignals:
             continue
 
-        # TODO: #221 get current body's parent star(s)
         body_parent_stars: Dict[int, Star] = {}
-        for parent_item in getattr(body, 'parents', {}):
+        for parent_item in body.parents:
             if list(parent_item.keys())[0] == "Star":
                 try:
                     body_parent_stars[list(parent_item.values())[0]] = potential_parent_stars[list(parent_item.values())[0]]
-                except KeyError:
-                    print(f"Missing parent star for {body_id}: {parent_item}")
+                except KeyError as ke:
+                    print(f"KeyError: key -> {ke} -> Missing parent star for {body.body_name}[{body_id}]: {parent_item}")
+
 
         # 2. Map Body Data
         atm_raw = _safe_get_atmosphere_type(body.atmosphere)
         pt_raw = body.body_type if isinstance(body.body_type, str) else str(body.body_type)
         pt_enum = _safe_get_enum(pt_raw, PlanetType, PlanetType.ROCKY)
-        volc_raw = getattr(body, 'volcanism', None) or "None"
+        volc_raw = body.volcanism or "None"
 
-        gravity = getattr(body, 'g_force', 0.0)
-        mean_temp = getattr(body, 'mean_temp', 0.0)
-        distance_from_parent_star = getattr(body, 'parent_distance', None)
+        gravity = body.g_force
+        mean_temp = body.mean_temp
+        distance_from_parent_star = _get_distance_to_parent_star(model_bodies, body_id)
+        #distance_from_parent_star = getattr(body, 'parent_distance', None)
         distance_ls = dh.km_to_ls(distance_from_parent_star)
-        body_name = getattr(body, 'body_name', body_id)
-        pressure_atm = dh.pressure_as_atm_from_pascals(getattr(body, 'pressure', 0.0))
-        present_signal_count = getattr(body, 'biosignals', 0)
+        body_name = body.body_name
+        pressure_atm = dh.pressure_as_atm_from_pascals(body.pressure)
+        present_signal_count = body.biosignals
 
         # 3. Check DSS & Codex Data
-        bio_found_data = getattr(body, 'bio_found', {})
+        bio_found_data = body.bio_found
 
         scanned_genus_localised = set()
         scanned_genus_species_localised = set()
@@ -201,30 +206,30 @@ def estimate_system_biosigns(model_bodies: Dict[str, Any]) -> Dict[str, List[Dic
                     "confirmed_by_dss": scanned_genus_localised,  # True if only genus known
                     "confirmed_by_codex": species_name in scanned_genus_localised,  # True if exact species known
                     "variant_color": confirmed_variants.get(species_name),  # e.g. "Green"
-                    "dss_complete": getattr(body, 'bio_complete', False)
+                    "dss_complete": body.bio_complete
                 })
 
     return results
 
-def _get_system_stars(model_bodies: Dict[str, Any]) -> Dict[int, Star]:
+def _get_system_stars(model_bodies: Dict[str, Body]) -> Dict[int, Star]:
     parent_stars: Dict[int, Star] = {}
-    for b in model_bodies.values():
-        b_type = b.body_type if isinstance(b.body_type, str) else str(b.body_type)
+    for body_id in model_bodies:
+        body: Body = model_bodies[body_id]
+        b_type = body.body_type if isinstance(body.body_type, str) else str(body.body_type)
         if b_type == "Earthlike body": system_has_earth_like = True
         if b_type == "Ammonia world": system_has_ammonia_world = True
         if b_type == "Water world": system_has_water_giant = True
         if "water based life" in b_type.lower(): system_has_gas_giant_with_water_life = True
         if "ammonia based life" in b_type.lower(): system_has_gas_giant_with_ammonia_life = True
 
-        is_star = b.is_star
-        if is_star:
-            star_id : int = int(getattr(b, 'body_id', None).split("_")[1])
+        if body.is_star:
+            star_id : int = int(body.body_id.split("_")[1])
             star_luminosity_enum = None
-            s_type = b.body_type
+            s_type = body.body_type
             star_class_enum = _safe_get_enum(s_type, StarClass, None)
             if star_class_enum is None and "_" in s_type:
                 star_class_enum = _safe_get_enum(s_type.split("_")[0], StarClass, None)
-            lum_raw = getattr(b, 'luminosity', None) or getattr(b, 'raw_luminosity', None)
+            lum_raw = body.luminosity or body.raw_luminosity
             if lum_raw:
                 star_luminosity_enum = _safe_get_enum(dh.get_clean_luminosity(lum_raw), StarLuminosity, None)
 
@@ -232,6 +237,32 @@ def _get_system_stars(model_bodies: Dict[str, Any]) -> Dict[int, Star]:
             parent_stars[star_id] = parent_star
 
     return parent_stars
+
+def _get_distance_to_parent_star(model_bodies: Dict[str, Body], body_id: str) -> float:
+    while True:
+        try:
+            body : Body = model_bodies[body_id]
+        except KeyError as ke:
+            print(f"KeyError: key not found -> {ke} in model_bodies (first item in system: {model_bodies[list(model_bodies)[0]].body_name})")
+            print("If this message occurs only once for that system, it's due to a race condition (system scan not yet complete)")
+            parent_star_distance = 0.0
+            break
+
+        if len(body.parents) == 0:
+            parent_star_distance = 0.0
+            break
+
+        is_last_parent_before_star = (not any("Planet" in parent for parent in body.parents)) and any("Star" in parent for parent in body.parents)
+        if is_last_parent_before_star:
+            parent_star_distance = body.parent_distance
+            break
+
+        for parent in body.parents:
+            if list(parent)[0] == "Planet":
+                body_id = bip + str(list(parent.values())[0])
+                break
+
+    return parent_star_distance
 
 # ... [Keep _safe_get_atmosphere_type, _safe_get_enum, calculate_probability, estimate_biosigns from previous steps] ...
 def _safe_get_atmosphere_type(body_atmosphere: Any) -> str:
