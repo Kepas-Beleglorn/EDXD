@@ -127,7 +127,8 @@ def estimate_system_biosigns(model_bodies: Dict[str, Body]) -> Dict[str, List[Di
             # 2. Discard all other candidates of the same genus.
             for sp in potential_species:
                 if any(sp.startswith(p) for p in scanned_genus_species_localised):
-                    final_species.append(sp)
+                    if sp not in final_species:
+                        final_species.append(sp)
 
         if scanned_genus_localised:
             # DSS PHASE (Genus known, species unknown): Filter by Genus Prefix (as before)
@@ -213,8 +214,36 @@ def estimate_system_biosigns(model_bodies: Dict[str, Body]) -> Dict[str, List[Di
                     "variant_color": confirmed_variants.get(species_name),  # e.g. "Green"
                     "dss_complete": body.bio_complete
                 })
+            results[body_id] = _remove_duplicates(results[body_id])
 
     return results
+
+
+def _remove_duplicates(data_list):
+    seen = set()
+    unique_list = []
+
+    for item in data_list:
+        # Create a hashable representation of the dictionary
+        # We must convert any inner 'set' values to 'frozenset' or 'tuple' first
+        hashable_items = []
+        for k, v in item.items():
+            if isinstance(v, set):
+                # Convert set to frozenset so it can be hashed
+                hashable_items.append((k, frozenset(v)))
+            elif isinstance(v, list):
+                # Convert list to tuple (lists are also unhashable)
+                hashable_items.append((k, tuple(v)))
+            else:
+                hashable_items.append((k, v))
+
+        item_frozen = frozenset(hashable_items)
+
+        if item_frozen not in seen:
+            seen.add(item_frozen)
+            unique_list.append(item)
+
+    return unique_list
 
 def _get_system_stars(model_bodies: Dict[str, Body]) -> Dict[int, Star]:
     parent_stars: Dict[int, Star] = {}
