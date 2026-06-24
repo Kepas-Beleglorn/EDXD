@@ -1,4 +1,5 @@
 import inspect
+import re
 from typing import Dict, Callable, Optional
 
 import wx
@@ -319,27 +320,36 @@ class BodiesTable(gridlib.Grid):
         if not self.sort_col:
             return
 
-        # Sort by the visible column (self.sort_col) using the raw value
+        # Helper function for natural sorting
+        def natural_sort_key(text):
+            if text is None:
+                return ""
+            # Split string into parts of digits and non-digits
+            # Convert digit parts to integers, keep text parts as lower-case strings
+            return [int(c) if c.isdigit() else c.lower() for c in re.split(r'(\d+)', str(text))]
+
         def sort_key(sort_row):
             val = sort_row.get(self.sort_col, ("", None))
             raw = val[1]
+
             if raw is None:
                 if self.sort_col in RAW_MATS:
                     return -1.0
                 return ""
-            return raw
+
+            # Apply natural sorting logic
+            return natural_sort_key(raw)
 
         sorted_rows = sorted(self._rows_data, key=sort_key, reverse=self.sort_reverse)
+
         for r, row in enumerate(sorted_rows):
             for c, colname in enumerate(self._display_cols):
-                # todo: remove try... col handling needs to be fixed
                 try:
                     self.SetCellValue(r, c, row.get(colname, ("", ""))[0])
                 except Exception as e:
                     log_context(level=logging.ERROR, frame=inspect.currentframe(), e=e)
                     logging.error(f"Failed to set value to {colname}(row[{r}]:col[{c}])")
 
-        # colorise G-force
         self._set_g_force_color()
 
     def _prepare_columns(self, display_cols):
