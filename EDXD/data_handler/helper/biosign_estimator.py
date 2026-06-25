@@ -745,7 +745,7 @@ def score_variant(species_name: str, mean_temp_k: float, pressure_atm: float, gr
             target = val
             break
 
-    # Safety fallback if species name is unrecognized
+    # Safety fallback if species name is unrecognised
     if target is None:
         return 0.0
 

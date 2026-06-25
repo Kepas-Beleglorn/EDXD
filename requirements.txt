@@ -1,4 +1,4 @@
-tomli
+tomli>=2.4.1
 watchdog>=3.0.0
 wxPython~=4.2.4
-filelock
+filelock>=3.29.4

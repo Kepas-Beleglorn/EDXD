@@ -9,8 +9,8 @@ requires-python = ">=3.9"
 dependencies = [
     "watchdog>=3.0.0",
     "wxPython~=4.2.4",
-    "tomli",
-    "filelock"
+    "tomli>=2.4.1",
+    "filelock>=3.29.4"
 ]
 
 [project.scripts]
