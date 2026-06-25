@@ -1,3 +1,5 @@
+import sys
+
 import EDXD.data_handler.helper.data_helper as dh
 
 from dataclasses import dataclass
@@ -53,7 +55,8 @@ def estimate_system_biosigns(model_bodies: Dict[str, Body]) -> Dict[str, List[Di
                 try:
                     body_parent_stars[list(parent_item.values())[0]] = potential_parent_stars[list(parent_item.values())[0]]
                 except KeyError as ke:
-                    print(f"KeyError: key -> {ke} -> Missing parent star for {body.body_name}[{body_id}]: {parent_item}")
+                    if sys.gettrace():
+                        print(f"KeyError: key -> {ke} -> Missing parent star for {body.body_name}[{body_id}]: {parent_item}")
 
 
         # 2. Map Body Data
@@ -115,7 +118,8 @@ def estimate_system_biosigns(model_bodies: Dict[str, Body]) -> Dict[str, List[Di
                 parent_stars=body_parent_stars,
             )
         except Exception as e:
-            print(f"Error estimating {body_id}: {e}")
+            if sys.gettrace():
+                print(f"Error estimating {body_id}: {e}")
             potential_species = []
 
         # 5. Filter & Refine based on Codex Data
@@ -277,8 +281,9 @@ def _get_distance_to_parent_star(model_bodies: Dict[str, Body], body_id: str) ->
         try:
             body : Body = model_bodies[body_id]
         except KeyError as ke:
-            print(f"KeyError: key not found -> {ke} in model_bodies (first item in system: {model_bodies[list(model_bodies)[0]].body_name})")
-            print("If this message occurs only once for that system, it's due to a race condition (system scan not yet complete)")
+            if sys.gettrace():
+                print(f"KeyError: key not found -> {ke} in model_bodies (first item in system: {model_bodies[list(model_bodies)[0]].body_name})")
+                print("If this message occurs only once for that system, it's due to a race condition (system scan not yet complete)")
             parent_star_distance = 0.0
             break
 
@@ -313,7 +318,8 @@ def _safe_get_enum(value: Optional[str], enum_class: Any, default: Any) -> Any:
     try:
         return enum_class(value)
     except ValueError as e:
-        print(f"Error: Enum value not found {enum_class}({value}): {e}")
+        if sys.gettrace():
+            print(f"Error: Enum value not found {enum_class}({value}): {e}")
         return default
 
 
