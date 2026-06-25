@@ -190,6 +190,9 @@ jobs:
             git push origin "$TAG"
           fi
 
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
       - name: Write release notes
         id: relnotes
         run: |
@@ -204,10 +207,6 @@ jobs:
 
       - name: List downloaded files
         run: ls -R dist
-
-      - name: Install jq
-        run: sudo apt-get install -y jq
-        if: runner.os == 'Linux'
 
       - name: Create GitHub Release via API
         env:
