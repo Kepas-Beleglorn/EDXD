@@ -140,24 +140,25 @@ def estimate_system_biosigns(model_bodies: Dict[str, Body]) -> Dict[str, List[Di
             for item in scanned_genus_localised:
                 is_confirmed = False
                 for confirmed in confirmed_species_names:
-                    if item in confirmed:
+                    if item is not None and item in confirmed:
                         is_confirmed = True
                         break
                 if not is_confirmed:
                     allowed_prefixes.add(item)
             for sp in potential_species:
                 for p in allowed_prefixes:
-                    matches = p in sp
-                    # Special Anemone/Clypeus handling
-                    if "Anemone" in sp:
-                        matches = True
-                    if "Sinuous Tubers" in sp:
-                        matches = True
-                    if "Clypeus" in allowed_prefixes:
-                        matches = True
+                    if p is not None:
+                        matches = p in sp
+                        # Special Anemone/Clypeus handling
+                        if "Anemone" in sp:
+                            matches = True
+                        if "Sinuous Tubers" in sp:
+                            matches = True
+                        if "Clypeus" in allowed_prefixes:
+                            matches = True
 
-                    if matches and sp not in final_species:
-                        final_species.append(sp)
+                        if matches and sp not in final_species:
+                            final_species.append(sp)
 
         else:
             # PRE-SCAN PHASE: Keep all physics candidates

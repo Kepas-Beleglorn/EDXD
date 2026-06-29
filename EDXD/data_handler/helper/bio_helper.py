@@ -352,6 +352,9 @@ def get_genus_value(species_localised: str) -> int:
         "Osseus Pumice": 3156300,
         "Osseus Spiralis": 2404700,
 
+        # Radicoida
+        "Radicoida Unica": 0,
+
         # Recepta
         "Recepta Conditivus": 14313700,
         "Recepta Deltahedronix": 16202800,
