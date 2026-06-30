@@ -224,7 +224,8 @@ ICONS = {
     "col_first_footfalled"  : "🕺🏽",
     "atmosphere_present"    : "☁️",
     "has_rings"             : "🪐",
-    "ring_hotspots"         : "⛏️"
+    "ring_hotspots"         : "⛏️",
+    "radicoida"             : "🫚"
 }
 
 # -----------------------------------------------------------------------

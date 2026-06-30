@@ -218,6 +218,176 @@ SPECIES_TO_CODEX = {
     "Thargoid Coral Root": "$Codex_Ent_Thargoid_Coral_Name;",
 }
 
+FULL_SPECIES_VALUE_MAPPING = {
+    # Aleoida
+    "Aleoida Arcus": 7252500,
+    "Aleoida Coronamus": 6284600,
+    "Aleoida Gravis": 12934900,
+    "Aleoida Laminiae": 3385200,
+    "Aleoida Spica": 3385200,
+
+    # Amphora Plant
+    "Amphora Plant": 3626400,
+
+    # Anemone
+    "Blatteum Bioluminescent Anemone": 1499900,
+    "Croceum Anemone": 3399800,
+    "Luteolum Anemone": 1499900,
+    "Prasinum Bioluminescent Anemone": 1499900,
+    "Puniceum Anemone": 1499900,
+    "Roseum Anemone": 1499900,
+    "Roseum Bioluminescent Anemone": 1499900,
+    "Rubeum Bioluminescent Anemone": 1499900,
+
+    # Bacterium
+    "Bacterium Nebulus": 9116600,
+    "Bacterium Acies": 1000000,
+    "Bacterium Omentum": 4638900,
+    "Bacterium Scopulum": 8633800,
+    "Bacterium Verrata": 3897000,
+    "Bacterium Bullaris": 1152500,
+    "Bacterium Vesicula": 1000000,
+    "Bacterium Informem": 8418000,
+    "Bacterium Volu": 7774700,
+    "Bacterium Alcyoneum": 1658500,
+    "Bacterium Aurasus": 1000000,
+    "Bacterium Cerbrus": 1689800,
+    "Bacterium Tela": 1949000,
+
+    # Bark Mound
+    "Bark Mound": 1471900,
+
+    # Brain Tree
+    "Brain Tree Aureum": 3565100,
+    "Brain Tree Gypseeum": 3565100,
+    "Brain Tree Lindigoticum": 3565100,
+    "Brain Tree Lividum": 1593700,
+    "Brain Tree Ostrinum": 3565100,
+    "Brain Tree Puniceum": 3565100,
+    "Brain Tree Roseum": 1593700,
+    "Brain Tree Viride": 1593700,
+
+    # Cactoida
+    "Cactoida Cortexum": 3667600,
+    "Cactoida Lapis": 2483600,
+    "Cactoida Peperatis": 2483600,
+    "Cactoida Pullulanta": 3667600,
+    "Cactoida Vermis": 16202800,
+
+    # Clypeus
+    "Clypeus Lacrimam": 8418000,
+    "Clypeus Margaritus": 11873200,
+    "Clypeus Speculumi": 16202800,
+
+    # Concha
+    "Concha Aureolas": 7774700,
+    "Concha Biconcavis": 16777215,
+    "Concha Labiata": 2352400,
+    "Concha Renibus": 4572400,
+
+    # Crystalline Shard
+    "Crystalline Shards": 3626400,
+
+    # Electricae
+    "Electricae Pluma": 6284600,
+    "Electricae Radialem": 6284600,
+
+    # Fonticulua
+    "Fonticulua Campestris": 1000000,
+    "Fonticulua Digitos": 1804100,
+    "Fonticulua Fluctus": 16777215,
+    "Fonticulua Lapida": 3111000,
+    "Fonticulua Segmentatus": 19010800,
+    "Fonticulua Upupam": 5727600,
+
+    # Frutexa
+    "Frutexa Acus": 7774700,
+    "Frutexa Collum": 1639800,
+    "Frutexa Fera": 1632500,
+    "Frutexa Flabellum": 1808900,
+    "Frutexa Flammasis": 10326000,
+    "Frutexa Metallicum": 1632500,
+    "Frutexa Sponsae": 5988000,
+
+    # Fumerola
+    "Fumerola Aquatis": 6284600,
+    "Fumerola Carbosis": 6284600,
+    "Fumerola Extremus": 16202800,
+    "Fumerola Nitris": 7500900,
+
+    # Fungoida
+    "Fungoida Bullarum": 3703200,
+    "Fungoida Gelata": 3330300,
+    "Fungoida Setisis": 1670100,
+    "Fungoida Stabitis": 2680300,
+
+    # Osseus
+    "Osseus Cornibus": 1483000,
+    "Osseus Discus": 12934900,
+    "Osseus Fractus": 4027800,
+    "Osseus Pellebantus": 9739000,
+    "Osseus Pumice": 3156300,
+    "Osseus Spiralis": 2404700,
+
+    # Radicoida
+    "Radicoida Unica": 0,
+
+    # Recepta
+    "Recepta Conditivus": 14313700,
+    "Recepta Deltahedronix": 16202800,
+    "Recepta Umbrux": 12934900,
+
+    # Sinuous Tuber
+    "Albidum Sinuous Tubers": 3425600,
+    "Blatteum Sinuous Tubers": 1514500,
+    "Caeruleum Sinuous Tubers": 1514500,
+    "Lindigoticum Sinuous Tubers": 1514500,
+    "Prasinum Sinuous Tubers": 1514500,
+    "Roseum Sinuous Tubers": 1514500,
+    "Violaceum Sinuous Tubers": 1514500,
+    "Viride Sinuous Tubers": 1514500,
+
+    # Stratum
+    "Stratum Araneamus": 2448900,
+    "Stratum Cucumisis": 16202800,
+    "Stratum Excutitus": 2448900,
+    "Stratum Frigus": 2637500,
+    "Stratum Laminamus": 2788300,
+    "Stratum Limaxus": 1362000,
+    "Stratum Paleas": 1362000,
+    "Stratum Tectonicas": 19010800,
+
+    # Tubas
+    "Tubus Cavas": 11873200,
+    "Tubus Compagibus": 7774700,
+    "Tubus Conifer": 2415500,
+    "Tubus Rosarium": 2637500,
+    "Tubus Sororibus": 5727600,
+
+    # Tussock
+    "Tussock Albata": 3252500,
+    "Tussock Capillum": 7025800,
+    "Tussock Caputus": 3472400,
+    "Tussock Catena": 1766600,
+    "Tussock Cultro": 1766600,
+    "Tussock Divisa": 1766600,
+    "Tussock Ignis": 1849000,
+    "Tussock Pennata": 5853800,
+    "Tussock Pennatis": 1000000,
+    "Tussock Propagito": 1000000,
+    "Tussock Serrati": 4447100,
+    "Tussock Stigmasis": 19010800,
+    "Tussock Triticum": 7774700,
+    "Tussock Ventusa": 3277700,
+    "Tussock Virgam": 14313700,
+
+    # Thargoid
+    "Thargoid Spires": 2247100,
+    "Thargoid Mega Barnacles": 2313500,
+    "Thargoid Coral Tree": 1896800,
+    "Thargoid Coral Root": 1924600,
+}
+
 # ---------------------------------------------------------------------------
 # NEW: Wrapper Function for Estimator
 # ---------------------------------------------------------------------------
@@ -241,173 +411,28 @@ def get_genus_value(species_localised: str) -> int:
     Returns:
         int: The base scan value for the species.
     """
-    full_species_value_mapping = {
-        # Aleoida
-        "Aleoida Arcus": 7252500,
-        "Aleoida Coronamus": 6284600,
-        "Aleoida Gravis": 12934900,
-        "Aleoida Laminiae": 3385200,
-        "Aleoida Spica": 3385200,
+    return FULL_SPECIES_VALUE_MAPPING.get(species_localised, 0)
 
-        # Amphora Plant
-        "Amphora Plant": 3626400,
+def get_genus_value_range(species_localised: str) -> tuple[int, int]:
+    min: int = 0
+    max: int = 0
 
-        # Anemone
-        "Blatteum Bioluminescent Anemone": 1499900,
-        "Croceum Anemone": 3399800,
-        "Luteolum Anemone": 1499900,
-        "Prasinum Bioluminescent Anemone": 1499900,
-        "Puniceum Anemone": 1499900,
-        "Roseum Anemone": 1499900,
-        "Roseum Bioluminescent Anemone": 1499900,
-        "Rubeum Bioluminescent Anemone": 1499900,
 
-        # Bacterium
-        "Bacterium Nebulus": 9116600,
-        "Bacterium Acies": 1000000,
-        "Bacterium Omentum": 4638900,
-        "Bacterium Scopulum": 8633800,
-        "Bacterium Verrata": 3897000,
-        "Bacterium Bullaris": 1152500,
-        "Bacterium Vesicula": 1000000,
-        "Bacterium Informem": 8418000,
-        "Bacterium Volu": 7774700,
-        "Bacterium Alcyoneum": 1658500,
-        "Bacterium Aurasus": 1000000,
-        "Bacterium Cerbrus": 1689800,
-        "Bacterium Tela": 1949000,
+    for item in FULL_SPECIES_VALUE_MAPPING.keys():
+        temp: int = 0
+        if item.startswith(species_localised):
+            temp = int(FULL_SPECIES_VALUE_MAPPING.get(item, 0))
 
-        # Bark Mound
-        "Bark Mound": 1471900,
+        if temp > 0:
+            if min == 0:
+                min = temp
+            if max == 0:
+                max = temp
+            if min > temp:
+                min = temp
+            if max < temp:
+                max = temp
 
-        # Brain Tree
-        "Brain Tree Aureum": 3565100,
-        "Brain Tree Gypseeum": 3565100,
-        "Brain Tree Lindigoticum": 3565100,
-        "Brain Tree Lividum": 1593700,
-        "Brain Tree Ostrinum": 3565100,
-        "Brain Tree Puniceum": 3565100,
-        "Brain Tree Roseum": 1593700,
-        "Brain Tree Viride": 1593700,
+    result: tuple[int, int] = (min, max)
 
-        # Cactoida
-        "Cactoida Cortexum": 3667600,
-        "Cactoida Lapis": 2483600,
-        "Cactoida Peperatis": 2483600,
-        "Cactoida Pullulanta": 3667600,
-        "Cactoida Vermis": 16202800,
-
-        # Clypeus
-        "Clypeus Lacrimam": 8418000,
-        "Clypeus Margaritus": 11873200,
-        "Clypeus Speculumi": 16202800,
-
-        # Concha
-        "Concha Aureolas": 7774700,
-        "Concha Biconcavis": 16777215,
-        "Concha Labiata": 2352400,
-        "Concha Renibus": 4572400,
-
-        # Crystalline Shard
-        "Crystalline Shards": 3626400,
-
-        # Electricae
-        "Electricae Pluma": 6284600,
-        "Electricae Radialem": 6284600,
-
-        # Fonticulua
-        "Fonticulua Campestris": 1000000,
-        "Fonticulua Digitos": 1804100,
-        "Fonticulua Fluctus": 16777215,
-        "Fonticulua Lapida": 3111000,
-        "Fonticulua Segmentatus": 19010800,
-        "Fonticulua Upupam": 5727600,
-
-        # Frutexa
-        "Frutexa Acus": 7774700,
-        "Frutexa Collum": 1639800,
-        "Frutexa Fera": 1632500,
-        "Frutexa Flabellum": 1808900,
-        "Frutexa Flammasis": 10326000,
-        "Frutexa Metallicum": 1632500,
-        "Frutexa Sponsae": 5988000,
-
-        # Fumerola
-        "Fumerola Aquatis": 6284600,
-        "Fumerola Carbosis": 6284600,
-        "Fumerola Extremus": 16202800,
-        "Fumerola Nitris": 7500900,
-
-        # Fungoida
-        "Fungoida Bullarum": 3703200,
-        "Fungoida Gelata": 3330300,
-        "Fungoida Setisis": 1670100,
-        "Fungoida Stabitis": 2680300,
-
-        # Osseus
-        "Osseus Cornibus": 1483000,
-        "Osseus Discus": 12934900,
-        "Osseus Fractus": 4027800,
-        "Osseus Pellebantus": 9739000,
-        "Osseus Pumice": 3156300,
-        "Osseus Spiralis": 2404700,
-
-        # Radicoida
-        "Radicoida Unica": 0,
-
-        # Recepta
-        "Recepta Conditivus": 14313700,
-        "Recepta Deltahedronix": 16202800,
-        "Recepta Umbrux": 12934900,
-
-        # Sinuous Tuber
-        "Albidum Sinuous Tubers": 3425600,
-        "Blatteum Sinuous Tubers": 1514500,
-        "Caeruleum Sinuous Tubers": 1514500,
-        "Lindigoticum Sinuous Tubers": 1514500,
-        "Prasinum Sinuous Tubers": 1514500,
-        "Roseum Sinuous Tubers": 1514500,
-        "Violaceum Sinuous Tubers": 1514500,
-        "Viride Sinuous Tubers": 1514500,
-
-        # Stratum
-        "Stratum Araneamus": 2448900,
-        "Stratum Cucumisis": 16202800,
-        "Stratum Excutitus": 2448900,
-        "Stratum Frigus": 2637500,
-        "Stratum Laminamus": 2788300,
-        "Stratum Limaxus": 1362000,
-        "Stratum Paleas": 1362000,
-        "Stratum Tectonicas": 19010800,
-
-        # Tubas
-        "Tubus Cavas": 11873200,
-        "Tubus Compagibus": 7774700,
-        "Tubus Conifer": 2415500,
-        "Tubus Rosarium": 2637500,
-        "Tubus Sororibus": 5727600,
-
-        # Tussock
-        "Tussock Albata": 3252500,
-        "Tussock Capillum": 7025800,
-        "Tussock Caputus": 3472400,
-        "Tussock Catena": 1766600,
-        "Tussock Cultro": 1766600,
-        "Tussock Divisa": 1766600,
-        "Tussock Ignis": 1849000,
-        "Tussock Pennata": 5853800,
-        "Tussock Pennatis": 1000000,
-        "Tussock Propagito": 1000000,
-        "Tussock Serrati": 4447100,
-        "Tussock Stigmasis": 19010800,
-        "Tussock Triticum": 7774700,
-        "Tussock Ventusa": 3277700,
-        "Tussock Virgam": 14313700,
-
-        # Thargoid
-        "Thargoid Spires": 2247100,
-        "Thargoid Mega Barnacles": 2313500,
-        "Thargoid Coral Tree": 1896800,
-        "Thargoid Coral Root": 1924600,
-    }
-    return full_species_value_mapping.get(species_localised, 0)
+    return result

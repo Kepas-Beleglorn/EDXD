@@ -2,7 +2,7 @@
 let
   my-python-pkg = python.pkgs.buildPythonPackage rec {
     pname = "ed-eXploration-dashboard";
-    version = "v0.9.0.1";
+    version = "v0.9.1.0";
 
     src = pkgs.fetchFromGitHub {
       owner = "Kepas-Beleglorn";

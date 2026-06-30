@@ -11,6 +11,7 @@ from EDXD.gui.helper.gui_handler import init_widget
 from EDXD.gui.helper.theme_handler import get_theme
 from EDXD.gui.helper.window_properties import WindowProperties
 from EDXD.gui.helper.collapsible_panel import CollapsiblePanel
+from EDXD.data_handler.helper.bio_helper import get_genus_value_range
 import EDXD.data_handler.helper.data_helper as dh
 
 TITLE = "Biosignal prediction"
@@ -93,15 +94,26 @@ class SignalPrediction(DynamicDialog):
 
         for item in body_data:
             genus_name: str = item["name"]
+            if genus_name == "Radicoida Unica":
+                continue
             genus_variant: str = item["variant_color"] or ""
             if genus_variant == "Unknown": genus_variant = ""
             genus_probability: float = item["probability"]
             genus_value: int = item["base_value"]
+
+            genus_value_string = ""
+            if genus_name != "Radicoida Unica" and genus_value == 0:
+                min_max: tuple[int, int] = get_genus_value_range(genus_name)
+                genus_value_string = f"  {min_max[0]:,} Cr ~ {min_max[1]:,} Cr"
+            else:
+                genus_value_string = f"  {genus_value:,} Cr"
+
             prediction_panel.add_table_item(f"  {genus_name}")
             prediction_panel.add_table_item(f" {genus_variant}")
             self._set_probability_colour(prediction_panel.add_table_item(f"  {dh.format_probability(genus_probability)}", align=wx.ALIGN_RIGHT), genus_probability)
-            prediction_panel.add_table_item(f"  {genus_value:,} Cr", align=wx.ALIGN_RIGHT)
+            prediction_panel.add_table_item(f"  {genus_value_string}", align=wx.ALIGN_RIGHT)
             prediction_panel.add_table_item("")
+
 
         if prediction_panel.IsShown():
             # Force a layout update

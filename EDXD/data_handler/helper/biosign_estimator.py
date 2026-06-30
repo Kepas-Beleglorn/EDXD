@@ -80,7 +80,14 @@ def estimate_system_biosigns(model_bodies: Dict[str, Body]) -> Dict[str, List[Di
         scanned_genus_localised = set()
         scanned_genus_species_localised = set()
         for genus in bio_found_data.items():
-            scanned_genus_localised.add(genus[1].localised)
+            # safe handling of species. Especially relevant for Radicoida Unica
+            if genus[1].localised is not None:
+                scanned_genus_localised.add(genus[1].localised)
+            elif genus[1].species_localised is not None:
+                scanned_genus_localised.add(genus[1].species_localised)
+            elif genus[1].variant_localised is not None:
+                scanned_genus_localised.add(genus[1].variant_localised.split(" ")[0])
+
             if genus[1].species_localised is not None:
                 scanned_genus_species_localised.add(genus[1].species_localised)
             elif genus[1].variant_localised is not None:
@@ -93,7 +100,12 @@ def estimate_system_biosigns(model_bodies: Dict[str, Body]) -> Dict[str, List[Di
         if scanned_genus_localised:
             for key, data in bio_found_data.items():
                 # data is a dict: { "genusid": "...", "variant_localised": "Bacterium Cerbrus - Green", ... }
-                variant_raw = data.variant_localised
+                if data.variant_localised is not None:
+                    variant_raw = data.variant_localised
+                elif data.localised is not None:
+                    variant_raw = data.localised
+                elif data.species_localised is not None:
+                    variant_raw = data.species_localised
                 if variant_raw:
                     # Parse "Bacterium Cerbrus - Green" -> "Bacterium Cerbrus", "Green"
                     if " - " in variant_raw:
@@ -124,6 +136,9 @@ def estimate_system_biosigns(model_bodies: Dict[str, Body]) -> Dict[str, List[Di
 
         # 5. Filter & Refine based on Codex Data
         final_species = []
+
+        for item in scanned_genus_localised:
+            potential_species.append(item)
 
         if potential_species:
             # CODEX PHASE: We know exactly what is here.
