@@ -3,6 +3,7 @@ import queue
 import re
 
 import EDXD.data_handler.helper.bio_helper as bio_helper
+from EDXD.data_handler.helper.spansh import SpanshHelper
 from EDXD.data_handler.helper.pausable_thread import PausableThread
 from EDXD.data_handler.model import *
 from EDXD.data_handler.planetary_surface_positioning_system import PSPSCoordinates
@@ -22,6 +23,7 @@ class JournalController(PausableThread, threading.Thread):
         self.m = model
         self.last_event = None
         self.ship_status = None
+        self.spansh_helper = SpanshHelper()
 
     def _process_data(self):
         try:
@@ -191,8 +193,13 @@ class JournalController(PausableThread, threading.Thread):
 
         if etype == "FSSDiscoveryScan":
             if evt.get("Progress")*1 == 1:
-                self.m.total_bodies = evt.get("Count")
+                self.m.total_bodies = evt.get("BodyCount")
                 total_bodies = self.m.total_bodies
+                #ToDo: #252 - prevent multiple lookups
+                if self.m.total_bodies and self.m.total_bodies != len(self.m.bodies):
+                    if systemaddress is not None:
+                        self.spansh_helper.get_system_data(system_id=int(systemaddress))
+                        self.spansh_helper.update_system_data(self.m)
 
         if etype == "FSSAllBodiesFound":
             self.m.total_bodies = evt.get("Count")

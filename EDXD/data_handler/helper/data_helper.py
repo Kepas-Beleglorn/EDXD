@@ -166,6 +166,11 @@ def pressure_as_atm_from_pascals(pressure_pascal):
     # 1 atm = 101,325 Pascals
     return pressure_pascal / 101325.0
 
+def pressure_as_pascals_from_atm(pressure_atm):
+    # 1 atm = 101,325 Pascals
+    return pressure_atm * 101325.0
+
+
 def get_clean_luminosity(luminosity: str) -> str:
     return re.sub(r'[^A-Z]', '', luminosity)
 
