@@ -120,10 +120,10 @@ class JournalController(PausableThread, threading.Thread):
                 pass
 
             if self.m.current_vessel == VESSEL_SHIP:
-                self.m.ship_status.ship_type = evt.get("Ship") or self.ship_status.ship_type
-                self.m.ship_status.ship_id = evt.get("ShipID") or self.ship_status.ship_id
-                self.m.ship_status.ship_name = evt.get("ShipName") or self.ship_status.ship_name
-                self.m.ship_status.ship_ident = evt.get("ShipIdent") or self.ship_status.ship_ident
+                self.m.ship_status.ship_type = evt.get("Ship")
+                self.m.ship_status.ship_id = evt.get("ShipID")
+                self.m.ship_status.ship_name = evt.get("ShipName")
+                self.m.ship_status.ship_ident = evt.get("ShipIdent")
 
                 fuel_main       : float = evt.get("FuelCapacity").get("Main")
                 fuel_reserve    : float = evt.get("FuelCapacity").get("Reserve")
