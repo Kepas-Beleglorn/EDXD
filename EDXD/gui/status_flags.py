@@ -115,7 +115,7 @@ class StatusFlags(DynamicDialog):
                                 "FSD Hyperdrive Charging",
                                 "Supercruise Overcharge Active",
                                 "Supercruise Assist Active",
-                                "UNKNOWN",
+                                "NPC Crew present",
                                 "UNKNOWN",
                                 "UNKNOWN",
                                 "UNKNOWN",
