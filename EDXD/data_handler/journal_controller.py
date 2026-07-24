@@ -52,6 +52,7 @@ class JournalController(PausableThread, threading.Thread):
         genus_id = re.sub(r'_\d+_[^_]+(?=_Name;)', '_Genus', genus_id)
         return genus_id
 
+    """
     def get_parent_star_ids(self, body_name: str, body_parents: List[Dict[str, int]]) -> List[Dict[str, int]]:
         parent_stars: List[Dict[str, int]] = body_parents
         system_name = self.m.system_name
@@ -82,6 +83,50 @@ class JournalController(PausableThread, threading.Thread):
                     parent_stars.append({str("Star"): int(body_id.split("_")[-1])})
 
         return parent_stars
+    """
+
+    def get_parent_star_ids(self, current_body:  Body, body_parents: List[Dict[str, int]] = None) -> List[Dict[str, int]]:
+        parent_stars: List[Dict[str, int]] = current_body.parents
+        if body_parents:
+            for item in body_parents:
+                parent_stars.append(item)
+
+        try:
+            # does the planet already have Stars listed as parents?
+            for body_parent in parent_stars:
+                if list(body_parent.keys())[0] == "Star":
+                    return parent_stars
+        except  Exception as e:
+            print(f"ERROR: journal_controller.get_parent_star_ids[1] {current_body.body_id}/{current_body.body_name}/{current_body.body_type}/{current_body.parents}: {e}")
+
+        try:
+            for body_parent in parent_stars:
+                if list(body_parent.keys())[0] == "Planet":
+                    parent_id = "body_" + str(list(body_parent.values())[0])
+                    for body in self.m.bodies:
+                        body =  Body(body)
+                        if body.body_id == parent_id:
+                            parent_results = self.get_parent_star_ids(body, None)
+                            for item in parent_results:
+                                parent_stars.append(item)
+        except  Exception as e:
+            print(f"ERROR: journal_controller.get_parent_star_ids[2] {current_body.body_id}/{current_body.body_name}/{current_body.body_type}/{current_body.parents}: {e}")
+
+        try:
+            for body_parent in parent_stars:
+                if list(body_parent.keys())[0] == "Null":
+                    parent_id = list(body_parent.values())[0]
+                    for body in self.m.bodies:
+                        body = Body(body)
+                        if body.body_type == "Star":
+                            for star_parent in body.parents:
+                                if list(star_parent.keys())[0] == "Null" and list(star_parent.values())[0] == parent_id:
+                                    parent_stars.append({str("Star"): int(body.body_id)})
+        except  Exception as e:
+            print(f"ERROR: journal_controller.get_parent_star_ids[3] {current_body.body_id}/{current_body.body_name}/{current_body.body_type}/{current_body.parents}: {e}")
+
+        return parent_stars
+
 
     def process_event(self, evt, update_gui: bool, set_timestamp: bool = True):
         etype = evt.get("event")
@@ -201,7 +246,7 @@ class JournalController(PausableThread, threading.Thread):
                     try:
                         self.spansh_helper.update_system_data(self.m)
                     except Exception as e:
-                        print(f"journal_controller[{systemaddress}] {e}")
+                        print(f"ERROR: journal_controller[{systemaddress}] {e}")
 
         if etype == "FSSAllBodiesFound":
             self.m.total_bodies = evt.get("Count")
@@ -390,7 +435,9 @@ class JournalController(PausableThread, threading.Thread):
                     scoopable = body_type[0] in ["K", "G", "B", "F", "O", "A", "M"]
                 materials = {m["Name"]: m["Percent"] for m in evt.get("Materials", [])}
                 parents = evt.get("Parents", [])
-                parents = self.get_parent_star_ids(body_name, parents)
+                #parents = self.get_parent_star_ids(body_name, parents)
+                if body_id in self.m.bodies.keys():
+                        parents = self.get_parent_star_ids(self.m.bodies[body_id], parents)
 
                 # first analyse data during FSS
                 if evt.get("ScanType") in {"AutoScan", "Detailed"}:

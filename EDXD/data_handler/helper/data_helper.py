@@ -373,3 +373,14 @@ def has_no_data_bodies(system_data):
         if body.body_type == BODY_NO_DATA or body.body_name == BODY_NO_DATA:
             return True
     return False
+
+def unique_dict_list(data: list[dict]) -> list[dict]:
+    seen = set()
+    result = []
+    for item in data:
+        # Create a hashable signature of the dictionary
+        signature = tuple(sorted(item.items()))
+        if signature not in seen:
+            seen.add(signature)
+            result.append(item)
+    return result

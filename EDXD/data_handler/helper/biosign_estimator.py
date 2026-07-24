@@ -293,6 +293,7 @@ def _get_system_stars(model_bodies: Dict[str, Body]) -> Dict[int, Star]:
     return parent_stars
 
 def _get_distance_to_parent_star(model_bodies: Dict[str, Body], body_id: str) -> float:
+    parent_star_distance = 0.0
     while True:
         try:
             body : Body = model_bodies[body_id]
@@ -312,10 +313,24 @@ def _get_distance_to_parent_star(model_bodies: Dict[str, Body], body_id: str) ->
             parent_star_distance = body.parent_distance
             break
 
+        body_id_changed = False
         for parent in body.parents:
             if list(parent)[0] == "Planet":
                 body_id = bip + str(list(parent.values())[0])
+                body_id_changed = True
                 break
+        if body_id_changed:
+            parent_star_distance = _get_distance_to_parent_star(model_bodies, body_id)
+            break
+
+        # still nothing?
+        only_null = True
+        for parent in body.parents:
+            if list(parent)[0] != "Null":
+                only_null = False
+                break
+        if only_null:
+            break
 
     return parent_star_distance
 

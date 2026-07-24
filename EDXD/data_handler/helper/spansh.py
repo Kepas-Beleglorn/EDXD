@@ -1,11 +1,11 @@
 import json
 from calendar import error
-from typing import List
+from typing import List, Dict
 
 import requests
 
 from EDXD.data_handler.helper.json_helper import DotDict
-from EDXD.data_handler.model import Model
+from EDXD.data_handler.model import Model, Atmosphere
 import EDXD.data_handler.helper.data_helper as dh
 from EDXD.globals import BODY_NO_DATA
 
@@ -29,16 +29,59 @@ class SpanshHelper:
             # 3. Convert the ENTIRE nested structure to DotDict
             self.system_data = DotDict(data_dict.get("system"))
 
+    def get_parent_star_ids(self, current_body: DotDict) -> List[Dict[str, int]]:
+        parent_stars: List[Dict[str, int]] = current_body.parents
+
+        try:
+            # does the planet already have Stars listed as parents?
+            for body_parent in parent_stars:
+                if list(body_parent.keys())[0] == "Star":
+                    return parent_stars
+        except  Exception as e:
+            print(f"ERROR: get_parent_star_ids[1] {current_body.bodyId}/{current_body.name}/{current_body.type}/{current_body.parents}: {e}")
+
+        try:
+            for body_parent in parent_stars:
+                if list(body_parent.keys())[0] == "Planet":
+                    parent_id = list(body_parent.values())[0]
+                    for body in self.system_data.bodies:
+                        if body.bodyId == parent_id:
+                            parent_results = self.get_parent_star_ids(body)
+                            for item in parent_results:
+                                parent_stars.append(item)
+        except  Exception as e:
+            print(f"ERROR: get_parent_star_ids[2] {current_body.bodyId}/{current_body.name}/{current_body.type}/{current_body.parents}: {e}")
+
+        try:
+            for body_parent in parent_stars:
+                if list(body_parent.keys())[0] == "Null":
+                    parent_id = list(body_parent.values())[0]
+                    for body in self.system_data.bodies:
+                        if body.type == "Star":
+                            for star_parent in body.parents:
+                                if list(star_parent.keys())[0] == "Null" and list(star_parent.values())[0] == parent_id:
+                                    parent_stars.append({str("Star"): int(body.bodyId)})
+        except  Exception as e:
+            print(f"ERROR: get_parent_star_ids[3] {current_body.bodyId}/{current_body.name}/{current_body.type}/{current_body.parents}: {e}")
+
+        return parent_stars
 
     def update_system_data(self, system_model: Model):
         systemaddress: int = self.system_data.id64
         system_model.reset_system(self.system_data.name, systemaddress)
+        body_count = 0
+        if hasattr(self.system_data, "bodyCount"):
+            body_count = self.system_data.bodyCount
+        else:
+            for item in  self.system_data.bodies:
+                if item.type and item.type in {"Star", "Planet"}:
+                    body_count += 1
         system_model.update_body_count(
             systemaddress=systemaddress,
-            total_bodies=self.system_data.bodyCount
+            total_bodies=body_count
         )
         fetched_body_ids: List[str] = []
-        print(f"update_system_data[{systemaddress}] {self.system_data.name}")
+        #print(f"update_system_data[{systemaddress}] {self.system_data.name}")
         bodies: DotDict = self.system_data.bodies
         for body in bodies:
             try:
@@ -84,10 +127,15 @@ class SpanshHelper:
                         #ToDo: #255 - forge ring data
                         pass
 
-                    atmosphere = {}
-                    if hasattr(body, "atmosphereType"):
-                        #ToDo: #256 - forge atmosphere data
-                        pass
+                    atmosphere = None
+                    atmos_type  = None
+                    atmos_type_raw  = None
+                    if hasattr(body, "atmosphereComposition") and hasattr(body, "atmosphereType"):
+                        atmos_composition = body.atmosphereComposition
+                        if body.atmosphereType is not None:
+                            atmos_type = body.atmosphereType.replace(" ", "")
+                            atmos_type_raw = body.atmosphereType.lower() + " atmosphere"
+                        atmosphere = Atmosphere(type=atmos_type, composition=atmos_composition, raw=atmos_type_raw)
 
                     luminosity = None
                     raw_luminosity = None
@@ -97,8 +145,8 @@ class SpanshHelper:
 
                     parents = None
                     if hasattr(body, "parents"):
-                        #ToDo: #257 - forge parent data
-                        pass
+                        parents = self.get_parent_star_ids(body)
+                        parents = dh.unique_dict_list(parents)
 
                     volcanism = None
                     if hasattr(body, "volcanismType"):
@@ -116,7 +164,14 @@ class SpanshHelper:
                         if body.spectralClass:
                             body_type = "".join(char for char in body.spectralClass if char.isalpha())
                         else:
-                            body_type = body.subType.split("(")[1].split(")")[0]
+                            if "(" in body.subType:
+                                body_type = body.subType.split("(")[1].split(")")[0]
+                            else:
+                                if body.subType ==  "Neutron Star":
+                                    body_type = "N"
+                                else:
+                                    body_type = body.subType
+                                    print(f"body.subType used as body type: [{body_type}]")
                             print(f"update_system_data[{systemaddress}] {self.system_data.name}: {body.name}[{body_id}] TYPE - [{body.subType}] -> [{body_type}]")
                     else:
                         body_type = body.subType
@@ -143,7 +198,7 @@ class SpanshHelper:
                         geo_found=None,
                         has_rings=hasattr(body, "rings"),
                         rings=rings,
-                        total_bodies=self.system_data.bodyCount,
+                        total_bodies=body_count,
                         radius=radius,
                         mapped=None,
                         geo_complete=None,
@@ -176,5 +231,5 @@ class SpanshHelper:
 
         system_model.update_body_count(
             systemaddress=systemaddress,
-            total_bodies=self.system_data.bodyCount
+            total_bodies=body_count
         )
