@@ -88,14 +88,16 @@ class EngineStatus(DynamicDialog):
         fuel_capacity_total = 0
         reservoir_fuel_level = 0
         fuel_level = 0
+        #ToDo: #258 - Nomad counts as SRV!
         if vehicle == VESSEL_SHIP:
             fuel_capacity_total = fuel_capacity_main + fuel_capacity_reservoir
         if vehicle == VESSEL_EV:
             fuel_capacity_total = fuel_capacity_reservoir
         if vehicle == VESSEL_SRV:
-            fuel_capacity_total = fuel_capacity_reservoir or 0.5
+            fuel_capacity_total = 0.5
         if vehicle == VESSEL_SLF:
-            fuel_capacity_total = fuel_capacity_reservoir or 0.5
+            # fighter has infinite fuel
+            fuel_capacity_total = fuel_current_reservoir
 
         self.vessel_type = vehicle
         if fuel_capacity_total > 0:
