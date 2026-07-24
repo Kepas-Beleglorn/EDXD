@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Optional
 
 from EDXD.data_handler.vessel_status import ShipStatus
-from EDXD.globals import log_context, logging
+from EDXD.globals import log_context, logging, BODY_NO_DATA
 
 TEMPERATURE_LOW = 170
 TEMPERATURE_HIGH = 320
@@ -358,3 +358,18 @@ def rings_have_hotspots(body) -> bool:
 def km_to_ls(kilometers):
     SPEED_OF_LIGHT_KM_S = 299792.458
     return kilometers / SPEED_OF_LIGHT_KM_S
+
+def count_belt_clusters(system_data):
+    count = 0
+    # Iterate over the dictionary values (the body objects)
+    for body in system_data.bodies.values():
+        if body.body_type == "Belt Cluster":
+            count += 1
+    return count
+
+def has_no_data_bodies(system_data):
+        # Iterate over the dictionary values (the body objects)
+    for body in system_data.bodies.values():
+        if body.body_type == BODY_NO_DATA or body.body_name == BODY_NO_DATA:
+            return True
+    return False

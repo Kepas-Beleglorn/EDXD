@@ -162,6 +162,8 @@ DEFAULT_FUEL_LOW_THRESHOLD = 10
 # prefix to stringify body_id
 BODY_ID_PREFIX = "body_"
 
+BODY_NO_DATA = "🚫 no data 🚫"
+
 # ----------------------------------------------------------------------
 # vessel identifiers
 VESSEL_SHIP = "ship"

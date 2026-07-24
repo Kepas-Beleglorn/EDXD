@@ -9,7 +9,7 @@ from EDXD.data_handler.model import *
 from EDXD.data_handler.planetary_surface_positioning_system import PSPSCoordinates
 from EDXD.data_handler.vessel_status import *
 from EDXD.globals import logging, BODY_ID_PREFIX, log_context, JOURNAL_TIMESTAMP_FILE, SHIP_STATUS_FILE, VESSEL_SHIP, \
-    VESSEL_SRV, VESSEL_EV, VESSEL_SLF
+    VESSEL_SRV, VESSEL_EV, VESSEL_SLF, BODY_NO_DATA
 
 bip = BODY_ID_PREFIX
 
@@ -196,10 +196,12 @@ class JournalController(PausableThread, threading.Thread):
                 self.m.total_bodies = evt.get("BodyCount")
                 total_bodies = self.m.total_bodies
                 #ToDo: #252 - prevent multiple lookups
-                if self.m.total_bodies and self.m.total_bodies != len(self.m.bodies):
-                    if systemaddress is not None:
-                        self.spansh_helper.get_system_data(system_id=int(systemaddress))
+                if self.m.total_bodies and self.m.total_bodies + dh.count_belt_clusters(self.m) != len(self.m.bodies) or dh.has_no_data_bodies(self.m):
+                    self.spansh_helper.get_system_data(system_id=int(systemaddress))
+                    try:
                         self.spansh_helper.update_system_data(self.m)
+                    except Exception as e:
+                        print(f"journal_controller[{systemaddress}] {e}")
 
         if etype == "FSSAllBodiesFound":
             self.m.total_bodies = evt.get("Count")
@@ -738,11 +740,11 @@ class JournalController(PausableThread, threading.Thread):
         self.m.total_bodies = total_bodies or self.m.total_bodies
         # workaround for empty body type
         if body_type is None and body_id in self.m.bodies:
-            body_type = self.m.bodies[body_id].body_type or "🚫 no data 🚫"
+            body_type = self.m.bodies[body_id].body_type or BODY_NO_DATA
         if body_type is None:
-            body_type = "🚫 no data 🚫"
+            body_type = BODY_NO_DATA
 
-        if body_id is not None and (body_name is None or not body_name.endswith("Ring")):
+        if body_id is not None and (body_name is None or not body_name.endswith("Ring")) and evt.get("StationType") is None:
             self.m.update_body(
                 systemaddress=systemaddress,
                 body_id=body_id,

@@ -1,4 +1,5 @@
 import json
+from calendar import error
 from typing import List
 
 import requests
@@ -6,6 +7,7 @@ import requests
 from EDXD.data_handler.helper.json_helper import DotDict
 from EDXD.data_handler.model import Model
 import EDXD.data_handler.helper.data_helper as dh
+from EDXD.globals import BODY_NO_DATA
 
 SPANSH_GET_DUMP: str = "https://spansh.co.uk/api/dump/"
 
@@ -39,108 +41,126 @@ class SpanshHelper:
         print(f"update_system_data[{systemaddress}] {self.system_data.name}")
         bodies: DotDict = self.system_data.bodies
         for body in bodies:
-            if body is not None and (body.name is None or not body.name.endswith("Ring")) and body.type != "Barycentre":
-                body_id = "body_" + str(body.bodyId)
-                fetched_body_ids.append(body_id)
-                landable = False
-                if hasattr(body, "isLandable"):
-                    landable = body.isLandable
+            try:
+                if body is not None and (body.name is None or not body.name.endswith("Ring")) and body.type != "Barycentre":
+                    body_id = "body_" + str(body.bodyId)
 
-                g_force     : float = None
-                earth_mass  : float = None
-                stellar_mass: float = None
-                radius      : float = None
+                    fetched_body_ids.append(body_id)
+                    landable = False
+                    if hasattr(body, "isLandable"):
+                        landable = body.isLandable
 
-                if body.type == "Star":
-                    stellar_mass = body.solarMasses
-                    if stellar_mass:
-                        stellar_mass = float(stellar_mass)
-                    radius = body.solarRadius
-                    g_force = dh.get_gravity_from_mass_and_radius(solar_masses=stellar_mass, earth_masses=earth_mass, radius=float(radius))
-                if body.type == "Planet":
-                    radius = body.radius
-                    g_force = body.gravity
-                if radius is not None:
-                    radius = float(radius)
+                    g_force     : float = None
+                    earth_mass  : float = None
+                    stellar_mass: float = None
+                    radius      : float = None
 
-                pressure = None
-                if hasattr(body, "surfacePressure"):
-                    pressure = dh.pressure_as_pascals_from_atm(body.surfacePressure)
+                    if body.type == "Star":
+                        stellar_mass = body.solarMasses
+                        if stellar_mass:
+                            stellar_mass = float(stellar_mass)
+                        radius = body.solarRadius
+                        g_force = dh.get_gravity_from_mass_and_radius(solar_masses=stellar_mass, earth_masses=earth_mass, radius=float(radius))
+                    if body.type == "Planet":
+                        radius = body.radius
+                        g_force = body.gravity
+                    if radius is not None:
+                        radius = float(radius)
 
-                materials = {}
-                if hasattr(body, "materials"):
-                    materials = {k.lower(): v for k, v in body.materials.items()}
+                    pressure = None
+                    if hasattr(body, "surfacePressure"):
+                        pressure = dh.pressure_as_pascals_from_atm(body.surfacePressure)
 
-                rings = {}
-                if hasattr(body, "rings"):
-                    #ToDo: #255 - forge ring data
-                    pass
+                    materials = {}
+                    if hasattr(body, "materials"):
+                        materials = {k.lower(): v for k, v in body.materials.items()}
 
-                atmosphere = {}
-                if hasattr(body, "atmosphereType"):
-                    #ToDo: #256 - forge atmosphere data
-                    pass
+                    rings = {}
+                    if hasattr(body, "rings"):
+                        #ToDo: #255 - forge ring data
+                        pass
 
-                luminosity = None
-                raw_luminosity = None
-                if hasattr(body, "luminosity"):
-                    raw_luminosity = body.luminosity
-                    luminosity = dh.get_clean_luminosity(raw_luminosity)
+                    atmosphere = {}
+                    if hasattr(body, "atmosphereType"):
+                        #ToDo: #256 - forge atmosphere data
+                        pass
 
-                parents = None
-                if hasattr(body, "parents"):
-                    #ToDo: #257 - forge parent data
-                    pass
+                    luminosity = None
+                    raw_luminosity = None
+                    if hasattr(body, "luminosity"):
+                        raw_luminosity = body.luminosity
+                        luminosity = dh.get_clean_luminosity(raw_luminosity)
 
-                volcanism = None
-                if hasattr(body, "volcanismType"):
-                    volcanism = body.volcanismType.lower()
+                    parents = None
+                    if hasattr(body, "parents"):
+                        #ToDo: #257 - forge parent data
+                        pass
 
-                present_life = ""
-                if hasattr(body, "subType") and " with " in body.subType:
-                    present_life = body.subType.split(" with ")[1]
+                    volcanism = None
+                    if hasattr(body, "volcanismType"):
+                        volcanism = body.volcanismType.lower()
 
-                #ToDo: 254 - forge scandata for body appraisal
-                scandata = None
+                    present_life = ""
+                    if hasattr(body, "subType") and " with " in body.subType:
+                        present_life = body.subType.split(" with ")[1]
 
-                system_model.update_body(
-                    systemaddress=systemaddress,
-                    body_id=body_id,
-                    body_name=body.name,
-                    body_type=body.subType,
-                    is_star=body.type == "Star",
-                    scoopable=body.type == "Star" and body.subType[0] in ["K", "G", "B", "F", "O", "A", "M"],
-                    distance=body.distanceToArrival,
-                    landable=landable,
-                    g_force=g_force,
-                    biosignals=body.get("$SAA_SignalType_Biological;"),
-                    geosignals=body.get("$SAA_SignalType_Geological;"),
-                    materials=materials,
-                    scandata=scandata,
-                    bio_found=None,
-                    geo_found=None,
-                    has_rings=hasattr(body, "rings"),
-                    rings=rings,
-                    total_bodies=self.system_data.bodyCount,
-                    radius=radius,
-                    mapped=None,
-                    geo_complete=None,
-                    geo_scanned=None,
-                    bio_complete=None,
-                    bio_scanned=None,
-                    first_discovered=None,
-                    first_mapped=None,
-                    first_footfalled=None,
-                    atmosphere=atmosphere,
-                    mean_temp=body.surfaceTemperature,
-                    luminosity=luminosity,
-                    raw_luminosity=raw_luminosity,
-                    volcanism=volcanism,
-                    present_life=present_life,
-                    parents=parents,
-                    parent_distance=body.semiMajorAxis,
-                    pressure=pressure
-                )
+                    #ToDo: 254 - forge scandata for body appraisal
+                    scandata = None
+
+
+                    if body.type == "Star":
+                        if body.spectralClass:
+                            body_type = "".join(char for char in body.spectralClass if char.isalpha())
+                        else:
+                            body_type = body.subType.split("(")[1].split(")")[0]
+                            print(f"update_system_data[{systemaddress}] {self.system_data.name}: {body.name}[{body_id}] TYPE - [{body.subType}] -> [{body_type}]")
+                    else:
+                        body_type = body.subType
+
+                    parent_distance = 0
+                    if hasattr(body, "semiMajorAxis"):
+                        parent_distance = body.semiMajorAxis
+
+                    system_model.update_body(
+                        systemaddress=systemaddress,
+                        body_id=body_id,
+                        body_name=body.name,
+                        body_type=body_type,
+                        is_star=body.type == "Star",
+                        scoopable=body.type == "Star" and body.subType[0] in ["K", "G", "B", "F", "O", "A", "M"],
+                        distance=body.distanceToArrival,
+                        landable=landable,
+                        g_force=g_force,
+                        biosignals=body.get("$SAA_SignalType_Biological;"),
+                        geosignals=body.get("$SAA_SignalType_Geological;"),
+                        materials=materials,
+                        scandata=scandata,
+                        bio_found=None,
+                        geo_found=None,
+                        has_rings=hasattr(body, "rings"),
+                        rings=rings,
+                        total_bodies=self.system_data.bodyCount,
+                        radius=radius,
+                        mapped=None,
+                        geo_complete=None,
+                        geo_scanned=None,
+                        bio_complete=None,
+                        bio_scanned=None,
+                        first_discovered=None,
+                        first_mapped=None,
+                        first_footfalled=None,
+                        atmosphere=atmosphere,
+                        mean_temp=body.surfaceTemperature,
+                        luminosity=luminosity,
+                        raw_luminosity=raw_luminosity,
+                        volcanism=volcanism,
+                        present_life=present_life,
+                        parents=parents,
+                        parent_distance=parent_distance,
+                        pressure=pressure
+                    )
+            except Exception as e:
+                print(f"ERROR: [{systemaddress}] {self.system_data.name} - {body.type} - {e}")
 
         pop_items: List[str] = []
         for body in system_model.bodies:
