@@ -44,8 +44,12 @@ class SpanshHelper:
             try:
                 if body is not None and (body.name is None or not body.name.endswith("Ring")) and body.type != "Barycentre":
                     body_id = "body_" + str(body.bodyId)
-
                     fetched_body_ids.append(body_id)
+                    if body_id in  system_model.bodies.keys():
+                        if (system_model.bodies[body_id].body_name is not None and system_model.bodies[body_id].body_name != BODY_NO_DATA and
+                            system_model.bodies[body_id].body_type is not None and system_model.bodies[body_id].body_type != BODY_NO_DATA):
+                            continue
+
                     landable = False
                     if hasattr(body, "isLandable"):
                         landable = body.isLandable
