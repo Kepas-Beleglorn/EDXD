@@ -1,5 +1,4 @@
 import json
-from calendar import error
 from typing import List, Dict
 
 import requests
@@ -81,7 +80,7 @@ class SpanshHelper:
             total_bodies=body_count
         )
         fetched_body_ids: List[str] = []
-        #print(f"update_system_data[{systemaddress}] {self.system_data.name}")
+        print(f"DEBUG: update_system_data[{systemaddress}] {self.system_data.name}")
         bodies: DotDict = self.system_data.bodies
         for body in bodies:
             try:
@@ -121,11 +120,6 @@ class SpanshHelper:
                     materials = {}
                     if hasattr(body, "materials"):
                         materials = {k.lower(): v for k, v in body.materials.items()}
-
-                    rings = {}
-                    if hasattr(body, "rings"):
-                        #ToDo: #255 - forge ring data
-                        pass
 
                     atmosphere = None
                     atmos_type  = None
@@ -187,6 +181,17 @@ class SpanshHelper:
                     if hasattr(body, "semiMajorAxis"):
                         parent_distance = body.semiMajorAxis
 
+                    # ToDo: #255 - forge ring data
+                    rings = {}
+                    if hasattr(body, "rings"):
+                        pass
+
+                    #ToDo: #260: get present geo signals (count only)
+                    geo_signal_count = None
+
+                    #ToDo: #261: get present bio signals (count only)
+                    bio_signal_count = None
+
                     #ToDo: 254 - forge scandata for body appraisal
                     scandata = None
 
@@ -204,8 +209,8 @@ class SpanshHelper:
                         geosignals=body.get("$SAA_SignalType_Geological;"),
                         materials=materials,
                         scandata=scandata,
-                        bio_found=None,
-                        geo_found=None,
+                        bio_found=bio_signal_count,
+                        geo_found=geo_signal_count,
                         has_rings=hasattr(body, "rings"),
                         rings=rings,
                         total_bodies=body_count,
