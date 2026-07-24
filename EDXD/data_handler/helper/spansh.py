@@ -90,7 +90,7 @@ class SpanshHelper:
                     fetched_body_ids.append(body_id)
                     if body_id in  system_model.bodies.keys():
                         if (system_model.bodies[body_id].body_name is not None and system_model.bodies[body_id].body_name != BODY_NO_DATA and
-                            system_model.bodies[body_id].body_type is not None and system_model.bodies[body_id].body_type != BODY_NO_DATA):
+                                system_model.bodies[body_id].body_type is not None and system_model.bodies[body_id].body_type != BODY_NO_DATA):
                             continue
 
                     landable = False
@@ -156,10 +156,6 @@ class SpanshHelper:
                     if hasattr(body, "subType") and " with " in body.subType:
                         present_life = body.subType.split(" with ")[1]
 
-                    #ToDo: 254 - forge scandata for body appraisal
-                    scandata = None
-
-
                     if body.type == "Star":
                         if body.spectralClass:
                             body_type = "".join(char for char in body.spectralClass if char.isalpha())
@@ -176,9 +172,23 @@ class SpanshHelper:
                     else:
                         body_type = body.subType
 
+                    part = 0
+                    for body_type_part in body_type.split(" "):
+                        if part == 0:
+                            body_type = body_type_part
+                        elif body_type_part in {"I", "II", "III", "IV", "V", "VI", "VII", "VIII"}:
+                            body_type += " " + body_type_part
+                        else:
+                            body_type += " " + body_type_part.lower()
+
+                        part += 1
+
                     parent_distance = 0
                     if hasattr(body, "semiMajorAxis"):
                         parent_distance = body.semiMajorAxis
+
+                    #ToDo: 254 - forge scandata for body appraisal
+                    scandata = None
 
                     system_model.update_body(
                         systemaddress=systemaddress,
