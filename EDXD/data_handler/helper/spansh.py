@@ -81,7 +81,7 @@ class SpanshHelper:
             total_bodies=body_count
         )
         fetched_body_ids: List[str] = []
-        print(f"DEBUG: update_system_data[{systemaddress}] {self.system_data.name}")
+        #print(f"DEBUG: update_system_data[{systemaddress}] {self.system_data.name}")
         bodies: DotDict = self.system_data.bodies
         for body in bodies:
             try:
@@ -202,8 +202,17 @@ class SpanshHelper:
                             if hasattr(body.signals.signals, "$SAA_SignalType_Biological;"):
                                 bio_signal_count = int(body.signals.signals["$SAA_SignalType_Biological;"])
 
-                    #ToDo: 254 - forge scandata for body appraisal
-                    scandata = None
+                    scandata = {}
+                    scandata["event"] = "Scan"
+                    scandata["ScanType"] = "Detailed"
+                    if body.type == "Star":
+                        scandata["StarType"] = body_type
+                    if body.type == "Planet":
+                        scandata["PlanetClass"] = body_type
+                        scandata["TerraformState"] = body.terraformingState
+                    if hasattr(body, "earthMasses"):
+                        scandata["MassEM"] = body.earthMasses
+
 
                     system_model.update_body(
                         systemaddress=systemaddress,

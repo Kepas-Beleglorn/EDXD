@@ -90,6 +90,7 @@ body_types = {
     'High metal content body': 2,
     'Rocky body': 11,
     'Rocky Ice world': 12,
+    'Rocky ice world': 12,
     'Rocky ice body': 12,
     'Icy body': 21,
     'Earth-like world': 31,
@@ -126,52 +127,66 @@ terraform_states = {
 }
 
 def encode_body_type(body_info):
-    if 'PlanetClass' not in body_info:
-        return None  # Belt clusters for example do not have a planet class
-    return body_types[body_info['PlanetClass']]
-
+    try:
+        if 'PlanetClass' not in body_info:
+            return None  # Belt clusters for example do not have a planet class
+        return body_types[body_info['PlanetClass']]
+    except Exception as e:
+        print(f"ERROR(body_appraiser.encode_body_type): {e}")
+        return None
 
 def encode_terraform_state(body_info):
-    if 'TerraformState' not in body_info or len(body_info['TerraformState']) == 0:
+    try:
+        if 'TerraformState' not in body_info or len(body_info['TerraformState']) == 0:
+            return None
+        return terraform_states[body_info['TerraformState']]
+    except Exception as e:
+        print(f"ERROR(body_appraiser.encode_terraform_state): {e}")
         return None
-    return terraform_states[body_info['TerraformState']]
 
 
 def encode_star_type(body_info):
-    return star_types[body_info['StarType']]
-
+    try:
+        return star_types[body_info['StarType']]
+    except Exception as e:
+        print(f"ERROR(body_appraiser.encode_star_type): {e}")
+        return None
 
 def appraise_body(body_info, just_scanned_value=True):
-    if "StarType" in body_info:
-        main_type = 'Star'
-        specific_type = encode_star_type(body_info)
-    else:
-        # Planet
-        main_type = 'Planet'
-        specific_type = encode_body_type(body_info)
+    try:
+        if "StarType" in body_info:
+            main_type = 'Star'
+            specific_type = encode_star_type(body_info)
+        else:
+            # Planet
+            main_type = 'Planet'
+            specific_type = encode_body_type(body_info)
 
-    if "MassEM" in body_info:
-        mass = body_info['MassEM']
-    else:
-        mass = 0  # belts don't have a mass attribute
+        if "MassEM" in body_info:
+            mass = body_info['MassEM']
+        else:
+            mass = 0  # belts don't have a mass attribute
 
-    terraform_state = encode_terraform_state(body_info)
+        terraform_state = encode_terraform_state(body_info)
 
-    first_discoverer = "WasDiscovered" in body_info.keys()
-    if first_discoverer:
-        first_discoverer = not body_info['WasDiscovered']
+        first_discoverer = "WasDiscovered" in body_info.keys()
+        if first_discoverer:
+            first_discoverer = not body_info['WasDiscovered']
 
-    first_mapper = "WasMapped" in body_info.keys()
-    if first_mapper:
-        first_mapper = not body_info['WasMapped']
+        first_mapper = "WasMapped" in body_info.keys()
+        if first_mapper:
+            first_mapper = not body_info['WasMapped']
 
-    options = {
-        'haveMapped': not just_scanned_value,  # Always indicate we mapped it so we can tell the max worth
-        'efficiencyBonus': True,
-#        'isFirstDiscoverer': not body_info['WasDiscovered'],
-        'isFirstDiscoverer': first_discoverer,
-        'isFirstMapper': first_mapper,
-    }
+        options = {
+            'haveMapped': not just_scanned_value,  # Always indicate we mapped it so we can tell the max worth
+            'efficiencyBonus': True,
+    #        'isFirstDiscoverer': not body_info['WasDiscovered'],
+            'isFirstDiscoverer': first_discoverer,
+            'isFirstMapper': first_mapper,
+        }
+    except Exception as e:
+        print(f"ERROR(body_appraiser.encode_body_type): {e}")
+        return None
 
     return calculate_estimated_value(main_type, specific_type, mass, terraform_state, options)
 
