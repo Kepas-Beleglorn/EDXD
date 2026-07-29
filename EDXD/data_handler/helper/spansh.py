@@ -3,8 +3,9 @@ from typing import List, Dict
 
 import requests
 
+from EDXD.data_handler.helper import spansh2edjournal
 from EDXD.data_handler.helper.json_helper import DotDict
-from EDXD.data_handler.model import Model, Atmosphere
+from EDXD.data_handler.model import Model, Atmosphere, Ring
 import EDXD.data_handler.helper.data_helper as dh
 from EDXD.globals import BODY_NO_DATA
 
@@ -87,7 +88,7 @@ class SpanshHelper:
                 if body is not None and (body.name is None or not body.name.endswith("Ring")) and body.type != "Barycentre":
                     body_id = "body_" + str(body.bodyId)
                     fetched_body_ids.append(body_id)
-                    if body_id in  system_model.bodies.keys():
+                    if body_id in system_model.bodies.keys():
                         if (system_model.bodies[body_id].body_name is not None and system_model.bodies[body_id].body_name != BODY_NO_DATA and
                                 system_model.bodies[body_id].body_type is not None and system_model.bodies[body_id].body_type != BODY_NO_DATA):
                             continue
@@ -181,16 +182,25 @@ class SpanshHelper:
                     if hasattr(body, "semiMajorAxis"):
                         parent_distance = body.semiMajorAxis
 
-                    # ToDo: #255 - forge ring data
-                    rings = {}
+                    rings_found:    Dict[str, Ring]         = {}
                     if hasattr(body, "rings"):
-                        pass
+                        for spansh_ring in body.rings:
+                            ring_name = spansh_ring.name
+                            ring_class = spansh2edjournal.get_journal_ring_class(spansh_ring.type)
+                            ring = Ring(body_id=ring_name, body_name=ring_name, ring_class=ring_class, signals={})
+                            rings_found[ring_name] = ring
 
-                    #ToDo: #260: get present geo signals (count only)
                     geo_signal_count = None
+                    if hasattr(body, "signals"):
+                        if hasattr(body.signals, "signals"):
+                            if hasattr(body.signals.signals, "$SAA_SignalType_Geological;"):
+                                geo_signal_count = int(body.signals.signals["$SAA_SignalType_Geological;"])
 
-                    #ToDo: #261: get present bio signals (count only)
                     bio_signal_count = None
+                    if hasattr(body, "signals"):
+                        if hasattr(body.signals, "signals"):
+                            if hasattr(body.signals.signals, "$SAA_SignalType_Biological;"):
+                                bio_signal_count = int(body.signals.signals["$SAA_SignalType_Biological;"])
 
                     #ToDo: 254 - forge scandata for body appraisal
                     scandata = None
@@ -205,14 +215,14 @@ class SpanshHelper:
                         distance=body.distanceToArrival,
                         landable=landable,
                         g_force=g_force,
-                        biosignals=body.get("$SAA_SignalType_Biological;"),
-                        geosignals=body.get("$SAA_SignalType_Geological;"),
+                        biosignals=bio_signal_count,
+                        geosignals=geo_signal_count,
                         materials=materials,
                         scandata=scandata,
-                        bio_found=bio_signal_count,
-                        geo_found=geo_signal_count,
+                        bio_found=None,
+                        geo_found=None,
                         has_rings=hasattr(body, "rings"),
-                        rings=rings,
+                        rings=rings_found,
                         total_bodies=body_count,
                         radius=radius,
                         mapped=None,
