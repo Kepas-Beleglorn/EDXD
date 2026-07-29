@@ -240,17 +240,23 @@ class JournalController(PausableThread, threading.Thread):
             if evt.get("Progress")*1 == 1:
                 self.m.total_bodies = evt.get("BodyCount")
                 total_bodies = self.m.total_bodies
-                #ToDo: #252 - prevent multiple lookups
                 if self.m.total_bodies and self.m.total_bodies + dh.count_belt_clusters(self.m) != len(self.m.bodies) or dh.has_no_data_bodies(self.m):
                     self.spansh_helper.get_system_data(system_id=int(systemaddress))
                     try:
                         self.spansh_helper.update_system_data(self.m)
                     except Exception as e:
-                        print(f"ERROR: journal_controller[{systemaddress}] {e}")
+                        print(f"ERROR: journal_controller[{systemaddress}/{evt}] {e}")
 
         if etype == "FSSAllBodiesFound":
             self.m.total_bodies = evt.get("Count")
             total_bodies = self.m.total_bodies
+            if self.m.total_bodies and self.m.total_bodies + dh.count_belt_clusters(self.m) != len(self.m.bodies) or dh.has_no_data_bodies(self.m):
+                self.spansh_helper.get_system_data(system_id=int(systemaddress))
+                try:
+                    self.spansh_helper.update_system_data(self.m)
+                except Exception as e:
+                    print(f"ERROR: journal_controller[{systemaddress}/{evt}] {e}")
+
         # initialize all parameters for update_body
         body_id                 = None
         body_name               = None
