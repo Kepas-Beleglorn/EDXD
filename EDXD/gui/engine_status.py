@@ -156,7 +156,7 @@ class EngineStatus(DynamicDialog):
 
                 if t_now and self.sco_cooldown_end_time:
                     if self.sco_cooldown_end_time >= t_now:
-                        self.lbl_sco_status.SetLabelText(f"SCO cooldown in progress - remaining duration: {self.sco_cooldown_end_time.Subtract(t_now).GetMilliseconds()/1000} seconds")
+                        self.lbl_sco_status.SetLabelText(f"SCO cooldown in progress - remaining duration: {self.sco_cooldown_end_time.Subtract(t_now).GetMilliseconds()/1000:.2f} seconds")
                     else:
                         self.lbl_sco_status.SetLabelText(f"SCO ready")
             else:

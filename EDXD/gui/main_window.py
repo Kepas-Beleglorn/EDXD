@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import functools
 import inspect
+import random
 from typing import Dict
 
 import wx, json
@@ -371,7 +372,9 @@ class MainFrame(DynamicFrame):
         # noinspection PyTypeChecker
         if self._refresh_timer:
             self._refresh_timer.Stop()
-        self._refresh_timer = wx.CallLater(millis=500, callableObj=self._refresh)  # schedule next update
+
+        refresh_millis = random.randint(75, 125)
+        self._refresh_timer = wx.CallLater(millis=refresh_millis, callableObj=self._refresh)  # schedule next update
 
     def on_close(self, event):
         if self.win_sel             : self.win_sel.Close(True)
