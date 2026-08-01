@@ -10,11 +10,13 @@ import wx, json
 from EDXD.data_handler.journal_controller import JournalController
 from EDXD.data_handler.journal_reader import JournalReader
 from EDXD.data_handler.model import Model, Body
+from EDXD.data_handler.nav_route import NavRouteHandler
 from EDXD.data_handler.status_json_watcher import StatusWatcher
 from EDXD.data_handler.helper.biosign_estimator import estimate_system_biosigns
 
 from EDXD.globals import DEFAULT_HEIGHT_MAIN, DEFAULT_WIDTH_MAIN, DEFAULT_POS_Y, DEFAULT_POS_X, RESIZE_MARGIN
 from EDXD.globals import logging, CFG_FILE
+from EDXD.gui.current_nav_route import PlottedNavRoute
 
 from EDXD.gui.detail_selected import DetailSelected
 from EDXD.gui.detail_target import DetailTargeted
@@ -76,6 +78,7 @@ class MainFrame(DynamicFrame):
         self.win_engine_status = None
         self.win_status_flags = None
         self.win_sig_pred = None
+        self.win_nav_route = None
 
         # Add options panel (mineral filter, landable, and maybe more in the future
         self.options = MainWindowOptions(parent=self)
@@ -213,6 +216,21 @@ class MainFrame(DynamicFrame):
                 self.win_sig_pred = SignalPrediction(self)
                 self.win_sig_pred.Show(True)
 
+        # Plotted route -----------------------------------------------------------------------------
+        from EDXD.gui.current_nav_route import WINID as winIdSelected
+        if self.prefs is None or self.prefs.get(winIdSelected) is None:
+            hidden = False
+        else:
+            hidden = self.prefs.get(winIdSelected).get("is_hidden", False)
+        if hidden:
+            if self.win_nav_route is not None:
+                self.win_nav_route.Close()
+                self.win_nav_route = None
+        else:
+            if self.win_nav_route is None:
+                self.win_nav_route = PlottedNavRoute(self)
+                self.win_nav_route.Show(True)
+
     def _update_system(self, title: str = ""):
         init_widget(widget=self.lbl_sys, title=title)
         font = self.lbl_sys.GetFont()
@@ -231,8 +249,13 @@ class MainFrame(DynamicFrame):
             )
 
     def _update_biosign_prediction(self, body_data):
-        prediction_data = estimate_system_biosigns(body_data)
-        self.win_sig_pred.render(prediction=prediction_data)
+        if self.win_sig_pred:
+            prediction_data = estimate_system_biosigns(body_data)
+            self.win_sig_pred.render(prediction=prediction_data)
+
+    def _update_current_nav_route(self):
+        if self.win_nav_route:
+            self.win_nav_route.render(self.journal_controller.nav_route)
 
     # ------------------------------------------------------------------
     # event handlers
@@ -369,6 +392,8 @@ class MainFrame(DynamicFrame):
 
         self._update_fuel_status()
 
+        self._update_current_nav_route()
+
         # noinspection PyTypeChecker
         if self._refresh_timer:
             self._refresh_timer.Stop()
@@ -383,5 +408,6 @@ class MainFrame(DynamicFrame):
         if self.win_engine_status   : self.win_engine_status.Close(True)
         if self.win_status_flags    : self.win_status_flags.Close(True)
         if self.win_sig_pred        : self.win_sig_pred.Close(True)
+        if self.win_nav_route       : self.win_nav_route.Close(True)
         self.save_geometry()
         event.Skip()

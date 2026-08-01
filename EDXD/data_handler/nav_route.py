@@ -23,11 +23,12 @@ class PlottedNavRoute:
     nav_points: List[NavPoint]
 
 class NavRouteHandler:
-    def __init__(self, nav_route_json: Path, amount_of_upcoming_systems_to_show: int):
+    def __init__(self, nav_route_json: Path, amount_of_upcoming_systems_to_show: int, amount_of_passed_systems_to_show: int):
         self.nav_route_json: Path = nav_route_json
         self.plotted_nav_route: Optional[PlottedNavRoute] = None
         self.remaining_jumps_in_route: int = 0
         self.amount_of_upcoming_systems_to_show: int = amount_of_upcoming_systems_to_show
+        self.amount_of_passed_systems_to_show: int = amount_of_passed_systems_to_show
         self.current_system: Optional[NavPoint] = None
 
     def _parse_star_position(self, pos_data: List[float]) -> StarPosition:
@@ -77,7 +78,8 @@ class NavRouteHandler:
         system_address = evt.get("SystemAddress")
         self.current_system = None
         if self.remaining_jumps_in_route < len(self.plotted_nav_route.nav_points):
-            index = len(self.plotted_nav_route.nav_points) - (self.remaining_jumps_in_route + 1)
+           # index = len(self.plotted_nav_route.nav_points) - (self.remaining_jumps_in_route + 1)
+            index = -1 * self.remaining_jumps_in_route
             if self.plotted_nav_route.nav_points[index].system_address == system_address:
                 self.current_system = self.plotted_nav_route.nav_points[index]
 
@@ -109,9 +111,16 @@ class NavRouteHandler:
         else:
             return None
 
-        system_index = len(self.plotted_nav_route.nav_points) - self.remaining_jumps_in_route
+        #system_index = len(self.plotted_nav_route.nav_points) - self.remaining_jumps_in_route
+        system_index = -1 * self.remaining_jumps_in_route
 
         return self.plotted_nav_route.nav_points[system_index]
+
+    def get_final_destination(self) -> NavPoint|None:
+        if not self.plotted_nav_route or len(self.plotted_nav_route.nav_points) < 1:
+            return None
+
+        return self.plotted_nav_route.nav_points[-1]
 
     def get_total_route_distance(self) -> float:
         """Calculates the total jump distance of the entire loaded route."""
@@ -138,6 +147,3 @@ class NavRouteHandler:
             total_distance += gn.calculate_star_system_distance(points[i].star_position, points[i + 1].star_position)
 
         return total_distance
-
-#[journal] { "timestamp":"2026-07-31T12:46:50Z", "event":"NavRoute" }
-#[journal] { "timestamp":"2026-07-31T12:46:50Z", "event":"FSDTarget", "Name":"LP 196-42", "SystemAddress":2587457751395, "StarClass":"DA", "RemainingJumpsInRoute":114 }

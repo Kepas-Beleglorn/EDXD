@@ -3,7 +3,7 @@ from EDXD.gui.helper.gui_handler import init_widget
 from EDXD.gui.helper.gui_dynamic_toggle_button import DynamicToggleButton
 
 class CollapsiblePanel(wx.Panel):
-    def __init__(self, parent, label="Panel Title", collapsed=False, columns: int = 1):
+    def __init__(self, parent, label="Panel Title", collapsed=False, columns: int = 1, show_toggle_bar: bool = True):
         super().__init__(parent)
         self.parent = parent
         self.label = label
@@ -11,32 +11,34 @@ class CollapsiblePanel(wx.Panel):
         self.columns = columns
         self.animation_duration = 200  # ms
         self.content_height = 0
+        self.show_toggle_bar = show_toggle_bar
 
         # Main sizer
         self.main_sizer = wx.BoxSizer(wx.VERTICAL)
 
-        # Header
-        self.header = wx.Panel(self)
-        self.header_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.header_label = wx.StaticText(self.header, label=self.label)
-        # Toggle button
-        self.toggle_button = DynamicToggleButton(parent=self.header,
-                label="–",
-                is_toggled=self.collapsed,
-                size=wx.Size(20,20),
-                style=wx.FONTWEIGHT_BOLD
-        )
-        self.toggle_button.Bind(wx.EVT_BUTTON, self.on_toggle)
+        if self.show_toggle_bar:
+            # Header
+            self.header = wx.Panel(self)
+            self.header_sizer = wx.BoxSizer(wx.HORIZONTAL)
+            self.header_label = wx.StaticText(self.header, label=self.label)
+            # Toggle button
+            self.toggle_button = DynamicToggleButton(parent=self.header,
+                    label="–",
+                    is_toggled=self.collapsed,
+                    size=wx.Size(20,20),
+                    style=wx.FONTWEIGHT_BOLD
+            )
+            self.toggle_button.Bind(wx.EVT_BUTTON, self.on_toggle)
 
-        init_widget(widget=self.header, title=self.label)
-        init_widget(widget=self.header_label, title=self.label)
-        init_widget(widget=self.toggle_button)
+            init_widget(widget=self.header, title=self.label)
+            init_widget(widget=self.header_label, title=self.label)
+            init_widget(widget=self.toggle_button)
 
-        self.header.SetBackgroundColour(wx.Colour("#221511"))
+            self.header.SetBackgroundColour(wx.Colour("#221511"))
 
-        self.header_sizer.Add(self.toggle_button, 0, wx.ALL, 5)
-        self.header_sizer.Add(self.header_label, 1, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
-        self.header.SetSizer(self.header_sizer)
+            self.header_sizer.Add(self.toggle_button, 0, wx.ALL, 5)
+            self.header_sizer.Add(self.header_label, 1, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+            self.header.SetSizer(self.header_sizer)
 
         # Content container
         self.content = wx.Panel(self)
@@ -49,7 +51,8 @@ class CollapsiblePanel(wx.Panel):
         self.setup_table()
 
         # Layout
-        self.main_sizer.Add(self.header, 0, wx.EXPAND)
+        if self.show_toggle_bar:
+            self.main_sizer.Add(self.header, 0, wx.EXPAND)
         self.main_sizer.Add(self.content, 1, wx.EXPAND)
         self.SetSizer(self.main_sizer)
 

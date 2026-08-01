@@ -30,6 +30,7 @@ class PositiveIntFormatterValidator(wx.Validator):
         self.Bind(wx.EVT_TEXT, self.OnText)
         self.Bind(wx.EVT_KILL_FOCUS, self.OnFormat)
         self.Bind(wx.EVT_SET_FOCUS, self.OnUnformat)
+        self._original_bg_color = None
 
     def Clone(self):
         """Required by wx.Validator to create copies."""
@@ -43,6 +44,9 @@ class PositiveIntFormatterValidator(wx.Validator):
         tc = self.GetWindow()
         if not isinstance(tc, wx.TextCtrl):
             return True
+
+        if self._original_bg_color is None:
+            self._original_bg_color = tc.GetBackgroundColour()
 
         text = tc.GetValue().strip()
 
@@ -65,7 +69,7 @@ class PositiveIntFormatterValidator(wx.Validator):
             return False
 
         # Valid: Reset color and tooltip
-        tc.SetBackgroundColour(wx.NullColour)
+        tc.SetBackgroundColour(self._original_bg_color)
         tc.SetToolTip("")
         tc.Refresh()
         return True
