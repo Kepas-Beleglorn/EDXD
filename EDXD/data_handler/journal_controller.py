@@ -838,5 +838,3 @@ class JournalController(PausableThread, threading.Thread):
 
         if update_gui and self.m.target_body_id :
             self.m.set_target(self.m.target_body_id )
-
-

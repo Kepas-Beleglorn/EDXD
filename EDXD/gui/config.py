@@ -242,11 +242,11 @@ class EDXDConfig(DynamicDialog):
 
         show_upcoming_nav_route_systems_raw = str(self.txt_show_upcoming_nav_route_systems.GetValue())
         if show_upcoming_nav_route_systems_raw != "":
-            self.cfg["amount_of_plotted_upcoming_systems_to_show"] = int(worthwhile_threshold_raw)
+            self.cfg["amount_of_plotted_upcoming_systems_to_show"] = int(show_upcoming_nav_route_systems_raw)
 
         show_passed_nav_route_systems_raw = str(self.txt_show_passed_nav_route_systems.GetValue())
         if show_passed_nav_route_systems_raw != "":
-            self.cfg["amount_of_plotted_passed_systems_to_show"] = int(worthwhile_threshold_raw)
+            self.cfg["amount_of_plotted_passed_systems_to_show"] = int(show_passed_nav_route_systems_raw)
 
         def _save():
             data = {k: v for k, v in self.cfg.items() if k != "save"}
