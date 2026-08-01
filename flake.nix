@@ -19,7 +19,7 @@
                 wxpython = python-prev.wxpython.overrideAttrs (oldAttrs: {
                   version = "4.2.4";
                   src = final.fetchPypi {
-                    pname = "wxPython";
+                    pname = "wxpython";
                     version = "4.2.4";
                     hash = "sha256-LrEjl5yHvLMp6KJFImnWD/j59lHpvyXGdXnlPE67rjw=";
                   };
