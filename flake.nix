@@ -15,7 +15,7 @@
         overlays = [
           (final: prev: {
             python3 = prev.python3.override {
-              packageOverrides = python-prev: {
+              packageOverrides = python-final: python-prev: {
                 wxpython = python-prev.wxpython.overrideAttrs (oldAttrs: {
                   version = "4.2.4";
                   src = final.fetchFromGitHub {
