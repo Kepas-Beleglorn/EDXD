@@ -9,12 +9,11 @@ set_mineral_filter.py – filter & preferences window
 from __future__ import annotations
 
 import wx, json
-import subprocess
 import sys, os
 
 from wx import Size
 
-from EDXD.globals import BTN_HEIGHT, BTN_WIDTH, CACHE_DIR, ICONS
+from EDXD.globals import BTN_HEIGHT, BTN_WIDTH, CACHE_DIR, ICONS, MAX_AMOUNT_OF_PLOTTED_UPCOMING_SYSTEMS_TO_SHOW, MAX_AMOUNT_OF_PLOTTED_PASSED_SYSTEMS_TO_SHOW
 from EDXD.gui.helper.dynamic_dialog import DynamicDialog
 from EDXD.gui.helper.gui_dir_picker import DirPicker
 from EDXD.gui.helper.gui_dynamic_toggle_button import DynamicToggleButton
@@ -23,6 +22,7 @@ from EDXD.gui.helper.gui_handler import init_widget
 from EDXD.gui.helper.theme_handler import get_theme
 from EDXD.gui.helper.window_properties import WindowProperties
 from EDXD.gui.themed_msg_dialog import ThemedMessageDialog
+from EDXD.utils.int_range_validator import IntRangeValidator
 from EDXD.utils.positive_integer_credit_formatter import PositiveIntFormatterValidator
 
 TITLE = "EDXD Configuration"
@@ -85,12 +85,29 @@ class EDXDConfig(DynamicDialog):
 
         # worthwhile threshold for indicator in main window
         self.lbl_worthwhile_threshold = wx.StaticText(self.scroll_container, label=f"\nMinimum value to show worthwhile indicator ({ICONS["worthwhile"]}) on a body.")
-        self.grid_options.Add(self.lbl_worthwhile_threshold, flag=wx.ALL | wx.EXPAND, border=10)
+        self.grid_options.Add(self.lbl_worthwhile_threshold, flag=wx.LEFT | wx.BOTTOM | wx.TOP | wx.EXPAND, border=10)
         self.txt_worthwhile_threshold = wx.TextCtrl(parent=self.scroll_container, style=wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_SIMPLE, size=Size(BTN_WIDTH, BTN_HEIGHT),
                                                     validator=PositiveIntFormatterValidator())
         init_widget(self.txt_worthwhile_threshold)
-        self.grid_options.Add(self.txt_worthwhile_threshold, flag=wx.ALL | wx.EXPAND, border=10)
-        self.grid_options.Add(wx.StaticText(self.scroll_container, label=""), 0, wx.ALIGN_LEFT | wx.EXPAND, 5)
+        self.grid_options.Add(self.txt_worthwhile_threshold, flag=wx.LEFT | wx.BOTTOM | wx.TOP | wx.EXPAND, border=10)
+        self.grid_options.Add(wx.StaticText(self.scroll_container, label=""), 0, wx.ALIGN_LEFT | wx.EXPAND, 0)
+
+        self.lbl_show_upcoming_nav_route_systems = wx.StaticText(self.scroll_container, label=f"\nHow many of the upcoming systems in the current navigation route should be displayed? (0..{MAX_AMOUNT_OF_PLOTTED_UPCOMING_SYSTEMS_TO_SHOW}):")
+        self.grid_options.Add(self.lbl_show_upcoming_nav_route_systems, flag=wx.LEFT | wx.EXPAND, border=10)
+        self.txt_show_upcoming_nav_route_systems = wx.TextCtrl(parent=self.scroll_container, style=wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_SIMPLE, size=Size(BTN_WIDTH, BTN_HEIGHT),
+                                                    validator=IntRangeValidator(min_val=0, max_val=MAX_AMOUNT_OF_PLOTTED_UPCOMING_SYSTEMS_TO_SHOW, allow_empty=False))
+        init_widget(self.txt_show_upcoming_nav_route_systems)
+        self.grid_options.Add(self.txt_show_upcoming_nav_route_systems, flag=wx.LEFT | wx.EXPAND, border=10)
+        self.grid_options.Add(wx.StaticText(self.scroll_container, label=""), 0, wx.ALIGN_LEFT | wx.EXPAND, 0)
+
+        self.lbl_show_passed_nav_route_systems = wx.StaticText(self.scroll_container,
+                                                                 label=f"\nHow many of the passed systems in the current navigation route should be displayed? (0..{MAX_AMOUNT_OF_PLOTTED_PASSED_SYSTEMS_TO_SHOW}):")
+        self.grid_options.Add(self.lbl_show_passed_nav_route_systems, flag=wx.LEFT | wx.EXPAND, border=10)
+        self.txt_show_passed_nav_route_systems = wx.TextCtrl(parent=self.scroll_container, style=wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_SIMPLE, size=Size(BTN_WIDTH, BTN_HEIGHT),
+                                                               validator=IntRangeValidator(min_val=0, max_val=MAX_AMOUNT_OF_PLOTTED_PASSED_SYSTEMS_TO_SHOW, allow_empty=False))
+        init_widget(self.txt_show_passed_nav_route_systems)
+        self.grid_options.Add(self.txt_show_passed_nav_route_systems, flag=wx.LEFT | wx.EXPAND, border=10)
+        self.grid_options.Add(wx.StaticText(self.scroll_container, label=""), 0, wx.ALIGN_LEFT | wx.EXPAND, 0)
 
         # Add the grid to your main sizer
         self.window_box.Add(self.grid_options, flag=wx.ALL | wx.EXPAND, border=10)
@@ -103,17 +120,32 @@ class EDXDConfig(DynamicDialog):
         temp: str = self.cfg.get("journal_dir", "")
         self.journal_dir_picker.SetPath(temp)
         self.journal_dir_picker.Refresh()
+
         temp: str = self.cfg.get("cache_dir", str(CACHE_DIR))
         self.system_cache_dir_picker.SetPath(temp)
         self.system_cache_dir_picker.Refresh()
         self.Layout()
+
         temp: str = str(self.cfg.get("worthwhile_threshold"))
         self.txt_worthwhile_threshold.SetValue(temp)
         validator = self.txt_worthwhile_threshold.GetValidator()
         if isinstance(validator, PositiveIntFormatterValidator):
             validator.RefreshFormatAndValidate()
-
         self.txt_worthwhile_threshold.Refresh()
+
+        temp: str = str(self.cfg.get("amount_of_plotted_upcoming_systems_to_show"))
+        self.txt_show_upcoming_nav_route_systems.SetValue(temp)
+        validator = self.txt_show_upcoming_nav_route_systems.GetValidator()
+        if isinstance(validator, IntRangeValidator):
+            validator.Validate(self)
+        self.txt_show_upcoming_nav_route_systems.Refresh()
+
+        temp: str = str(self.cfg.get("amount_of_plotted_passed_systems_to_show"))
+        self.txt_show_passed_nav_route_systems.SetValue(temp)
+        validator = self.txt_show_passed_nav_route_systems.GetValidator()
+        if isinstance(validator, IntRangeValidator):
+            validator.Validate(self)
+        self.txt_show_passed_nav_route_systems.Refresh()
 
         # Config items grid for buttons
         self.grid_windows = wx.FlexGridSizer(cols=2, hgap=8, vgap=4)
@@ -127,7 +159,8 @@ class EDXDConfig(DynamicDialog):
             ["PSPS",                    "Planetary Surface Positioning System"],
             ["ENGINE_STATUS",           "Engine status"],
             ["BIOSIGNAL_PREDICTION",    "Biosignal prediction"],
-            ["STATUS_FLAGS",            "Ship's System Status"]
+            ["STATUS_FLAGS",            "Ship's System Status"],
+            ["PLOTTED_NAV_ROUTE",       "Currently plotted navigation route"]
         ]
 
         self.window_buttons = {}
@@ -206,6 +239,14 @@ class EDXDConfig(DynamicDialog):
             worthwhile_threshold_raw = worthwhile_threshold_raw.replace(" Cr", "").strip()
             worthwhile_threshold_raw = worthwhile_threshold_raw.replace(",", "").strip()
             self.cfg["worthwhile_threshold"] = int(worthwhile_threshold_raw)
+
+        show_upcoming_nav_route_systems_raw = str(self.txt_show_upcoming_nav_route_systems.GetValue())
+        if show_upcoming_nav_route_systems_raw != "":
+            self.cfg["amount_of_plotted_upcoming_systems_to_show"] = int(worthwhile_threshold_raw)
+
+        show_passed_nav_route_systems_raw = str(self.txt_show_passed_nav_route_systems.GetValue())
+        if show_passed_nav_route_systems_raw != "":
+            self.cfg["amount_of_plotted_passed_systems_to_show"] = int(worthwhile_threshold_raw)
 
         def _save():
             data = {k: v for k, v in self.cfg.items() if k != "save"}
