@@ -80,7 +80,10 @@ class CollapsiblePanel(wx.Panel):
         """Add a row to the table."""
         label = wx.StaticText(self.content)
         init_widget(widget=label, title=label_text)
-        self.table_sizer.Add(label, 0, align | wx.EXPAND, 5)
+        if align == wx.ALIGN_CENTER:
+            self.table_sizer.Add(label, 0, align, 5)
+        else:
+            self.table_sizer.Add(label, 0, align | wx.EXPAND, 5)
         return label
 
     def on_toggle(self, event):

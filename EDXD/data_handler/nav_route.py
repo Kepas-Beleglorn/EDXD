@@ -78,7 +78,6 @@ class NavRouteHandler:
         system_address = evt.get("SystemAddress")
         self.current_system = None
         if self.remaining_jumps_in_route < len(self.plotted_nav_route.nav_points):
-           # index = len(self.plotted_nav_route.nav_points) - (self.remaining_jumps_in_route + 1)
             index = -1 * self.remaining_jumps_in_route
             if self.plotted_nav_route.nav_points[index].system_address == system_address:
                 self.current_system = self.plotted_nav_route.nav_points[index]
@@ -93,6 +92,9 @@ class NavRouteHandler:
                     star_class="",
                     star_position=pos
                 )
+
+    def get_system_by_index(self, system_index: int) -> NavPoint|None:
+        return self.plotted_nav_route.nav_points[system_index]
 
     def get_next_system(self, remaining_jumps_in_route: int|None) -> NavPoint|None:
         """Calculates the next system to show."""
@@ -111,7 +113,6 @@ class NavRouteHandler:
         else:
             return None
 
-        #system_index = len(self.plotted_nav_route.nav_points) - self.remaining_jumps_in_route
         system_index = -1 * self.remaining_jumps_in_route
 
         return self.plotted_nav_route.nav_points[system_index]

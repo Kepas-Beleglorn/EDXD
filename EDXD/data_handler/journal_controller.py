@@ -167,10 +167,6 @@ class JournalController(PausableThread, threading.Thread):
             if self.nav_route.plotted_nav_route is None:
                 self.nav_route.load_plotted_route()
             self.nav_route.set_current_system_from_journal_data(evt)
-            next_system = self.nav_route.get_next_system(None)
-            if next_system and self.nav_route.current_system:
-                distance_to_next_system = gn.calculate_star_system_distance(self.nav_route.current_system.star_position, next_system.star_position)
-                print(f"DEBUG (FSDJump/Location): {next_system.system_address}: {next_system.star_system} [{next_system.star_class}] [{next_system.star_position}] - Distance to next system: {distance_to_next_system:.2f}  from {self.nav_route.current_system.star_system}")
 
         #113:   after app-start, load only current SYSTEM.json
         #       store last read journal line (timestamp) and process only newer lines
