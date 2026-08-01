@@ -1,6 +1,14 @@
-outputs = { self, nixpkgs, flake-utils }:
-  flake-utils.lib.eachDefaultSystem (system:
-    let
+{
+  description = "EDXD - Elite Dangerous eXploration Dashboard";
+
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    flake-utils.url = "github:numtide/flake-utils";
+  };
+
+  outputs = { self, nixpkgs, flake-utils }:
+    flake-utils.lib.eachDefaultSystem (system:
+      let
       # Import nixpkgs with a custom overlay to override wxpython
       pkgs = import nixpkgs {
         inherit system;
@@ -80,3 +88,4 @@ outputs = { self, nixpkgs, flake-utils }:
       };
     }
   );
+}
