@@ -10,7 +10,7 @@ from EDXD.data_handler.journal_controller import JournalController
 from EDXD.data_handler.journal_reader import JournalReader
 from EDXD.data_handler.model import Model
 from EDXD.data_handler.status_json_watcher import StatusWatcher
-from EDXD.globals import CFG_FILE, RAW_MATS, DEFAULT_WORTHWHILE_THRESHOLD, DEFAULT_FUEL_LOW_THRESHOLD, args
+from EDXD.globals import CFG_FILE, RAW_MATS, DEFAULT_WORTHWHILE_THRESHOLD, DEFAULT_FUEL_LOW_THRESHOLD, args, DEFAULT_AMOUNT_OF_PLOTTED_SYSTEMS_TO_SHOW
 from EDXD.gui.main_window import MainFrame
 
 
@@ -77,12 +77,13 @@ def main():
     model = Model()
     journal_reader = JournalReader(journal_dir, q)
     journal_reader.start()
-    journal_controller = JournalController(q, model)
+    journal_controller = JournalController(q, model, cfg)
     journal_controller.start()
 
     cfg.setdefault("land", False)
     cfg.setdefault("ringed", False)
     cfg.setdefault("mat_sel", {m: True for m in RAW_MATS})
+    cfg.setdefault("amount_of_plotted_systems_to_show", DEFAULT_AMOUNT_OF_PLOTTED_SYSTEMS_TO_SHOW)
     if "worthwhile_threshold" not in cfg.keys():
         cfg["worthwhile_threshold"] = DEFAULT_WORTHWHILE_THRESHOLD
 

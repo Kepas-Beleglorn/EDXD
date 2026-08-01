@@ -157,6 +157,7 @@ BTN_MARGIN = 1
 
 DEFAULT_WORTHWHILE_THRESHOLD = 1000000
 DEFAULT_FUEL_LOW_THRESHOLD = 10
+DEFAULT_AMOUNT_OF_PLOTTED_SYSTEMS_TO_SHOW = 10
 
 # -----------------------------------------------------------------------
 # prefix to stringify body_id

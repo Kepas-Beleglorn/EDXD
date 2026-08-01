@@ -1,11 +1,14 @@
 import json
 import queue
 import re
+from pathlib import Path
 
 import EDXD.data_handler.helper.bio_helper as bio_helper
-from EDXD.data_handler.helper.spansh import SpanshHelper
+import EDXD.data_handler.helper.galactic_navigation as gn
 from EDXD.data_handler.helper.pausable_thread import PausableThread
+from EDXD.data_handler.helper.spansh import SpanshHelper
 from EDXD.data_handler.model import *
+from EDXD.data_handler.nav_route import NavRouteHandler, NavPoint
 from EDXD.data_handler.planetary_surface_positioning_system import PSPSCoordinates
 from EDXD.data_handler.vessel_status import *
 from EDXD.globals import logging, BODY_ID_PREFIX, log_context, JOURNAL_TIMESTAMP_FILE, SHIP_STATUS_FILE, VESSEL_SHIP, \
@@ -17,13 +20,16 @@ bip = BODY_ID_PREFIX
 # controller thread – turns Journal lines into Model updates
 # ---------------------------------------------------------------------------
 class JournalController(PausableThread, threading.Thread):
-    def __init__(self, q: "queue.Queue[str]", model: Model):
+    def __init__(self, q: "queue.Queue[str]", model: Model, cfg):
         super().__init__()
+        self.cfg = cfg
         self.q = q
         self.m = model
         self.last_event = None
         self.ship_status = None
         self.spansh_helper = SpanshHelper()
+        self.journal_path: Path = Path(cfg["journal_dir"])
+        self.nav_route: NavRouteHandler = NavRouteHandler(nav_route_json=self.journal_path / "NavRoute.json", amount_of_upcoming_systems_to_show=int(cfg["amount_of_plotted_systems_to_show"]))
 
     def _process_data(self):
         try:
@@ -51,39 +57,6 @@ class JournalController(PausableThread, threading.Thread):
         genus_id = re.sub(r'(\w+)_\d+[^_]*_Name;', r'\1_Name;', genus_id)
         genus_id = re.sub(r'_\d+_[^_]+(?=_Name;)', '_Genus', genus_id)
         return genus_id
-
-    """
-    def get_parent_star_ids(self, body_name: str, body_parents: List[Dict[str, int]]) -> List[Dict[str, int]]:
-        parent_stars: List[Dict[str, int]] = body_parents
-        system_name = self.m.system_name
-        body_name_without_system = body_name.removeprefix(system_name).strip()
-
-        # If body name is empty after removing the system name from it, we are in a single star system. So nothing to do here
-        if len(body_name_without_system) == 0:
-            return parent_stars
-
-        # If body has only one part (e.g. "A", not "A 1" or A 1 a" and so on) it is a star itself
-        if len(body_name_without_system.split(" ")) == 1:
-            return parent_stars
-
-        # does the planet already have Stars listed as parents?
-        for body_parent in parent_stars:
-            if list(body_parent)[0] == "Star":
-                return parent_stars
-
-        body_name_star_hint = body_name_without_system.split(" ")[0]
-
-        for i in range(0, len(body_name_star_hint), 1):
-            star_name = system_name + " " + body_name_star_hint[i]
-            for body_id in self.m.bodies:
-                body = self.m.bodies[body_id]
-                if not body.is_star:
-                    continue
-                if body.body_name == star_name:
-                    parent_stars.append({str("Star"): int(body_id.split("_")[-1])})
-
-        return parent_stars
-    """
 
     def get_parent_star_ids(self, current_body:  Body, body_parents: List[Dict[str, int]] = None) -> List[Dict[str, int]]:
         parent_stars: List[Dict[str, int]] = current_body.parents
@@ -126,7 +99,6 @@ class JournalController(PausableThread, threading.Thread):
             print(f"ERROR: journal_controller.get_parent_star_ids[3] {current_body.body_id}/{current_body.body_name}/{current_body.body_type}/{current_body.parents}: {e}")
 
         return parent_stars
-
 
     def process_event(self, evt, update_gui: bool, set_timestamp: bool = True):
         etype = evt.get("event")
@@ -186,6 +158,19 @@ class JournalController(PausableThread, threading.Thread):
                 self.m.ship_status.jet_cone_boost_factor = None
                 dh.update_ship_status(SHIP_STATUS_FILE, self.m.ship_status)
 
+        if etype == "NavRoute":
+            if update_gui:
+                self.nav_route = NavRouteHandler(self.journal_path / "NavRoute.json", self.cfg["amount_of_plotted_systems_to_show"])
+                self.nav_route.load_plotted_route()
+
+        if etype in ("FSDJump", "Location") and update_gui:
+            if self.nav_route.plotted_nav_route is None:
+                self.nav_route.load_plotted_route()
+            self.nav_route.set_current_system_from_journal_data(evt)
+            next_system = self.nav_route.get_next_system(None)
+            if next_system and self.nav_route.current_system:
+                distance_to_next_system = gn.calculate_star_system_distance(self.nav_route.current_system.star_position, next_system.star_position)
+                print(f"DEBUG (FSDJump/Location): {next_system.system_address}: {next_system.star_system} [{next_system.star_class}] [{next_system.star_position}] - Distance to next system: {distance_to_next_system:.2f}  from {self.nav_route.current_system.star_system}")
 
         #113:   after app-start, load only current SYSTEM.json
         #       store last read journal line (timestamp) and process only newer lines
@@ -206,18 +191,23 @@ class JournalController(PausableThread, threading.Thread):
                 self.last_event = evt
                 dh.update_last_timestamp(JOURNAL_TIMESTAMP_FILE, current_evt_timestamp_str)
 
-        #141: don't load system data of FSDTarget, if targeted system has been visited before.
-        #137: reset_system no longer uses <evt.get("Name")>, as this NEVER holds the systems name
+        if etype == "NavRouteClear":
+            if update_gui:
+                self.nav_route = None
+
+
         if etype != "FSDTarget":
             systemaddress = evt.get("SystemAddress")
             total_bodies = None
             if systemaddress is not None:
                 self.m.total_bodies = None
                 self.m.reset_system(evt.get("StarSystem") or self.m.system_name, systemaddress)
-
         else:
             systemaddress = self.m.system_addr
             total_bodies = self.m.total_bodies
+            if update_gui:
+                if self.nav_route.plotted_nav_route is None:
+                    self.nav_route.load_plotted_route()
 
         # ───── jump to a new system ───────────────────────────────
         #124: system/selection is no longer reset when entering super cruise
@@ -237,6 +227,9 @@ class JournalController(PausableThread, threading.Thread):
             )
 
         if etype == "FSSDiscoveryScan":
+            if self.m.system_name in ("No System", "", None):
+                self.m.reset_system(system_name=evt.get("StarSystem"), address=systemaddress)
+                self.m.system_name = evt.get("SystemName")
             if evt.get("Progress")*1 == 1:
                 self.m.total_bodies = evt.get("BodyCount")
                 total_bodies = self.m.total_bodies
