@@ -22,7 +22,7 @@
                     owner = "wxWidgets";
                     repo = "Phoenix";
                     rev = "wxPython-4.2.4";
-                    hash = "";
+                    hash = "sha256-bhlWN8uEBqHGbIPrw88Kd33Ib0Rt6jzc6zyy0d9h8Pk=";
                   };
                   # wxPython 4.2.5 from GitHub source may need build flags
                   # Usually not needed for Phoenix, but kept for safety
