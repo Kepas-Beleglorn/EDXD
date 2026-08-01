@@ -29,7 +29,7 @@ class JournalController(PausableThread, threading.Thread):
         self.ship_status = None
         self.spansh_helper = SpanshHelper()
         self.journal_path: Path = Path(cfg["journal_dir"])
-        self.nav_route: NavRouteHandler = NavRouteHandler(nav_route_json=self.journal_path / "NavRoute.json", amount_of_upcoming_systems_to_show=int(cfg["amount_of_plotted_systems_to_show"]))
+        self.nav_route: NavRouteHandler = NavRouteHandler(nav_route_json=self.journal_path / "NavRoute.json", amount_of_upcoming_systems_to_show=int(cfg["amount_of_plotted_upcoming_systems_to_show"]), amount_of_passed_systems_to_show=int(cfg["amount_of_plotted_passed_systems_to_show"]))
 
     def _process_data(self):
         try:
@@ -160,7 +160,7 @@ class JournalController(PausableThread, threading.Thread):
 
         if etype == "NavRoute":
             if update_gui:
-                self.nav_route = NavRouteHandler(self.journal_path / "NavRoute.json", self.cfg["amount_of_plotted_systems_to_show"])
+                self.nav_route = NavRouteHandler(nav_route_json=self.journal_path / "NavRoute.json", amount_of_upcoming_systems_to_show=int(self.cfg["amount_of_plotted_upcoming_systems_to_show"]), amount_of_passed_systems_to_show=int(self.cfg["amount_of_plotted_passed_systems_to_show"]))
                 self.nav_route.load_plotted_route()
 
         if etype in ("FSDJump", "Location") and update_gui:
