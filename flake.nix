@@ -18,15 +18,11 @@
               packageOverrides = python-final: python-prev: {
                 wxpython = python-prev.wxpython.overrideAttrs (oldAttrs: {
                   version = "4.2.4";
-                  src = final.fetchFromGitHub {
-                    owner = "wxWidgets";
-                    repo = "Phoenix";
-                    rev = "wxPython-4.2.4";
-                    hash = "sha256-bhlWN8uEBqHGbIPrw88Kd33Ib0Rt6jzc6zyy0d9h8Pk=";
+                  src = final.fetchPypi {
+                    pname = "wxPython";
+                    version = "4.2.4";
+                    hash = "sha256-LrEjl5yHvLMp6KJFImnWD/j59lHpvyXGdXnlPE67rjw=";
                   };
-                  # wxPython 4.2.5 from GitHub source may need build flags
-                  # Usually not needed for Phoenix, but kept for safety
-                  buildInputs = oldAttrs.buildInputs or [];
                 });
               };
             };
