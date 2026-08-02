@@ -76,10 +76,18 @@ class CollapsiblePanel(wx.Panel):
                 child.GetWindow().Destroy()
         self.table_sizer.Clear()
 
-    def add_table_item(self, label_text, align=wx.ALIGN_LEFT) -> wx.StaticText:
+    def add_table_item(self, label_text, align=wx.ALIGN_LEFT, line_height: int = -1) -> wx.StaticText:
         """Add a row to the table."""
         label = wx.StaticText(self.content)
         init_widget(widget=label, title=label_text)
+
+        if line_height > 0:
+            fixed_size = wx.Size(-1, line_height)
+            label.SetMaxSize(fixed_size)
+            label.SetMinSize(fixed_size)
+            label.SetSize(fixed_size)
+            label.SetInitialSize(fixed_size)
+
         if align == wx.ALIGN_CENTER:
             self.table_sizer.Add(label, 0, align, 5)
         else:

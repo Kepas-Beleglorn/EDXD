@@ -156,6 +156,8 @@ class PlottedNavRoute(DynamicDialog):
         system: NavPoint|None = None
         next_system: NavPoint|None = None
 
+        fixed_height = 20
+
         for i in  range(min, max, 1):
             if abs(i) > len(self.plotted_route.plotted_nav_route.nav_points) :
                 continue
@@ -186,23 +188,23 @@ class PlottedNavRoute(DynamicDialog):
                 if next_system:
                     distance_next_jump = gn.calculate_star_system_distance(next_system.star_position, system.star_position)
 
-                lbl_system_indicator = self.route_panel.add_table_item(f"{system_indicator}", align=wx.ALIGN_CENTER)
-                self.route_panel.add_table_item(f"")
-                lbl_star_feature = self.route_panel.add_table_item(f"{' '*5}{system_feature}", align=wx.ALIGN_BOTTOM)
+                lbl_system_indicator = self.route_panel.add_table_item(f"{system_indicator}", align=wx.ALIGN_CENTER, line_height=fixed_height)
+                self.route_panel.add_table_item(f"", line_height=fixed_height)
+                lbl_star_feature = self.route_panel.add_table_item(f"{' '*5}{system_feature}", align=wx.ALIGN_BOTTOM, line_height=fixed_height)
                 lbl_star_feature.SetFont(small_font)
-                lbl_star_class = self.route_panel.add_table_item(f"[{system_type}]{' '*2}", align=wx.ALIGN_RIGHT)
-                lbl_system = self.route_panel.add_table_item(f"{system_name}")
-                self.route_panel.add_table_item(f"")
+                lbl_star_class = self.route_panel.add_table_item(f"[{system_type}]{' '*2}", align=wx.ALIGN_RIGHT, line_height=fixed_height)
+                lbl_system = self.route_panel.add_table_item(f"{system_name}", line_height=fixed_height)
+                self.route_panel.add_table_item(f"", line_height=fixed_height)
 
                 if abs(i) > abs(max - 1) and abs(i) <= len(self.plotted_route.plotted_nav_route.nav_points):
-                    lbl_distance_indicator = self.route_panel.add_table_item(f"|", align=wx.ALIGN_CENTER)
+                    lbl_distance_indicator = self.route_panel.add_table_item(f"|", align=wx.ALIGN_CENTER, line_height=fixed_height)
                     lbl_distance_indicator.SetFont(tall_font)
-                    lbl_distance = self.route_panel.add_table_item(f"{' '*2}{distance_next_jump:.2f} Ly", align=wx.ALIGN_CENTER_VERTICAL)
+                    lbl_distance = self.route_panel.add_table_item(f"{' '*2}{distance_next_jump:.2f} Ly", align=wx.ALIGN_CENTER_VERTICAL, line_height=fixed_height)
                     lbl_distance.SetFont(small_font)
-                    self.route_panel.add_table_item(f"")
-                    self.route_panel.add_table_item(f"")
-                    self.route_panel.add_table_item(f"")
-                    self.route_panel.add_table_item(f"")
+                    self.route_panel.add_table_item(f"", line_height=fixed_height)
+                    self.route_panel.add_table_item(f"", line_height=fixed_height)
+                    self.route_panel.add_table_item(f"", line_height=fixed_height)
+                    self.route_panel.add_table_item(f"", line_height=fixed_height)
 
         if self.route_panel.IsShown():
             # Force a layout update
