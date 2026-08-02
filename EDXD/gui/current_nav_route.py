@@ -4,9 +4,11 @@ import wx
 
 from EDXD.data_handler.helper import galactic_navigation
 from EDXD.data_handler.nav_route import NavRouteHandler, NavPoint
-from EDXD.globals import DEFAULT_POS_Y, DEFAULT_POS_X, RESIZE_MARGIN, ICONS, DEFAULT_WORTHWHILE_THRESHOLD, DEFAULT_HEIGHT_CURRENT_NAV_ROUTE, DEFAULT_WIDTH_CURRENT_NAV_ROUTE
+from EDXD.globals import DEFAULT_POS_Y, DEFAULT_POS_X, RESIZE_MARGIN, ICONS, DEFAULT_WORTHWHILE_THRESHOLD, DEFAULT_HEIGHT_CURRENT_NAV_ROUTE, DEFAULT_WIDTH_CURRENT_NAV_ROUTE, BASE64_CIRCLE_ORANGE, \
+    BASE64_CIRCLE_BLUE, BASE64_LINE_ORANGE, BASE64_LINE_BLUE
 from EDXD.gui.helper.dynamic_dialog import DynamicDialog
 from EDXD.gui.helper.gui_handler import init_widget
+from EDXD.gui.helper.icon_loader import get_bitmap_from_base64
 from EDXD.gui.helper.theme_handler import get_theme
 from EDXD.gui.helper.window_properties import WindowProperties
 from EDXD.utils.clipboard import copy_text_to_clipboard
@@ -33,6 +35,11 @@ class PlottedNavRoute(DynamicDialog):
         self.plotted_route: NavRouteHandler|None = None
 
         self.theme = get_theme()
+
+        self.BMP_CIRCLE_ORANGE  = get_bitmap_from_base64(BASE64_CIRCLE_ORANGE, 20)
+        self.BMP_CIRCLE_BLUE    = get_bitmap_from_base64(BASE64_CIRCLE_BLUE, 20)
+        self.BMP_LINE_ORANGE    = get_bitmap_from_base64(BASE64_LINE_ORANGE, 20)
+        self.BMP_LINE_BLUE      = get_bitmap_from_base64(BASE64_LINE_BLUE, 20)
 
         self._ready = False  # not yet mapped
         self._loading = True  # during startup, we must not save, otherwise we'll get garbage!!
@@ -172,8 +179,10 @@ class PlottedNavRoute(DynamicDialog):
             system_feature = ""
             system_name = ""
             distance_next_jump = 0.0
-            system_indicator = "O"
             has_jet_cone = False
+            system_indicator = self.BMP_CIRCLE_ORANGE
+            distance_indicator = self.BMP_LINE_ORANGE
+
             if system:
                 system_type = system.star_class
                 if system_type and system_type != "":
@@ -181,24 +190,26 @@ class PlottedNavRoute(DynamicDialog):
                         system_feature = ICONS["scoopable"]
                     if system_type[0] in ("N", "D", "T"):
                         has_jet_cone = True
-                        system_indicator = "🔵"
-                    else:
-                        system_indicator = "🟠"
+                        system_indicator = self.BMP_CIRCLE_BLUE
+                        distance_indicator = self.BMP_LINE_BLUE
+
                 system_name = system.star_system
                 if next_system:
                     distance_next_jump = gn.calculate_star_system_distance(next_system.star_position, system.star_position)
 
-                lbl_system_indicator = self.route_panel.add_table_item(f"{system_indicator}", align=wx.ALIGN_CENTER, line_height=fixed_height)
+                #lbl_system_indicator = self.route_panel.add_table_item(f"{system_indicator}", align=wx.ALIGN_CENTER, line_height=fixed_height)
+                self.route_panel.add_table_item_widget(system_indicator, 20)
                 self.route_panel.add_table_item(f"", line_height=fixed_height)
-                lbl_star_feature = self.route_panel.add_table_item(f"{' '*5}{system_feature}", align=wx.ALIGN_BOTTOM, line_height=fixed_height)
-                lbl_star_feature.SetFont(small_font)
+                lbl_star_feature = self.route_panel.add_table_item(f"{' '*5}{system_feature}{'  '*2}", align=wx.ALIGN_CENTER, line_height=fixed_height)
+                #lbl_star_feature.SetFont(small_font)
                 lbl_star_class = self.route_panel.add_table_item(f"[{system_type}]{' '*2}", align=wx.ALIGN_RIGHT, line_height=fixed_height)
                 lbl_system = self.route_panel.add_table_item(f"{system_name}", line_height=fixed_height)
                 self.route_panel.add_table_item(f"", line_height=fixed_height)
 
                 if abs(i) > abs(max - 1) and abs(i) <= len(self.plotted_route.plotted_nav_route.nav_points):
-                    lbl_distance_indicator = self.route_panel.add_table_item(f"|", align=wx.ALIGN_CENTER, line_height=fixed_height)
-                    lbl_distance_indicator.SetFont(tall_font)
+                    #lbl_distance_indicator = self.route_panel.add_table_item(f"|", align=wx.ALIGN_CENTER, line_height=fixed_height)
+                    #lbl_distance_indicator.SetFont(tall_font)
+                    self.route_panel.add_table_item_widget(distance_indicator, line_height=fixed_height)
                     lbl_distance = self.route_panel.add_table_item(f"{' '*2}{distance_next_jump:.2f} Ly", align=wx.ALIGN_CENTER_VERTICAL, line_height=fixed_height)
                     lbl_distance.SetFont(small_font)
                     self.route_panel.add_table_item(f"", line_height=fixed_height)

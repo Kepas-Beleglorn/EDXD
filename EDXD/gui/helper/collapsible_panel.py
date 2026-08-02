@@ -64,7 +64,7 @@ class CollapsiblePanel(wx.Panel):
         """Set up a table-like layout with two columns."""
         self.table_sizer = wx.FlexGridSizer(cols=self.columns)  # 2 columns, 5px gaps
         self.table_sizer.AddGrowableCol(self.columns - 1)
-        self.content_sizer.Add(self.table_sizer, 1, wx.EXPAND | wx.ALL, 5)
+        self.content_sizer.Add(self.table_sizer, 1, wx.EXPAND | wx.ALL, 0)
         self.content_height = self.content.GetBestSize().height
         self.main_sizer.Layout()
 
@@ -93,6 +93,19 @@ class CollapsiblePanel(wx.Panel):
         else:
             self.table_sizer.Add(label, 0, align | wx.EXPAND, 5)
         return label
+
+    # Inside your CollapsiblePanel class
+    def add_table_item_widget(self, widget: wx.Bitmap, line_height: int = -1):
+        icon =  wx.StaticBitmap(self.content, bitmap=widget)
+
+        if line_height > 0:
+            fixed_size = wx.Size(-1, line_height)
+            icon.SetMaxSize(fixed_size)
+            icon.SetMinSize(fixed_size)
+            icon.SetSize(fixed_size)
+            icon.SetInitialSize(fixed_size)
+
+        self.table_sizer.Add(icon, 0, wx.ALIGN_CENTER_HORIZONTAL, 0)
 
     def on_toggle(self, event):
         """Toggle collapse/expand state with animation."""
