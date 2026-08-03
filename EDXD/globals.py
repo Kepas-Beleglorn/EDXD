@@ -241,7 +241,8 @@ ICONS = {
     "atmosphere_present"    : "☁️",
     "has_rings"             : "🪐",
     "ring_hotspots"         : "⛏️",
-    "radicoida"             : "🫚"
+    "radicoida"             : "🫚",
+    "final"                 : "🏁"
 }
 
 # -----------------------------------------------------------------------

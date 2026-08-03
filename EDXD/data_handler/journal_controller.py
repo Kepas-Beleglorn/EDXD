@@ -161,6 +161,7 @@ class JournalController(PausableThread, threading.Thread):
         if etype == "NavRoute":
             if update_gui:
                 self.nav_route = NavRouteHandler(nav_route_json=self.journal_path / "NavRoute.json", amount_of_upcoming_systems_to_show=int(self.cfg["amount_of_plotted_upcoming_systems_to_show"]), amount_of_passed_systems_to_show=int(self.cfg["amount_of_plotted_passed_systems_to_show"]))
+                self.nav_route.clear_plotted_route()
                 self.nav_route.load_plotted_route()
 
         if etype in ("FSDJump", "Location") and update_gui:
@@ -204,6 +205,7 @@ class JournalController(PausableThread, threading.Thread):
             if update_gui:
                 if self.nav_route.plotted_nav_route is None:
                     self.nav_route.load_plotted_route()
+                self.nav_route.remaining_jumps_in_route = int(evt.get("RemainingJumpsInRoute"))
 
         # ───── jump to a new system ───────────────────────────────
         #124: system/selection is no longer reset when entering super cruise

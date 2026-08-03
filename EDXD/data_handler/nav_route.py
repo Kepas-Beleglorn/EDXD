@@ -148,3 +148,13 @@ class NavRouteHandler:
             total_distance += gn.calculate_star_system_distance(points[i].star_position, points[i + 1].star_position)
 
         return total_distance
+
+    def check_and_update_remaining_jump_count(self):
+        system_address_remaining_jumps = self.get_system_by_index(-1*(1+self.remaining_jumps_in_route)).system_address
+        system_address_current_system  = self.current_system.system_address
+
+        if system_address_current_system != system_address_remaining_jumps:
+            for i in range(-1, -1*len(self.plotted_nav_route.nav_points), -1):
+                if self.get_system_by_index(i).system_address == system_address_current_system:
+                    self.remaining_jumps_in_route = -1*(i+1)
+                    return

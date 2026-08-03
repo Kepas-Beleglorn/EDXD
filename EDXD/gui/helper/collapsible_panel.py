@@ -88,14 +88,15 @@ class CollapsiblePanel(wx.Panel):
             label.SetSize(fixed_size)
             label.SetInitialSize(fixed_size)
 
+
         if align == wx.ALIGN_CENTER:
-            self.table_sizer.Add(label, 0, align, 5)
+            self.table_sizer.Add(label, 0, align, 0)
         else:
-            self.table_sizer.Add(label, 0, align | wx.EXPAND, 5)
+            self.table_sizer.Add(label, 0, align | wx.EXPAND, 0)
         return label
 
     # Inside your CollapsiblePanel class
-    def add_table_item_widget(self, widget: wx.Bitmap, line_height: int = -1):
+    def add_table_item_widget(self, widget: wx.Bitmap, line_height: int = -1) -> wx.StaticBitmap:
         icon =  wx.StaticBitmap(self.content, bitmap=widget)
 
         if line_height > 0:
@@ -106,6 +107,7 @@ class CollapsiblePanel(wx.Panel):
             icon.SetInitialSize(fixed_size)
 
         self.table_sizer.Add(icon, 0, wx.ALIGN_CENTER_HORIZONTAL, 0)
+        return icon
 
     def on_toggle(self, event):
         """Toggle collapse/expand state with animation."""

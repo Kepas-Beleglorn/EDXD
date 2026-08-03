@@ -40,6 +40,7 @@ def _get_dark_theme():
         background_click        = wx.Colour("#663322"),
         background_toggled      = wx.Colour("#553322"),
         foreground              = wx.Colour("#ff9a00"),
+        foreground_less         = wx.Colour("#ff9a0088"),
         foreground_accent       = wx.Colour("#ff9a33"),
         foreground_hover        = wx.Colour("#ff9a33"),
         foreground_click        = wx.Colour("#ffbb55"),
