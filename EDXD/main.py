@@ -74,13 +74,6 @@ def main():
     if not journal_dir.is_dir():
         sys.exit("Run once with --journals <Saved Games …>")
 
-    q = queue.Queue()
-    model = Model()
-    journal_reader = JournalReader(journal_dir, q)
-    journal_reader.start()
-    journal_controller = JournalController(q, model, cfg)
-    journal_controller.start()
-
     cfg.setdefault("land", False)
     cfg.setdefault("ringed", False)
     cfg.setdefault("mat_sel", {m: True for m in RAW_MATS})
@@ -91,6 +84,13 @@ def main():
 
     if "fuel_low_threshold" not in cfg.keys():
         cfg["fuel_low_threshold"] = DEFAULT_FUEL_LOW_THRESHOLD
+
+    q = queue.Queue()
+    model = Model()
+    journal_reader = JournalReader(journal_dir, q)
+    journal_reader.start()
+    journal_controller = JournalController(q, model, cfg)
+    journal_controller.start()
 
     def _save():
         data = {k: v for k, v in cfg.items() if k != "save"}
