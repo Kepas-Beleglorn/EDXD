@@ -99,15 +99,16 @@ class PlottedNavRoute(DynamicDialog):
 
     def _on_name_label_double_click(self, evt: wx.Event):
         name = None
-        if getattr(self, "body", None):
-            name = getattr(self.body, "name", None) or getattr(self.body, "body_name", None)
+        # Retrieve the label that triggered the event
+        label = evt.GetEventObject()
 
-        if not name and getattr(self, "name_label", None):
-            raw = self.lbl_body.GetLabel()
+        if not name and label:
+            raw = label.GetLabelText()
             name = self._plain_name_from_label(raw)
 
         if name:
             copy_text_to_clipboard(name)
+
         evt.Skip()
 
     def _update_general(self):
@@ -200,7 +201,7 @@ class PlottedNavRoute(DynamicDialog):
                 if system_type and system_type != "":
                     if system_type[0] in ("K", "G", "B", "F", "O", "A", "M"):
                         system_feature = ICONS["scoopable"]
-                    if system_type[0] in ("N", "D", "T"):
+                    if system_type[0] in ("N", "D"):
                         has_jet_cone = True
                         system_indicator = self.BMP_CIRCLE_BLUE
                         distance_indicator = self.BMP_LINE_BLUE
@@ -213,10 +214,10 @@ class PlottedNavRoute(DynamicDialog):
                 lbl_2_space = self.route_panel.add_table_item(f"", line_height=fixed_height)
                 if abs(i) == abs(max-1):
                     lbl_2_space.SetLabelText(f"{' '*5}{ICONS["final"]}")
-                #lbl_3_star_feature = self.route_panel.add_table_item(f"{' '*5}{system_feature}{'  '*2}", align=wx.ALIGN_CENTER, line_height=fixed_height)
                 lbl_3_star_feature = self.route_panel.add_table_item(f"{' '*5}{system_feature}{'  '*2}", line_height=fixed_height)
                 lbl_4_star_class = self.route_panel.add_table_item(f"[{system_type}]", line_height=fixed_height)
                 lbl_5_system = self.route_panel.add_table_item(f"{' '*2}{system_name}", line_height=fixed_height)
+                lbl_5_system.Bind(wx.EVT_LEFT_DCLICK, self._on_name_label_double_click)
                 lbl_6_space = self.route_panel.add_table_item(f"", line_height=fixed_height)
 
                 if has_jet_cone:
