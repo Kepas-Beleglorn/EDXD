@@ -131,7 +131,8 @@ class PlottedNavRoute(DynamicDialog):
 
         if self.plotted_route.current_system:
             total_distance = self.plotted_route.get_total_route_distance()
-            remaining_distance = gn.calculate_star_system_distance(self.plotted_route.current_system.star_position, self.plotted_route.get_final_destination().star_position)
+            #remaining_distance = gn.calculate_star_system_distance(self.plotted_route.current_system.star_position, self.plotted_route.get_final_destination().star_position)
+            remaining_distance = self.plotted_route.get_remaining_route_distance()
 
             lbl_distance = self.general_panel.add_table_item(f"{' '*6}{remaining_distance:,.2f} Ly of {total_distance:,.2f} Ly ({self.plotted_route.remaining_jumps_in_route} jumps) remaining")
             self.general_panel.add_table_item("")
