@@ -231,6 +231,10 @@ class MainFrame(DynamicFrame):
                 self.win_nav_route = PlottedNavRoute(self)
                 self.win_nav_route.Show(True)
 
+        if self.win_nav_route and self.win_nav_route.plotted_route:
+            self.win_nav_route.plotted_route.amount_of_upcoming_systems_to_show = int(self.prefs.get("amount_of_plotted_upcoming_systems_to_show"))
+            self.win_nav_route.plotted_route.amount_of_passed_systems_to_show = int(self.prefs.get("amount_of_plotted_passed_systems_to_show"))
+
     def _update_system(self, title: str = ""):
         init_widget(widget=self.lbl_sys, title=title)
         font = self.lbl_sys.GetFont()
