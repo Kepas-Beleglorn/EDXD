@@ -68,15 +68,37 @@ Add to input:
     ...
 ```
 
-Add to system packages from the inputs:
+To use `inputs.edxd` inside your NixOS modules (e.g. `configuration.nix`), your flake's `outputs` needs to capture the whole inputs set and hand it to the module system via `specialArgs`. This is a step that's easy to miss and will otherwise fail with `error: undefined variable 'inputs'`.
+
+In your `flake.nix`, bind the inputs set with `inputs@` and pass it through `specialArgs`:
+
 ```nix
-{ inputs, ... }:
+outputs = inputs@{ self, nixpkgs, ... }:
+  {
+    nixosConfigurations.yourHostName = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      specialArgs = { inherit inputs; };
+      modules = [
+        ./configuration.nix
+      ];
+    };
+  };
+```
+
+Then any module listed in `modules`, including `configuration.nix`, can accept `inputs` as an argument:
+
+```nix
+{ config, pkgs, inputs, ... }:
 {
-  ...
-  systemPackages = with pkgs; [
+  environment.systemPackages = with pkgs; [
     inputs.edxd.packages."${stdenv.hostPlatform.system}".default
   ];
 }
+```
+
+> [!NOTE]
+> `specialArgs` is what makes `inputs` (and anything else you put in it) available as a function argument across your NixOS modules. Without it, `inputs` is only in scope inside `flake.nix` itself, not inside files listed under `modules`.
+
 ```
 
 **Using standard `configuration.nix`**

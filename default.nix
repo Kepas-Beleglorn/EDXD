@@ -8,7 +8,7 @@ let
       owner = "Kepas-Beleglorn";
       repo = "EDXD";
       rev = version;
-      hash = "sha256-d1bHkqeK3uX49QY5QqNklhjNEZ1Xc2BAQIsDPedbTtg=";
+      hash = "sha256-bhlWN8uEBqHGbIPrw88Kd33Ib0Rt6jzc6zyy0d9h8Pk=";
     };
 
     preBuild = ''

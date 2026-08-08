@@ -15,18 +15,14 @@
         overlays = [
           (final: prev: {
             python3 = prev.python3.override {
-              packageOverrides = python-prev: {
+              packageOverrides = python-final: python-prev: {
                 wxpython = python-prev.wxpython.overrideAttrs (oldAttrs: {
                   version = "4.2.4";
-                  src = final.fetchFromGitHub {
-                    owner = "wxWidgets";
-                    repo = "Phoenix";
-                    rev = "wxPython-4.2.4";
-                    hash = "sha256-44e836d1bccd99c38790bb034b6ecf70d9060f6734320560f7c4b0d006144793";
+                  src = final.fetchPypi {
+                    pname = "wxpython";
+                    version = "4.2.4";
+                    hash = "sha256-LrEjl5yHvLMp6KJFImnWD/j59lHpvyXGdXnlPE67rjw=";
                   };
-                  # wxPython 4.2.5 from GitHub source may need build flags
-                  # Usually not needed for Phoenix, but kept for safety
-                  buildInputs = oldAttrs.buildInputs or [];
                 });
               };
             };
