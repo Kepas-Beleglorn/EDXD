@@ -94,7 +94,10 @@ class NavRouteHandler:
                 )
 
     def get_system_by_index(self, system_index: int) -> NavPoint|None:
-        return self.plotted_nav_route.nav_points[system_index]
+        if self.plotted_nav_route and len(self.plotted_nav_route.nav_points) > 0:
+            return self.plotted_nav_route.nav_points[system_index]
+        else:
+            return None
 
     def get_next_system(self, remaining_jumps_in_route: int|None) -> NavPoint|None:
         """Calculates the next system to show."""
@@ -150,13 +153,15 @@ class NavRouteHandler:
         return total_distance
 
     def check_and_update_remaining_jump_count(self):
-        system_address_remaining_jumps = self.get_system_by_index(-1*(1+self.remaining_jumps_in_route)).system_address
-        if self.current_system is None:
-            self.current_system = self.plotted_nav_route.nav_points[0]
-        system_address_current_system  = self.current_system.system_address
+        system_remaining_jumps = self.get_system_by_index(-1*(1+self.remaining_jumps_in_route))
+        if system_remaining_jumps:
+            system_address_remaining_jumps = self.get_system_by_index(-1*(1+self.remaining_jumps_in_route)).system_address
+            if self.current_system is None:
+                self.current_system = self.plotted_nav_route.nav_points[0]
+            system_address_current_system  = self.current_system.system_address
 
-        if system_address_current_system != system_address_remaining_jumps:
-            for i in range(-1, -1*len(self.plotted_nav_route.nav_points), -1):
-                if self.get_system_by_index(i).system_address == system_address_current_system:
-                    self.remaining_jumps_in_route = -1*(i+1)
-                    return
+            if system_address_current_system != system_address_remaining_jumps:
+                for i in range(-1, -1*len(self.plotted_nav_route.nav_points), -1):
+                    if self.get_system_by_index(i).system_address == system_address_current_system:
+                        self.remaining_jumps_in_route = -1*(i+1)
+                        return
