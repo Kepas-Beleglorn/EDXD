@@ -28,8 +28,11 @@ class JournalController(PausableThread, threading.Thread):
         self.last_event = None
         self.ship_status = None
         self.spansh_helper = SpanshHelper()
-        self.journal_path: Path = Path(cfg["journal_dir"])
-        self.nav_route: NavRouteHandler = NavRouteHandler(nav_route_json=self.journal_path / "NavRoute.json", amount_of_upcoming_systems_to_show=int(cfg["amount_of_plotted_upcoming_systems_to_show"]), amount_of_passed_systems_to_show=int(cfg["amount_of_plotted_passed_systems_to_show"]))
+        self.journal_path = None
+        self.nav_route = None
+        if cfg["journal_dir"] and cfg["journal_dir"] != "":
+            self.journal_path: Path = Path(cfg["journal_dir"])
+            self.nav_route: NavRouteHandler = NavRouteHandler(nav_route_json=self.journal_path / "NavRoute.json", amount_of_upcoming_systems_to_show=int(cfg["amount_of_plotted_upcoming_systems_to_show"]), amount_of_passed_systems_to_show=int(cfg["amount_of_plotted_passed_systems_to_show"]))
 
     def _process_data(self):
         try:
@@ -167,7 +170,7 @@ class JournalController(PausableThread, threading.Thread):
         if etype in ("FSDJump", "Location") and update_gui:
             if self.nav_route and self.nav_route.plotted_nav_route is None:
                 self.nav_route.load_plotted_route()
-            self.nav_route.set_current_system_from_journal_data(evt)
+                self.nav_route.set_current_system_from_journal_data(evt)
 
         #113:   after app-start, load only current SYSTEM.json
         #       store last read journal line (timestamp) and process only newer lines

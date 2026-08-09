@@ -176,86 +176,87 @@ class PlottedNavRoute(DynamicDialog):
 
         fixed_height = 20
 
-        for i in  range(min, max, 1):
-            if i == 0:
-                break
+        if self.plotted_route.plotted_nav_route:
+            for i in  range(min, max, 1):
+                if i == 0:
+                    break
 
-            if abs(i) > len(self.plotted_route.plotted_nav_route.nav_points) :
-                continue
+                if abs(i) > len(self.plotted_route.plotted_nav_route.nav_points) :
+                    continue
 
-            if len(self.plotted_route.plotted_nav_route.nav_points) - abs(i) < 0:
-                print(f"DEBUG[items-abs(i)  <  0]: {len(self.plotted_route.plotted_nav_route.nav_points)} = {abs(i) - len(self.plotted_route.plotted_nav_route.nav_points)} - {abs(i)}")
-                continue
+                if len(self.plotted_route.plotted_nav_route.nav_points) - abs(i) < 0:
+                    print(f"DEBUG[items-abs(i)  <  0]: {len(self.plotted_route.plotted_nav_route.nav_points)} = {abs(i) - len(self.plotted_route.plotted_nav_route.nav_points)} - {abs(i)}")
+                    continue
 
-            system = self.plotted_route.get_system_by_index(i)
-            next_system = self.plotted_route.get_system_by_index(i + 1)
-            system_type = ""
-            system_feature = ""
-            system_name = ""
-            distance_next_jump = 0.0
-            has_jet_cone = False
-            system_indicator = self.BMP_CIRCLE_ORANGE
-            distance_indicator = self.BMP_LINE_ORANGE
+                system = self.plotted_route.get_system_by_index(i)
+                next_system = self.plotted_route.get_system_by_index(i + 1)
+                system_type = ""
+                system_feature = ""
+                system_name = ""
+                distance_next_jump = 0.0
+                has_jet_cone = False
+                system_indicator = self.BMP_CIRCLE_ORANGE
+                distance_indicator = self.BMP_LINE_ORANGE
 
-            if system:
-                system_type = system.star_class
-                if system_type and system_type != "":
-                    if system_type[0] in ("K", "G", "B", "F", "O", "A", "M"):
-                        system_feature = ICONS["scoopable"]
-                    if system_type[0] in ("N", "D"):
-                        has_jet_cone = True
-                        system_indicator = self.BMP_CIRCLE_BLUE
-                        distance_indicator = self.BMP_LINE_BLUE
+                if system:
+                    system_type = system.star_class
+                    if system_type and system_type != "":
+                        if system_type[0] in ("K", "G", "B", "F", "O", "A", "M"):
+                            system_feature = ICONS["scoopable"]
+                        if system_type[0] in ("N", "D"):
+                            has_jet_cone = True
+                            system_indicator = self.BMP_CIRCLE_BLUE
+                            distance_indicator = self.BMP_LINE_BLUE
 
-                system_name = system.star_system
-                if next_system:
-                    distance_next_jump = gn.calculate_star_system_distance(next_system.star_position, system.star_position)
+                    system_name = system.star_system
+                    if next_system:
+                        distance_next_jump = gn.calculate_star_system_distance(next_system.star_position, system.star_position)
 
-                lbl_1_system_indicator = self.route_panel.add_table_item_widget(system_indicator, 20)
-                lbl_2_space = self.route_panel.add_table_item(f"", line_height=fixed_height)
-                if abs(i) == abs(max-1):
-                    lbl_2_space.SetLabelText(f"{' '*5}{ICONS["final"]}")
-                lbl_3_star_feature = self.route_panel.add_table_item(f"{' '*5}{system_feature}{'  '*2}", line_height=fixed_height)
-                lbl_4_star_class = self.route_panel.add_table_item(f"[{system_type}]", line_height=fixed_height)
-                lbl_5_system = self.route_panel.add_table_item(f"{' '*2}{system_name}", line_height=fixed_height)
-                lbl_5_system.Bind(wx.EVT_LEFT_DCLICK, self._on_name_label_double_click)
-                lbl_6_space = self.route_panel.add_table_item(f"", line_height=fixed_height)
-
-                if has_jet_cone:
-                    lbl_1_system_indicator.SetForegroundColour(jet_cone_colour)
-                    lbl_2_space.SetForegroundColour(jet_cone_colour)
-                    lbl_3_star_feature.SetForegroundColour(jet_cone_colour)
-                    lbl_4_star_class.SetForegroundColour(jet_cone_colour)
-                    lbl_5_system.SetForegroundColour(jet_cone_colour)
-                    lbl_6_space.SetForegroundColour(jet_cone_colour)
-
-                if abs(i) > self.plotted_route.remaining_jumps_in_route+1:
-                    lbl_1_system_indicator.SetForegroundColour(passed_colour)
-                    lbl_2_space.SetForegroundColour(passed_colour)
-                    lbl_3_star_feature.SetForegroundColour(passed_colour)
-                    lbl_4_star_class.SetForegroundColour(passed_colour)
-                    lbl_5_system.SetForegroundColour(passed_colour)
-                    lbl_6_space.SetForegroundColour(passed_colour)
-
-                if abs(i) == self.plotted_route.remaining_jumps_in_route+1:
-                    lbl_4_star_class.SetFont(wx.Font(self.theme["font_bold"]))
-                    lbl_5_system.SetFont(wx.Font(self.theme["font_bold"]))
-
-                    lbl_1_system_indicator.SetBackgroundColour(current_bg_colour)
-                    lbl_2_space.SetBackgroundColour(current_bg_colour)
-                    lbl_3_star_feature.SetBackgroundColour(current_bg_colour)
-                    lbl_4_star_class.SetBackgroundColour(current_bg_colour)
-                    lbl_5_system.SetBackgroundColour(current_bg_colour)
-                    lbl_6_space.SetBackgroundColour(current_bg_colour)
-
-                if abs(i) > abs(max-1) and abs(i) <= len(self.plotted_route.plotted_nav_route.nav_points):
-                    lbl_1_distance_indicator = self.route_panel.add_table_item_widget(distance_indicator, line_height=fixed_height)
-                    lbl_2_distance = self.route_panel.add_table_item(f"{' '*2}{distance_next_jump:.2f} Ly", align=wx.ALIGN_CENTER_VERTICAL, line_height=fixed_height)
-                    lbl_2_distance.SetFont(small_font)
-                    lbl_3_space = self.route_panel.add_table_item(f"", line_height=fixed_height)
-                    lbl_4_space = self.route_panel.add_table_item(f"", line_height=fixed_height)
-                    lbl_5_space = self.route_panel.add_table_item(f"", line_height=fixed_height)
+                    lbl_1_system_indicator = self.route_panel.add_table_item_widget(system_indicator, 20)
+                    lbl_2_space = self.route_panel.add_table_item(f"", line_height=fixed_height)
+                    if abs(i) == abs(max-1):
+                        lbl_2_space.SetLabelText(f"{' '*5}{ICONS["final"]}")
+                    lbl_3_star_feature = self.route_panel.add_table_item(f"{' '*5}{system_feature}{'  '*2}", line_height=fixed_height)
+                    lbl_4_star_class = self.route_panel.add_table_item(f"[{system_type}]", line_height=fixed_height)
+                    lbl_5_system = self.route_panel.add_table_item(f"{' '*2}{system_name}", line_height=fixed_height)
+                    lbl_5_system.Bind(wx.EVT_LEFT_DCLICK, self._on_name_label_double_click)
                     lbl_6_space = self.route_panel.add_table_item(f"", line_height=fixed_height)
+
+                    if has_jet_cone:
+                        lbl_1_system_indicator.SetForegroundColour(jet_cone_colour)
+                        lbl_2_space.SetForegroundColour(jet_cone_colour)
+                        lbl_3_star_feature.SetForegroundColour(jet_cone_colour)
+                        lbl_4_star_class.SetForegroundColour(jet_cone_colour)
+                        lbl_5_system.SetForegroundColour(jet_cone_colour)
+                        lbl_6_space.SetForegroundColour(jet_cone_colour)
+
+                    if abs(i) > self.plotted_route.remaining_jumps_in_route+1:
+                        lbl_1_system_indicator.SetForegroundColour(passed_colour)
+                        lbl_2_space.SetForegroundColour(passed_colour)
+                        lbl_3_star_feature.SetForegroundColour(passed_colour)
+                        lbl_4_star_class.SetForegroundColour(passed_colour)
+                        lbl_5_system.SetForegroundColour(passed_colour)
+                        lbl_6_space.SetForegroundColour(passed_colour)
+
+                    if abs(i) == self.plotted_route.remaining_jumps_in_route+1:
+                        lbl_4_star_class.SetFont(wx.Font(self.theme["font_bold"]))
+                        lbl_5_system.SetFont(wx.Font(self.theme["font_bold"]))
+
+                        lbl_1_system_indicator.SetBackgroundColour(current_bg_colour)
+                        lbl_2_space.SetBackgroundColour(current_bg_colour)
+                        lbl_3_star_feature.SetBackgroundColour(current_bg_colour)
+                        lbl_4_star_class.SetBackgroundColour(current_bg_colour)
+                        lbl_5_system.SetBackgroundColour(current_bg_colour)
+                        lbl_6_space.SetBackgroundColour(current_bg_colour)
+
+                    if abs(i) > abs(max-1) and abs(i) <= len(self.plotted_route.plotted_nav_route.nav_points):
+                        lbl_1_distance_indicator = self.route_panel.add_table_item_widget(distance_indicator, line_height=fixed_height)
+                        lbl_2_distance = self.route_panel.add_table_item(f"{' '*2}{distance_next_jump:.2f} Ly", align=wx.ALIGN_CENTER_VERTICAL, line_height=fixed_height)
+                        lbl_2_distance.SetFont(small_font)
+                        lbl_3_space = self.route_panel.add_table_item(f"", line_height=fixed_height)
+                        lbl_4_space = self.route_panel.add_table_item(f"", line_height=fixed_height)
+                        lbl_5_space = self.route_panel.add_table_item(f"", line_height=fixed_height)
+                        lbl_6_space = self.route_panel.add_table_item(f"", line_height=fixed_height)
 
         if self.route_panel.IsShown():
             # Force a layout update
