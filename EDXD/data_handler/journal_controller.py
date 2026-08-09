@@ -165,7 +165,7 @@ class JournalController(PausableThread, threading.Thread):
                 self.nav_route.load_plotted_route()
 
         if etype in ("FSDJump", "Location") and update_gui:
-            if self.nav_route.plotted_nav_route is None:
+            if self.nav_route and self.nav_route.plotted_nav_route is None:
                 self.nav_route.load_plotted_route()
             self.nav_route.set_current_system_from_journal_data(evt)
 
