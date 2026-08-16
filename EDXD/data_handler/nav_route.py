@@ -52,6 +52,9 @@ class NavRouteHandler:
         return systems
 
     def load_plotted_route(self):
+        if not self.nav_route_json.exists():
+            return
+
         raw_data = self.nav_route_json.read_text()
         data = DotDict(json.loads(raw_data))
 
@@ -75,6 +78,9 @@ class NavRouteHandler:
         self.remaining_jumps_in_route = 0
 
     def set_current_system_from_journal_data(self, evt):
+        if not self.nav_route_json.exists():
+            return
+
         system_address = evt.get("SystemAddress")
         self.current_system = None
         if self.remaining_jumps_in_route < len(self.plotted_nav_route.nav_points):
