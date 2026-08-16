@@ -145,7 +145,7 @@ class EngineStatus(DynamicDialog):
         else:
             self.lbl_fsd_injection.SetLabelText(f"FSD injection active: +{self.parent.model.ship_status.fsd_injection_factor * 100}%")
 
-        if self.parent.model is None or self.parent.model.ship_status is None:
+        if self.parent.model is None or self.parent.model.ship_status is None or self.parent.model.flags2 is None:
             self.lbl_sco_status.SetLabelText("")
         else:
             t_now: DateTime = DateTime.UNow()
