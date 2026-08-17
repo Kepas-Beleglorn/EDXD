@@ -53,6 +53,3 @@ class LandingPadFrame(DynamicDialog):
     def on_assign_pad(self, pad_num: int):
         self.station.assigned_pad = pad_num
         self.display.Refresh()
-
-    def on_exit(self, event):
-        self.Close()
