@@ -29,6 +29,7 @@ from EDXD.gui.psps_gui import PositionTracker
 from EDXD.gui.table_view import BodiesTable
 from EDXD.gui.status_flags import StatusFlags
 from EDXD.gui.signal_prediction import SignalPrediction
+from EDXD.gui.landing_pad_indicator import LandingPadFrame
 
 from EDXD.utils.clipboard import copy_text_to_clipboard
 
@@ -79,6 +80,7 @@ class MainFrame(DynamicFrame):
         self.win_status_flags = None
         self.win_sig_pred = None
         self.win_nav_route = None
+        self.win_landing_pads = None
 
         # Add options panel (mineral filter, landable, and maybe more in the future
         self.options = MainWindowOptions(parent=self)
@@ -234,6 +236,21 @@ class MainFrame(DynamicFrame):
         if self.win_nav_route and self.win_nav_route.plotted_route:
             self.win_nav_route.plotted_route.amount_of_upcoming_systems_to_show = int(self.prefs.get("amount_of_plotted_upcoming_systems_to_show"))
             self.win_nav_route.plotted_route.amount_of_passed_systems_to_show = int(self.prefs.get("amount_of_plotted_passed_systems_to_show"))
+
+        # Landing pad indicator ---------------------------------------------------------------------
+        from EDXD.gui.landing_pad_indicator import WINID as winIdSelected
+        if self.prefs is None or self.prefs.get(winIdSelected) is None:
+            hidden = False
+        else:
+            hidden = self.prefs.get(winIdSelected).get("is_hidden", False)
+        if hidden:
+            if self.win_landing_pads is not None:
+                self.win_landing_pads.Close()
+                self.win_landing_pads = None
+        else:
+            if self.win_landing_pads is None:
+                self.win_landing_pads = LandingPadFrame(self, "foo bar", 0, "")
+                self.win_landing_pads.Show(True)
 
     def _update_system(self, title: str = ""):
         init_widget(widget=self.lbl_sys, title=title)

@@ -1,6 +1,9 @@
 import wx
 import math
 
+from EDXD.data_handler.helper.landing_pad_layouts.coriolis_like import StationLayout, LandingPad
+
+
 class CoriolisDisplay(wx.Panel):
     """Coriolis station landing pad display - simple layered approach"""
 

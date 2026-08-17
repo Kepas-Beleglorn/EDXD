@@ -26,25 +26,29 @@ class LandingPadFrame(DynamicDialog):
                                       default_is_hidden=False)
         if props.is_hidden: return
         DynamicDialog.__init__(self, parent=parent, style=wx.NO_BORDER | wx.FRAME_SHAPED | wx.STAY_ON_TOP, title=TITLE, win_id=WINID, show_minimize=False, show_maximize=False, show_close=True)
-        # 2. Apply geometry
-        max_height = wx.Size(-1, DEFAULT_LANDING_PAD_HEIGHT)
-        min_width = wx.Size(DEFAULT_LANDING_PAD_WIDTH, -1)
-        if props.width < min_width.width:
-            props.width = min_width.width
-        if props.height > max_height.height:
-            props.height = max_height.height
-        self.SetMinSize(min_width)
-        self.SetMaxSize(max_height)
 
         init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
 
         self.theme = get_theme()
         self.parent = parent
 
-        self.station = CoriolisDataGenerator.generate_coriolis(station_name)
-        self.display = CoriolisDisplay(self, self.station)
+        grid = wx.BoxSizer(wx.VERTICAL)
 
-        self.Centre()
+        self.lbl_station_name = wx.StaticText(self.scroll_container)
+        init_widget(widget=self.lbl_station_name, title=station_name)
+
+        theme = wx.Font(self.theme["font_bold"])
+        theme.SetPointSize(12)
+        self.lbl_station_name.SetFont(theme)
+
+        grid.Add(self.lbl_station_name, 0, wx.EXPAND | wx.ALL, -4)
+
+        self.station = CoriolisDataGenerator.generate_coriolis(station_name)
+        self.display = CoriolisDisplay(self.scroll_container, self.station)
+
+        grid.Add(self.display, 1, wx.EXPAND, 5)
+
+        self.window_box.Add(grid, 1, flag=wx.ALL | wx.EXPAND, border=10)
 
     def on_assign_pad(self, pad_num: int):
         self.station.assigned_pad = pad_num

@@ -154,13 +154,14 @@ class EDXDConfig(DynamicDialog):
 
         # Buttons
         self.window_identifiers = [
-            ["DETAIL_TARGETED",         "Targeted body"],
-            ["DETAIL_SELECTED",         "Selected body"],
-            ["PSPS",                    "Planetary Surface Positioning System"],
-            ["ENGINE_STATUS",           "Engine status"],
-            ["BIOSIGNAL_PREDICTION",    "Biosignal prediction"],
-            ["STATUS_FLAGS",            "Ship's System Status"],
-            ["PLOTTED_NAV_ROUTE",       "Currently plotted navigation route"]
+            ["DETAIL_TARGETED",         "Targeted body"]
+            ,["DETAIL_SELECTED",        "Selected body"]
+            ,["PSPS",                   "Planetary Surface Positioning System"]
+            ,["ENGINE_STATUS",          "Engine status"]
+            ,["BIOSIGNAL_PREDICTION",   "Biosignal prediction"]
+            ,["STATUS_FLAGS",           "Ship's System Status"]
+            ,["PLOTTED_NAV_ROUTE",      "Currently plotted navigation route"]
+            ,["LANDING_PAD_INDICATOR",  "Landing Pad Indicator"]
         ]
 
         self.window_buttons = {}
