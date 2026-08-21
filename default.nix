@@ -1,21 +1,18 @@
-{ pkgs, python }:
+{ pkgs, python, src }:
 let
-  my-python-pkg = python.pkgs.buildPythonPackage rec {
+  version = (builtins.fromTOML (builtins.readFile ./pyproject.toml)).project.version;
+  my-python-pkg = python.pkgs.buildPythonPackage {
     pname = "ed-eXploration-dashboard";
-    version = "v0.9.1.0";
-
-    src = pkgs.fetchFromGitHub {
-      owner = "Kepas-Beleglorn";
-      repo = "EDXD";
-      rev = version;
-      hash = "sha256-d1bHkqeK3uX49QY5QqNklhjNEZ1Xc2BAQIsDPedbTtg=";
-    };
+    inherit version src;
 
     preBuild = ''
       echo 'VERSION = "${version}"' > EDXD/_version.py
     '';
 
     doCheck = false;
+
+    pythonRelaxDeps = [ "tomli" "filelock" ];
+    nativeBuildInputs = [ python.pkgs.pythonRelaxDepsHook ];
 
     pyproject = true;
     build-system = [
