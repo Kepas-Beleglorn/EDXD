@@ -5,12 +5,13 @@ description = "Elite Dangerous eXploration Dashboard"
 authors = [{ name = "Kepas Beleglorn", email = "Kepas-Beleglorn@users.noreply.github.com" }]
 readme = "README.md"
 license = 'CC-BY-NC-4.0'
-requires-python = ">=3.9"
+requires-python = ">=3.14"
 dependencies = [
     "watchdog>=6.0.0",
     "wxPython>=4.2.5",
     "tomli>=2.4.1",
-    "filelock>=3.29.4"
+    "filelock>=3.29.4",
+    "requests>=2.34.2"
 ]
 
 [project.scripts]
