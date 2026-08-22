@@ -231,7 +231,8 @@ class MainFrame(DynamicFrame):
 
     def _update_biosign_prediction(self, body_data):
         prediction_data = estimate_system_biosigns(body_data)
-        self.win_sig_pred.render(prediction=prediction_data)
+        if self.win_sig_pred and prediction_data:
+            self.win_sig_pred.render(prediction=prediction_data)
 
     # ------------------------------------------------------------------
     # event handlers
