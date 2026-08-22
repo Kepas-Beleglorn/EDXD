@@ -1,5 +1,5 @@
 #!/bin/bash
-# THIS CREATES A DEBUG BUILD FROM CURRENT SOURCE CODE! USE AT OWN RISK!
+# THIS CREATES A DEBUG BUILD FROM CURRENT SOURCE CODE! USE AT OWN RISK! PATHS WILL VERY LIKELY DIFFER FROM YOURS!
 set -e # Exit on error
 
 # --- CONFIGURATION ---
@@ -47,7 +47,7 @@ pyinstaller --onefile EDXD/main.py --name ed-eXploration-dashboard
 
 # 5. Deploy
 echo "📂 Copying to target directory..."
-cp -fv ./dist/ed-eXploration-dashboard /mnt/games/ED/EDXD/
+cp -fv ./dist/ed-eXploration-dashboard /mnt/games/ED/EDXD_test/
 
 # 6. Cleanup
 rm EDXD/_version.py
