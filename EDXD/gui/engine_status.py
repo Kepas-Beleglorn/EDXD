@@ -147,7 +147,7 @@ class EngineStatus(DynamicDialog):
             self.lbl_sco_status.SetLabelText("")
         else:
             t_now: DateTime = DateTime.UNow()
-            if (self.parent.model.flags2 & pow(2, 20)) == 0:
+            if self.parent.model.flags2 and (self.parent.model.flags2 & pow(2, 20)) == 0:
                 if self.last_sco_state:
                     self.last_sco_state = False
                     self.sco_cooldown_end_time = t_now.Add(self.sco_cooldown_duration)
