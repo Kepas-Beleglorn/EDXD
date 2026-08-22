@@ -1,0 +1,35 @@
+name: Nix build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/cache@v4
+        id: nix-cache
+        with:
+          path: /tmp/nixcache
+          key: nix-${{ hashFiles('flake.lock') }}
+          restore-keys: nix-
+
+      - uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Import Nix store cache
+        if: steps.nix-cache.outputs.cache-hit == 'true'
+        run: nix-store --import < /tmp/nixcache
+
+      - name: Build
+        run: nix build
+
+      - name: Export Nix store cache
+        if: steps.nix-cache.outputs.cache-hit != 'true'
+        run: nix-store --export $(find /nix/store -maxdepth 1 -name '*-*') > /tmp/nixcache
