@@ -16,7 +16,7 @@ jobs:
         id: nix-cache
         with:
           path: /tmp/nixcache
-          key: nix-${{ hashFiles('flake.lock') }}
+          key: nix-${{ hashFiles('flake.lock', 'pyproject.toml') }}
           restore-keys: nix-
 
       - uses: cachix/install-nix-action@v31
