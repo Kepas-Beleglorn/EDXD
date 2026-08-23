@@ -1,0 +1,119 @@
+name: Build binaries manually with PyInstaller
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-20.04, windows-latest, macos-latest]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - name: Compute requirements hash
+        id: reqhash
+        shell: bash
+        run: |
+          if [ -f requirements.txt ]; then
+            reqhash=$(python -c "import hashlib,sys;print(hashlib.sha256(open('requirements.txt','rb').read()).hexdigest())")
+            echo "reqhash=$reqhash" >> $GITHUB_OUTPUT
+          else
+            if [ -f pyproject.toml ]; then
+              reqhash=$(python -c "import hashlib,sys;print(hashlib.sha256(open('pyproject.toml','rb').read()).hexdigest())")
+              echo "reqhash=$reqhash" >> $GITHUB_OUTPUT
+            else
+              echo "reqhash=missing" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: Install system dependencies for wxPython
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libglib2.0-dev libgstreamer1.0-dev \
+          libgstreamer-plugins-base1.0-dev libgtk-3-0
+        if: runner.os == 'Linux'
+
+      - name: Extract version & bake into EDXD/_version.py
+        id: ver
+        shell: bash
+        run: |
+          python - <<'PY'
+          import os, pathlib
+          # tomllib on 3.11+, fall back to tomli if needed
+          try:
+            import tomllib
+          except ModuleNotFoundError:
+            import tomli as tomllib
+    
+          root = pathlib.Path(".")
+          data = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))
+          ver = data["project"]["version"]
+    
+          # Write the version file where your code imports it FROM EDXD._version
+          out = root / "EDXD" / "_version.py"
+          out.parent.mkdir(parents=True, exist_ok=True)
+          out.write_text(f'VERSION = "{ver}"\n', encoding="utf-8")
+    
+          # Expose version to later steps (for artifact names, etc.)
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
+            f.write(f"ver={ver}\n")
+    
+          print("Baked VERSION:", ver)
+          PY
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ steps.reqhash.outputs.reqhash }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+          pip install -e .
+
+      - name: Build with PyInstaller
+        run: |
+          pyinstaller --onefile EDXD/main.py --name ed-eXploration-dashboard
+        shell: bash
+
+      - name: Prepare release directory
+        run: |
+          mkdir release
+          cp dist/ed-eXploration-dashboard* release/
+        shell: bash
+
+      - name: Archive release for Linux/macOS
+        if: runner.os != 'Windows'
+        run: |
+          tar -czvf edxd-dashboard-${{ runner.os }}.tar.gz -C release .
+        shell: bash
+
+      - name: Archive release for Windows
+        if: runner.os == 'Windows'
+        run: |
+          powershell Compress-Archive -Path release\* -DestinationPath edxd-dashboard-${{ runner.os }}.zip
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: edxd-dashboard-${{ runner.os }}
+          path: |
+            edxd-dashboard-${{ runner.os }}.tar.gz
+            edxd-dashboard-${{ runner.os }}.zip
