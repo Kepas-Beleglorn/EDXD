@@ -15,6 +15,8 @@
 
 #### A more detailed description will be maintained here: [EDXD on edcodex.info](https://edcodex.info/?m=tools&entry=608)
 
+### Known issue #263 - Windows can't be moved on Wayland
+
 ### Planned:
 * show first discovered (EDSM)
 * show potential types of geosigns, if any; update on DSS
