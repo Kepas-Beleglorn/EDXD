@@ -46,21 +46,24 @@ class PositionTracker(DynamicDialog):
         self.window_box.Add(self.buttons, 0, wx.EXPAND | wx.EAST | wx.WEST, RESIZE_MARGIN)
 
         # current position
-        self.txt_current_position = wx.TextCtrl(parent=self.scroll_container, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE)
-        init_widget(self.txt_current_position, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
-        self.txt_current_position.SetEditable(False)
+        #self.txt_current_position = wx.TextCtrl(parent=self.scroll_container, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE)
+        self.txt_current_position = wx.StaticText(parent=self.scroll_container, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE)
+        init_widget(self.txt_current_position, width=props.width, height=props.height, posx=props.posx, posy=props.posy)
+        #self.txt_current_position.SetEditable(False)
         self.window_box.Add(self.txt_current_position, 0, wx.EXPAND | wx.EAST | wx.WEST | wx.SOUTH, RESIZE_MARGIN)
 
         # pinned position
-        self.txt_pinned_position = wx.TextCtrl(parent=self.scroll_container, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE)
-        init_widget(self.txt_pinned_position, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
-        self.txt_pinned_position.SetEditable(False)
+        #self.txt_pinned_position = wx.TextCtrl(parent=self.scroll_container, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE)
+        self.txt_pinned_position = wx.StaticText(parent=self.scroll_container, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE)
+        init_widget(self.txt_pinned_position, width=props.width, height=props.height, posx=props.posx, posy=props.posy)
+        #self.txt_pinned_position.SetEditable(False)
         self.window_box.Add(self.txt_pinned_position, 0, wx.EXPAND | wx.EAST | wx.WEST | wx.SOUTH, RESIZE_MARGIN)
 
         # distance to target
-        self.txt_distance_to_target = wx.TextCtrl(parent=self.scroll_container, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE)
-        init_widget(self.txt_distance_to_target, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
-        self.txt_distance_to_target.SetEditable(False)
+        #self.txt_distance_to_target = wx.TextCtrl(parent=self.scroll_container, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE)
+        self.txt_distance_to_target = wx.StaticText(parent=self.scroll_container, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE)
+        init_widget(self.txt_distance_to_target, width=props.width, height=props.height, posx=props.posx, posy=props.posy)
+        #self.txt_distance_to_target.SetEditable(False)
         self.window_box.Add(self.txt_distance_to_target, 0, wx.EXPAND | wx.EAST | wx.WEST | wx.SOUTH, RESIZE_MARGIN)
 
         self.finalize_layout()
