@@ -1,4 +1,4 @@
-name: Build binaries with PyInstaller and Draft Release
+name: Auto compile and release
 
 on:
   push:
@@ -59,7 +59,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: '3.14'
 
       - name: Compute requirements hash
         id: reqhash
@@ -69,7 +69,12 @@ jobs:
             reqhash=$(python -c "import hashlib,sys;print(hashlib.sha256(open('requirements.txt','rb').read()).hexdigest())")
             echo "reqhash=$reqhash" >> $GITHUB_OUTPUT
           else
-            echo "reqhash=missing" >> $GITHUB_OUTPUT
+            if [ -f pyproject.toml ]; then
+              reqhash=$(python -c "import hashlib,sys;print(hashlib.sha256(open('pyprooject.toml','rb').read()).hexdigest())")
+              echo "reqhash=$reqhash" >> $GITHUB_OUTPUT
+            else
+              echo "reqhash=missing" >> $GITHUB_OUTPUT
+            fi
           fi
 
       - name: Install system dependencies for wxPython
@@ -119,7 +124,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install pyinstaller
-          pip install -r requirements.txt
+          pip install -e .
 
       - name: Build with PyInstaller
         run: |
