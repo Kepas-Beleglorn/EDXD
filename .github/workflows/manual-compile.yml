@@ -1,4 +1,4 @@
-name: Build binaries manually with PyInstaller
+name: Manual compile
 
 on:
   workflow_dispatch:
