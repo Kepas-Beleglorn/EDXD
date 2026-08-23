@@ -1,5 +1,11 @@
 # EDXD · Elite Dangerous eXploration Dashboard
 
+---
+
+#### Known issue [#263](https://github.com/Kepas-Beleglorn/EDXD/issues/263) - Windows can't be moved on Wayland
+
+---
+
 ### A cross-platform, real-time dashboard for explorers:
 * **100 % Python** – runs on Linux, macOS and Windows.
 
@@ -15,7 +21,6 @@
 
 #### A more detailed description will be maintained here: [EDXD on edcodex.info](https://edcodex.info/?m=tools&entry=608)
 
-### Known issue #263 - Windows can't be moved on Wayland
 
 ### Planned:
 * show first discovered (EDSM)
