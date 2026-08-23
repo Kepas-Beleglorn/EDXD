@@ -57,7 +57,6 @@ class CoriolisDisplay(wx.Panel):
     def draw_pad(self, dc: wx.DC, cx: float, cy: float, r: float,
                  pad: LandingPad, is_assigned: bool):
         """Draw a single landing pad segment - spans multiple rings as one piece"""
-        print(pad.pad_number)
         if is_assigned:
             color = self.colors['assigned']
         elif pad.pad_number == 0:
