@@ -56,6 +56,9 @@ class NavRouteHandler:
             return
 
         raw_data = self.nav_route_json.read_text()
+        if len(raw_data) == 0:
+            return
+
         data = DotDict(json.loads(raw_data))
 
         # Parse the timestamp
@@ -79,6 +82,9 @@ class NavRouteHandler:
 
     def set_current_system_from_journal_data(self, evt):
         if not self.nav_route_json.exists():
+            return
+
+        if self.plotted_nav_route is None:
             return
 
         system_address = evt.get("SystemAddress")
