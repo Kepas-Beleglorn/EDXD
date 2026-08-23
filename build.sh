@@ -38,7 +38,6 @@ fi
 source .venv/bin/activate
 pip install --upgrade pip
 pip install pyinstaller
-#pip install -r requirements.txt
 pip install -e .
 
 # 4. Build
