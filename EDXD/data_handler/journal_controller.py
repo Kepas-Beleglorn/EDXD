@@ -30,6 +30,8 @@ class JournalController(PausableThread, threading.Thread):
         self.spansh_helper = SpanshHelper()
         self.journal_path = None
         self.nav_route = None
+        self.landing_in_progress = False
+
         if cfg and "journal_dir" in cfg.keys() and cfg["journal_dir"] and cfg["journal_dir"] != "":
             self.journal_path: Path = Path(cfg["journal_dir"])
             self.nav_route: NavRouteHandler = NavRouteHandler(nav_route_json=self.journal_path / "NavRoute.json", amount_of_upcoming_systems_to_show=int(cfg["amount_of_plotted_upcoming_systems_to_show"]), amount_of_passed_systems_to_show=int(cfg["amount_of_plotted_passed_systems_to_show"]))
@@ -153,6 +155,20 @@ class JournalController(PausableThread, threading.Thread):
                 self.m.ship_status.fuel_capacity = FuelLevel(fuel_main, fuel_reserve) or self.m.ship_status.fuel_capacity
 
                 dh.update_ship_status(SHIP_STATUS_FILE, self.m.ship_status)
+
+        if etype == "DOCKED":
+            self.landing_in_progress = False
+
+        if self.landing_in_progress == False:
+            self.m.station_type = None
+            self.m.station_name = None
+            self.m.station_landing_pad = None
+
+        if etype == "DockingGranted":
+            self.landing_in_progress = True
+            self.m.station_type = evt.get("StationType")
+            self.m.station_name = evt.get("StationName")
+            self.m.station_landing_pad = evt.get("LandingPad")
 
         # reset FSD boosts
         if etype == "StartJump":

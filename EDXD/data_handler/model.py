@@ -238,20 +238,23 @@ class Model:
     """Keeps the bodies of the *current* system; notifies target listeners."""
     def __init__(self):
         self.lock               = threading.Lock()
-        self.system_name        : Optional[str]             = None
-        self.system_addr        : Optional[int]             = None
-        self.bodies             : Dict[str, Body]           = {}
-        self.target_body_id     : Optional[str]             = None
-        self.selected_body_id   : Optional[str]             = None
-        self.total_bodies       : Optional[int]             = None
-        self._target_cbs        : List                      = [] # listeners
-        self.current_position   : Optional[PSPSCoordinates] = None
-        self.current_heading    : Optional[int]             = None
-        self.ship_status        : Optional[ShipStatus]      = None
-        self.fuel_level         : Optional[FuelLevel]       = None
-        self.current_vessel     : Optional[str]             = None
-        self.flags              : Optional[int]             = None
-        self.flags2             : Optional[int]             = None
+        self.system_name            : Optional[str]             = None
+        self.system_addr            : Optional[int]             = None
+        self.bodies                 : Dict[str, Body]           = {}
+        self.target_body_id         : Optional[str]             = None
+        self.selected_body_id       : Optional[str]             = None
+        self.total_bodies           : Optional[int]             = None
+        self._target_cbs            : List                      = [] # listeners
+        self.current_position       : Optional[PSPSCoordinates] = None
+        self.current_heading        : Optional[int]             = None
+        self.ship_status            : Optional[ShipStatus]      = None
+        self.fuel_level             : Optional[FuelLevel]       = None
+        self.current_vessel         : Optional[str]             = None
+        self.flags                  : Optional[int]             = None
+        self.flags2                 : Optional[int]             = None
+        self.station_type           : Optional[str]             = None
+        self.station_name           : Optional[str]             = None
+        self.station_landing_pad    : Optional[int]             = None
 
     # ----- listeners ---------------------------------------------------------
     def register_target_listener(self, cb):

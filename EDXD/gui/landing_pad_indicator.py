@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from pickletools import dis
+from sys import displayhook
+
 import wx
 
 
@@ -20,7 +23,7 @@ from EDXD.globals import DEFAULT_LANDING_PAD_WIDTH, DEFAULT_LANDING_PAD_HEIGHT, 
 class LandingPadFrame(DynamicDialog):
     """Main application frame"""
 
-    def __init__(self,  parent, station_name: str, station_id, station_type):
+    def __init__(self,  parent, station_name: str, station_type: str, landing_pad: int):
         # 1. Load saved properties (or use defaults)
         props = WindowProperties.load(WINID, default_height=DEFAULT_LANDING_PAD_HEIGHT, default_width=DEFAULT_LANDING_PAD_WIDTH, default_posx=DEFAULT_POS_X, default_posy=DEFAULT_POS_Y,
                                       default_is_hidden=False)
@@ -35,7 +38,7 @@ class LandingPadFrame(DynamicDialog):
         grid = wx.BoxSizer(wx.VERTICAL)
 
         self.lbl_station_name = wx.StaticText(self.scroll_container)
-        init_widget(widget=self.lbl_station_name, title=station_name)
+        init_widget(widget=self.lbl_station_name, title=station_name + "  [ " + station_type + " ]\n", height=20)
 
         theme = wx.Font(self.theme["font_bold"])
         theme.SetPointSize(12)
@@ -43,13 +46,35 @@ class LandingPadFrame(DynamicDialog):
 
         grid.Add(self.lbl_station_name, 0, wx.EXPAND | wx.ALL, -4)
 
-        self.station = CoriolisDataGenerator.generate_coriolis(station_name)
-        self.display = CoriolisDisplay(self.scroll_container, self.station)
+        self.station = None
+        self.display = None
 
-        grid.Add(self.display, 1, wx.EXPAND, 5)
+        fit_to_labels = False
+        if station_type in ["Coriolis"]:
+            self.station = CoriolisDataGenerator.generate_coriolis(station_name)
+            self.display = CoriolisDisplay(self.scroll_container, self.station)
+
+        elif station_type in [""]:
+            pass
+        else:
+            fit_to_labels = True
+            self.lbl_landing_pad = wx.StaticText(self.scroll_container)
+            init_widget(widget=self.lbl_landing_pad, title="Assigned landing pad: " + str(landing_pad) + "\n", height=20)
+            self.lbl_landing_pad.SetFont(theme)
+            grid.Add(self.lbl_landing_pad, 0, wx.EXPAND | wx.ALL, -4)
+
+        self.on_assign_pad(landing_pad)
+
+        if self.display:
+            grid.Add(self.display, 1, wx.EXPAND, 5)
 
         self.window_box.Add(grid, 1, flag=wx.ALL | wx.EXPAND, border=10)
 
+        if fit_to_labels:
+            self.Fit()
+
     def on_assign_pad(self, pad_num: int):
-        self.station.assigned_pad = pad_num
-        self.display.Refresh()
+        if self.station:
+            self.station.assigned_pad = pad_num
+        if self.display:
+            self.display.Refresh()
