@@ -47,7 +47,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-20.04, windows-latest, macos-latest]
+        os: [ubuntu-22.04, ubuntu-24.04, ubuntu-latest, windows-latest, macos-latest]
 
     steps:
       - name: Checkout code
@@ -116,9 +116,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ steps.reqhash.outputs.reqhash }}
+          key: ${{ matrix.os }}-pip-${{ steps.reqhash.outputs.reqhash }}
           restore-keys: |
-            ${{ runner.os }}-pip-
+            ${{ matrix.os }}-pip-
 
       - name: Install dependencies
         run: |
@@ -135,26 +135,30 @@ jobs:
         run: |
           mkdir release
           cp dist/ed-eXploration-dashboard* release/
+          if [ "${{ runner.os }}" = "Linux" ]; then
+            cp run_edxd.sh release/
+            chmod +x release/run_edxd.sh
+          fi
         shell: bash
 
       - name: Archive release for Linux/macOS
         if: runner.os != 'Windows'
         run: |
-          tar -czvf edxd-dashboard-${{ runner.os }}.tar.gz -C release .
+          tar -czvf edxd-dashboard-${{ matrix.os }}.tar.gz -C release .
         shell: bash
 
       - name: Archive release for Windows
         if: runner.os == 'Windows'
         run: |
-          powershell Compress-Archive -Path release\* -DestinationPath edxd-dashboard-${{ runner.os }}.zip
+          powershell Compress-Archive -Path release\* -DestinationPath edxd-dashboard-${{ matrix.os }}.zip
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: edxd-dashboard-${{ runner.os }}
+          name: edxd-dashboard-${{ matrix.os }}
           path: |
-            edxd-dashboard-${{ runner.os }}.tar.gz
-            edxd-dashboard-${{ runner.os }}.zip
+            edxd-dashboard-${{ matrix.os }}.tar.gz
+            edxd-dashboard-${{ matrix.os }}.zip
 
   tag-and-release:
     name: Tag & Create GitHub Release
