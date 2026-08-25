@@ -10,7 +10,7 @@ dependencies = [
     "watchdog==6.0.0",
     "wxPython==4.2.5",
     "tomli==2.4.1",
-    "filelock==3.29.4",
+    "filelock==3.32.4",
     "requests==2.34.2"
 ]
 

@@ -9,7 +9,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-22.04, windows-latest, macos-latest]
+        os: [ubuntu-22.04, ubuntu-24.04, ubuntu-latest, windows-latest, macos-latest]
 
     steps:
       - name: Checkout code
@@ -113,7 +113,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: edxd-dashboard-${{ runner.os }}
+          name: edxd-dashboard-${{ matrix.os }}
           path: |
-            edxd-dashboard-${{ runner.os }}.tar.gz
-            edxd-dashboard-${{ runner.os }}.zip
+            edxd-dashboard-${{ matrix.os }}.tar.gz
+            edxd-dashboard-${{ matrix.os }}.zip
