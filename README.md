@@ -35,6 +35,8 @@
 
 **Don't know which to use?** Run: `bash check-compatibility.sh`
 
+**Or just download the latest releases `Source Code (tar.gz)` and build it from scratch with `build.sh` (Requires python 3.14+)
+
 ### Planned:
 * show first discovered (EDSM)
 * show potential types of geosigns, if any; update on DSS

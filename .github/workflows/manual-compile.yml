@@ -97,6 +97,10 @@ jobs:
         run: |
           mkdir release
           cp dist/ed-eXploration-dashboard* release/
+          if [ "${{ runner.os }}" = "Linux" ]; then
+            cp run_edxd.sh release/
+            chmod +x release/run_edxd.sh
+          fi
         shell: bash
 
       - name: Archive release for Linux/macOS
