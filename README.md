@@ -2,14 +2,6 @@
 
 ---
 
-#### Known issue [#263](https://github.com/Kepas-Beleglorn/EDXD/issues/263) - Windows can't be moved on Wayland
-
-**Known workarounds:**
-- Run with `GDK_BACKEND=x11 ./ed-eXploration-dashboard`
-- On KDE you could try moving/positioning the panels with window-rules (system settings), 
-- Switch from Wayland to X11.
----
-
 ### A cross-platform, real-time dashboard for explorers:
 * **100 % Python** – runs on Linux, macOS and Windows.
 
@@ -46,11 +38,7 @@
 
 ## Installation
 
-Just download the zip for your platform, unpack the contents anywhere you like and run with 
-
-`
-./ed-eXploration-dashboard
-`
+Just download the zip for your platform, unpack the contents anywhere you like and run with `./ed-eXploration-dashboard` or `./run_edxd.sh`. The script ensures Wayland compatibility (see [#263](https://github.com/Kepas-Beleglorn/EDXD/issues/263))
 ```
 options:
   -h, --help           show this help message and exit
