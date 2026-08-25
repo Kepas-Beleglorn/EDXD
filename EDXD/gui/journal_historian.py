@@ -33,6 +33,8 @@ class JournalHistorian(DynamicFrame):
         self.journal_controller = journal_controller
         self.status_json_watcher = status_json_watcher
 
+        self.is_running = False
+
         self.journal_dir = self.journal_reader.folder
         self.files = []
         self.total_files = 0
@@ -40,16 +42,18 @@ class JournalHistorian(DynamicFrame):
         self.start_time = None
         self.end_time = None
 
-        self.lbl_current    = wx.StaticText(parent=self, label="Current File: N/A")
-        self.lbl_filecount  = wx.StaticText(parent=self, label="File 0/0")
-        self.lbl_start      = wx.StaticText(parent=self, label="Start Time: N/A")
-        self.lbl_end        = wx.StaticText(parent=self, label="End Time: N/A")
-        self.lbl_total      = wx.StaticText(parent=self, label="Total Time: N/A")
-        self.progress       = wx.Gauge(parent=self, range=100, size=wx.Size(400, 30))
-        self.btn_start      = DynamicButton(parent=self, label="Start Processing")
+        self.lbl_current        = wx.StaticText(parent=self, label="Current File: N/A")
+        self.lbl_filecount      = wx.StaticText(parent=self, label="File 0/0")
+        self.lbl_current_line   = wx.StaticText(parent=self, label="Current line: ...")
+        self.lbl_start          = wx.StaticText(parent=self, label="Start Time: N/A")
+        self.lbl_end            = wx.StaticText(parent=self, label="End Time: N/A")
+        self.lbl_total          = wx.StaticText(parent=self, label="Total Time: N/A")
+        self.progress           = wx.Gauge(parent=self, range=100, size=wx.Size(400, 30))
+        self.btn_start          = DynamicButton(parent=self, label="Start Processing")
 
         init_widget(self.lbl_current)
         init_widget(self.lbl_filecount)
+        init_widget(self.lbl_current_line)
         init_widget(self.lbl_start)
         init_widget(self.lbl_end)
         init_widget(self.lbl_total)
@@ -58,6 +62,7 @@ class JournalHistorian(DynamicFrame):
 
         self.window_box.Add(self.lbl_current, 0, wx.EXPAND | wx.EAST | wx.WEST | wx.SOUTH, RESIZE_MARGIN)
         self.window_box.Add(self.lbl_filecount, 0, wx.EXPAND | wx.EAST | wx.WEST | wx.SOUTH, RESIZE_MARGIN)
+        self.window_box.Add(self.lbl_current_line, 0, wx.EXPAND | wx.EAST | wx.WEST | wx.SOUTH, RESIZE_MARGIN)
         self.window_box.Add(self.lbl_start, 0, wx.EXPAND | wx.EAST | wx.WEST | wx.SOUTH, RESIZE_MARGIN)
         self.window_box.Add(self.lbl_end, 0, wx.EXPAND | wx.EAST | wx.WEST | wx.SOUTH, RESIZE_MARGIN)
         self.window_box.Add(self.lbl_total, 0, wx.EXPAND | wx.EAST | wx.WEST | wx.SOUTH, RESIZE_MARGIN)
@@ -100,6 +105,7 @@ class JournalHistorian(DynamicFrame):
         self.status_json_watcher.resume()
 
     def process_all_journals(self):
+        self.is_running = True
         self._pause_threads()
         self._empty_directory(CACHE_DIR)
         #113: delete timestamp, otherwise no data will be shown, as the timestamp would match the very last/recent journal line
@@ -110,7 +116,7 @@ class JournalHistorian(DynamicFrame):
 
         journal_files = self._get_sorted_journal_files(self.journal_dir)
         for idx, file_path in enumerate(journal_files, 1):
-            logging.debug(f"Processing {file_path}")
+            logging.debug(f"Processing {str(file_path)}")
             with open(file_path, encoding="utf-8") as f:
                 for line in f:
                     try:
@@ -119,7 +125,7 @@ class JournalHistorian(DynamicFrame):
                     except Exception as e:
                         log_context(level=logging.WARN, frame=inspect.currentframe(), e=e)
                         continue
-                    wx.CallAfter(self._update_ui, idx, file_path)
+                    wx.CallAfter(self._update_ui, idx, file_path, str(evt)[14:80])
 
         self.end_time = time.time()
         wx.CallAfter(self._finish)
@@ -139,10 +145,11 @@ class JournalHistorian(DynamicFrame):
         # Sort by last modified time (or use 'stat().st_ctime' for creation time on some systems)
         return sorted(journal_files, key=lambda f: f.stat().st_mtime)
 
-    def _update_ui(self, idx, file_path):
+    def _update_ui(self, idx, file_path, evt):
         self.current_index = idx
-        self.lbl_current.SetLabel(f"Current File: {file_path}")
+        self.lbl_current.SetLabel(f"Current File: {str(file_path)}")
         self.lbl_filecount.SetLabel(f"File {idx}/{self.total_files}")
+        self.lbl_current_line.SetLabel(f"Current line: {evt}...")
         self.progress.SetValue(idx)
 
     def _finish(self):
@@ -150,3 +157,4 @@ class JournalHistorian(DynamicFrame):
         total = self.end_time - self.start_time
         self.lbl_total.SetLabel(f"Total Time: {time.strftime('%H:%M:%S', time.gmtime(total))}")
         self.btn_start.Enable()
+        self.is_running = False

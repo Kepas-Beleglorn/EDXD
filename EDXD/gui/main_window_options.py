@@ -40,6 +40,7 @@ class MainWindowOptions(wx.Panel):
         super().__init__(parent)
         self.parent = parent
         self.theme = get_theme()
+        self.historian = None
 
         self._check_version(self, self.parent.prefs)
 
@@ -92,8 +93,8 @@ class MainWindowOptions(wx.Panel):
         self.Bind(wx.EVT_PAINT, self._on_paint)
 
     def _load_all_logs(self, event):
-        historian = JournalHistorian(journal_reader=self.parent.journal_reader, journal_controller=self.parent.journal_controller, status_json_watcher=self.parent.status_watcher)
-        historian.Show()
+        self.historian = JournalHistorian(journal_reader=self.parent.journal_reader, journal_controller=self.parent.journal_controller, status_json_watcher=self.parent.status_watcher)
+        self.historian.Show()
 
     def _edit_config(self, event):
         config_dialog = EDXDConfig(self)

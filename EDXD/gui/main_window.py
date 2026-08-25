@@ -128,6 +128,7 @@ class MainFrame(DynamicFrame):
 
     def _init_panels(self):
         # initialise sub windows
+
         # selected body ------------------------------------------------------------------------------------------------
         from EDXD.gui.detail_selected import WINID as winIdSelected
         if self.prefs is None or self.prefs.get(winIdSelected) is None:
@@ -238,19 +239,8 @@ class MainFrame(DynamicFrame):
             self.win_nav_route.plotted_route.amount_of_passed_systems_to_show = int(self.prefs.get("amount_of_plotted_passed_systems_to_show"))
 
         # Landing pad indicator ---------------------------------------------------------------------
-        from EDXD.gui.landing_pad_indicator import WINID as winIdSelected
-        if self.prefs is None or self.prefs.get(winIdSelected) is None:
-            hidden = False
-        else:
-            hidden = self.prefs.get(winIdSelected).get("is_hidden", False)
-        if hidden:
-            if self.win_landing_pads is not None:
-                self.win_landing_pads.Close()
-                self.win_landing_pads = None
-        else:
-            if self.win_landing_pads is None:
-                self.win_landing_pads = LandingPadFrame(self, "foo bar", 0, "")
-                self.win_landing_pads.Show(True)
+        # Landing pad indicator is only relevant when landing permission was requested
+        # So directly after game start it's irrelevant. Same goes for docking complete
 
     def _update_system(self, title: str = ""):
         init_widget(widget=self.lbl_sys, title=title)
@@ -277,6 +267,23 @@ class MainFrame(DynamicFrame):
     def _update_current_nav_route(self):
         if self.win_nav_route:
             self.win_nav_route.render(self.journal_controller.nav_route)
+
+    def _update_assigned_landing_pad(self):
+        from EDXD.gui.landing_pad_indicator import WINID as winIdSelected
+        if self.prefs is None or self.prefs.get(winIdSelected) is None:
+            hidden = False
+        else:
+            hidden = self.prefs.get(winIdSelected).get("is_hidden", False)
+        if hidden:
+            if self.win_landing_pads is not None:
+                self.win_landing_pads.Close()
+                self.win_landing_pads = None
+        else:
+            if self.model.station_name and self.model.station_type and self.model.station_landing_pad:
+                if self.win_landing_pads is None:
+                    self.win_landing_pads = LandingPadFrame(self, station_name=self.model.station_name, station_type=self.model.station_type, landing_pad=self.model.station_landing_pad)
+                    self.win_landing_pads.Show(True)
+
 
     # ------------------------------------------------------------------
     # event handlers
@@ -368,6 +375,9 @@ class MainFrame(DynamicFrame):
     # ------------------------------------------------------------------
     #@log_call()
     def _refresh(self):
+        if self.options.historian and self.options.historian.is_running:
+            return
+
         self.table_view.refresh(
             bodies=self.model.snapshot_bodies(),
             filters=self.prefs["mat_sel"],
@@ -415,6 +425,8 @@ class MainFrame(DynamicFrame):
 
         self._update_current_nav_route()
 
+        self._update_assigned_landing_pad()
+
         # noinspection PyTypeChecker
         if self._refresh_timer:
             self._refresh_timer.Stop()
@@ -430,5 +442,6 @@ class MainFrame(DynamicFrame):
         if self.win_status_flags    : self.win_status_flags.Close(True)
         if self.win_sig_pred        : self.win_sig_pred.Close(True)
         if self.win_nav_route       : self.win_nav_route.Close(True)
+        if self.win_landing_pads    : self.win_landing_pads.Close(True)
         self.save_geometry()
         event.Skip()
