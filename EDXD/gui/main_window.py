@@ -283,6 +283,10 @@ class MainFrame(DynamicFrame):
                 if self.win_landing_pads is None:
                     self.win_landing_pads = LandingPadFrame(self, station_name=self.model.station_name, station_type=self.model.station_type, landing_pad=self.model.station_landing_pad)
                     self.win_landing_pads.Show(True)
+            else:
+                if self.win_landing_pads is not None:
+                    self.win_landing_pads.Close()
+                    self.win_landing_pads = None
 
 
     # ------------------------------------------------------------------

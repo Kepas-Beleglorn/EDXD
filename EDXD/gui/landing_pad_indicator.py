@@ -50,10 +50,9 @@ class LandingPadFrame(DynamicDialog):
         self.display = None
 
         fit_to_labels = False
-        if station_type in ["Coriolis"]:
+        if station_type in ["Coriolis", "Orbis"]:
             self.station = CoriolisDataGenerator.generate_coriolis(station_name)
             self.display = CoriolisDisplay(self.scroll_container, self.station)
-
         elif station_type in [""]:
             pass
         else:
@@ -72,6 +71,8 @@ class LandingPadFrame(DynamicDialog):
 
         if fit_to_labels:
             self.Fit()
+        else:
+            init_widget(self, width=DEFAULT_LANDING_PAD_WIDTH, height=DEFAULT_LANDING_PAD_HEIGHT, posx=props.posx, posy=props.posy, title=TITLE)
 
     def on_assign_pad(self, pad_num: int):
         if self.station:
