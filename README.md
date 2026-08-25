@@ -25,6 +25,15 @@
 
 #### A more detailed description will be maintained here: [EDXD on edcodex.info](https://edcodex.info/?m=tools&entry=608)
 
+## Binary Compatibility (Required for Linux only)
+
+| Binary | glibc | Ubuntu Base | Distros |
+|--------|-------|-------------|---------|
+| ubuntu-22.04 | 2.35 | 22.04 LTS | Ubuntu 22.04, Linux Mint 21, Debian 12 |
+| ubuntu-24.04 | 2.39 | 24.04 LTS | Ubuntu 24.04, Linux Mint 22, ZorinOS 17, Fedora 40 |
+| ubuntu-latest | 2.43+ | 26.04 | Ubuntu 26.04+, latest distributions |
+
+**Don't know which to use?** Run: `bash check-compatibility.sh`
 
 ### Planned:
 * show first discovered (EDSM)
