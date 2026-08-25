@@ -1,6 +1,7 @@
 #!/bin/bash
 # Run script for ed-eXploration-dashboard
 # Detects display server and sets appropriate environment
+# only required for wayland compatibility
 
 # --- DETECT DISPLAY SERVER ---
 if [ -n "$WAYLAND_DISPLAY" ]; then
