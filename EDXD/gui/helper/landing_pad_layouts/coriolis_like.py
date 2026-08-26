@@ -111,7 +111,7 @@ class CoriolisDisplay(wx.Panel):
             dc.SetFont(wx.Font(20, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD))
             dc.SetTextForeground(self.colors['text'])
 
-            label = str(self.layout.assigned_pad)
+            label = str("0" + str(self.layout.assigned_pad))[-2:]
             text_width, text_height = dc.GetTextExtent(label)
 
             text_x = cx - text_width / 2

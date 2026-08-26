@@ -156,7 +156,7 @@ class JournalController(PausableThread, threading.Thread):
 
                 dh.update_ship_status(SHIP_STATUS_FILE, self.m.ship_status)
 
-        if etype in ["DockingCancelled", "Docked"]:
+        if etype in ["DockingCancelled", "Docked", "DockingTimeout" ,"StartJump"]:
             self.landing_in_progress = False
 
         if self.landing_in_progress == False:
