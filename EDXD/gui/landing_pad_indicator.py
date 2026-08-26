@@ -50,7 +50,7 @@ class LandingPadFrame(DynamicDialog):
         self.display = None
 
         fit_to_labels = False
-        if station_type in ["Coriolis", "Orbis"]:
+        if station_type in ["Coriolis", "Orbis", "Ocellus", "Dodec", "AsteroidBase"]:
             self.station = CoriolisDataGenerator.generate_coriolis(station_name)
             self.display = CoriolisDisplay(self.scroll_container, self.station)
         elif station_type in [""]:
