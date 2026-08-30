@@ -5,6 +5,7 @@ from pathlib import Path
 
 import EDXD.data_handler.helper.bio_helper as bio_helper
 import EDXD.data_handler.helper.galactic_navigation as gn
+from EDXD.data_handler.helper.json_helper import DotDict
 from EDXD.data_handler.helper.pausable_thread import PausableThread
 from EDXD.data_handler.helper.spansh import SpanshHelper
 from EDXD.data_handler.model import *
@@ -156,7 +157,7 @@ class JournalController(PausableThread, threading.Thread):
 
                 dh.update_ship_status(SHIP_STATUS_FILE, self.m.ship_status)
 
-        if etype in ["DockingCancelled", "Docked", "DockingTimeout" ,"StartJump"]:
+        if etype in ["DockingCancelled", "Docked", "DockingTimeout" ,"StartJump", "DockingDenied"]:
             self.landing_in_progress = False
 
         if self.landing_in_progress == False:
@@ -164,10 +165,18 @@ class JournalController(PausableThread, threading.Thread):
             self.m.station_name = None
             self.m.station_landing_pad = None
 
-        if etype == "DockingGranted":
+        if etype == "DockingRequested":
             self.landing_in_progress = True
             self.m.station_type = evt.get("StationType")
+            if self.m.station_type == "FleetCarrier":
+                pad_structure = DotDict(evt.get("LandingPads"))
+                if hasattr(pad_structure, "Small") and pad_structure.Small == 8:
+                    self.m.station_type = "SquadronCarrier"
+
             self.m.station_name = evt.get("StationName")
+
+        if etype == "DockingGranted":
+            self.landing_in_progress = True
             self.m.station_landing_pad = evt.get("LandingPad")
 
         # reset FSD boosts

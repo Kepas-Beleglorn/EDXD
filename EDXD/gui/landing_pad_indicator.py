@@ -14,7 +14,7 @@ from EDXD.gui.helper.window_properties import WindowProperties
 from EDXD.gui.helper.landing_pad_layouts.coriolis_like import CoriolisDisplay
 from EDXD.data_handler.helper.landing_pad_layouts.coriolis_like import CoriolisDataGenerator
 from EDXD.gui.helper.landing_pad_layouts.carrier_like import CarrierDisplay
-from EDXD.data_handler.helper.landing_pad_layouts.carrier_like import CarrierDataGenerator, WIDTH_S, OFFSET_X, MARGIN
+from EDXD.data_handler.helper.landing_pad_layouts.carrier_like import CarrierDataGenerator, WIDTH_S, OFFSET_X, MARGIN, X_SHIFT
 
 
 
@@ -42,7 +42,7 @@ class LandingPadFrame(DynamicDialog):
         grid = wx.BoxSizer(wx.VERTICAL)
 
         self.lbl_station_name = wx.StaticText(self.scroll_container)
-        init_widget(widget=self.lbl_station_name, title=station_name + "  [ " + station_type + " ]\n", height=20)
+        init_widget(widget=self.lbl_station_name, title=station_name + "  [ " + self._normalise_station_type(station_type) + " ]\n", height=20)
 
         theme = wx.Font(self.theme["font_bold"])
         theme.SetPointSize(12)
@@ -65,10 +65,12 @@ class LandingPadFrame(DynamicDialog):
         if station_type in ["Coriolis", "Orbis", "Ocellus", "Dodec", "AsteroidBase"]:
             self.station = CoriolisDataGenerator.generate_coriolis(station_name, station_type)
             self.display = CoriolisDisplay(self.scroll_container, self.station)
-        elif station_type in ["FleetCarrier"]:
+        elif station_type in ["FleetCarrier", "SquadronCarrier"]:
             self.station = CarrierDataGenerator.generate_carrier(station_name, station_type)
             self.display = CarrierDisplay(self.scroll_container, self.station)
             width = WIDTH_S * 9 + OFFSET_X * 2 + MARGIN * 12
+            if station_type == "SquadronCarrier":
+                width += X_SHIFT
         else:
             fit_to_labels = True
 
@@ -89,3 +91,15 @@ class LandingPadFrame(DynamicDialog):
             self.station.assigned_pad = pad_num
         if self.display:
             self.display.Refresh()
+
+    @staticmethod
+    def _normalise_station_type(station_type: str):
+        match station_type:
+            case "AsteroidBase":
+                return "Asteroid Base"
+            case "FleetCarrier":
+                return "Fleet Carrier"
+            case "SquadronCarrier":
+                return "Squadron Carrier"
+            case _:
+                return station_type

@@ -13,6 +13,21 @@ HEIGHT_M  :int  = int(RATIO*WIDTH_M)
 WIDTH_L   :int  = int(2*WIDTH_S)
 HEIGHT_L  :int  = int(RATIO*WIDTH_L)
 
+X1_L = 2 * WIDTH_S + 4 * MARGIN     # Left large pads
+X2_L = X1_L + 2 * MARGIN + WIDTH_L  # Right large pads
+
+X1_M = X1_L - 2 * MARGIN - WIDTH_M  # Left medium pads
+X2_M = X2_L + 2 * MARGIN + WIDTH_L  # Right medium pads
+
+Y1_M = 4 * HEIGHT_L + 6 * MARGIN - HEIGHT_M # lower medium pads
+Y2_M = Y1_M - 2 * MARGIN - HEIGHT_M         # upper medium pads
+
+X_S = X2_L + WIDTH_L + 2 * MARGIN
+Y_S = Y2_M - 2 * MARGIN - HEIGHT_S
+
+# Right half needs an off-set, equal to left half + 5*MARGIN
+X_SHIFT = X_S + 2 * MARGIN + 2 * WIDTH_S + 15 * MARGIN
+
 @dataclass
 class CarrierPad:
     """Represents a single carrier landing pad"""
@@ -28,7 +43,7 @@ class CarrierPad:
 class CarrierLayout:
     """Fleet carrier landing pad layout"""
     carrier_name: str
-    carrier_id: str
+    carrier_type: str
     pads: List[CarrierPad]
     assigned_pad: Optional[int] = None
 
@@ -36,7 +51,7 @@ class CarrierDataGenerator:
     """Generate fleet carrier landing pad layout with precise pixel positioning"""
 
     @staticmethod
-    def generate_carrier(carrier_name: str, carrier_id: str) -> CarrierLayout:
+    def generate_carrier(carrier_name: str, carrier_type: str) -> CarrierLayout:
         """
         Generate carrier layout with exact pixel positions.
         """
@@ -45,41 +60,79 @@ class CarrierDataGenerator:
         # Define each pad with exact pixel coordinates
         # Format: (pad_number, size, x_position, y_position)
 
-        X1_L = 2 * WIDTH_S + 4 * MARGIN     # Left large pads
-        X2_L = X1_L + 2 * MARGIN + WIDTH_L  # Right large pads
+        match carrier_type:
+            case "SquadronCarrier":
+                pad_layout = [
+                    # Left half
+                    # Large pads
+                    {"num": 23, "size": "L", "x": X1_L, "y": 0},
+                    {"num": 24, "size": "L", "x": X2_L, "y": 0},
+                    {"num": 21, "size": "L", "x": X1_L, "y": HEIGHT_L + 2 * MARGIN},
+                    {"num": 22, "size": "L", "x": X2_L, "y": HEIGHT_L + 2 * MARGIN},
+                    {"num": 19, "size": "L", "x": X1_L, "y": 2 * HEIGHT_L + 4 * MARGIN},
+                    {"num": 20, "size": "L", "x": X2_L, "y": 2 * HEIGHT_L + 4 * MARGIN},
+                    {"num": 17, "size": "L", "x": X1_L, "y": 3 * HEIGHT_L + 6 * MARGIN},
+                    {"num": 18, "size": "L", "x": X2_L, "y": 3 * HEIGHT_L + 6 * MARGIN},
 
-        X1_M = X1_L - 2 * MARGIN - WIDTH_M  # Left medium pads
-        X2_M = X2_L + 2 * MARGIN + WIDTH_L  # Right medium pads
+                    # Medium pads
+                    {"num": 25, "size": "M", "x": X1_M, "y": Y1_M},
+                    {"num": 26, "size": "M", "x": X1_M, "y": Y2_M},
+                    {"num": 27, "size": "M", "x": X2_M, "y": Y1_M},
+                    {"num": 28, "size": "M", "x": X2_M, "y": Y2_M},
 
-        Y1_M = 4 * HEIGHT_L + 6 * MARGIN - HEIGHT_M # lower medium pads
-        Y2_M = Y1_M - 2 * MARGIN - HEIGHT_M         # upper medium pads
+                    # Small pads
+                    {"num": 29, "size": "S", "x": 0, "y": Y_S},
+                    {"num": 30, "size": "S", "x": WIDTH_S + 2 * MARGIN, "y": Y_S},
+                    {"num": 31, "size": "S", "x": X_S, "y": Y_S},
+                    {"num": 32, "size": "S", "x": X_S + 2 * MARGIN + WIDTH_S, "y": Y_S},
 
-        X_S = X2_L + WIDTH_L + 2 * MARGIN
-        Y_S = Y2_M - 2 * MARGIN - HEIGHT_S
+                    # Right half (needs an off-set, equal to left half + margin of 25px
+                    # Large pads
+                    {"num": 7, "size": "L", "x":    X_SHIFT + X1_L,   "y": 0},
+                    {"num": 8, "size": "L", "x":    X_SHIFT + X2_L,   "y": 0},
+                    {"num": 5, "size": "L", "x":    X_SHIFT + X1_L,   "y": HEIGHT_L + 2 * MARGIN},
+                    {"num": 6, "size": "L", "x":    X_SHIFT + X2_L,   "y": HEIGHT_L + 2 * MARGIN},
+                    {"num": 3, "size": "L", "x":    X_SHIFT + X1_L,   "y": 2 * HEIGHT_L + 4 * MARGIN},
+                    {"num": 4, "size": "L", "x":    X_SHIFT + X2_L,   "y": 2 * HEIGHT_L + 4 * MARGIN},
+                    {"num": 1, "size": "L", "x":    X_SHIFT + X1_L,   "y": 3 * HEIGHT_L + 6 * MARGIN},
+                    {"num": 2, "size": "L", "x":    X_SHIFT + X2_L,   "y": 3 * HEIGHT_L + 6 * MARGIN},
 
-        pad_layout = [
-            # Large pads
-            {"num": 7, "size": "L", "x":    X1_L,   "y": 0},
-            {"num": 8, "size": "L", "x":    X2_L,   "y": 0},
-            {"num": 5, "size": "L", "x":    X1_L,   "y": HEIGHT_L + 2 * MARGIN},
-            {"num": 6, "size": "L", "x":    X2_L,   "y": HEIGHT_L + 2 * MARGIN},
-            {"num": 3, "size": "L", "x":    X1_L,   "y": 2 * HEIGHT_L + 4 * MARGIN},
-            {"num": 4, "size": "L", "x":    X2_L,   "y": 2 * HEIGHT_L + 4 * MARGIN},
-            {"num": 1, "size": "L", "x":    X1_L,   "y": 3 * HEIGHT_L + 6 * MARGIN},
-            {"num": 2, "size": "L", "x":    X2_L,   "y": 3 * HEIGHT_L + 6 * MARGIN},
+                    # Medium pads
+                    {"num": 9,  "size": "M", "x": X_SHIFT + X1_M, "y": Y1_M},
+                    {"num": 10, "size": "M", "x": X_SHIFT + X1_M, "y": Y2_M},
+                    {"num": 11, "size": "M", "x": X_SHIFT + X2_M, "y": Y1_M},
+                    {"num": 12, "size": "M", "x": X_SHIFT + X2_M, "y": Y2_M},
 
-            # Medium pads
-            {"num": 9,  "size": "M", "x": X1_M, "y": Y1_M},
-            {"num": 10, "size": "M", "x": X1_M, "y": Y2_M},
-            {"num": 11, "size": "M", "x": X2_M, "y": Y1_M},
-            {"num": 12, "size": "M", "x": X2_M, "y": Y2_M},
+                    # Small pads
+                    {"num": 13, "size": "S", "x": X_SHIFT + 0, "y": Y_S}, # the "+ 0" is just for easier human understandability. Mathematically it's unnecessary, obviously ;-)
+                    {"num": 14, "size": "S", "x": X_SHIFT + WIDTH_S + 2 * MARGIN, "y": Y_S},
+                    {"num": 15, "size": "S", "x": X_SHIFT + X_S, "y": Y_S},
+                    {"num": 16, "size": "S", "x": X_SHIFT + X_S + 2 * MARGIN + WIDTH_S, "y": Y_S},
+                ]
+            case _:
+                pad_layout = [
+                    # Large pads
+                    {"num": 7, "size": "L", "x": X1_L, "y": 0},
+                    {"num": 8, "size": "L", "x": X2_L, "y": 0},
+                    {"num": 5, "size": "L", "x": X1_L, "y": HEIGHT_L + 2 * MARGIN},
+                    {"num": 6, "size": "L", "x": X2_L, "y": HEIGHT_L + 2 * MARGIN},
+                    {"num": 3, "size": "L", "x": X1_L, "y": 2 * HEIGHT_L + 4 * MARGIN},
+                    {"num": 4, "size": "L", "x": X2_L, "y": 2 * HEIGHT_L + 4 * MARGIN},
+                    {"num": 1, "size": "L", "x": X1_L, "y": 3 * HEIGHT_L + 6 * MARGIN},
+                    {"num": 2, "size": "L", "x": X2_L, "y": 3 * HEIGHT_L + 6 * MARGIN},
 
-            # Small pads
-            {"num": 13, "size": "S", "x": 0, "y": Y_S},
-            {"num": 16, "size": "S", "x": WIDTH_S + 2 * MARGIN, "y": Y_S},
-            {"num": 14, "size": "S", "x": X_S, "y": Y_S},
-            {"num": 15, "size": "S", "x": X_S + 2 * MARGIN + WIDTH_S, "y": Y_S},
-        ]
+                    # Medium pads
+                    {"num": 9, "size": "M", "x": X1_M, "y": Y1_M},
+                    {"num": 10, "size": "M", "x": X1_M, "y": Y2_M},
+                    {"num": 11, "size": "M", "x": X2_M, "y": Y1_M},
+                    {"num": 12, "size": "M", "x": X2_M, "y": Y2_M},
+
+                    # Small pads
+                    {"num": 13, "size": "S", "x": 0, "y": Y_S},
+                    {"num": 16, "size": "S", "x": WIDTH_S + 2 * MARGIN, "y": Y_S},
+                    {"num": 14, "size": "S", "x": X_S, "y": Y_S},
+                    {"num": 15, "size": "S", "x": X_S + 2 * MARGIN + WIDTH_S, "y": Y_S},
+                ]
 
         for pad_info in pad_layout:
             size = str(pad_info["size"])
@@ -96,7 +149,7 @@ class CarrierDataGenerator:
 
         return CarrierLayout(
             carrier_name=carrier_name,
-            carrier_id=carrier_id,
+            carrier_type=carrier_type,
             pads=pads,
             assigned_pad=5  # Default assigned pad
         )
