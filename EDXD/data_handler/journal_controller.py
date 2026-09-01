@@ -474,22 +474,26 @@ class JournalController(PausableThread, threading.Thread):
                             first_discovered = 1
 
                     # Is that thing mapped?
-                    if not evt.get("WasMapped"):
-                        # It could be I've been there, but haven't sold the mapping data yet.
-                        if first_mapped != 2:
-                            first_mapped = 0
+                    if is_star:
+                        first_mapped = 0
+                        first_footfalled = 0
                     else:
-                        if first_mapped != 2:
-                            first_mapped = 1
+                        if not evt.get("WasMapped"):
+                            # It could be I've been there, but haven't sold the mapping data yet.
+                            if first_mapped != 2:
+                                first_mapped = 0
+                        else:
+                            if first_mapped != 2:
+                                first_mapped = 1
 
-                    # Has anyone set foot on that rock?
-                    if not evt.get("WasFootfalled"):
-                        # It could be I've been there, but haven't sold the mapping data yet.
-                        if first_footfalled != 2:
-                            first_footfalled = 0
-                    else:
-                        if first_footfalled != 2:
-                            first_footfalled = 1
+                        # Has anyone set foot on that rock?
+                        if not evt.get("WasFootfalled"):
+                            # It could be I've been there, but haven't sold the mapping data yet.
+                            if first_footfalled != 2:
+                                first_footfalled = 0
+                        else:
+                            if first_footfalled != 2:
+                                first_footfalled = 1
 
                     if evt.get("AtmosphereType") or evt.get("AtmosphereComposition") or evt.get("Atmosphere"):
                         atmos_composition = {a["Name"]: a["Percent"] for a in evt.get("AtmosphereComposition", [])}
