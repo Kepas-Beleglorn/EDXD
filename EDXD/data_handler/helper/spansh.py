@@ -97,10 +97,10 @@ class SpanshHelper:
                     if hasattr(body, "isLandable"):
                         landable = body.isLandable
 
-                    g_force     : float = None
-                    earth_mass  : float = None
-                    stellar_mass: float = None
-                    radius      : float = None
+                    g_force     : float = 0
+                    earth_mass  : float = 0
+                    stellar_mass: float = 0
+                    radius      : float = 0
 
                     if body.type == "Star":
                         stellar_mass = body.solarMasses
@@ -108,9 +108,11 @@ class SpanshHelper:
                             stellar_mass = float(stellar_mass)
                         radius = body.solarRadius
                         g_force = dh.get_gravity_from_mass_and_radius(solar_masses=stellar_mass, earth_masses=earth_mass, radius=float(radius))
+
                     if body.type == "Planet":
                         radius = body.radius
                         g_force = body.gravity
+
                     if radius is not None:
                         radius = float(radius)
 
@@ -252,7 +254,7 @@ class SpanshHelper:
                         pressure=pressure
                     )
             except Exception as e:
-                print(f"ERROR (update_system_data; after 'system_model.update_body'): [{systemaddress}] {self.system_data.name} - {body.type} - {e}\nGET: {self.url}")
+                print(f"ERROR (update_system_data; after 'system_model.update_body'): [{systemaddress}] {self.system_data.name} - Body: {body.bodyId} | {body.name} | {body.type} - {e}\nGET: {self.url}")
 
         pop_items: List[str] = []
         for body in system_model.bodies:
