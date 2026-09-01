@@ -325,6 +325,7 @@ class JournalController(PausableThread, threading.Thread):
                 body_name = evt.get("BodyName")
             if body_name is None and etype == "FSDJump" and "Body" in evt:
                 body_name = evt.get("Body")
+                is_star = True
             if body_name is None and body_id in self.m.bodies:
                 body_name = self.m.bodies[body_id].body_name
             if etype == "ScanBaryCentre":
@@ -341,8 +342,9 @@ class JournalController(PausableThread, threading.Thread):
 
         if body_id in self.m.bodies:
             first_discovered = self.m.bodies[body_id].first_discovered or first_discovered
-            first_mapped = self.m.bodies[body_id].first_mapped or first_mapped
-            first_footfalled = self.m.bodies[body_id].first_footfalled or first_footfalled
+            if evt.get("BodyType") and evt.get("BodyType") != "Star":
+                first_mapped = self.m.bodies[body_id].first_mapped or first_mapped
+                first_footfalled = self.m.bodies[body_id].first_footfalled or first_footfalled
 
         # FSS - body scan in system
         if etype == "Scan":

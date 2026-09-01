@@ -14,13 +14,14 @@ SPANSH_GET_DUMP: str = "https://spansh.co.uk/api/dump/"
 class SpanshHelper:
     def __init__(self):
         self.system_data: DotDict = None
+        self.url = None
 
     def get_system_data(self, system_id: int):
         # Check if we need to fetch new data
         if self.system_data is None or (hasattr(self.system_data, "id64") and int(self.system_data.id64) != system_id):
             # 1. Make the request
-            url = SPANSH_GET_DUMP + str(system_id)
-            response = requests.get(url)
+            self.url = SPANSH_GET_DUMP + str(system_id)
+            response = requests.get(self.url)
             response.raise_for_status()  # Raise error if request failed
 
             # 2. Parse JSON into a standard Python dict
@@ -81,7 +82,6 @@ class SpanshHelper:
             total_bodies=body_count
         )
         fetched_body_ids: List[str] = []
-        #print(f"DEBUG: update_system_data[{systemaddress}] {self.system_data.name}")
         bodies: DotDict = self.system_data.bodies
         for body in bodies:
             try:
@@ -213,7 +213,6 @@ class SpanshHelper:
                     if hasattr(body, "earthMasses"):
                         scandata["MassEM"] = body.earthMasses
 
-
                     system_model.update_body(
                         systemaddress=systemaddress,
                         body_id=body_id,
@@ -240,7 +239,7 @@ class SpanshHelper:
                         bio_complete=None,
                         bio_scanned=None,
                         first_discovered=1,
-                        first_mapped=1,
+                        first_mapped=0,
                         first_footfalled=0,
                         atmosphere=atmosphere,
                         mean_temp=body.surfaceTemperature,
@@ -253,7 +252,7 @@ class SpanshHelper:
                         pressure=pressure
                     )
             except Exception as e:
-                print(f"ERROR (update_system_data; after 'system_model.update_body'): [{systemaddress}] {self.system_data.name} - {body.type} - {e}")
+                print(f"ERROR (update_system_data; after 'system_model.update_body'): [{systemaddress}] {self.system_data.name} - {body.type} - {e}\nGET: {self.url}")
 
         pop_items: List[str] = []
         for body in system_model.bodies:
