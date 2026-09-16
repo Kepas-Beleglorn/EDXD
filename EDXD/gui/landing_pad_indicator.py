@@ -1,10 +1,6 @@
 from __future__ import annotations
 
-from pickletools import dis
-from sys import displayhook
-
-import wx
-
+import wx, re
 
 from EDXD.gui.helper.dynamic_dialog import DynamicDialog
 from EDXD.gui.helper.gui_handler import init_widget
@@ -93,13 +89,6 @@ class LandingPadFrame(DynamicDialog):
             self.display.Refresh()
 
     @staticmethod
-    def _normalise_station_type(station_type: str):
-        match station_type:
-            case "AsteroidBase":
-                return "Asteroid Base"
-            case "FleetCarrier":
-                return "Fleet Carrier"
-            case "SquadronCarrier":
-                return "Squadron Carrier"
-            case _:
-                return station_type
+    def _normalise_station_type(station_type: str) -> str:
+        # Insert a space before any uppercase letter that follows a lowercase letter
+        return re.sub(r'([a-z])([A-Z])', r'\1 \2', station_type)
