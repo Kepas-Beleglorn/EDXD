@@ -171,6 +171,8 @@ class PlottedNavRoute(DynamicDialog):
         current_bg_colour = self.theme["background_hover"]
         jet_cone_colour = wx.Colour(0, 165, 255)
 
+        final_destination_address =self.plotted_route.get_final_destination().system_address
+
         system: NavPoint|None = None
         next_system: NavPoint|None = None
 
@@ -209,12 +211,14 @@ class PlottedNavRoute(DynamicDialog):
                             distance_indicator = self.BMP_LINE_BLUE
 
                     system_name = system.star_system
+                    system_address = system.system_address
+
                     if next_system:
                         distance_next_jump = gn.calculate_star_system_distance(next_system.star_position, system.star_position)
 
                     lbl_1_system_indicator = self.route_panel.add_table_item_widget(system_indicator, 20)
                     lbl_2_space = self.route_panel.add_table_item(f"", line_height=fixed_height)
-                    if abs(i) == abs(max-1):
+                    if final_destination_address == system_address:
                         lbl_2_space.SetLabelText(f"{' '*5}{ICONS["final"]}")
                     lbl_3_star_feature = self.route_panel.add_table_item(f"{' '*5}{system_feature}{'  '*2}", line_height=fixed_height)
                     lbl_4_star_class = self.route_panel.add_table_item(f"[{system_type}]", line_height=fixed_height)
