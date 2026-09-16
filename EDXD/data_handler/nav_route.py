@@ -4,10 +4,16 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional
 
+import pywinctl, wx
+
 import EDXD.data_handler.helper.galactic_navigation as gn
 import EDXD.data_handler.helper.data_helper as dh
 from EDXD.data_handler.helper.json_helper import DotDict
 from EDXD.data_handler.helper.galactic_navigation import StarPosition
+from EDXD.gui.themed_msg_dialog import ThemedMessageDialog
+
+ERR_TITLE = "Navigation error"
+ERR_MSG = "Please clear the route and calculate it fresh.\nThe game does not update 'NavRoute.json' on 'Recalculate Route'."
 
 
 @dataclass
@@ -106,31 +112,13 @@ class NavRouteHandler:
                 )
 
     def get_system_by_index(self, system_index: int) -> NavPoint|None:
-        if self.plotted_nav_route and len(self.plotted_nav_route.nav_points) > 0:
-            return self.plotted_nav_route.nav_points[system_index]
+        if self.plotted_nav_route and len(self.plotted_nav_route.nav_points) > 0 :
+            try:
+                return self.plotted_nav_route.nav_points[system_index]
+            except IndexError as ie:
+                self._show_message(ERR_TITLE, ERR_MSG, ie)
         else:
             return None
-
-    def get_next_system(self, remaining_jumps_in_route: int|None) -> NavPoint|None:
-        """Calculates the next system to show."""
-        if not self.plotted_nav_route or len(self.plotted_nav_route.nav_points) < 1:
-            return None
-
-        if remaining_jumps_in_route:
-            self.remaining_jumps_in_route = remaining_jumps_in_route
-        elif self.current_system:
-            i = 0
-            for system in self.plotted_nav_route.nav_points:
-                if system.system_address == self.current_system.system_address:
-                    self.remaining_jumps_in_route = len(self.plotted_nav_route.nav_points) - (i + 1)
-                    break
-                i += 1
-        else:
-            return None
-
-        system_index = -1 * self.remaining_jumps_in_route
-
-        return self.plotted_nav_route.nav_points[system_index]
 
     def get_final_destination(self) -> NavPoint|None:
         if not self.plotted_nav_route or len(self.plotted_nav_route.nav_points) < 1:
@@ -159,8 +147,11 @@ class NavRouteHandler:
         total_distance = 0.0
         points = self.plotted_nav_route.nav_points
 
-        for i in range(-1, -1*(self.remaining_jumps_in_route+1), -1):
-            total_distance += gn.calculate_star_system_distance(points[i].star_position, points[i-1].star_position)
+        try:
+            for i in range(-1, -1*(self.remaining_jumps_in_route+1), -1):
+                total_distance += gn.calculate_star_system_distance(points[i].star_position, points[i-1].star_position)
+        except IndexError as ie:
+            self._show_message(ERR_TITLE, ERR_MSG, ie)
 
         return total_distance
 
@@ -177,3 +168,47 @@ class NavRouteHandler:
                     if self.get_system_by_index(i).system_address == system_address_current_system:
                         self.remaining_jumps_in_route = -1*(i+1)
                         return
+
+    def check_nav_route_consistency(self, remaining_jumps: int, target_system_address: int):
+        if remaining_jumps > len(self.plotted_nav_route.nav_points):
+            self._show_message(ERR_TITLE, ERR_MSG, None)
+            return
+
+        try:
+            if self.get_system_by_index(-1*remaining_jumps).system_address != target_system_address:
+                self._show_message(ERR_TITLE, ERR_MSG, None)
+                return
+        except IndexError as ie:
+            self._show_message(ERR_TITLE, ERR_MSG, ie)
+            return
+
+    def _show_message(self, title: str, message: str|None, ie: IndexError|None) -> None:
+        if ie is not None:
+            print(f"IndexError: {ie}\n{ERR_MSG}")
+
+        if self.is_window_visible("PLOTTED_NAV_ROUTE"):
+            try:
+                dlg = ThemedMessageDialog(None, message, title, False)
+                dlg.ShowModal()
+                dlg.Destroy()
+            except Exception as ex:
+                print(ex)
+
+
+    def is_window_visible(self, window_title_part: str) -> bool:
+        """
+        Checks if a window containing 'window_title_part' in its title is currently visible.
+        """
+        # Get all windows with the title
+        windows = pywinctl.getWindowsWithTitle(window_title_part)
+
+        if not windows:
+            return False
+
+        # Check if at least one of them is visible
+        # Note: On Linux, 'isVisible' checks if the window is mapped and not minimized
+        for win in windows:
+            if win.isVisible:
+                return True
+        return False
+

@@ -4,7 +4,6 @@ import re
 from pathlib import Path
 
 import EDXD.data_handler.helper.bio_helper as bio_helper
-import EDXD.data_handler.helper.galactic_navigation as gn
 from EDXD.data_handler.helper.json_helper import DotDict
 from EDXD.data_handler.helper.pausable_thread import PausableThread
 from EDXD.data_handler.helper.spansh import SpanshHelper
@@ -233,7 +232,8 @@ class JournalController(PausableThread, threading.Thread):
             if update_gui:
                 if self.nav_route.plotted_nav_route is None:
                     self.nav_route.load_plotted_route()
-                self.nav_route.remaining_jumps_in_route = int(evt.get("RemainingJumpsInRoute"))
+                if evt.get("RemainingJumpsInRoute") != "":
+                    self.nav_route.check_nav_route_consistency(int(evt.get("RemainingJumpsInRoute")), int(evt.get("SystemAddress")))
 
         # ───── jump to a new system ───────────────────────────────
         #124: system/selection is no longer reset when entering super cruise

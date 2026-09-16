@@ -11,7 +11,8 @@ dependencies = [
     "wxPython>=4.2.5,<5",
     "tomli",
     "filelock",
-    "requests"
+    "requests",
+    "pywinctl"
 ]
 
 [project.scripts]
