@@ -232,8 +232,10 @@ class JournalController(PausableThread, threading.Thread):
             if update_gui:
                 if self.nav_route.plotted_nav_route is None:
                     self.nav_route.load_plotted_route()
-                if evt.get("RemainingJumpsInRoute")  is  not None and evt.get("RemainingJumpsInRoute") != "" and evt.get("SystemAddress") is not None and evt.get("SystemAddress") != "":
-                    self.nav_route.check_nav_route_consistency(int(evt.get("RemainingJumpsInRoute")), int(evt.get("SystemAddress")))
+                if evt.get("RemainingJumpsInRoute")  is  not None and evt.get("RemainingJumpsInRoute") != "":
+                    self.nav_route.remaining_jumps_in_route = int(evt.get("RemainingJumpsInRoute"))
+                    if evt.get("SystemAddress") is not None and evt.get("SystemAddress") != "":
+                        self.nav_route.check_nav_route_consistency(int(evt.get("RemainingJumpsInRoute")), int(evt.get("SystemAddress")))
 
         # ───── jump to a new system ───────────────────────────────
         #124: system/selection is no longer reset when entering super cruise
