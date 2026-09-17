@@ -232,7 +232,7 @@ class JournalController(PausableThread, threading.Thread):
             if update_gui:
                 if self.nav_route.plotted_nav_route is None:
                     self.nav_route.load_plotted_route()
-                if evt.get("RemainingJumpsInRoute") != "":
+                if evt.get("RemainingJumpsInRoute")  is  not None and evt.get("RemainingJumpsInRoute") != "" and evt.get("SystemAddress") is not None and evt.get("SystemAddress") != "":
                     self.nav_route.check_nav_route_consistency(int(evt.get("RemainingJumpsInRoute")), int(evt.get("SystemAddress")))
 
         # ───── jump to a new system ───────────────────────────────
