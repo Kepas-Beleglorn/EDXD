@@ -112,7 +112,7 @@ class PlottedNavRoute(DynamicDialog):
         evt.Skip()
 
     def _update_general(self):
-        if self.plotted_route is None:
+        if self.plotted_route is None or self.plotted_route.plotted_nav_route is None or len(self.plotted_route.plotted_nav_route.nav_points) < 1:
             self.general_panel.Hide()
             return
 
@@ -143,7 +143,7 @@ class PlottedNavRoute(DynamicDialog):
             self.general_panel.force_render()
 
     def _update_route(self):
-        if self.plotted_route is None:
+        if self.plotted_route is None or self.plotted_route.plotted_nav_route is None or len(self.plotted_route.plotted_nav_route.nav_points) < 1:
             self.route_panel.Hide()
             return
 
@@ -171,7 +171,7 @@ class PlottedNavRoute(DynamicDialog):
         current_bg_colour = self.theme["background_hover"]
         jet_cone_colour = wx.Colour(0, 165, 255)
 
-        final_destination_address =self.plotted_route.get_final_destination().system_address
+        final_destination_address = self.plotted_route.get_final_destination().system_address
 
         system: NavPoint|None = None
         next_system: NavPoint|None = None
