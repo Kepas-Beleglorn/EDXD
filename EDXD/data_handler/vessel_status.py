@@ -28,16 +28,18 @@ def log_call(level=LOG_LEVEL):
 
 
 class ShipStatus:
-    __slots__ = ("ship_type", "ship_id", "ship_name", "ship_ident", "fuel_capacity", "jet_cone_boost_factor", "fsd_injection_factor")
+    __slots__ = ("ship_type", "ship_id", "ship_name", "ship_ident", "fuel_capacity", "max_jump_range", "cargo", "jet_cone_boost_factor", "fsd_injection_factor")
 
     def __init__(self,
-                 ship_type              : str = None,
-                 ship_id                : int = None,
-                 ship_name              : str = None,
-                 ship_ident             : str = None,
+                 ship_type              : str | None = None,
+                 ship_id                : int | None = None,
+                 ship_name              : str | None = None,
+                 ship_ident             : str | None = None,
                  fuel_capacity          : Dict[str, FuelLevel] | None = None,
-                 jet_cone_boost_factor  : float = None,
-                 fsd_injection_factor   : float = None
+                 max_jump_range         : float | None = None,
+                 cargo                  : int | None = None,
+                 jet_cone_boost_factor  : float | None = None,
+                 fsd_injection_factor   : float | None = None
                  ):
 
         self.ship_type              = ship_type
@@ -45,6 +47,8 @@ class ShipStatus:
         self.ship_name              = ship_name
         self.ship_ident             = ship_ident
         self.fuel_capacity          = fuel_capacity or FuelLevel()
+        self.max_jump_range         = max_jump_range
+        self.cargo                  = cargo
         self.jet_cone_boost_factor  = jet_cone_boost_factor
         self.fsd_injection_factor   = fsd_injection_factor
 
@@ -55,6 +59,10 @@ class ShipStatus:
             self.ship_name = ship_status.get("ship_name", None)
             self.ship_ident = ship_status.get("ship_ident", None)
             self.fuel_capacity = FuelLevel(ship_status.get("fuel_capacity", None).get("main", None), ship_status.get("fuel_capacity", None).get("reserve", None))
+            self.max_jump_range = ship_status.get("max_jump_range", None)
+            self.cargo = ship_status.get("cargo", None)
+            self.jet_cone_boost_factor = ship_status.get("jet_cone_boost_factor", None)
+            self.fsd_injection_factor = ship_status.get("fsd_injection_factor", None)
 
         return self
 
@@ -70,6 +78,8 @@ class ShipStatus:
                     fuel
                 for fuel_item, fuel in self.fuel_capacity.to_dict().items()
             },
+            "max_jump_range": self.max_jump_range,
+            "cargo": self.cargo,
             "jet_cone_boost_factor": self.jet_cone_boost_factor,
             "fsd_injection_factor": self.fsd_injection_factor
         }

@@ -130,6 +130,14 @@ class JournalController(PausableThread, threading.Thread):
 
             dh.update_ship_status(SHIP_STATUS_FILE, self.m.ship_status)
 
+        if etype in {"Cargo"}:
+            match evt.get("Vessel"):
+                case "Ship":
+                    self.m.ship_status.cargo = int(evt.get("Count"))
+                    dh.update_ship_status(SHIP_STATUS_FILE, self.m.ship_status)
+                case _:
+                    pass
+
         if etype in {"Loadout"}: #, "LoadGame"}:
             if self.m.current_vessel == VESSEL_EV:
                 # on foot
@@ -151,6 +159,8 @@ class JournalController(PausableThread, threading.Thread):
 
                 fuel_main       : float = evt.get("FuelCapacity").get("Main")
                 fuel_reserve    : float = evt.get("FuelCapacity").get("Reserve")
+
+                self.m.ship_status.max_jump_range = float(evt.get("MaxJumpRange"))
 
                 self.m.ship_status.fuel_capacity = FuelLevel(fuel_main, fuel_reserve) or self.m.ship_status.fuel_capacity
 
