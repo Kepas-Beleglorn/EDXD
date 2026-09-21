@@ -254,7 +254,7 @@ class SpanshHelper:
                         pressure=pressure
                     )
             except Exception as e:
-                print(f"WARNING (update_system_data; after 'system_model.update_body'): [{systemaddress}] {self.system_data.name} - Body: {body.bodyId} | {body.name} | {body.type} - {e}\nGET: {self.url}\nplease consider using EDMC to help keeping data at spansh, EDSM and other databases up to date.\nsystem@spansh: https://spansh.co.uk/system/{systemaddress}#system-main")
+                print(f"WARNING (update_system_data; after 'system_model.update_body'): [{systemaddress}] {self.system_data.name} - Body: {body.bodyId} | {body.name} | {body.type} - {e}\nGET: {self.url}\nplease consider using EDMC to help keeping spansh, EDSM and other databases up to date.\nsystem@spansh: https://spansh.co.uk/system/{systemaddress}#system-main")
 
         pop_items: List[str] = []
         for body in system_model.bodies:
