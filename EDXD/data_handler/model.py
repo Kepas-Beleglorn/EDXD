@@ -370,9 +370,9 @@ class Model:
     def update_body(self, systemaddress: int, body_id: str, body_name: str | None = None, body_type: str | None = None, is_star: bool | None = None, scoopable: bool | None = None, distance: int | None = None, landable: bool | None = None,
                     biosignals: int | None = None, geosignals: int | None = None, materials: Dict[str, float] | None = None, scandata = None,
                     bio_found: Dict[str, Genus] | None = None, geo_found: Dict[str, CodexEntry] | None = None, has_rings: bool | None = False, rings: Dict[str, Ring] | None = None, total_bodies: int | None = None, radius: float | None = 0.0, mapped: bool | None = False,
-                    geo_complete: bool = False, geo_scanned: int = 0, bio_complete: bool = False, bio_scanned: int = 0,
-                    first_discovered: int = 0, first_mapped: int = 0, first_footfalled: int = 0, g_force: float = 0.0, atmosphere: Atmosphere | None = None,
-                    mean_temp: float = 0.0, luminosity: str = "", raw_luminosity: str = "", volcanism: str = "", present_life: str = "", parents: List[Dict[str, int]] | None = None, parent_distance: float = 0.0, pressure: float = 0.0
+                    geo_complete: bool | None = False, geo_scanned: int | None = 0, bio_complete: bool | None = False, bio_scanned: int | None = 0,
+                    first_discovered: int | None = 0, first_mapped: int | None = 0, first_footfalled: int | None = 0, g_force: float | None = 0.0, atmosphere: Atmosphere | None = None,
+                    mean_temp: float | None = 0.0, luminosity: str | None = "", raw_luminosity: str | None = "", volcanism: str | None = "", present_life: str | None = "", parents: List[Dict[str, int]] | None = None, parent_distance: float | None = 0.0, pressure: float | None = 0.0
                     ):
         with self.lock:
             self.system_addr = systemaddress
