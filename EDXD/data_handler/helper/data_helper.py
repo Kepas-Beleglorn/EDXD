@@ -323,6 +323,18 @@ def ensure_timestamp_file(journal_timestamp_file, new_timestamp):
         with open(journal_timestamp_file, "w") as f:
             json.dump(default_data, f, indent=2)
 
+def time_delta(str_start: str, str_end: str) -> str:
+    # 1. Define the format matching your strings
+    time_format = "%Y-%m-%dT%H:%M:%S"
+
+    # 2. Parse strings into datetime objects
+    time_start = datetime.strptime(str_start, time_format)
+    time_end = datetime.strptime(str_end, time_format)
+
+    # 3. Calculate the difference (returns a timedelta object)
+    delta = time_end - time_start
+    return str(delta)
+
 def read_ship_status(ship_status_file, ship_status):
     ensure_ship_status_file(ship_status_file, ship_status)
     try:

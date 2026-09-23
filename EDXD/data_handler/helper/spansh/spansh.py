@@ -1,29 +1,36 @@
-from typing import List, Dict
+from time import sleep
+from datetime import datetime, timezone
+from typing import List, Dict, Any
 import json
-from typing import Any
 
 import requests
 from pathlib import Path
 
+from EDXD.data_handler.helper.data_helper import time_delta
 
-from EDXD.data_handler.helper import spansh2edjournal
-from EDXD.data_handler.helper.dotted_dictionary import DotDict
+from EDXD.data_handler.helper.spansh import spansh2edjournal
+from EDXD.data_handler.helper.dotted_dictionary import create_dot_dict_from_string
 from EDXD.data_handler.model import Model, Atmosphere, Ring
 import EDXD.data_handler.helper.data_helper as dh
 from EDXD.globals import BODY_NO_DATA, SLEF_PATH
+from EDXD.data_handler.helper.spansh.ship_modules import ShipFSDModules
 
 SPANSH_BASE_URL:str = "https://spansh.co.uk/"
 SPANSH_GET_DUMP: str = SPANSH_BASE_URL + "api/dump/"
 SPANSH_PLOTTED_ROUTE: str = SPANSH_BASE_URL + "api/results/"
 
 SPANSH_ROAD_TO_RICHES_API: str = SPANSH_BASE_URL + "api/riches/route"
-SPANSH_ROAD_TO_RICHES_REF: str = SPANSH_BASE_URL + "riches"
+#SPANSH_ROAD_TO_RICHES_REF: str = SPANSH_BASE_URL + "riches"
 
 SPANSH_GALAXY_PLOTTER_API: str = SPANSH_BASE_URL + "api/generic/route"
-SPANSH_GALAXY_PLOTTER_REF: str = SPANSH_BASE_URL + "exact-plotter"
+#SPANSH_GALAXY_PLOTTER_REF: str = SPANSH_BASE_URL + "exact-plotter"
 
 SPANSH_NEUTRON_ROUTER_API: str = SPANSH_BASE_URL + "api/route"
-SPANSH_NEUTRON_ROUTER_REF: str = SPANSH_BASE_URL + "plotter"
+#SPANSH_NEUTRON_ROUTER_REF: str = SPANSH_BASE_URL + "plotter"
+
+SPANSH_EXO_MASTERY_API: str = SPANSH_BASE_URL + "api/exobiology/route"
+
+FSD_INJECTION_MULTIPLIER: int = 2
 
 # current version
 try:
@@ -33,7 +40,7 @@ except Exception:
 
 class SpanshHelper:
     def __init__(self):
-        self.system_data: DotDict = None
+        self.system_data: DotDict  | None = None
         self.url = None
 
     def get_system_data(self, system_id: int):
@@ -317,6 +324,7 @@ class SpanshRoutePlotter:
             ("Road to Riches", "riches"),
             ("Neutron Plotter", "plotter")
         ]
+        self.sm: ShipFSDModules = ShipFSDModules()
 
     @staticmethod
     def get_route(job_id: str) -> DotDict | None:
@@ -337,7 +345,7 @@ class SpanshRoutePlotter:
                        refuel_every_scoopable: bool = False,
                        algorithm: str =  "optimistic"
                        ) -> str | None:
-        job_id = None
+        spansh_job_id = None
 
         path = Path(SLEF_PATH)
         if not path.exists():
@@ -346,32 +354,30 @@ class SpanshRoutePlotter:
         with open(path, 'r', encoding='utf-8') as f:
             ship_loadout_json = json.load(f)
 
-        print(ship_loadout_json)
-
         url = SPANSH_GALAXY_PLOTTER_API
         payload = {
             "source": source_system_name,
             "destination": destination_system_name,
-            "is_supercharged": "1" if already_supercharged else "0",
-            "use_supercharge": "1" if use_supercharge else "0",
-            "use_injections": "1" if fsd_inject_always else "0",
-            "use_injections_when_required": "1" if fsd_inject_when_required else "0",
-            "exclude_secondary": "1" if exclude_secondary else "0",
-            "refuel_every_scoopable": "1" if refuel_every_scoopable else "0",
-            "fuel_power": str(2.5025),
-            "fuel_multiplier": str(0.011),
-            "optimal_mass": str(self._get_optimal_mass(ship_loadout)),
-            "base_mass": str(ship_loadout.data.UnladenMass),
-            "tank_size": str(ship_loadout.data.FuelCapacity.Main),
-            "internal_tank_size": str(ship_loadout.data.FuelCapacity.Reserve),
-            "reserve_size": str(reserve_fuel),
-            "max_fuel_per_jump": str(6.25),
-            "range_boost": str(10.5),
-            "max_time": "60",
-            "cargo": str(cargo),
+            "is_supercharged": 1 if already_supercharged else 0,
+            "use_supercharge": 1 if use_supercharge else 0,
+            "use_injections": 1 if fsd_inject_always else 0,
+            "use_injections_when_required": 1 if fsd_inject_when_required else 0,
+            "exclude_secondary": 1 if exclude_secondary else 0,
+            "refuel_every_scoopable": 1 if refuel_every_scoopable else 0,
+            "fuel_power": self.sm.get_fuel_power(ship_loadout),
+            "fuel_multiplier": self.sm.get_fuel_multiplier(ship_loadout),
+            "optimal_mass": self.sm.get_optimal_mass(ship_loadout),
+            "base_mass": ship_loadout.data.UnladenMass,
+            "tank_size": ship_loadout.data.FuelCapacity.Main,
+            "internal_tank_size": ship_loadout.data.FuelCapacity.Reserve,
+            "reserve_size": reserve_fuel,
+            "max_fuel_per_jump": self.sm.get_max_fuel_per_jump(ship_loadout),
+            "range_boost": self.sm.get_jump_boost(ship_loadout),
+            "max_time": 120,
+            "cargo": cargo,
             "algorithm": algorithm,
-            "supercharge_multiplier": str(6),
-            "injection_multiplier": str(2),
+            "supercharge_multiplier": self.sm.get_super_charge_multiplier(ship_loadout),
+            "injection_multiplier": FSD_INJECTION_MULTIPLIER,
             # REPLACE THE STRING BELOW WITH YOUR ACTUAL MASSIVE URL-ENCODED SHIP_BUILD STRING
             # Or, if you have the Python dict/object from your SLEF function, use: json.dumps(slef_object)
             "ship_build": ship_loadout_json
@@ -383,49 +389,58 @@ class SpanshRoutePlotter:
             "User-Agent": "EDXD (Python)",
             "X-Requested-With": "XMLHttpRequest"
         }
-        print(url)
+
         response = requests.request("POST", url, headers=headers, data=payload)
-        print(response.text)
 
-        return job_id
+        if response.status_code < 200 or response.status_code >= 300:
+            # Read the body for the error message
+            error_body = response.text
+            print(f"ERROR: Spansh API returned status {response.status_code}: {error_body}")
+            return spansh_job_id
 
+        response_dict: DotDict = create_dot_dict_from_string(response.text)
+        spansh_job_id = response_dict.job
+        return spansh_job_id
 
-    def _get_optimal_mass(self, ship_data: DotDict) -> float:
-        # Assuming you saved the file as 'self_loadout.json' in the same directory
-        optimal_mass = 0
-        try:
-            # Instead of: ship_data["data"]["Ship"]
-            print(f"Ship Name: {ship_data.data.ShipName}")
-            print(f"Ship ID: {ship_data.data.ShipIdent}")
-            print(f"Ship Type: {ship_data.data.Ship}")
-            print(f"Max Jump Range: {ship_data.data.MaxJumpRange}")
+    @staticmethod
+    def get_itinerary(job_id: str | None) -> DotDict | None:
+        spansh_itinerary: DotDict | None = None
 
-            # Accessing nested lists (Modules)
-            # Find the Frame Shift Drive module
-            fsd_module = None
-            for module in ship_data.data.Modules:
-                if module.Slot == "FrameShiftDrive":
-                    fsd_module = module
-                    break
+        url = SPANSH_PLOTTED_ROUTE
 
-            if fsd_module:
-                print(f"\nFSD Found:")
-                print(f"  Item: {fsd_module.Item}")
-                if hasattr(fsd_module, 'Engineering'):
-                    print(f"  Engineer: {fsd_module.Engineering.Engineer}")
-                    # Accessing modifiers
-                    for mod in fsd_module.Engineering.Modifiers:
-                        if mod.Label == "FSDOptimalMass":
-                            print(f"  Optimal Mass: {mod.Value}")
-                            optimal_mass = mod.Value
-                            break
+        while True:
+            response = requests.request("GET", url + str(job_id))
+            response_dict: DotDict = create_dot_dict_from_string(response.text)
+            iso_date =datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
+            if response.status_code < 200 or response.status_code >= 300:
+                error_body = response.text
+                print(f"ERROR: Spansh API returned status {response.status_code}: {error_body}")
+                break
 
-            # Accessing Header
-            print(f"\nApp: {ship_data.header.appName} v{ship_data.header.appVersion}")
+            if response_dict.state == "completed" and response_dict.status == "ok":
+                spansh_itinerary = DotDict(response_dict.result)
+                break
 
-        except AttributeError as e:
-            print(f"Access Error: {e}")
-        except Exception as e:
-            print(f"Unexpected error: {e}")
+            print(f"Job ID: {job_id} - state: {response_dict.state} - status: {response_dict.status} - created at: {response_dict.created_at} - current time: {iso_date} - duration: {time_delta(response_dict.created_at, iso_date)}")
+            sleep(1)
 
-        return optimal_mass
+        print(f"Job ID: {job_id} - state: {response_dict.state} - status: {response_dict.status} - created at: {response_dict.created_at} - updated at: {response_dict.updated_at} - duration: {time_delta(response_dict.created_at, response_dict.updated_at)}")
+        return spansh_itinerary
+
+########################################################################################################################################################################################################
+#======================================================================================================================================================================================================#
+########################################################################################################################################################################################################
+from EDXD.data_handler.helper.dotted_dictionary import DotDict, load_json_as_dotdict
+spansh = SpanshRoutePlotter()
+ship_loadout = load_json_as_dotdict(SLEF_PATH)
+
+algos = ("optimistic", "fuel", "fuel_jumps", "guided", "pessimistic")
+
+try:
+    for algo in algos:
+        job_id: str | None= spansh.galaxy_plotter(ship_loadout, source_system_name="Sol", destination_system_name="Colonia", cargo=1, algorithm=algo)
+        print(f"{algo}: {job_id}")
+        itinerary: DotDict | None = spansh.get_itinerary(job_id)
+        print(f"{algo} - jumps:  {len(itinerary.jumps) - 1}")
+except Exception as e:
+    print(e)

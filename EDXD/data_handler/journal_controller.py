@@ -6,7 +6,7 @@ from pathlib import Path
 import EDXD.data_handler.helper.bio_helper as bio_helper
 from EDXD.data_handler.helper.dotted_dictionary import DotDict
 from EDXD.data_handler.helper.pausable_thread import PausableThread
-from EDXD.data_handler.helper.spansh import SpanshHelper
+from EDXD.data_handler.helper.spansh.spansh import SpanshHelper
 from EDXD.data_handler.model import *
 from EDXD.data_handler.nav_route import NavRouteHandler, NavPoint
 from EDXD.data_handler.planetary_surface_positioning_system import PSPSCoordinates

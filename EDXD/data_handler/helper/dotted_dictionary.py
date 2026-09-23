@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+import requests
 
 class DotDict(dict):
     """A dictionary that allows dot notation access and recursively converts nested dicts."""
@@ -24,15 +25,7 @@ class DotDict(dict):
 
 
 def load_json_as_dotdict(file_path: str) -> DotDict:
-    """
-    Loads a JSON file and returns it as a DotDict object.
 
-    Args:
-        file_path: Path to the JSON file (e.g., 'self_loadout.json')
-
-    Returns:
-        DotDict: The parsed JSON data accessible via dot notation.
-    """
     path = Path(file_path)
     if not path.exists():
         raise FileNotFoundError(f"File not found: {file_path}")
@@ -40,8 +33,6 @@ def load_json_as_dotdict(file_path: str) -> DotDict:
     with open(path, 'r', encoding='utf-8') as f:
         data = json.load(f)
 
-    # If the root is a list (like your SLEF format), we wrap it or return the first item
-    # Your SLEF format is a list containing one object: [ { "header":..., "data":... } ]
     if isinstance(data, list):
         if len(data) == 0:
             return DotDict()
@@ -49,3 +40,28 @@ def load_json_as_dotdict(file_path: str) -> DotDict:
         return DotDict(data[0]) if isinstance(data[0], dict) else data[0]
 
     return DotDict(data) if isinstance(data, dict) else data
+
+def load_json_from_url_as_dotdict(url: str) -> DotDict:
+    response = requests.get(url)
+    data = response.json()
+
+    if isinstance(data, list):
+        if len(data) == 0:
+            return DotDict()
+        # Convert the first item in the list to DotDict
+        return DotDict(data[0]) if isinstance(data[0], dict) else data[0]
+
+    return DotDict(data) if isinstance(data, dict) else data
+
+def create_dot_dict_from_string(data_string: str) -> DotDict:
+
+    data = json.loads(data_string)
+
+    def convert_to_dotdict(obj):
+        if isinstance(obj, dict):
+            return DotDict({k: convert_to_dotdict(v) for k, v in obj.items()})
+        elif isinstance(obj, list):
+            return [convert_to_dotdict(item) for item in obj]
+        return obj
+
+    return convert_to_dotdict(data)

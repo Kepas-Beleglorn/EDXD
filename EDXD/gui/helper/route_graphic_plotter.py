@@ -1,3 +1,5 @@
+import wx
+
 class RouteGraphicPanel(wx.Panel):
     def __init__(self, parent, route_data, line_height=20, width=40):
         """

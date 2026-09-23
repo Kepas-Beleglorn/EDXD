@@ -12,7 +12,10 @@ dependencies = [
     "tomli",
     "filelock",
     "requests",
-    "pywinctl"
+    "pywinctl",
+    "matplotlib",
+    "seaborn",
+    "pandas"
 ]
 
 [project.scripts]
