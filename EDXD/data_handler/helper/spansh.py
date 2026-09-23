@@ -1,15 +1,35 @@
-import json
 from typing import List, Dict
+import json
+from typing import Any
 
 import requests
+from pathlib import Path
+
 
 from EDXD.data_handler.helper import spansh2edjournal
-from EDXD.data_handler.helper.json_helper import DotDict
+from EDXD.data_handler.helper.dotted_dictionary import DotDict
 from EDXD.data_handler.model import Model, Atmosphere, Ring
 import EDXD.data_handler.helper.data_helper as dh
-from EDXD.globals import BODY_NO_DATA
+from EDXD.globals import BODY_NO_DATA, SLEF_PATH
 
-SPANSH_GET_DUMP: str = "https://spansh.co.uk/api/dump/"
+SPANSH_BASE_URL:str = "https://spansh.co.uk/"
+SPANSH_GET_DUMP: str = SPANSH_BASE_URL + "api/dump/"
+SPANSH_PLOTTED_ROUTE: str = SPANSH_BASE_URL + "api/results/"
+
+SPANSH_ROAD_TO_RICHES_API: str = SPANSH_BASE_URL + "api/riches/route"
+SPANSH_ROAD_TO_RICHES_REF: str = SPANSH_BASE_URL + "riches"
+
+SPANSH_GALAXY_PLOTTER_API: str = SPANSH_BASE_URL + "api/generic/route"
+SPANSH_GALAXY_PLOTTER_REF: str = SPANSH_BASE_URL + "exact-plotter"
+
+SPANSH_NEUTRON_ROUTER_API: str = SPANSH_BASE_URL + "api/route"
+SPANSH_NEUTRON_ROUTER_REF: str = SPANSH_BASE_URL + "plotter"
+
+# current version
+try:
+    from EDXD._version import VERSION as __version__
+except Exception:
+    __version__ = "0.0.0.0"
 
 class SpanshHelper:
     def __init__(self):
@@ -268,3 +288,144 @@ class SpanshHelper:
             systemaddress=systemaddress,
             total_bodies=body_count
         )
+
+    @staticmethod
+    def extract_loadout_to_slef(journal_event: dict[str, Any]) -> None:
+        """
+        Extracts a 'Loadout' event from an Elite Dangerous journal and converts it to SLEF format.
+
+        Args:
+            journal_event: The parsed JSON dictionary of the 'Loadout' event.
+            output_path: The file path where the resulting SLEF JSON will be saved.
+        """
+        slef_structure = {
+            "header": {
+                "appName": "EDXD",
+                "appVersion": __version__
+            },
+            "data": journal_event
+        }
+
+        with open(SLEF_PATH, "w", encoding="utf-8") as f:
+            json.dump([slef_structure], f, indent=4)
+
+
+class SpanshRoutePlotter:
+    def __init__(self):
+        self.route_planners = [
+            ("Galaxy Plotter", "exact-plotter"),
+            ("Road to Riches", "riches"),
+            ("Neutron Plotter", "plotter")
+        ]
+
+    @staticmethod
+    def get_route(job_id: str) -> DotDict | None:
+        plotted_route: DotDict | None = None
+        return plotted_route
+
+    def galaxy_plotter(self,
+                       ship_loadout: DotDict,
+                       source_system_name: str,
+                       destination_system_name: str,
+                       cargo: int,
+                       reserve_fuel: int = 0,
+                       already_supercharged: bool = False,
+                       use_supercharge: bool = True,
+                       fsd_inject_always: bool = False,
+                       fsd_inject_when_required: bool = False,
+                       exclude_secondary: bool = False,
+                       refuel_every_scoopable: bool = False,
+                       algorithm: str =  "optimistic"
+                       ) -> str | None:
+        job_id = None
+
+        path = Path(SLEF_PATH)
+        if not path.exists():
+            raise FileNotFoundError(f"File not found: {SLEF_PATH}")
+
+        with open(path, 'r', encoding='utf-8') as f:
+            ship_loadout_json = json.load(f)
+
+        print(ship_loadout_json)
+
+        url = SPANSH_GALAXY_PLOTTER_API
+        payload = {
+            "source": source_system_name,
+            "destination": destination_system_name,
+            "is_supercharged": "1" if already_supercharged else "0",
+            "use_supercharge": "1" if use_supercharge else "0",
+            "use_injections": "1" if fsd_inject_always else "0",
+            "use_injections_when_required": "1" if fsd_inject_when_required else "0",
+            "exclude_secondary": "1" if exclude_secondary else "0",
+            "refuel_every_scoopable": "1" if refuel_every_scoopable else "0",
+            "fuel_power": str(2.5025),
+            "fuel_multiplier": str(0.011),
+            "optimal_mass": str(self._get_optimal_mass(ship_loadout)),
+            "base_mass": str(ship_loadout.data.UnladenMass),
+            "tank_size": str(ship_loadout.data.FuelCapacity.Main),
+            "internal_tank_size": str(ship_loadout.data.FuelCapacity.Reserve),
+            "reserve_size": str(reserve_fuel),
+            "max_fuel_per_jump": str(6.25),
+            "range_boost": str(10.5),
+            "max_time": "60",
+            "cargo": str(cargo),
+            "algorithm": algorithm,
+            "supercharge_multiplier": str(6),
+            "injection_multiplier": str(2),
+            # REPLACE THE STRING BELOW WITH YOUR ACTUAL MASSIVE URL-ENCODED SHIP_BUILD STRING
+            # Or, if you have the Python dict/object from your SLEF function, use: json.dumps(slef_object)
+            "ship_build": ship_loadout_json
+        }
+
+        headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            "User-Agent": "EDXD (Python)",
+            "X-Requested-With": "XMLHttpRequest"
+        }
+        print(url)
+        response = requests.request("POST", url, headers=headers, data=payload)
+        print(response.text)
+
+        return job_id
+
+
+    def _get_optimal_mass(self, ship_data: DotDict) -> float:
+        # Assuming you saved the file as 'self_loadout.json' in the same directory
+        optimal_mass = 0
+        try:
+            # Instead of: ship_data["data"]["Ship"]
+            print(f"Ship Name: {ship_data.data.ShipName}")
+            print(f"Ship ID: {ship_data.data.ShipIdent}")
+            print(f"Ship Type: {ship_data.data.Ship}")
+            print(f"Max Jump Range: {ship_data.data.MaxJumpRange}")
+
+            # Accessing nested lists (Modules)
+            # Find the Frame Shift Drive module
+            fsd_module = None
+            for module in ship_data.data.Modules:
+                if module.Slot == "FrameShiftDrive":
+                    fsd_module = module
+                    break
+
+            if fsd_module:
+                print(f"\nFSD Found:")
+                print(f"  Item: {fsd_module.Item}")
+                if hasattr(fsd_module, 'Engineering'):
+                    print(f"  Engineer: {fsd_module.Engineering.Engineer}")
+                    # Accessing modifiers
+                    for mod in fsd_module.Engineering.Modifiers:
+                        if mod.Label == "FSDOptimalMass":
+                            print(f"  Optimal Mass: {mod.Value}")
+                            optimal_mass = mod.Value
+                            break
+
+            # Accessing Header
+            print(f"\nApp: {ship_data.header.appName} v{ship_data.header.appVersion}")
+
+        except AttributeError as e:
+            print(f"Access Error: {e}")
+        except Exception as e:
+            print(f"Unexpected error: {e}")
+
+        return optimal_mass

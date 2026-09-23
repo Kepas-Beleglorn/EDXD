@@ -4,7 +4,7 @@ import re
 from pathlib import Path
 
 import EDXD.data_handler.helper.bio_helper as bio_helper
-from EDXD.data_handler.helper.json_helper import DotDict
+from EDXD.data_handler.helper.dotted_dictionary import DotDict
 from EDXD.data_handler.helper.pausable_thread import PausableThread
 from EDXD.data_handler.helper.spansh import SpanshHelper
 from EDXD.data_handler.model import *
@@ -139,32 +139,19 @@ class JournalController(PausableThread, threading.Thread):
                     pass
 
         if etype in {"Loadout"}: #, "LoadGame"}:
-            if self.m.current_vessel == VESSEL_EV:
-                # on foot
-                pass
+            self.m.ship_status.ship_type = evt.get("Ship")
+            self.m.ship_status.ship_id = evt.get("ShipID")
+            self.m.ship_status.ship_name = evt.get("ShipName")
+            self.m.ship_status.ship_ident = evt.get("ShipIdent")
 
-            if self.m.current_vessel == VESSEL_SRV:
-                # SRV
-                pass
+            fuel_main       : float = evt.get("FuelCapacity").get("Main")
+            fuel_reserve    : float = evt.get("FuelCapacity").get("Reserve")
 
-            if self.m.current_vessel == VESSEL_SLF:
-                # SLF
-                pass
+            self.m.ship_status.max_jump_range = float(evt.get("MaxJumpRange"))
 
-            if self.m.current_vessel == VESSEL_SHIP:
-                self.m.ship_status.ship_type = evt.get("Ship")
-                self.m.ship_status.ship_id = evt.get("ShipID")
-                self.m.ship_status.ship_name = evt.get("ShipName")
-                self.m.ship_status.ship_ident = evt.get("ShipIdent")
+            self.m.ship_status.fuel_capacity = FuelLevel(fuel_main, fuel_reserve) or self.m.ship_status.fuel_capacity
 
-                fuel_main       : float = evt.get("FuelCapacity").get("Main")
-                fuel_reserve    : float = evt.get("FuelCapacity").get("Reserve")
-
-                self.m.ship_status.max_jump_range = float(evt.get("MaxJumpRange"))
-
-                self.m.ship_status.fuel_capacity = FuelLevel(fuel_main, fuel_reserve) or self.m.ship_status.fuel_capacity
-
-                dh.update_ship_status(SHIP_STATUS_FILE, self.m.ship_status)
+            dh.update_ship_status(SHIP_STATUS_FILE, self.m.ship_status)
 
         if etype in ["DockingCancelled", "Docked", "DockingTimeout" ,"StartJump", "DockingDenied"]:
             self.landing_in_progress = False

@@ -8,7 +8,7 @@ import pywinctl, wx
 
 import EDXD.data_handler.helper.galactic_navigation as gn
 import EDXD.data_handler.helper.data_helper as dh
-from EDXD.data_handler.helper.json_helper import DotDict
+from EDXD.data_handler.helper.dotted_dictionary import DotDict
 from EDXD.data_handler.helper.galactic_navigation import StarPosition
 from EDXD.gui.themed_msg_dialog import ThemedMessageDialog
 
