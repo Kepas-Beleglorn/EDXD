@@ -165,34 +165,34 @@ class BodyDetails(DynamicDialog):
         if self.body.estimated_value >= self.parent.prefs.get("worthwhile_threshold", DEFAULT_WORTHWHILE_THRESHOLD):
             worthwhile_prefix = ICONS["worthwhile"]
 
-        self.general_panel.add_table_item("Type")
-        self.general_panel.add_table_item(f"  {t2h.get_clean_body_type(self.body.body_type)}")
-        self.general_panel.add_table_item(f"Mapped value       {worthwhile_prefix}")
-        self.general_panel.add_table_item(f"  {self.body.estimated_value:,} Cr")
-        self.general_panel.add_table_item("Distance")
-        self.general_panel.add_table_item(f"  {self.body.distance:,.0f} Ls")
+        self.general_panel.add_table_item_label("Type")
+        self.general_panel.add_table_item_label(f"  {t2h.get_clean_body_type(self.body.body_type)}")
+        self.general_panel.add_table_item_label(f"Mapped value       {worthwhile_prefix}")
+        self.general_panel.add_table_item_label(f"  {self.body.estimated_value:,} Cr")
+        self.general_panel.add_table_item_label("Distance")
+        self.general_panel.add_table_item_label(f"  {self.body.distance:,.0f} Ls")
         if self.body.g_force is not None and self.body.g_force > 0:
-            self.general_panel.add_table_item("Gravity")
-            self._set_g_force_colour(self.general_panel.add_table_item(f"  {dh.format_gravity(self.body.g_force)}"), self.body.g_force)
+            self.general_panel.add_table_item_label("Gravity")
+            self._set_g_force_colour(self.general_panel.add_table_item_label(f"  {dh.format_gravity(self.body.g_force)}"), self.body.g_force)
 
         if self.body.mean_temp is not None:
-            self.general_panel.add_table_item("Surface Temperature")
-            self._set_temperature_colour(self.general_panel.add_table_item(f"  {dh.format_temperature(self.body.mean_temp, self.body.landable)}"), self.body.mean_temp)
+            self.general_panel.add_table_item_label("Surface Temperature")
+            self._set_temperature_colour(self.general_panel.add_table_item_label(f"  {dh.format_temperature(self.body.mean_temp, self.body.landable)}"), self.body.mean_temp)
 
         if self.body.volcanism is not None and self.body.volcanism != "":
-            self.general_panel.add_table_item("Volcanism")
-            self.general_panel.add_table_item(f"  {self.body.volcanism}")
+            self.general_panel.add_table_item_label("Volcanism")
+            self.general_panel.add_table_item_label(f"  {self.body.volcanism}")
 
         if self.body.present_life is not None and self.body.present_life != "":
-            self.general_panel.add_table_item("Life")
-            self.general_panel.add_table_item(f"  {self.body.present_life}")
+            self.general_panel.add_table_item_label("Life")
+            self.general_panel.add_table_item_label(f"  {self.body.present_life}")
 
         if self.body.luminosity is not None and self.body.luminosity != "":
-            self.general_panel.add_table_item("Luminosity")
+            self.general_panel.add_table_item_label("Luminosity")
             if self.body.luminosity != self.body.raw_luminosity:
-                self.general_panel.add_table_item(f"  {self.body.luminosity} ({self.body.raw_luminosity})")
+                self.general_panel.add_table_item_label(f"  {self.body.luminosity} ({self.body.raw_luminosity})")
             else:
-                self.general_panel.add_table_item(f"  {self.body.luminosity}")
+                self.general_panel.add_table_item_label(f"  {self.body.luminosity}")
 
         if self.general_panel.IsShown():
             # Force a layout update
@@ -227,22 +227,22 @@ class BodyDetails(DynamicDialog):
             self.atmosphere_panel.header_label.SetLabel(f"Atmosphere ({self.body.body_type})")
 
         if atmosphere is not None:
-            self.atmosphere_panel.add_table_item(f"Classification")
-            self.atmosphere_panel.add_table_item(f"  {atmos_raw}")
-            self.atmosphere_panel.add_table_item("")
+            self.atmosphere_panel.add_table_item_label(f"Classification")
+            self.atmosphere_panel.add_table_item_label(f"  {atmos_raw}")
+            self.atmosphere_panel.add_table_item_label("")
 
         if self.body.pressure is not None and self.body.pressure > 0:
-            self.atmosphere_panel.add_table_item(f"Surface pressure")
-            self.atmosphere_panel.add_table_item(f"  {dh.format_pressure(self.body.pressure)}")
-            self.atmosphere_panel.add_table_item("")
+            self.atmosphere_panel.add_table_item_label(f"Surface pressure")
+            self.atmosphere_panel.add_table_item_label(f"  {dh.format_pressure(self.body.pressure)}")
+            self.atmosphere_panel.add_table_item_label("")
 
         for mat, pct in sorted(atmos_comp.items(),
                               key=lambda kv: kv[1],
                               reverse=True):
             atm_raw_len = len(str(atmos_raw))
-            self.atmosphere_panel.add_table_item(label_text=f"{mat.title():<12}")
-            self.atmosphere_panel.add_table_item(label_text=f"  {pct:5.1f}%{' ':<{atm_raw_len+10}}", align=wx.ALIGN_RIGHT)
-            self.atmosphere_panel.add_table_item("")
+            self.atmosphere_panel.add_table_item_label(label_text=f"{mat.title():<12}")
+            self.atmosphere_panel.add_table_item_label(label_text=f"  {pct:5.1f}%{' ':<{atm_raw_len + 10}}", align=wx.ALIGN_RIGHT)
+            self.atmosphere_panel.add_table_item_label("")
 
         if not self.atmosphere_panel.IsShown():
             self.atmosphere_panel.Show()
@@ -256,9 +256,9 @@ class BodyDetails(DynamicDialog):
                                reverse=True):
             if filters.get(mat, True):
                 show_mats = True
-                self.mat_panel.add_table_item(label_text=f"{mat.title():<12}")
-                self.mat_panel.add_table_item(label_text=f"  {pct:5.1f}%", align=wx.ALIGN_RIGHT)
-                self.mat_panel.add_table_item("")
+                self.mat_panel.add_table_item_label(label_text=f"{mat.title():<12}")
+                self.mat_panel.add_table_item_label(label_text=f"  {pct:5.1f}%", align=wx.ALIGN_RIGHT)
+                self.mat_panel.add_table_item_label("")
 
         if show_mats and not self.mat_panel.IsShown():
             self.mat_panel.Show()
@@ -292,9 +292,9 @@ class BodyDetails(DynamicDialog):
         for signal, geo in self.body.geo_found.items():
             geo_name = geo.localised
             if geo.is_new:
-                self.geo_panel.add_table_item(f"{ICONS['new_entry']:>4}{ICONS['geosigns']:>4}{' ' * 4}{geo_name}")
+                self.geo_panel.add_table_item_label(f"{ICONS['new_entry']:>4}{ICONS['geosigns']:>4}{' ' * 4}{geo_name}")
             else:
-                self.geo_panel.add_table_item(f"{ICONS['geosigns']:>13}{' ' * 4}{geo_name}")
+                self.geo_panel.add_table_item_label(f"{ICONS['geosigns']:>13}{' ' * 4}{geo_name}")
 
         if self.geo_panel.IsShown():
             # Force a layout update
@@ -351,22 +351,22 @@ class BodyDetails(DynamicDialog):
 
             # line per genus
             if bio_name == "Radicoida Unica":
-                self.bio_panel.add_table_item(f"{ICONS['radicoida']}")
+                self.bio_panel.add_table_item_label(f"{ICONS['radicoida']}")
             else:
                 if done >= 3:
-                    self.bio_panel.add_table_item(f"{ICONS['checked']}")
+                    self.bio_panel.add_table_item_label(f"{ICONS['checked']}")
                 elif 0 < done < 3:
-                    self.bio_panel.add_table_item(f"{ICONS['in_progress']}")
+                    self.bio_panel.add_table_item_label(f"{ICONS['in_progress']}")
                 else:
-                    self.bio_panel.add_table_item(f"{ICONS['unknown']}")
+                    self.bio_panel.add_table_item_label(f"{ICONS['unknown']}")
 
-            self.bio_panel.add_table_item(f"{bio_name}")
+            self.bio_panel.add_table_item_label(f"{bio_name}")
             if bio_name == "Radicoida Unica":
-                self.bio_panel.add_table_item("")
-                self.bio_panel.add_table_item("")
-                self.bio_panel.add_table_item("")
+                self.bio_panel.add_table_item_label("")
+                self.bio_panel.add_table_item_label("")
+                self.bio_panel.add_table_item_label("")
             else:
-                self.bio_panel.add_table_item(f"{' ' * 2}({done}/3)")
+                self.bio_panel.add_table_item_label(f"{' ' * 2}({done}/3)")
                 genus_name = genus.species_localised
                 if (genus_name is None or genus_name == "") and genus.variant_localised is not None:
                     genus_name = genus.variant_localised.split(" - ")[0]
@@ -374,25 +374,25 @@ class BodyDetails(DynamicDialog):
                 scan_value_str: str = ""
                 if scan_value is not None and scan_value > 0:
                     scan_value_str = f"{' ' * 2}{scan_value:,} Cr"
-                self.bio_panel.add_table_item(label_text=f"{' ' * 2}{scan_value_str}", align=wx.ALIGN_RIGHT)
-                self.bio_panel.add_table_item("")
+                self.bio_panel.add_table_item_label(label_text=f"{' ' * 2}{scan_value_str}", align=wx.ALIGN_RIGHT)
+                self.bio_panel.add_table_item_label("")
 
                 # if currently in progress, add bearings to already scanned
                 if done in [1, 2]:
-                    self.bio_panel.add_table_item("")
-                    self.bio_panel.add_table_item(f"min. {bio_range}m")
-                    self.bio_panel.add_table_item(f"{bearing_one}")
-                    lbl_range_1 = self.bio_panel.add_table_item(f"{range_one}")
+                    self.bio_panel.add_table_item_label("")
+                    self.bio_panel.add_table_item_label(f"min. {bio_range}m")
+                    self.bio_panel.add_table_item_label(f"{bearing_one}")
+                    lbl_range_1 = self.bio_panel.add_table_item_label(f"{range_one}")
                     self._set_distance_color(label=lbl_range_1, range_min=bio_range, range_current=range_raw_one)
-                    self.bio_panel.add_table_item("")
+                    self.bio_panel.add_table_item_label("")
 
                 if done == 2:
-                    self.bio_panel.add_table_item("")
-                    self.bio_panel.add_table_item("")
-                    self.bio_panel.add_table_item(f"{bearing_two}")
-                    lbl_range_2 = self.bio_panel.add_table_item(f"{range_two}")
+                    self.bio_panel.add_table_item_label("")
+                    self.bio_panel.add_table_item_label("")
+                    self.bio_panel.add_table_item_label(f"{bearing_two}")
+                    lbl_range_2 = self.bio_panel.add_table_item_label(f"{range_two}")
                     self._set_distance_color(label=lbl_range_2, range_min=bio_range, range_current=range_raw_two)
-                    self.bio_panel.add_table_item("")
+                    self.bio_panel.add_table_item_label("")
 
         if self.bio_panel.IsShown():
             # Force a layout update
@@ -412,18 +412,18 @@ class BodyDetails(DynamicDialog):
             ring_name = self.body.rings[ring_id].body_name
             ring_class = self.body.rings[ring_id].ring_class
 
-            self.rings_panel.add_table_item(ring_name)
-            self.rings_panel.add_table_item("")
+            self.rings_panel.add_table_item_label(ring_name)
+            self.rings_panel.add_table_item_label("")
 
-            self.rings_panel.add_table_item(f"{' ' * 4}Ring Class:{' ' * 8}{t2h.get_clean_ring_class(ring_class)}")
-            self.rings_panel.add_table_item("")
+            self.rings_panel.add_table_item_label(f"{' ' * 4}Ring Class:{' ' * 8}{t2h.get_clean_ring_class(ring_class)}")
+            self.rings_panel.add_table_item_label("")
 
             if self.body.rings[ring_id].signals:
-                self.rings_panel.add_table_item(f"{' ' * 4}Hotspots")
-                self.rings_panel.add_table_item("")
+                self.rings_panel.add_table_item_label(f"{' ' * 4}Hotspots")
+                self.rings_panel.add_table_item_label("")
                 for sig_item in self.body.rings[ring_id].signals:
-                    self.rings_panel.add_table_item(f"{' ' * 8}{t2h.get_hotspot_type(sig_item["Type"])}")
-                    self.rings_panel.add_table_item(f"  {str(sig_item["Count"])}")
+                    self.rings_panel.add_table_item_label(f"{' ' * 8}{t2h.get_hotspot_type(sig_item["Type"])}")
+                    self.rings_panel.add_table_item_label(f"  {str(sig_item["Count"])}")
 
 
         if self.rings_panel.IsShown():

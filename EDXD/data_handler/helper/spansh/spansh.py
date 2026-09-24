@@ -430,17 +430,17 @@ class SpanshRoutePlotter:
 ########################################################################################################################################################################################################
 #======================================================================================================================================================================================================#
 ########################################################################################################################################################################################################
-from EDXD.data_handler.helper.dotted_dictionary import DotDict, load_json_as_dotdict
-spansh = SpanshRoutePlotter()
-ship_loadout = load_json_as_dotdict(SLEF_PATH)
+#from EDXD.data_handler.helper.dotted_dictionary import DotDict, load_json_as_dotdict
+#spansh = SpanshRoutePlotter()
+#ship_loadout = load_json_as_dotdict(SLEF_PATH)
 
-algos = ("optimistic", "fuel", "fuel_jumps", "guided", "pessimistic")
+#algos = ("optimistic", "fuel", "fuel_jumps", "guided", "pessimistic")
 
-try:
-    for algo in algos:
-        job_id: str | None= spansh.galaxy_plotter(ship_loadout, source_system_name="Sol", destination_system_name="Colonia", cargo=1, algorithm=algo)
-        print(f"{algo}: {job_id}")
-        itinerary: DotDict | None = spansh.get_itinerary(job_id)
-        print(f"{algo} - jumps:  {len(itinerary.jumps) - 1}")
-except Exception as e:
-    print(e)
+#try:
+#    for algo in algos:
+#        job_id: str | None= spansh.galaxy_plotter(ship_loadout, source_system_name="Sol", destination_system_name="Colonia", cargo=1, algorithm=algo)
+#        print(f"{algo}: {job_id}")
+#        itinerary: DotDict | None = spansh.get_itinerary(job_id)
+#        print(f"{algo} - jumps:  {len(itinerary.jumps) - 1}")
+#except Exception as e:
+#    print(e)

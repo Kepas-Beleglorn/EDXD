@@ -11,6 +11,7 @@ from EDXD.gui.helper.theme_handler import get_theme
 from EDXD.gui.journal_historian import JournalHistorian
 from EDXD.gui.set_mineral_filter import MineralsFilter
 from EDXD.gui.config import EDXDConfig
+from EDXD.gui.route_plotter import ExplorationItinerary
 
 
 def log_call(level=logging.INFO):
@@ -71,6 +72,15 @@ class MainWindowOptions(wx.Panel):
         options_box.Add(self.btn_load_history, 0, wx.ALIGN_CENTER_VERTICAL | wx.TOP | wx.BOTTOM, margin)
         self.btn_load_history.Bind(wx.EVT_BUTTON, self._load_all_logs)
 
+        # Show spansh plotter
+        self.btn_show_exploration_itinerary = DynamicButton(parent=self, label="Exploration itinerary",
+                                             size=wx.Size(BTN_WIDTH + self.theme["button_border_width"],
+                                                          BTN_HEIGHT + self.theme["button_border_width"]),
+                                             draw_border=True)
+        margin = self.theme["button_border_margin"] + self.theme["button_border_width"]
+        options_box.Add(self.btn_show_exploration_itinerary, 0, wx.ALIGN_CENTER_VERTICAL | wx.TOP | wx.BOTTOM, margin)
+        self.btn_show_exploration_itinerary.Bind(wx.EVT_BUTTON, self._plot_exploration_itinerary)
+
         # Show config dialog
         self.btn_show_config = DynamicButton(parent=self, label="Configuration",
                                               size=wx.Size(BTN_WIDTH + self.theme["button_border_width"],
@@ -100,6 +110,11 @@ class MainWindowOptions(wx.Panel):
         config_dialog = EDXDConfig(self)
         config_dialog.ShowModal()
         self.parent.update_panels()
+
+    def _plot_exploration_itinerary(self, event):
+        exploration_itinerary = ExplorationItinerary(self)
+        exploration_itinerary.Show()
+        exploration_itinerary.render()
 
     def _on_paint(self, event):
         dc = wx.PaintDC(self)

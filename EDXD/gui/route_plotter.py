@@ -14,12 +14,13 @@ from EDXD.gui.helper.window_properties import WindowProperties
 from EDXD.utils.clipboard import copy_text_to_clipboard
 from EDXD.gui.helper.collapsible_panel import CollapsiblePanel
 import EDXD.data_handler.helper.data_helper as dh
+import EDXD.data_handler.helper.galactic_navigation as gn
 
 
-TITLE = "Exploration route"
-WINID = "EXPLORATION_ROUTE"
+TITLE = "Exploration itinerary"
+WINID = "EXPLORATION_ITINERARY"
 
-class PlottedNavRoute(DynamicDialog):
+class ExplorationItinerary(DynamicDialog):
     def __init__(self, parent, title=TITLE, win_id=WINID, is_hidden: bool = True):
         # 1. Load saved properties (or use defaults)
         props = WindowProperties.load(win_id, default_height=DEFAULT_HEIGHT, default_width=DEFAULT_WIDTH, default_posx=DEFAULT_POS_X, default_posy=DEFAULT_POS_Y, default_is_hidden=False)
@@ -31,25 +32,29 @@ class PlottedNavRoute(DynamicDialog):
         self.theme = get_theme()
         self.parent = parent
         self.body = None
-        self.plotted_route: NavRouteHandler|None = None
+        self.plotted_route: NavRouteHandler | None = None
 
         self.theme = get_theme()
 
-        self.BMP_CIRCLE_ORANGE  = get_bitmap_from_base64(BASE64_CIRCLE_ORANGE, 20)
-        self.BMP_CIRCLE_BLUE    = get_bitmap_from_base64(BASE64_CIRCLE_BLUE, 20)
-        self.BMP_LINE_ORANGE    = get_bitmap_from_base64(BASE64_LINE_ORANGE, 20)
-        self.BMP_LINE_BLUE      = get_bitmap_from_base64(BASE64_LINE_BLUE, 20)
+        self.BMP_CIRCLE_ORANGE = get_bitmap_from_base64(BASE64_CIRCLE_ORANGE, 20)
+        self.BMP_CIRCLE_BLUE = get_bitmap_from_base64(BASE64_CIRCLE_BLUE, 20)
+        self.BMP_LINE_ORANGE = get_bitmap_from_base64(BASE64_LINE_ORANGE, 20)
+        self.BMP_LINE_BLUE = get_bitmap_from_base64(BASE64_LINE_BLUE, 20)
 
         self._ready = False  # not yet mapped
         self._loading = True  # during startup, we must not save, otherwise we'll get garbage!!
         self.Bind(wx.EVT_SHOW, self._on_show)
 
         # (collapsible) panels with details
+        # spansh parameters
+        self.parameter_panel = CollapsiblePanel(parent=self.scroll_container, columns=2, label="General", show_toggle_bar=True)
+        self.window_box.Add(self.parameter_panel, 0, wx.EXPAND, RESIZE_MARGIN)
+        self.parameter_panel.Hide()
+
         # general data
-        #ToDo: Set label dynamic
-        self.param_panel = CollapsiblePanel(parent=self.scroll_container, columns=2, label="Galaxy Plotter", show_toggle_bar=True)
-        self.window_box.Add(self.param_panel, 0, wx.EXPAND, RESIZE_MARGIN)
-        #self.param_panel.Hide()
+        self.general_panel = CollapsiblePanel(parent=self.scroll_container, columns=2, label="General", show_toggle_bar=False)
+        self.window_box.Add(self.general_panel, 0, wx.EXPAND, RESIZE_MARGIN)
+        self.general_panel.Hide()
 
         # route visualisation
         self.route_panel = CollapsiblePanel(parent=self.scroll_container, columns=6, label="Route", show_toggle_bar=False)
@@ -63,29 +68,28 @@ class PlottedNavRoute(DynamicDialog):
     def _loading_finished(self):
         self._loading = False
 
-    # ------------------------------------------------------------------
-    def render(self, plotted_route: NavRouteHandler):
+    def render(self, plotted_route: NavRouteHandler | None = None):
         # reset
-        self.param_panel.reset_table()
+        self.general_panel.reset_table()
         self.route_panel.reset_table()
 
         if plotted_route is None:
-            self.param_panel.Hide()
+            self.general_panel.Hide()
             self.route_panel.Hide()
         else:
-            self.plotted_route =  plotted_route
-            self._update_parameter()
+            self.plotted_route = plotted_route
+            self._update_general()
             self._update_route()
+
+        self._update_parameter()
 
         if not self.IsShown():
             self.Show()
 
-    # --------------------------------------------------------------
     def _on_show(self, event):
         """First time the window becomes visible."""
         self._ready = True
         event.Skip()
-
 
     @staticmethod
     def _plain_name_from_label(raw: str) -> str:
@@ -112,31 +116,48 @@ class PlottedNavRoute(DynamicDialog):
         evt.Skip()
 
     def _update_parameter(self):
-        if not self.param_panel.IsShown():
-            self.param_panel.Show()
+        if not self.parameter_panel.IsShown():
+            self.parameter_panel.Show()
+
+        self.parameter_panel.add_table_item_label("Source System")
+        self.txt_source_system = self.parameter_panel.add_table_item_textbox()
+        self.parameter_panel.add_table_item_label("Destination System")
+        self.txt_destination_system = self.parameter_panel.add_table_item_textbox()
+
+        if self.general_panel.IsShown():
+            # Force a layout update
+            self.general_panel.force_render()
+
+    def _update_general(self):
+        if self.plotted_route is None or self.plotted_route.plotted_nav_route is None or len(self.plotted_route.plotted_nav_route.nav_points) < 1:
+            self.general_panel.Hide()
+            return
+
+        if not self.general_panel.IsShown():
+            self.general_panel.Show()
 
         final_destination = "Currently no plotted route..."
         if self.plotted_route.plotted_nav_route and len(self.plotted_route.plotted_nav_route.nav_points) > 0:
             final_destination = f"Final destination: {self.plotted_route.get_final_destination().star_system}"
 
-        lbl_final_destination =  self.param_panel.add_table_item(f"{final_destination}")
+        lbl_final_destination = self.general_panel.add_table_item_label(f"{final_destination}")
         theme = wx.Font(self.theme["font_bold"])
         theme.SetPointSize(12)
         lbl_final_destination.SetFont(theme)
-        self.param_panel.add_table_item("")
+        self.general_panel.add_table_item_label("")
 
         if self.plotted_route.current_system:
             total_distance = self.plotted_route.get_total_route_distance()
-            #remaining_distance = gn.calculate_star_system_distance(self.plotted_route.current_system.star_position, self.plotted_route.get_final_destination().star_position)
+            # remaining_distance = gn.calculate_star_system_distance(self.plotted_route.current_system.star_position, self.plotted_route.get_final_destination().star_position)
             remaining_distance = self.plotted_route.get_remaining_route_distance()
 
-            lbl_distance = self.param_panel.add_table_item(f"{' '*6}{remaining_distance:,.2f} Ly of {total_distance:,.2f} Ly ({self.plotted_route.remaining_jumps_in_route} jumps) remaining")
-            self.param_panel.add_table_item("")
-            self.param_panel.add_table_item("", line_height=20)
+            lbl_distance = self.general_panel.add_table_item_label(f"{' ' * 6}{remaining_distance:,.2f} Ly of {total_distance:,.2f} Ly ({self.plotted_route.remaining_jumps_in_route} jumps) remaining")
+            self.general_panel.add_table_item_label("")
+            self.general_panel.add_table_item_label("", line_height=20)
 
-        if self.param_panel.IsShown():
+        if self.general_panel.IsShown():
             # Force a layout update
-            self.param_panel.force_render()
+            self.general_panel.force_render()
 
     def _update_route(self):
         if self.plotted_route is None or self.plotted_route.plotted_nav_route is None or len(self.plotted_route.plotted_nav_route.nav_points) < 1:
@@ -148,7 +169,7 @@ class PlottedNavRoute(DynamicDialog):
 
         self.plotted_route.check_and_update_remaining_jump_count()
 
-        min = -1 * (self.plotted_route.amount_of_passed_systems_to_show+1)
+        min = -1 * (self.plotted_route.amount_of_passed_systems_to_show + 1)
         max = self.plotted_route.amount_of_upcoming_systems_to_show
 
         if max > self.plotted_route.remaining_jumps_in_route:
@@ -169,17 +190,17 @@ class PlottedNavRoute(DynamicDialog):
 
         final_destination_address = self.plotted_route.get_final_destination().system_address
 
-        system: NavPoint|None = None
-        next_system: NavPoint|None = None
+        system: NavPoint | None = None
+        next_system: NavPoint | None = None
 
         fixed_height = 20
 
         if self.plotted_route.plotted_nav_route:
-            for i in  range(min, max, 1):
+            for i in range(min, max, 1):
                 if i == 0:
                     break
 
-                if abs(i) > len(self.plotted_route.plotted_nav_route.nav_points) :
+                if abs(i) > len(self.plotted_route.plotted_nav_route.nav_points):
                     continue
 
                 if len(self.plotted_route.plotted_nav_route.nav_points) - abs(i) < 0:
@@ -213,14 +234,14 @@ class PlottedNavRoute(DynamicDialog):
                         distance_next_jump = gn.calculate_star_system_distance(next_system.star_position, system.star_position)
 
                     lbl_1_system_indicator = self.route_panel.add_table_item_widget(system_indicator, 20)
-                    lbl_2_space = self.route_panel.add_table_item(f"", line_height=fixed_height)
+                    lbl_2_space = self.route_panel.add_table_item_label(f"", line_height=fixed_height)
                     if final_destination_address == system_address:
-                        lbl_2_space.SetLabelText(f"{' '*5}{ICONS["final"]}")
-                    lbl_3_star_feature = self.route_panel.add_table_item(f"{' '*5}{system_feature}{'  '*2}", line_height=fixed_height)
-                    lbl_4_star_class = self.route_panel.add_table_item(f"[{system_type}]", line_height=fixed_height)
-                    lbl_5_system = self.route_panel.add_table_item(f"{' '*2}{system_name}", line_height=fixed_height)
+                        lbl_2_space.SetLabelText(f"{' ' * 5}{ICONS["final"]}")
+                    lbl_3_star_feature = self.route_panel.add_table_item_label(f"{' ' * 5}{system_feature}{'  ' * 2}", line_height=fixed_height)
+                    lbl_4_star_class = self.route_panel.add_table_item_label(f"[{system_type}]", line_height=fixed_height)
+                    lbl_5_system = self.route_panel.add_table_item_label(f"{' ' * 2}{system_name}", line_height=fixed_height)
                     lbl_5_system.Bind(wx.EVT_LEFT_DCLICK, self._on_name_label_double_click)
-                    lbl_6_space = self.route_panel.add_table_item(f"", line_height=fixed_height)
+                    lbl_6_space = self.route_panel.add_table_item_label(f"", line_height=fixed_height)
 
                     if has_jet_cone:
                         lbl_1_system_indicator.SetForegroundColour(jet_cone_colour)
@@ -230,7 +251,7 @@ class PlottedNavRoute(DynamicDialog):
                         lbl_5_system.SetForegroundColour(jet_cone_colour)
                         lbl_6_space.SetForegroundColour(jet_cone_colour)
 
-                    if abs(i) > self.plotted_route.remaining_jumps_in_route+1:
+                    if abs(i) > self.plotted_route.remaining_jumps_in_route + 1:
                         lbl_1_system_indicator.SetForegroundColour(passed_colour)
                         lbl_2_space.SetForegroundColour(passed_colour)
                         lbl_3_star_feature.SetForegroundColour(passed_colour)
@@ -238,7 +259,7 @@ class PlottedNavRoute(DynamicDialog):
                         lbl_5_system.SetForegroundColour(passed_colour)
                         lbl_6_space.SetForegroundColour(passed_colour)
 
-                    if abs(i) == self.plotted_route.remaining_jumps_in_route+1:
+                    if abs(i) == self.plotted_route.remaining_jumps_in_route + 1:
                         lbl_4_star_class.SetFont(wx.Font(self.theme["font_bold"]))
                         lbl_5_system.SetFont(wx.Font(self.theme["font_bold"]))
 
@@ -249,14 +270,14 @@ class PlottedNavRoute(DynamicDialog):
                         lbl_5_system.SetBackgroundColour(current_bg_colour)
                         lbl_6_space.SetBackgroundColour(current_bg_colour)
 
-                    if abs(i) > abs(max-1) and abs(i) <= len(self.plotted_route.plotted_nav_route.nav_points):
+                    if abs(i) > abs(max - 1) and abs(i) <= len(self.plotted_route.plotted_nav_route.nav_points):
                         lbl_1_distance_indicator = self.route_panel.add_table_item_widget(distance_indicator, line_height=fixed_height)
-                        lbl_2_distance = self.route_panel.add_table_item(f"{' '*2}{distance_next_jump:.2f} Ly", align=wx.ALIGN_CENTER_VERTICAL, line_height=fixed_height)
+                        lbl_2_distance = self.route_panel.add_table_item_label(f"{' ' * 2}{distance_next_jump:.2f} Ly", align=wx.ALIGN_CENTER_VERTICAL, line_height=fixed_height)
                         lbl_2_distance.SetFont(small_font)
-                        lbl_3_space = self.route_panel.add_table_item(f"", line_height=fixed_height)
-                        lbl_4_space = self.route_panel.add_table_item(f"", line_height=fixed_height)
-                        lbl_5_space = self.route_panel.add_table_item(f"", line_height=fixed_height)
-                        lbl_6_space = self.route_panel.add_table_item(f"", line_height=fixed_height)
+                        lbl_3_space = self.route_panel.add_table_item_label(f"", line_height=fixed_height)
+                        lbl_4_space = self.route_panel.add_table_item_label(f"", line_height=fixed_height)
+                        lbl_5_space = self.route_panel.add_table_item_label(f"", line_height=fixed_height)
+                        lbl_6_space = self.route_panel.add_table_item_label(f"", line_height=fixed_height)
 
         if self.route_panel.IsShown():
             # Force a layout update

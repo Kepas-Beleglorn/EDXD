@@ -108,11 +108,11 @@ class SignalPrediction(DynamicDialog):
             else:
                 genus_value_string = f"  {genus_value:,} Cr"
 
-            prediction_panel.add_table_item(f"  {genus_name}")
-            prediction_panel.add_table_item(f" {genus_variant}")
-            self._set_probability_colour(prediction_panel.add_table_item(f"  {dh.format_probability(genus_probability)}", align=wx.ALIGN_RIGHT), genus_probability)
-            prediction_panel.add_table_item(f"  {genus_value_string}", align=wx.ALIGN_RIGHT)
-            prediction_panel.add_table_item("")
+            prediction_panel.add_table_item_label(f"  {genus_name}")
+            prediction_panel.add_table_item_label(f" {genus_variant}")
+            self._set_probability_colour(prediction_panel.add_table_item_label(f"  {dh.format_probability(genus_probability)}", align=wx.ALIGN_RIGHT), genus_probability)
+            prediction_panel.add_table_item_label(f"  {genus_value_string}", align=wx.ALIGN_RIGHT)
+            prediction_panel.add_table_item_label("")
 
 
         if prediction_panel.IsShown():
