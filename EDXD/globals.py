@@ -96,8 +96,9 @@ ap.add_argument("--portable", help="Portable mode. All configs and data will be 
 ap.add_argument("--debug", help="Enable debug mode", action="store_true")
 args = ap.parse_args()
 
+os.environ.pop("GTK_IM_MODULE", None)
+
 if "--debug" not in sys.argv:
-    os.environ.pop("GTK_IM_MODULE", None)
     wx.Log.SetLogLevel(wx.LOG_Error)
 
 if "--portable" in sys.argv:
