@@ -119,7 +119,6 @@ class CustomTitleBar(wx.Panel):
             if self.HasCapture():
                 self.ReleaseMouse()
 
-    # ... (other code unchanged)
     @log_call(logging.DEBUG)
     def on_maximize(self, event):
         if getattr(self.parent, "_is_maximized", False):

@@ -42,6 +42,7 @@ class MainWindowOptions(wx.Panel):
         self.parent = parent
         self.theme = get_theme()
         self.historian = None
+        self.exploration_itinerary = None
 
         self._check_version(self, self.parent.prefs)
 
@@ -103,8 +104,13 @@ class MainWindowOptions(wx.Panel):
         self.Bind(wx.EVT_PAINT, self._on_paint)
 
     def _load_all_logs(self, event):
-        self.historian = JournalHistorian(journal_reader=self.parent.journal_reader, journal_controller=self.parent.journal_controller, status_json_watcher=self.parent.status_watcher)
-        self.historian.Show()
+        if self.historian is None:
+            self.historian = JournalHistorian(journal_reader=self.parent.journal_reader, journal_controller=self.parent.journal_controller, status_json_watcher=self.parent.status_watcher)
+            self.historian.Bind(wx.EVT_CLOSE, lambda evt: setattr(self, 'historian', None) or evt.Skip())
+            self.historian.Show()
+        else:
+            self.historian.Raise()
+            self.historian.SetFocus()
 
     def _edit_config(self, event):
         config_dialog = EDXDConfig(self)
@@ -112,9 +118,14 @@ class MainWindowOptions(wx.Panel):
         self.parent.update_panels()
 
     def _plot_exploration_itinerary(self, event):
-        exploration_itinerary = ExplorationItinerary(self)
-        exploration_itinerary.Show()
-        exploration_itinerary.render()
+        if self.exploration_itinerary is None:
+            self.exploration_itinerary = ExplorationItinerary(self)
+            self.exploration_itinerary.Bind(wx.EVT_CLOSE, lambda evt: setattr(self, 'exploration_itinerary', None) or evt.Skip())
+            self.exploration_itinerary.Show()
+            self.exploration_itinerary.render()
+        else:
+            self.exploration_itinerary.Raise()
+            self.exploration_itinerary.SetFocus()
 
     def _on_paint(self, event):
         dc = wx.PaintDC(self)
