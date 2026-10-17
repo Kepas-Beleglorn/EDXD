@@ -86,6 +86,7 @@ class ExplorationItinerary(DynamicDialog):
         self.routing_algo = "optimistic"
 
         self.finalize_layout()
+        self._update_parameter()
         # noinspection PyTypeChecker
         wx.CallLater(millis=3000, callableObj=self._loading_finished)
 
@@ -100,8 +101,6 @@ class ExplorationItinerary(DynamicDialog):
         if self.nav_route is None:
             self.general_panel.Hide()
             self.route_panel.Hide()
-            self.parameter_panel.reset_table()
-            self._update_parameter()
         else:
             self._update_general()
             self._update_route()
@@ -246,6 +245,10 @@ class ExplorationItinerary(DynamicDialog):
         self.parameter_panel.add_table_item_generic(self.btn_calculate_route)
 
         self.lbl_job_status = self.parameter_panel.add_table_item_label(label_text="", align=wx.ALIGN_BOTTOM)
+        self.parameter_panel.add_table_item_label("")
+        self.parameter_panel.add_table_item_label("")
+        self.parameter_panel.add_table_item_label("")
+        self.parameter_panel.add_table_item_label("")
 
         if self.parameter_panel.IsShown():
             # Force a layout update
@@ -262,6 +265,9 @@ class ExplorationItinerary(DynamicDialog):
 
     def  _on_calculate_route(self, event):
         spansh = SpanshRoutePlotter()
+
+        self.nav_route  = None
+        self.render()
 
         self.job_id: str | None = spansh.galaxy_plotter(
             source_system_name=self.txt_source_system.GetValue(),
@@ -292,7 +298,6 @@ class ExplorationItinerary(DynamicDialog):
         self.nav_route  = None
         if result:
             self.lbl_job_status.SetLabel("  Route ready!")
-            self.render()
             self.itinerary: DotDict = result
             self.itinerary.timestamp = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
