@@ -20,7 +20,7 @@ class IntRangeValidator(wx.Validator):
         txt = wx.TextCtrl(panel, validator=IntRangeValidator(0, 100, allow_empty=False))
     """
 
-    def __init__(self, min_val: int, max_val: int, allow_empty: bool = False):
+    def __init__(self, min_val: int | None, max_val: int | None, allow_empty: bool | None = False):
         super().__init__()
         self.min_val = min_val
         self.max_val = max_val
