@@ -216,7 +216,7 @@ class PlottedNavRoute(DynamicDialog):
                     if next_system:
                         distance_next_jump = gn.calculate_star_system_distance(next_system.star_position, system.star_position)
 
-                    lbl_1_system_indicator = self.route_panel.add_table_item_widget(system_indicator, 20)
+                    lbl_1_system_indicator = self.route_panel.add_table_item_bitmap(system_indicator, 20)
                     lbl_2_space = self.route_panel.add_table_item_label(f"", line_height=fixed_height)
                     if final_destination_address == system_address:
                         lbl_2_space.SetLabelText(f"{' '*5}{ICONS["final"]}")
@@ -254,7 +254,7 @@ class PlottedNavRoute(DynamicDialog):
                         lbl_6_space.SetBackgroundColour(current_bg_colour)
 
                     if abs(i) > abs(max-1) and abs(i) <= len(self.plotted_route.plotted_nav_route.nav_points):
-                        lbl_1_distance_indicator = self.route_panel.add_table_item_widget(distance_indicator, line_height=fixed_height)
+                        lbl_1_distance_indicator = self.route_panel.add_table_item_bitmap(distance_indicator, line_height=fixed_height)
                         lbl_2_distance = self.route_panel.add_table_item_label(f"{' ' * 2}{distance_next_jump:.2f} Ly", align=wx.ALIGN_CENTER_VERTICAL, line_height=fixed_height)
                         lbl_2_distance.SetFont(small_font)
                         lbl_3_space = self.route_panel.add_table_item_label(f"", line_height=fixed_height)

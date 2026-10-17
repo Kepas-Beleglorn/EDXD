@@ -28,7 +28,7 @@ def log_call(level=LOG_LEVEL):
 
 
 class ShipStatus:
-    __slots__ = ("ship_type", "ship_id", "ship_name", "ship_ident", "fuel_capacity", "max_jump_range", "cargo", "jet_cone_boost_factor", "fsd_injection_factor")
+    __slots__ = ("ship_type", "ship_id", "ship_name", "ship_ident", "fuel_capacity", "max_jump_range", "cargo", "cargo_capacity", "jet_cone_boost_factor", "fsd_injection_factor")
 
     def __init__(self,
                  ship_type              : str | None = None,
@@ -38,6 +38,7 @@ class ShipStatus:
                  fuel_capacity          : Dict[str, FuelLevel] | None = None,
                  max_jump_range         : float | None = None,
                  cargo                  : int | None = None,
+                 cargo_capacity         : int | None = None,
                  jet_cone_boost_factor  : float | None = None,
                  fsd_injection_factor   : float | None = None
                  ):
@@ -49,6 +50,7 @@ class ShipStatus:
         self.fuel_capacity          = fuel_capacity or FuelLevel()
         self.max_jump_range         = max_jump_range
         self.cargo                  = cargo
+        self.cargo_capacity         = cargo_capacity
         self.jet_cone_boost_factor  = jet_cone_boost_factor
         self.fsd_injection_factor   = fsd_injection_factor
 
@@ -61,6 +63,7 @@ class ShipStatus:
             self.fuel_capacity = FuelLevel(ship_status.get("fuel_capacity", None).get("main", None), ship_status.get("fuel_capacity", None).get("reserve", None))
             self.max_jump_range = ship_status.get("max_jump_range", None)
             self.cargo = ship_status.get("cargo", None)
+            self.cargo_capacity = ship_status.get("cargo_capacity", None)
             self.jet_cone_boost_factor = ship_status.get("jet_cone_boost_factor", None)
             self.fsd_injection_factor = ship_status.get("fsd_injection_factor", None)
 
@@ -80,6 +83,7 @@ class ShipStatus:
             },
             "max_jump_range": self.max_jump_range,
             "cargo": self.cargo,
+            "cargo_capacity": self.cargo_capacity,
             "jet_cone_boost_factor": self.jet_cone_boost_factor,
             "fsd_injection_factor": self.fsd_injection_factor
         }

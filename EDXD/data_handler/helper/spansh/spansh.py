@@ -9,7 +9,7 @@ from pathlib import Path
 from EDXD.data_handler.helper.data_helper import time_delta
 
 from EDXD.data_handler.helper.spansh import spansh2edjournal
-from EDXD.data_handler.helper.dotted_dictionary import create_dot_dict_from_string
+from EDXD.data_handler.helper.dotted_dictionary import *
 from EDXD.data_handler.model import Model, Atmosphere, Ring
 import EDXD.data_handler.helper.data_helper as dh
 from EDXD.globals import BODY_NO_DATA, SLEF_PATH
@@ -332,7 +332,6 @@ class SpanshRoutePlotter:
         return plotted_route
 
     def galaxy_plotter(self,
-                       ship_loadout: DotDict,
                        source_system_name: str,
                        destination_system_name: str,
                        cargo: int,
@@ -353,6 +352,8 @@ class SpanshRoutePlotter:
 
         with open(path, 'r', encoding='utf-8') as f:
             ship_loadout_json = json.load(f)
+
+        ship_loadout = load_json_as_dotdict(SLEF_PATH)
 
         url = SPANSH_GALAXY_PLOTTER_API
         payload = {
@@ -402,45 +403,68 @@ class SpanshRoutePlotter:
         spansh_job_id = response_dict.job
         return spansh_job_id
 
-    @staticmethod
-    def get_itinerary(job_id: str | None) -> DotDict | None:
-        spansh_itinerary: DotDict | None = None
+#    @staticmethod
+#    def get_itinerary(job_id: str | None) -> DotDict | None:
+#        spansh_itinerary: DotDict | None = None
+#
+#        url = SPANSH_PLOTTED_ROUTE
+#
+#        while True:
+#            response = requests.request("GET", url + str(job_id))
+#            response_dict: DotDict = create_dot_dict_from_string(response.text)
+#            iso_date =datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
+#            if response.status_code < 200 or response.status_code >= 300:
+#                error_body = response.text
+#                print(f"ERROR: Spansh API returned status {response.status_code}: {error_body}")
+#                break
+#
+#            if response_dict.state == "completed" and response_dict.status == "ok":
+#                spansh_itinerary = DotDict(response_dict.result)
+#                break
+#
+#            print(f"Job ID: {job_id} - state: {response_dict.state} - status: {response_dict.status} - created at: {response_dict.created_at} - current time: {iso_date} - duration: {time_delta(response_dict.created_at, iso_date)}")
+#            sleep(1)
+#
+#        print(f"Job ID: {job_id} - state: {response_dict.state} - status: {response_dict.status} - created at: {response_dict.created_at} - updated at: {response_dict.updated_at} - duration: {time_delta(response_dict.created_at, response_dict.updated_at)}")
+#        return spansh_itinerary
 
-        url = SPANSH_PLOTTED_ROUTE
+@staticmethod
+def get_itinerary(job_id: str | None,
+                  progress_callback=None) -> DotDict | None:
+    """
+    Polls Spansh until the route is ready.
+    progress_callback: optional callable(state: str, status: str, duration: str)
+                       called from the worker thread on each poll.
+    """
+    spansh_itinerary: DotDict | None = None
+    url = SPANSH_PLOTTED_ROUTE
+    response_dict = None
 
-        while True:
-            response = requests.request("GET", url + str(job_id))
-            response_dict: DotDict = create_dot_dict_from_string(response.text)
-            iso_date =datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
-            if response.status_code < 200 or response.status_code >= 300:
-                error_body = response.text
-                print(f"ERROR: Spansh API returned status {response.status_code}: {error_body}")
-                break
+    while True:
+        response = requests.request("GET", url + str(job_id))
+        response_dict = create_dot_dict_from_string(response.text)
+        iso_date = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
 
-            if response_dict.state == "completed" and response_dict.status == "ok":
-                spansh_itinerary = DotDict(response_dict.result)
-                break
+        if response.status_code < 200 or response.status_code >= 300:
+            error_body = response.text
+            print(f"ERROR: Spansh API returned status {response.status_code}: {error_body}")
+            break
 
-            print(f"Job ID: {job_id} - state: {response_dict.state} - status: {response_dict.status} - created at: {response_dict.created_at} - current time: {iso_date} - duration: {time_delta(response_dict.created_at, iso_date)}")
-            sleep(1)
+        if response_dict.state == "completed" and response_dict.status == "ok":
+            spansh_itinerary = DotDict(response_dict.result)
+            break
 
-        print(f"Job ID: {job_id} - state: {response_dict.state} - status: {response_dict.status} - created at: {response_dict.created_at} - updated at: {response_dict.updated_at} - duration: {time_delta(response_dict.created_at, response_dict.updated_at)}")
-        return spansh_itinerary
+        duration = time_delta(response_dict.created_at, iso_date)
+        print(f"Job ID: {job_id} - state: {response_dict.state} - status: {response_dict.status} "
+              f"- created at: {response_dict.created_at} - current time: {iso_date} - duration: {duration}")
 
-########################################################################################################################################################################################################
-#======================================================================================================================================================================================================#
-########################################################################################################################################################################################################
-#from EDXD.data_handler.helper.dotted_dictionary import DotDict, load_json_as_dotdict
-#spansh = SpanshRoutePlotter()
-#ship_loadout = load_json_as_dotdict(SLEF_PATH)
+        # Push progress to the GUI (callback runs on the worker thread)
+        if progress_callback:
+            progress_callback(response_dict.state, response_dict.status, str(duration))
 
-#algos = ("optimistic", "fuel", "fuel_jumps", "guided", "pessimistic")
+        sleep(1)
 
-#try:
-#    for algo in algos:
-#        job_id: str | None= spansh.galaxy_plotter(ship_loadout, source_system_name="Sol", destination_system_name="Colonia", cargo=1, algorithm=algo)
-#        print(f"{algo}: {job_id}")
-#        itinerary: DotDict | None = spansh.get_itinerary(job_id)
-#        print(f"{algo} - jumps:  {len(itinerary.jumps) - 1}")
-#except Exception as e:
-#    print(e)
+    print(f"Job ID: {job_id} - state: {response_dict.state} - status: {response_dict.status} "
+          f"- created at: {response_dict.created_at} - updated at: {response_dict.updated_at} "
+          f"- duration: {time_delta(response_dict.created_at, response_dict.updated_at)}")
+    return spansh_itinerary

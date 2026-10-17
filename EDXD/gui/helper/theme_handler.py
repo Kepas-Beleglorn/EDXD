@@ -79,6 +79,8 @@ def apply_theme(widget):
         _apply_theme_to_grid(widget)
     elif widget.Name == "dirpickerctrl":
         _apply_theme_to_dirpickerctrl(widget)
+    elif widget.Name == "comboBox":
+        _apply_theme_to_combobox(widget)
     else:
         return
 
@@ -147,4 +149,10 @@ def _apply_theme_to_dirpickerctrl(widget: wx.DirPickerCtrl):
     widget.SetForegroundColour(theme["foreground"])
     widget.TextCtrl.SetBackgroundColour(theme["background"])
     widget.TextCtrl.SetForegroundColour(theme["foreground"])
+    widget.SetFont(theme["font"])
+
+def _apply_theme_to_combobox(widget: wx.ComboBox):
+    theme = get_theme()
+    widget.SetBackgroundColour(theme["background"])
+    widget.SetForegroundColour(theme["foreground"])
     widget.SetFont(theme["font"])

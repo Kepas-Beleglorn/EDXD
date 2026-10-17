@@ -1,12 +1,17 @@
 from __future__ import annotations
 
-import wx
+from threading import Thread
 
+import wx
+from datetime import datetime, UTC
+from EDXD.data_handler.helper.spansh import spansh
 from EDXD.data_handler.helper.spansh.spansh import SpanshRoutePlotter
 from EDXD.data_handler.nav_route import NavRouteHandler, NavPoint
 from EDXD.globals import DEFAULT_POS_Y, DEFAULT_POS_X, RESIZE_MARGIN, ICONS, DEFAULT_HEIGHT, DEFAULT_WIDTH, BASE64_CIRCLE_ORANGE, \
-    BASE64_CIRCLE_BLUE, BASE64_LINE_ORANGE, BASE64_LINE_BLUE
+    BASE64_CIRCLE_BLUE, BASE64_LINE_ORANGE, BASE64_LINE_BLUE, SHIP_STATUS_FILE, SPANSH_ROUTE
 from EDXD.gui.helper.dynamic_dialog import DynamicDialog
+from EDXD.gui.helper.gui_dynamic_button import DynamicButton
+from EDXD.gui.helper.gui_dynamic_toggle_button import DynamicToggleButton
 from EDXD.gui.helper.gui_handler import init_widget
 from EDXD.gui.helper.icon_loader import get_bitmap_from_base64
 from EDXD.gui.helper.theme_handler import get_theme
@@ -15,10 +20,21 @@ from EDXD.utils.clipboard import copy_text_to_clipboard
 from EDXD.gui.helper.collapsible_panel import CollapsiblePanel
 import EDXD.data_handler.helper.data_helper as dh
 import EDXD.data_handler.helper.galactic_navigation as gn
-
+from EDXD.utils.int_range_validator import IntRangeValidator
+from EDXD.data_handler.vessel_status import *
+from EDXD.data_handler.helper.dotted_dictionary import *
 
 TITLE = "Exploration itinerary"
 WINID = "EXPLORATION_ITINERARY"
+
+# List of (display, value) tuples
+ROUTING_OPTIONS = [
+    ("Optimistic", "optimistic"),
+    ("Fuel", "fuel"),
+    ("Fuel Jumps", "fuel_jumps"),
+    ("Guided", "guided"),
+    ("Pessimistic", "pessimistic")
+]
 
 class ExplorationItinerary(DynamicDialog):
     def __init__(self, parent, title=TITLE, win_id=WINID, is_hidden: bool = True):
@@ -30,9 +46,15 @@ class ExplorationItinerary(DynamicDialog):
         init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=win_id)
 
         self.theme = get_theme()
+        self.itinerary = None
+
         self.parent = parent
+        self.ship_status = parent.parent.journal_controller.ship_status
+        if self.ship_status is None:
+            self.ship_status = ShipStatus()
+        self.ship_status = self.ship_status.read_from_json(dh.read_ship_status(SHIP_STATUS_FILE, self.ship_status))
         self.body = None
-        self.plotted_route: NavRouteHandler | None = None
+        self.nav_route: NavRouteHandler | None = None
 
         self.theme = get_theme()
 
@@ -47,7 +69,7 @@ class ExplorationItinerary(DynamicDialog):
 
         # (collapsible) panels with details
         # spansh parameters
-        self.parameter_panel = CollapsiblePanel(parent=self.scroll_container, columns=2, label="General", show_toggle_bar=True)
+        self.parameter_panel = CollapsiblePanel(parent=self.scroll_container, columns=3, label="Route parameters", show_toggle_bar=True)
         self.window_box.Add(self.parameter_panel, 0, wx.EXPAND, RESIZE_MARGIN)
         self.parameter_panel.Hide()
 
@@ -61,6 +83,8 @@ class ExplorationItinerary(DynamicDialog):
         self.window_box.Add(self.route_panel, 0, wx.EXPAND, RESIZE_MARGIN)
         self.route_panel.Hide()
 
+        self.routing_algo = "optimistic"
+
         self.finalize_layout()
         # noinspection PyTypeChecker
         wx.CallLater(millis=3000, callableObj=self._loading_finished)
@@ -68,20 +92,19 @@ class ExplorationItinerary(DynamicDialog):
     def _loading_finished(self):
         self._loading = False
 
-    def render(self, plotted_route: NavRouteHandler | None = None):
+    def render(self):
         # reset
         self.general_panel.reset_table()
         self.route_panel.reset_table()
 
-        if plotted_route is None:
+        if self.nav_route is None:
             self.general_panel.Hide()
             self.route_panel.Hide()
+            self.parameter_panel.reset_table()
+            self._update_parameter()
         else:
-            self.plotted_route = plotted_route
             self._update_general()
             self._update_route()
-
-        self._update_parameter()
 
         if not self.IsShown():
             self.Show()
@@ -118,18 +141,177 @@ class ExplorationItinerary(DynamicDialog):
     def _update_parameter(self):
         if not self.parameter_panel.IsShown():
             self.parameter_panel.Show()
-
-        self.parameter_panel.add_table_item_label("Source System")
+        label_fixed_text_length = 24
+        self.parameter_panel.add_table_item_label(label_text=f"{"Source System"[:label_fixed_text_length]:<{label_fixed_text_length}}", align=wx.ALIGN_BOTTOM)
         self.txt_source_system = self.parameter_panel.add_table_item_textbox()
-        self.parameter_panel.add_table_item_label("Destination System")
-        self.txt_destination_system = self.parameter_panel.add_table_item_textbox()
+        self.parameter_panel.add_table_item_label("")
 
-        if self.general_panel.IsShown():
+        self.parameter_panel.add_table_item_label(label_text=f"{"Destination System"[:label_fixed_text_length]:<{label_fixed_text_length}}", align=wx.ALIGN_BOTTOM)
+        self.txt_destination_system = self.parameter_panel.add_table_item_textbox()
+        self.parameter_panel.add_table_item_label("")
+
+        self.parameter_panel.add_table_item_label(label_text=f"{"Cargo"[:label_fixed_text_length]:<{label_fixed_text_length}}", align=wx.ALIGN_BOTTOM)
+        self.txt_cargo = self.parameter_panel.add_table_item_textbox()
+        self.txt_cargo.SetValidator(IntRangeValidator(min_val=0, max_val=self.ship_status.cargo_capacity, allow_empty=False))
+        self.txt_cargo.SetValue(str(self.ship_status.cargo))
+        self.parameter_panel.add_table_item_label("")
+
+        self.parameter_panel.add_table_item_label(label_text=f"{"Reserve fuel"[:label_fixed_text_length]:<{label_fixed_text_length}}", align=wx.ALIGN_BOTTOM)
+        self.txt_reserve_fuel = self.parameter_panel.add_table_item_textbox()
+        self.txt_reserve_fuel.SetValidator(IntRangeValidator(min_val=0, max_val=self.ship_status.fuel_capacity.main, allow_empty=False))
+        self.txt_reserve_fuel.SetValue("0")
+        self.parameter_panel.add_table_item_label("")
+
+        self.parameter_panel.add_table_item_label("")
+        self.parameter_panel.add_table_item_label("")
+        self.parameter_panel.add_table_item_label("")
+
+        btn_size = wx.Size(250, -1)
+        self.btn_already_supercharged = DynamicToggleButton(
+            label="Already supercharged",
+            parent=self.parameter_panel.content,
+            is_toggled=self.ship_status.jet_cone_boost_factor is not None,
+            size=btn_size
+        )
+        self.parameter_panel.add_table_item_toggle_button(self.btn_already_supercharged)
+
+        self.btn_use_supercharged = DynamicToggleButton(
+            label="Use supercharge",
+            parent=self.parameter_panel.content,
+            is_toggled=True,
+            size=btn_size
+        )
+        self.parameter_panel.add_table_item_toggle_button(self.btn_use_supercharged)
+        self.parameter_panel.add_table_item_label("")
+
+        self.btn_use_fsd_injections_always = DynamicToggleButton(
+            label="Use FSD injections always",
+            parent=self.parameter_panel.content,
+            is_toggled=False,
+            size=btn_size
+        )
+        self.parameter_panel.add_table_item_toggle_button(self.btn_use_fsd_injections_always)
+
+        self.btn_use_fsd_injections_when_required = DynamicToggleButton(
+            label="Use FSD injections when required",
+            parent=self.parameter_panel.content,
+            is_toggled=False,
+            size=btn_size
+        )
+        self.parameter_panel.add_table_item_toggle_button(self.btn_use_fsd_injections_when_required)
+        self.parameter_panel.add_table_item_label("")
+
+        self.btn_exclude_secondary_stars = DynamicToggleButton(
+            label="Exclude secondary stars",
+            parent=self.parameter_panel.content,
+            is_toggled=False,
+            size=btn_size
+        )
+        self.parameter_panel.add_table_item_toggle_button(self.btn_exclude_secondary_stars)
+
+        self.btn_refuel_every_scoopable = DynamicToggleButton(
+            label="Refuel  every scoopable",
+            parent=self.parameter_panel.content,
+            is_toggled=True,
+            size=btn_size
+        )
+        self.parameter_panel.add_table_item_toggle_button(self.btn_refuel_every_scoopable)
+        self.parameter_panel.add_table_item_label("")
+
+        self.parameter_panel.add_table_item_label("")
+        self.parameter_panel.add_table_item_label("")
+        self.parameter_panel.add_table_item_label("")
+
+        self.parameter_panel.add_table_item_label(label_text=f"{"Routing algorithm"[:label_fixed_text_length]:<{label_fixed_text_length}}", align=wx.ALIGN_BOTTOM)
+
+        # Extract display texts for the dropdown
+        display_texts = [opt[0] for opt in ROUTING_OPTIONS]
+
+        # Create combobox
+        self.cmb_routing_algorithm = wx.ComboBox(choices=display_texts, style=wx.CB_READONLY, parent=self.parameter_panel.content, size=btn_size)
+        self.cmb_routing_algorithm.SetValue(display_texts[0])  # Set default
+
+        # Bind event to handle selection
+        self.cmb_routing_algorithm.Bind(wx.EVT_COMBOBOX, self._on_routing_changed)
+
+        self.parameter_panel.add_table_item_generic(self.cmb_routing_algorithm)
+        self.parameter_panel.add_table_item_label("")
+
+        self.parameter_panel.add_table_item_label("")
+        self.parameter_panel.add_table_item_label("")
+        self.parameter_panel.add_table_item_label("")
+
+        self.btn_calculate_route = DynamicButton(parent=self.parameter_panel.content, label="Calculate route", size=btn_size)
+        self.btn_calculate_route.Bind(wx.EVT_BUTTON, self._on_calculate_route)
+        self.parameter_panel.add_table_item_generic(self.btn_calculate_route)
+
+        self.lbl_job_status = self.parameter_panel.add_table_item_label(label_text="", align=wx.ALIGN_BOTTOM)
+
+        if self.parameter_panel.IsShown():
             # Force a layout update
-            self.general_panel.force_render()
+            self.parameter_panel.force_render()
+
+    def _on_routing_changed(self, event):
+        selected_display = self.cmb_routing_algorithm.GetValue()
+        # Find the corresponding value
+        selected_value = next(
+            (value for display, value in ROUTING_OPTIONS if display == selected_display),
+            None
+        )
+        self.selected_routing_option = selected_value
+
+    def  _on_calculate_route(self, event):
+        spansh = SpanshRoutePlotter()
+
+        self.job_id: str | None = spansh.galaxy_plotter(
+            source_system_name=self.txt_source_system.GetValue(),
+            destination_system_name=self.txt_destination_system.GetValue(),
+            cargo=int(self.txt_cargo.GetValue()),
+            reserve_fuel=int(self.txt_reserve_fuel.GetValue()),
+            already_supercharged=bool(self.btn_already_supercharged.GetValue()),
+            use_supercharge=bool(self.btn_use_supercharged.GetValue()),
+            fsd_inject_always=bool(self.btn_use_fsd_injections_always.GetValue()),
+            fsd_inject_when_required=bool(self.btn_use_fsd_injections_when_required.GetValue()),
+            exclude_secondary=bool(self.btn_exclude_secondary_stars.GetValue()),
+            refuel_every_scoopable=bool(self.btn_refuel_every_scoopable.GetValue()),
+            algorithm=self.routing_algo)
+
+        # Start the background worker; it updates the label while polling
+        self.worker = PlotterWorker(
+            self.job_id,
+            on_progress=self.update_status,
+            on_done=self.on_plot_done,
+        )
+        self.worker.start()
+
+    def update_status(self, state: str, status: str, duration: str):
+        # Called on the MAIN thread via wx.CallAfter — safe to touch widgets
+        self.lbl_job_status.SetLabel(f"  Plotting… {duration}")
+
+    def on_plot_done(self, result: DotDict | None):
+        self.nav_route  = None
+        if result:
+            self.lbl_job_status.SetLabel("  Route ready!")
+            self.render()
+            self.itinerary: DotDict = result
+            self.itinerary.timestamp = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+            save_dotdict_to_json(self.itinerary, SPANSH_ROUTE)
+
+            self.nav_route = NavRouteHandler(
+                SPANSH_ROUTE,
+                amount_of_upcoming_systems_to_show=int(self.parent.parent.prefs["amount_of_plotted_upcoming_systems_to_show"]),
+                amount_of_passed_systems_to_show=int(self.parent.parent.prefs["amount_of_plotted_passed_systems_to_show"])
+            )
+            self.nav_route.clear_plotted_route()
+            self.nav_route.load_plotted_route()
+        else:
+            self.lbl_job_status.SetLabel("  Plotting failed.")
+
+        self.render()
 
     def _update_general(self):
-        if self.plotted_route is None or self.plotted_route.plotted_nav_route is None or len(self.plotted_route.plotted_nav_route.nav_points) < 1:
+        if self.nav_route is None or self.nav_route.plotted_nav_route is None or len(self.nav_route.plotted_nav_route.nav_points) < 1:
             self.general_panel.Hide()
             return
 
@@ -137,8 +319,8 @@ class ExplorationItinerary(DynamicDialog):
             self.general_panel.Show()
 
         final_destination = "Currently no plotted route..."
-        if self.plotted_route.plotted_nav_route and len(self.plotted_route.plotted_nav_route.nav_points) > 0:
-            final_destination = f"Final destination: {self.plotted_route.get_final_destination().star_system}"
+        if self.nav_route.plotted_nav_route and len(self.nav_route.plotted_nav_route.nav_points) > 0:
+            final_destination = f"Final destination: {self.nav_route.get_final_destination().star_system}"
 
         lbl_final_destination = self.general_panel.add_table_item_label(f"{final_destination}")
         theme = wx.Font(self.theme["font_bold"])
@@ -146,12 +328,12 @@ class ExplorationItinerary(DynamicDialog):
         lbl_final_destination.SetFont(theme)
         self.general_panel.add_table_item_label("")
 
-        if self.plotted_route.current_system:
-            total_distance = self.plotted_route.get_total_route_distance()
-            # remaining_distance = gn.calculate_star_system_distance(self.plotted_route.current_system.star_position, self.plotted_route.get_final_destination().star_position)
-            remaining_distance = self.plotted_route.get_remaining_route_distance()
+        # ToDo #176, #178, #296: check spansh_route.json every x seconds to read current system. Update nav_route.current_system if it is a waypoint in the spansh route
+        if self.nav_route.current_system:
+            total_distance = self.nav_route.get_total_route_distance()
+            remaining_distance = self.nav_route.get_remaining_route_distance()
 
-            lbl_distance = self.general_panel.add_table_item_label(f"{' ' * 6}{remaining_distance:,.2f} Ly of {total_distance:,.2f} Ly ({self.plotted_route.remaining_jumps_in_route} jumps) remaining")
+            lbl_distance = self.general_panel.add_table_item_label(f"{' ' * 6}{remaining_distance:,.2f} Ly of {total_distance:,.2f} Ly ({self.nav_route.remaining_jumps_in_route} jumps) remaining")
             self.general_panel.add_table_item_label("")
             self.general_panel.add_table_item_label("", line_height=20)
 
@@ -160,23 +342,23 @@ class ExplorationItinerary(DynamicDialog):
             self.general_panel.force_render()
 
     def _update_route(self):
-        if self.plotted_route is None or self.plotted_route.plotted_nav_route is None or len(self.plotted_route.plotted_nav_route.nav_points) < 1:
+        if self.nav_route is None or self.nav_route.plotted_nav_route is None or len(self.nav_route.plotted_nav_route.nav_points) < 1:
             self.route_panel.Hide()
             return
 
         if not self.route_panel.IsShown():
             self.route_panel.Show()
 
-        self.plotted_route.check_and_update_remaining_jump_count()
+        self.nav_route.check_and_update_remaining_jump_count()
 
-        min = -1 * (self.plotted_route.amount_of_passed_systems_to_show + 1)
-        max = self.plotted_route.amount_of_upcoming_systems_to_show
+        min = -1 * (self.nav_route.amount_of_passed_systems_to_show + 1)
+        max = self.nav_route.amount_of_upcoming_systems_to_show
 
-        if max > self.plotted_route.remaining_jumps_in_route:
-            max = self.plotted_route.remaining_jumps_in_route
+        if max > self.nav_route.remaining_jumps_in_route:
+            max = self.nav_route.remaining_jumps_in_route
 
-        min = min - self.plotted_route.remaining_jumps_in_route
-        max = -1 * (self.plotted_route.remaining_jumps_in_route - max)
+        min = min - self.nav_route.remaining_jumps_in_route
+        max = -1 * (self.nav_route.remaining_jumps_in_route - max)
 
         small_font = wx.Font(self.theme["font"])
         small_font.SetPointSize(9)
@@ -188,27 +370,27 @@ class ExplorationItinerary(DynamicDialog):
         current_bg_colour = self.theme["background_hover"]
         jet_cone_colour = wx.Colour(0, 165, 255)
 
-        final_destination_address = self.plotted_route.get_final_destination().system_address
+        final_destination_address = self.nav_route.get_final_destination().system_address
 
         system: NavPoint | None = None
         next_system: NavPoint | None = None
 
         fixed_height = 20
 
-        if self.plotted_route.plotted_nav_route:
+        if self.nav_route.plotted_nav_route:
             for i in range(min, max, 1):
                 if i == 0:
                     break
 
-                if abs(i) > len(self.plotted_route.plotted_nav_route.nav_points):
+                if abs(i) > len(self.nav_route.plotted_nav_route.nav_points):
                     continue
 
-                if len(self.plotted_route.plotted_nav_route.nav_points) - abs(i) < 0:
-                    print(f"DEBUG[items-abs(i)  <  0]: {len(self.plotted_route.plotted_nav_route.nav_points)} = {abs(i) - len(self.plotted_route.plotted_nav_route.nav_points)} - {abs(i)}")
+                if len(self.nav_route.plotted_nav_route.nav_points) - abs(i) < 0:
+                    print(f"DEBUG[items-abs(i)  <  0]: {len(self.nav_route.plotted_nav_route.nav_points)} = {abs(i) - len(self.nav_route.plotted_nav_route.nav_points)} - {abs(i)}")
                     continue
 
-                system = self.plotted_route.get_system_by_index(i)
-                next_system = self.plotted_route.get_system_by_index(i + 1)
+                system = self.nav_route.get_system_by_index(i)
+                next_system = self.nav_route.get_system_by_index(i + 1)
                 system_type = ""
                 system_feature = ""
                 system_name = ""
@@ -233,7 +415,7 @@ class ExplorationItinerary(DynamicDialog):
                     if next_system:
                         distance_next_jump = gn.calculate_star_system_distance(next_system.star_position, system.star_position)
 
-                    lbl_1_system_indicator = self.route_panel.add_table_item_widget(system_indicator, 20)
+                    lbl_1_system_indicator = self.route_panel.add_table_item_bitmap(system_indicator, 20)
                     lbl_2_space = self.route_panel.add_table_item_label(f"", line_height=fixed_height)
                     if final_destination_address == system_address:
                         lbl_2_space.SetLabelText(f"{' ' * 5}{ICONS["final"]}")
@@ -251,7 +433,7 @@ class ExplorationItinerary(DynamicDialog):
                         lbl_5_system.SetForegroundColour(jet_cone_colour)
                         lbl_6_space.SetForegroundColour(jet_cone_colour)
 
-                    if abs(i) > self.plotted_route.remaining_jumps_in_route + 1:
+                    if abs(i) > self.nav_route.remaining_jumps_in_route + 1:
                         lbl_1_system_indicator.SetForegroundColour(passed_colour)
                         lbl_2_space.SetForegroundColour(passed_colour)
                         lbl_3_star_feature.SetForegroundColour(passed_colour)
@@ -259,7 +441,7 @@ class ExplorationItinerary(DynamicDialog):
                         lbl_5_system.SetForegroundColour(passed_colour)
                         lbl_6_space.SetForegroundColour(passed_colour)
 
-                    if abs(i) == self.plotted_route.remaining_jumps_in_route + 1:
+                    if abs(i) == self.nav_route.remaining_jumps_in_route + 1:
                         lbl_4_star_class.SetFont(wx.Font(self.theme["font_bold"]))
                         lbl_5_system.SetFont(wx.Font(self.theme["font_bold"]))
 
@@ -270,8 +452,8 @@ class ExplorationItinerary(DynamicDialog):
                         lbl_5_system.SetBackgroundColour(current_bg_colour)
                         lbl_6_space.SetBackgroundColour(current_bg_colour)
 
-                    if abs(i) > abs(max - 1) and abs(i) <= len(self.plotted_route.plotted_nav_route.nav_points):
-                        lbl_1_distance_indicator = self.route_panel.add_table_item_widget(distance_indicator, line_height=fixed_height)
+                    if abs(i) > abs(max - 1) and abs(i) <= len(self.nav_route.plotted_nav_route.nav_points):
+                        lbl_1_distance_indicator = self.route_panel.add_table_item_bitmap(distance_indicator, line_height=fixed_height)
                         lbl_2_distance = self.route_panel.add_table_item_label(f"{' ' * 2}{distance_next_jump:.2f} Ly", align=wx.ALIGN_CENTER_VERTICAL, line_height=fixed_height)
                         lbl_2_distance.SetFont(small_font)
                         lbl_3_space = self.route_panel.add_table_item_label(f"", line_height=fixed_height)
@@ -283,24 +465,21 @@ class ExplorationItinerary(DynamicDialog):
             # Force a layout update
             self.route_panel.force_render()
 
-    @staticmethod
-    def _set_g_force_colour(label: wx.StaticText = None, g_force: float = 0.0):
-        if label is None:
-            return
-        label.SetForegroundColour(dh.get_colour_gradient_from_gravity(g_force))
+class PlotterWorker(Thread):
+    """Runs get_itinerary off the main thread and delivers the result back via wx.CallAfter."""
+    def __init__(self, job_id: str | None, on_progress, on_done):
+        super().__init__(daemon=True)
+        self.job_id = job_id
+        self.on_progress = on_progress   # callable(state, status, duration)
+        self.on_done = on_done           # callable(result: DotDict | None)
 
-    @staticmethod
-    def _set_temperature_colour(label: wx.StaticText = None, temperature: float = 0.0):
-        if label is None:
-            return
-        label.SetForegroundColour(dh.get_colour_gradient_from_temperature(temperature))
+    def run(self):
+        # get_itinerary calls on_progress from this thread; we must marshal
+        # those to the GUI thread with wx.CallAfter, so wrap them here.
+        def gui_progress(state, status, duration):
+            wx.CallAfter(self.on_progress, state, status, duration)
 
-    @staticmethod
-    def _set_distance_color(label: wx.StaticText = None, range_min: float = 0.0, range_current: float = 0.0):
-        if label is None:
-            return
+        result = spansh.get_itinerary(self.job_id, progress_callback=gui_progress)
 
-        if range_current * 1000 > range_min:
-            label.SetForegroundColour(wx.GREEN)
-        else:
-            label.SetForegroundColour(wx.RED)
+        # Deliver the final result back onto the main thread
+        wx.CallAfter(self.on_done, result)

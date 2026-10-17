@@ -10,6 +10,8 @@ import EDXD.data_handler.helper.galactic_navigation as gn
 import EDXD.data_handler.helper.data_helper as dh
 from EDXD.data_handler.helper.dotted_dictionary import DotDict
 from EDXD.data_handler.helper.galactic_navigation import StarPosition
+from EDXD.data_handler.helper.spansh import spansh
+
 from EDXD.gui.themed_msg_dialog import ThemedMessageDialog
 
 ERR_TITLE = "Navigation error"
@@ -46,16 +48,42 @@ class NavRouteHandler:
         systems = []
         for system in route_data:
             # Handle DotDict or standard dict access safely
-            pos = self._parse_star_position(system.StarPos if isinstance(system, DotDict) else system['StarPos'])
+            if hasattr(system, "StarPos"):
+                pos = self._parse_star_position(system.StarPos if isinstance(system, DotDict) else system['StarPos'])
+            else:
+                if hasattr(system, "x") and hasattr(system, "y") and hasattr(system, "z"):
+                    pos = StarPosition(system.x, system.y, system.z)
 
             nav_point = NavPoint(
-                star_system=system.StarSystem if isinstance(system, DotDict) else system['StarSystem'],
-                system_address=system.SystemAddress if isinstance(system, DotDict) else system['SystemAddress'],
-                star_class=system.StarClass if isinstance(system, DotDict) else system['StarClass'],
+                star_system=system.StarSystem if hasattr(system, "StarSystem") else system.name if hasattr(system, "name") else "",
+                system_address=system.SystemAddress if hasattr(system, "SystemAddress") else system.id64 if hasattr(system, "id64") else -1,
+                star_class=system.StarClass if hasattr(system, "StarClass") else self.get_star_class_from_spansh(system.id64),
                 star_position=pos
             )
             systems.append(nav_point)
         return systems
+
+    def get_star_class_from_spansh(self, system_id: int) -> str:
+        sh = spansh.SpanshHelper()
+        sh.get_system_data(system_id)
+        system_data = sh.system_data
+        body_type  = ""
+        for body in system_data.bodies:
+            try:
+                if body.type == "Star":
+                    if hasattr(body, "spectralClass") and body.spectralClass:
+                        body_type = "".join(char for char in body.spectralClass if char.isalpha())
+                    else:
+                        if "(" in body.subType:
+                            body_type = body.subType.split("(")[1].split(")")[0]
+                        else:
+                            if body.subType == "Neutron Star":
+                                body_type = "N"
+                            else:
+                                body_type = body.subType
+            except Exception as e:
+                print(f"ERROR: {system_id} - {e} - {body}")
+        return body_type
 
     def load_plotted_route(self):
         if not self.nav_route_json.exists():
@@ -71,7 +99,11 @@ class NavRouteHandler:
         timestamp = dh.parse_utc_isoformat(data.timestamp) if data.timestamp else None
 
         # Parse the list of route points into proper dataclass instances
-        nav_points = self._parse_nav_points(data.Route)
+        if hasattr(data, 'Route'):
+            nav_points = self._parse_nav_points(data.Route)
+
+        if hasattr(data, 'jumps'):
+            nav_points = self._parse_nav_points(data.jumps)
 
         self.plotted_nav_route = PlottedNavRoute(
             timestamp=timestamp,

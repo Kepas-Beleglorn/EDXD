@@ -65,3 +65,11 @@ def create_dot_dict_from_string(data_string: str) -> DotDict:
         return obj
 
     return convert_to_dotdict(data)
+
+def save_dotdict_to_json(dotdict: DotDict, file_path: str, indent: int = 2) -> None:
+    """Save a DotDict (or any JSON-serializable object) to a JSON file."""
+    path = Path(file_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    with open(path, 'w', encoding='utf-8') as f:
+        json.dump(dotdict, f, indent=indent, ensure_ascii=False)

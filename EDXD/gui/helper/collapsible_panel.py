@@ -1,4 +1,6 @@
 import wx
+
+from EDXD.gui.helper import theme_handler
 from EDXD.gui.helper.gui_handler import init_widget
 from EDXD.gui.helper.gui_dynamic_toggle_button import DynamicToggleButton
 
@@ -95,8 +97,7 @@ class CollapsiblePanel(wx.Panel):
             self.table_sizer.Add(label, 0, align | wx.EXPAND, 0)
         return label
 
-    # Inside your CollapsiblePanel class
-    def add_table_item_widget(self, widget: wx.Bitmap, line_height: int = -1) -> wx.StaticBitmap:
+    def add_table_item_bitmap(self, widget: wx.Bitmap, line_height: int = -1) -> wx.StaticBitmap:
         icon =  wx.StaticBitmap(self.content, bitmap=widget)
 
         if line_height > 0:
@@ -108,6 +109,30 @@ class CollapsiblePanel(wx.Panel):
 
         self.table_sizer.Add(icon, 0, wx.ALIGN_CENTER_HORIZONTAL, 0)
         return icon
+
+    def add_table_item_toggle_button(self, button: DynamicToggleButton, line_height: int = -1) -> DynamicToggleButton:
+
+        if line_height > 0:
+            fixed_size = wx.Size(-1, line_height)
+            button.SetMaxSize(fixed_size)
+            button.SetMinSize(fixed_size)
+            button.SetSize(fixed_size)
+            button.SetInitialSize(fixed_size)
+
+        self.table_sizer.Add(button, 0, wx.ALIGN_CENTER_HORIZONTAL, 0)
+        return button
+
+    def add_table_item_generic(self, item: wx.Control, line_height: int = -1):
+        if line_height > 0:
+            fixed_size = wx.Size(-1, line_height)
+            item.SetMaxSize(fixed_size)
+            item.SetMinSize(fixed_size)
+            item.SetSize(fixed_size)
+            item.SetInitialSize(fixed_size)
+
+        theme_handler.apply_theme(item)
+
+        self.table_sizer.Add(item, 0, wx.ALIGN_CENTER_HORIZONTAL, 0)
 
     def add_table_item_textbox(self, align=wx.ALIGN_LEFT, line_height: int = -1) -> wx.TextCtrl:
         text = wx.TextCtrl(self.content)

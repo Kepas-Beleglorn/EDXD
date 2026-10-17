@@ -143,6 +143,7 @@ class JournalController(PausableThread, threading.Thread):
             self.m.ship_status.ship_id = evt.get("ShipID")
             self.m.ship_status.ship_name = evt.get("ShipName")
             self.m.ship_status.ship_ident = evt.get("ShipIdent")
+            self.m.ship_status.cargo_capacity = evt.get("CargoCapacity")
 
             fuel_main       : float = evt.get("FuelCapacity").get("Main")
             fuel_reserve    : float = evt.get("FuelCapacity").get("Reserve")
@@ -192,6 +193,8 @@ class JournalController(PausableThread, threading.Thread):
             if self.nav_route and self.nav_route.plotted_nav_route is None:
                 self.nav_route.load_plotted_route()
                 self.nav_route.set_current_system_from_journal_data(evt)
+                # ToDo: #176, #178, #296 write  current system to spansh_route.json
+
 
         #113:   after app-start, load only current SYSTEM.json
         #       store last read journal line (timestamp) and process only newer lines
