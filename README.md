@@ -38,7 +38,7 @@
 
 ## Installation
 
-Just download the zip for your platform, unpack the contents anywhere you like and run with `./ed-eXploration-dashboard` or `./run_edxd.sh`. The script ensures Wayland compatibility (see [#263](https://github.com/Kepas-Beleglorn/EDXD/issues/263))
+Just download the zip for your platform, unpack the contents anywhere you like and run with `./ed-eXploration-dashboard`.
 ```
 options:
   -h, --help           show this help message and exit

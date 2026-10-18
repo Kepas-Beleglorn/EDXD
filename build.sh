@@ -98,8 +98,6 @@ pyinstaller --onefile EDXD/main.py --name ed-eXploration-dashboard
 # 5. Deploy
 echo "📂 Copying to output directory..."
 cp -fv ./dist/ed-eXploration-dashboard "$OUTPUT_DIR/"
-cp -fv ./run_edxd.sh "$OUTPUT_DIR/"
-chmod +x "$OUTPUT_DIR/run_edxd.sh"
 echo "✅ Binary and run script placed at: $OUTPUT_DIR/"
 
 # 6. Cleanup

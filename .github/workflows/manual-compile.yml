@@ -98,7 +98,6 @@ jobs:
           mkdir release
           cp dist/ed-eXploration-dashboard* release/
           if [ "${{ runner.os }}" = "Linux" ]; then
-            cp run_edxd.sh release/
             cp check-compatibility.sh release/
             cp install_x11_deps.sh release/
             chmod +x release/*.sh
