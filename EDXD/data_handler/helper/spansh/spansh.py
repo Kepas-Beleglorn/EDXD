@@ -76,6 +76,8 @@ class SpanshHelper:
                                 body_type = body.subType
             except Exception as e:
                 print(f"ERROR: {system_id} - {e} - {body}")
+            if body_type != "":
+                break
         return body_type
 
     def get_parent_star_ids(self, current_body: DotDict) -> List[Dict[str, int]]:

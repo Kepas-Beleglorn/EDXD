@@ -48,6 +48,7 @@ class ExplorationItinerary(DynamicDialog):
 
         self.theme = get_theme()
         self.itinerary = None
+        self.copied_system_name: str = ""
 
         self.parent = parent
         self.ship_status = parent.parent.journal_controller.ship_status
@@ -99,10 +100,11 @@ class ExplorationItinerary(DynamicDialog):
         self._loading = False
 
     def _on_timer(self, event):
-        self.general_panel.reset_table()
-        self.route_panel.reset_table()
-        self._update_general()
-        self._update_route()
+        if self._check_waypoint():
+            self.general_panel.reset_table()
+            self.route_panel.reset_table()
+            self._update_general()
+            self._update_route()
 
     def render(self):
         self.general_panel.reset_table()
@@ -116,8 +118,8 @@ class ExplorationItinerary(DynamicDialog):
         else:
             if not self._timer.IsRunning():
                 self._timer.Start(1000)  # 1000 ms = 1 second
-            self._update_general()
             self._update_route()
+            self._update_general()
 
         if not self.IsShown():
             self.Show()
@@ -260,6 +262,13 @@ class ExplorationItinerary(DynamicDialog):
 
         self.lbl_job_status = self.parameter_panel.add_table_item_label(label_text="", align=wx.ALIGN_BOTTOM)
         self.parameter_panel.add_table_item_label("")
+
+        self.btn_load_route = DynamicButton(parent=self.parameter_panel.content, label="Load last route", size=btn_size)
+        self.btn_load_route.Bind(wx.EVT_BUTTON, self._on_load_route)
+        self.parameter_panel.add_table_item_generic(self.btn_load_route)
+        self.parameter_panel.add_table_item_label("")
+        self.parameter_panel.add_table_item_label("")
+
         self.parameter_panel.add_table_item_label("")
         self.parameter_panel.add_table_item_label("")
         self.parameter_panel.add_table_item_label("")
@@ -276,6 +285,17 @@ class ExplorationItinerary(DynamicDialog):
             None
         )
         self.selected_routing_option = selected_value
+
+    def  _on_load_route(self, event):
+        self.nav_route = NavRouteHandler(
+            SPANSH_ROUTE,
+            amount_of_upcoming_systems_to_show=int(self.parent.parent.prefs["amount_of_plotted_upcoming_systems_to_show"]),
+            amount_of_passed_systems_to_show=int(self.parent.parent.prefs["amount_of_plotted_passed_systems_to_show"])
+        )
+        self.nav_route.clear_plotted_route()
+        self.nav_route.load_plotted_route()
+        self._check_waypoint()
+        self.render()
 
     def  _on_calculate_route(self, event):
         spansh = SpanshRoutePlotter()
@@ -484,14 +504,14 @@ class ExplorationItinerary(DynamicDialog):
             # Force a layout update
             self.route_panel.force_render()
 
-    def _check_waypoint(self, current_waypoint: NavPoint | None = None):
+    def _check_waypoint(self, current_waypoint: NavPoint | None = None) -> bool:
         spansh_route_data: DotDict = load_json_as_dotdict(SPANSH_ROUTE)
         current_system: NavPoint
         if hasattr(spansh_route_data, "current_system"):
             current_system: NavPoint = from_dotdict(NavPoint, spansh_route_data.current_system)
         else:
             if current_waypoint is None:
-                return
+                return False
             else:
                 current_system = current_waypoint
 
@@ -502,14 +522,24 @@ class ExplorationItinerary(DynamicDialog):
         for system in spansh_route_data.jumps:
             # If we've reached a waypoint, copy the next name to the clipboard
             if do_copy_to_clipboard:
-                copy_text_to_clipboard(system.name)
-                return
+                if self.copied_system_name != system.name:
+                    self.copied_system_name = system.name
+                    copy_text_to_clipboard(system.name)
+                    return True
+                else:
+                    return False
 
             # check if we reached a waypoint
             if system.id64 == current_system_address:
                 self.nav_route.current_system = current_system
                 self._save_last_waypoint_system(spansh_route_data, current_system)
                 do_copy_to_clipboard = True
+
+        return False
+
+    def _on_close(self,event):
+        self._timer.Stop()
+        event.Skip()
 
     @staticmethod
     def _save_last_waypoint_system(spansh_route_data: DotDict, current_system: NavPoint):
