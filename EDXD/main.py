@@ -2,11 +2,14 @@
 import os
 import sys
 
-# Force X11 backend on Wayland - re-exec if needed
-if 'WAYLAND_DISPLAY' in os.environ and os.environ.get('GDK_BACKEND') != 'x11':
+# Force X11 backend on Wayland - MUST be before ANY wx import
+if 'WAYLAND_DISPLAY' in os.environ and os.environ.get('XDG_SESSION_TYPE') != 'x11':
     os.environ['GDK_BACKEND'] = 'x11'
-    # Re-exec but skip sys.argv[0] (the script name)
-    os.execv(sys.executable, [sys.executable] + sys.argv[1:])
+    os.environ['GTK_BACKEND'] = 'x11'  # Also set for completeness
+    os.environ.pop("GTK_IM_MODULE", None)
+
+    # Re-exec with original argv to ensure environment is set from process start
+    os.execv(sys.executable, sys.argv[1:])
     sys.exit(1)
 
 import queue
@@ -14,6 +17,9 @@ import queue
 from pathlib import Path
 
 import wx
+
+if "--debug" not in sys.argv:
+    wx.Log.SetLogLevel(wx.LOG_Error)
 
 from EDXD.data_handler.journal_controller import JournalController
 from EDXD.data_handler.journal_reader import JournalReader

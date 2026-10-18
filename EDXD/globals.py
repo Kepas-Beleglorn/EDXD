@@ -10,7 +10,7 @@ from typing import List
 import argparse
 
 
-import wx
+#import wx
 
 from EDXD.gui.helper.icon_loader import get_bitmap_from_base64
 
@@ -99,10 +99,8 @@ ap.add_argument("--portable", help="Portable mode. All configs and data will be 
 ap.add_argument("--debug", help="Enable debug mode", action="store_true")
 args = ap.parse_args()
 
-os.environ.pop("GTK_IM_MODULE", None)
-
-if "--debug" not in sys.argv:
-    wx.Log.SetLogLevel(wx.LOG_Error)
+#if "--debug" not in sys.argv:
+#    wx.Log.SetLogLevel(wx.LOG_Error)
 
 if "--portable" in sys.argv:
     setattr(sys, "portable", True)
