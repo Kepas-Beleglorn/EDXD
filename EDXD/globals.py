@@ -9,12 +9,6 @@ from pathlib import Path
 from typing import List
 import argparse
 
-
-#import wx
-
-from EDXD.gui.helper.icon_loader import get_bitmap_from_base64
-
-
 def get_app_dir():
     # PORTABLE mode (parameter --portable)
     local_path = Path(sys.executable).parent
@@ -97,11 +91,10 @@ ap.add_argument("--journals", type=Path, help="Path to Saved Games/Frontier Deve
 ap.add_argument("--version", action="version", version=__version__)
 ap.add_argument("--portable", help="Portable mode. All configs and data will be stored in the directory where the binary resides", action="store_true")
 ap.add_argument("--debug", help="Enable debug mode", action="store_true")
-args = ap.parse_args(sys.argv[1:] if len(sys.argv) > 1 and not sys.argv[1].startswith('--') else None)
+args = ap.parse_args()
 
 if "--portable" in sys.argv:
     setattr(sys, "portable", True)
-
 
 # general paths for storing data
 APP_DIR = get_app_dir()

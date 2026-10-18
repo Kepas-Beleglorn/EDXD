@@ -2,17 +2,16 @@
 import os
 import sys
 
-# Handle Wayland/X11 backend selection
+# Handle Wayland/X11 backend selection - MUST be before ANY wx import
 if 'WAYLAND_DISPLAY' in os.environ:
-    # Try X11 backend first with XWayland
     os.environ['GDK_BACKEND'] = 'x11'
     os.environ['GTK_BACKEND'] = 'x11'
-    os.environ['DISPLAY'] = ':0'  # Ensure DISPLAY is set
-    print("🖥️  Wayland detected. Trying X11 backend via XWayland...")
-    print(f"    DISPLAY={os.environ.get('DISPLAY')}")
-    print(f"    WAYLAND_DISPLAY={os.environ.get('WAYLAND_DISPLAY')}")
+    # Don't set DISPLAY here - let the system handle it
+    print("🖥️  Wayland detected. Forcing X11 backend...")
 else:
     print("🖥️  X11 detected")
+
+os.environ.pop("GTK_IM_MODULE", None)
 
 import queue
 # version handling
