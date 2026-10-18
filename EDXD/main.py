@@ -17,11 +17,6 @@ import queue
 # version handling
 from pathlib import Path
 
-import wx
-
-if "--debug" not in sys.argv:
-    wx.Log.SetLogLevel(wx.LOG_Error)
-
 from EDXD.data_handler.journal_controller import JournalController
 from EDXD.data_handler.journal_reader import JournalReader
 from EDXD.data_handler.model import Model
@@ -29,6 +24,10 @@ from EDXD.data_handler.status_json_watcher import StatusWatcher
 from EDXD.globals import CFG_FILE, RAW_MATS, DEFAULT_WORTHWHILE_THRESHOLD, DEFAULT_FUEL_LOW_THRESHOLD, args, \
     DEFAULT_AMOUNT_OF_PLOTTED_UPCOMING_SYSTEMS_TO_SHOW, DEFAULT_AMOUNT_OF_PLOTTED_PASSED_SYSTEMS_TO_SHOW
 from EDXD.gui.main_window import MainFrame
+
+import wx
+if "--debug" not in sys.argv:
+    wx.Log.SetLogLevel(wx.LOG_Error)
 
 def _from_pyproject() -> str | None:
     try:
