@@ -287,6 +287,11 @@ class ExplorationItinerary(DynamicDialog):
         self.selected_routing_option = selected_value
 
     def  _on_load_route(self, event):
+        path = Path(SPANSH_ROUTE)
+        if not path.exists():
+            self.lbl_job_status.SetLabel("  No previous route found.")
+            return
+
         self.nav_route = NavRouteHandler(
             SPANSH_ROUTE,
             amount_of_upcoming_systems_to_show=int(self.parent.parent.prefs["amount_of_plotted_upcoming_systems_to_show"]),

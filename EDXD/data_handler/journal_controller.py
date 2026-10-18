@@ -883,6 +883,10 @@ class JournalController(PausableThread, threading.Thread):
         star_class: str = self.spansh_helper.get_star_class_from_spansh(system_address)
         nav_point: NavPoint = NavPoint(star_system=star_system, system_address=system_address, star_class=star_class, star_position=pos)
 
+        path = Path(SPANSH_ROUTE)
+        if not path.exists():
+            return
+
         spansh_route: DotDict = load_json_as_dotdict(SPANSH_ROUTE)
         spansh_route.current_system = DotDict(asdict(nav_point))
         save_dotdict_to_json(spansh_route, SPANSH_ROUTE)

@@ -354,9 +354,14 @@ def update_ship_status(ship_status_file, ship_status: ShipStatus):
 def ensure_ship_status_file(ship_status_file, ship_status):
     if not ship_status_file.exists():
         # You can choose any default value for "last_timestamp"
-        default_data = ship_status
-        with open(ship_status_file, "w") as f:
-            json.dump(default_data, f, indent=2)
+        try:
+            default_data = ship_status
+            with open(ship_status_file, "w") as f:
+                json.dump(default_data, f, indent=2)
+        except FileNotFoundError:
+            pass
+        except TypeError:
+            pass
 
 def add_spaces_to_camel_case(s):
     return re.sub(r'(?<!^)(?=[A-Z])', ' ', s)

@@ -25,11 +25,11 @@ class DotDict(dict):
     def __setattr__(self, name, value):
         self[name] = value
 
-def load_json_as_dotdict(file_path: str) -> DotDict:
+def load_json_as_dotdict(file_path: str) -> DotDict | None:
 
     path = Path(file_path)
     if not path.exists():
-        raise FileNotFoundError(f"File not found: {file_path}")
+        return None
 
     with open(path, 'r', encoding='utf-8') as f:
         data = json.load(f)

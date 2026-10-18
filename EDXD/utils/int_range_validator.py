@@ -263,7 +263,7 @@ class IntRangeValidator(wx.Validator):
         if _FULL_INT_RE.match(text):
             try:
                 val = int(text)
-                if val < self.min_val or val > self.max_val:
+                if val is not None and self.min_val is not None and self.max_val is not None and (val < self.min_val or val > self.max_val):
                     tc.SetBackgroundColour(err_color)
                     tc.SetToolTip(f"Must be between {self.min_val} and {self.max_val}")
                     tc.Refresh()
