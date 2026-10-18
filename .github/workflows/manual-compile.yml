@@ -99,7 +99,9 @@ jobs:
           cp dist/ed-eXploration-dashboard* release/
           if [ "${{ runner.os }}" = "Linux" ]; then
             cp run_edxd.sh release/
-            chmod +x release/run_edxd.sh
+            cp check-compatibility.sh release/
+            cp install_x11_deps.sh release/
+            chmod +x release/*.sh
           fi
         shell: bash
 
