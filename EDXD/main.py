@@ -1,7 +1,16 @@
 #!/usr/bin/env python3
+import os
+import sys
+
+# Force X11 backend on Wayland - re-exec if needed
+if 'WAYLAND_DISPLAY' in os.environ and os.environ.get('GDK_BACKEND') != 'x11':
+    os.environ['GDK_BACKEND'] = 'x11'
+    # Re-exec but skip sys.argv[0] (the script name)
+    os.execv(sys.executable, [sys.executable] + sys.argv[1:])
+    sys.exit(1)
+
 import queue
 # version handling
-import sys
 from pathlib import Path
 
 import wx
@@ -13,7 +22,6 @@ from EDXD.data_handler.status_json_watcher import StatusWatcher
 from EDXD.globals import CFG_FILE, RAW_MATS, DEFAULT_WORTHWHILE_THRESHOLD, DEFAULT_FUEL_LOW_THRESHOLD, args, \
     DEFAULT_AMOUNT_OF_PLOTTED_UPCOMING_SYSTEMS_TO_SHOW, DEFAULT_AMOUNT_OF_PLOTTED_PASSED_SYSTEMS_TO_SHOW
 from EDXD.gui.main_window import MainFrame
-
 
 def _from_pyproject() -> str | None:
     try:

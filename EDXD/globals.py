@@ -1,12 +1,15 @@
-import functools
-import inspect
 import sys
 import os
+
+import functools
+import inspect
 import json
 import platform
 from pathlib import Path
 from typing import List
 import argparse
+
+
 import wx
 
 from EDXD.gui.helper.icon_loader import get_bitmap_from_base64
