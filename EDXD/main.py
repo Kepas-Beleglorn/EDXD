@@ -11,6 +11,7 @@ if 'WAYLAND_DISPLAY' in os.environ:
 else:
     print("🖥️  X11 detected")
 
+os.environ['GIO_MODULE_SKIP'] = 'gvfs'
 os.environ.pop("GTK_IM_MODULE", None)
 
 import queue
