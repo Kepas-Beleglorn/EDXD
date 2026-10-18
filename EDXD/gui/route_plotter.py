@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import asdict
 from threading import Thread
 
 import wx
@@ -87,21 +88,34 @@ class ExplorationItinerary(DynamicDialog):
 
         self.finalize_layout()
         self._update_parameter()
+
+        self._timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self._on_timer, self._timer)
+
         # noinspection PyTypeChecker
         wx.CallLater(millis=3000, callableObj=self._loading_finished)
 
     def _loading_finished(self):
         self._loading = False
 
+    def _on_timer(self, event):
+        self.general_panel.reset_table()
+        self.route_panel.reset_table()
+        self._update_general()
+        self._update_route()
+
     def render(self):
-        # reset
         self.general_panel.reset_table()
         self.route_panel.reset_table()
 
         if self.nav_route is None:
+            if self._timer.IsRunning():
+                self._timer.Stop()
             self.general_panel.Hide()
             self.route_panel.Hide()
         else:
+            if not self._timer.IsRunning():
+                self._timer.Start(1000)  # 1000 ms = 1 second
             self._update_general()
             self._update_route()
 
@@ -310,6 +324,7 @@ class ExplorationItinerary(DynamicDialog):
             )
             self.nav_route.clear_plotted_route()
             self.nav_route.load_plotted_route()
+            self._check_waypoint(self.nav_route.plotted_nav_route.nav_points[0])
         else:
             self.lbl_job_status.SetLabel("  Plotting failed.")
 
@@ -333,7 +348,6 @@ class ExplorationItinerary(DynamicDialog):
         lbl_final_destination.SetFont(theme)
         self.general_panel.add_table_item_label("")
 
-        # ToDo #176, #178, #296: check spansh_route.json every x seconds to read current system. Update nav_route.current_system if it is a waypoint in the spansh route
         if self.nav_route.current_system:
             total_distance = self.nav_route.get_total_route_distance()
             remaining_distance = self.nav_route.get_remaining_route_distance()
@@ -469,6 +483,38 @@ class ExplorationItinerary(DynamicDialog):
         if self.route_panel.IsShown():
             # Force a layout update
             self.route_panel.force_render()
+
+    def _check_waypoint(self, current_waypoint: NavPoint | None = None):
+        spansh_route_data: DotDict = load_json_as_dotdict(SPANSH_ROUTE)
+        current_system: NavPoint
+        if hasattr(spansh_route_data, "current_system"):
+            current_system: NavPoint = from_dotdict(NavPoint, spansh_route_data.current_system)
+        else:
+            if current_waypoint is None:
+                return
+            else:
+                current_system = current_waypoint
+
+        current_system_address: int = current_system.system_address
+
+        do_copy_to_clipboard: bool = False
+
+        for system in spansh_route_data.jumps:
+            # If we've reached a waypoint, copy the next name to the clipboard
+            if do_copy_to_clipboard:
+                copy_text_to_clipboard(system.name)
+                return
+
+            # check if we reached a waypoint
+            if system.id64 == current_system_address:
+                self.nav_route.current_system = current_system
+                self._save_last_waypoint_system(spansh_route_data, current_system)
+                do_copy_to_clipboard = True
+
+    @staticmethod
+    def _save_last_waypoint_system(spansh_route_data: DotDict, current_system: NavPoint):
+        spansh_route_data.last_waypoint = DotDict(asdict(current_system))
+        save_dotdict_to_json(spansh_route_data, SPANSH_ROUTE)
 
 class PlotterWorker(Thread):
     """Runs get_itinerary off the main thread and delivers the result back via wx.CallAfter."""

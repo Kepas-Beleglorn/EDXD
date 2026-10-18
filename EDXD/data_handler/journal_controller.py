@@ -4,7 +4,8 @@ import re
 from pathlib import Path
 
 import EDXD.data_handler.helper.bio_helper as bio_helper
-from EDXD.data_handler.helper.dotted_dictionary import DotDict
+from EDXD.data_handler.helper.dotted_dictionary import DotDict, load_json_as_dotdict, save_dotdict_to_json
+from EDXD.data_handler.helper.galactic_navigation import StarPosition
 from EDXD.data_handler.helper.pausable_thread import PausableThread
 from EDXD.data_handler.helper.spansh.spansh import SpanshHelper
 from EDXD.data_handler.model import *
@@ -12,7 +13,7 @@ from EDXD.data_handler.nav_route import NavRouteHandler, NavPoint
 from EDXD.data_handler.planetary_surface_positioning_system import PSPSCoordinates
 from EDXD.data_handler.vessel_status import *
 from EDXD.globals import logging, BODY_ID_PREFIX, log_context, JOURNAL_TIMESTAMP_FILE, SHIP_STATUS_FILE, VESSEL_SHIP, \
-    VESSEL_SRV, VESSEL_EV, VESSEL_SLF, BODY_NO_DATA
+    VESSEL_SRV, VESSEL_EV, VESSEL_SLF, BODY_NO_DATA, SPANSH_ROUTE
 
 bip = BODY_ID_PREFIX
 
@@ -193,8 +194,7 @@ class JournalController(PausableThread, threading.Thread):
             if self.nav_route and self.nav_route.plotted_nav_route is None:
                 self.nav_route.load_plotted_route()
                 self.nav_route.set_current_system_from_journal_data(evt)
-                # ToDo: #176, #178, #296 write  current system to spansh_route.json
-
+                self._set_current_position_for_spansh(evt)
 
         #113:   after app-start, load only current SYSTEM.json
         #       store last read journal line (timestamp) and process only newer lines
@@ -873,3 +873,16 @@ class JournalController(PausableThread, threading.Thread):
         if update_gui and self.m.target_body_id :
             self.m.set_target(self.m.target_body_id )
 
+    def _set_current_position_for_spansh(self, evt):
+        x: int = evt.get("StarPos")[0]
+        y: int = evt.get("StarPos")[1]
+        z: int = evt.get("StarPos")[2]
+        pos: StarPosition = StarPosition(x, y, z)
+        star_system: str = evt.get("StarSystem")
+        system_address: int = int(evt.get("SystemAddress"))
+        star_class: str = self.spansh_helper.get_star_class_from_spansh(system_address)
+        nav_point: NavPoint = NavPoint(star_system=star_system, system_address=system_address, star_class=star_class, star_position=pos)
+
+        spansh_route: DotDict = load_json_as_dotdict(SPANSH_ROUTE)
+        spansh_route.current_system = DotDict(asdict(nav_point))
+        save_dotdict_to_json(spansh_route, SPANSH_ROUTE)

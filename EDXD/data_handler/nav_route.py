@@ -8,6 +8,7 @@ import pywinctl, wx
 
 import EDXD.data_handler.helper.galactic_navigation as gn
 import EDXD.data_handler.helper.data_helper as dh
+from EDXD.data_handler.helper.spansh.spansh import SpanshHelper
 from EDXD.data_handler.helper.dotted_dictionary import DotDict
 from EDXD.data_handler.helper.galactic_navigation import StarPosition
 from EDXD.data_handler.helper.spansh import spansh
@@ -38,6 +39,7 @@ class NavRouteHandler:
         self.amount_of_upcoming_systems_to_show: int = amount_of_upcoming_systems_to_show
         self.amount_of_passed_systems_to_show: int = amount_of_passed_systems_to_show
         self.current_system: Optional[NavPoint] = None
+        self.sh: SpanshHelper = SpanshHelper()
 
     def _parse_star_position(self, pos_data: List[float]) -> StarPosition:
         """Converts a list of 3 floats into a StarPosition dataclass."""
@@ -57,33 +59,12 @@ class NavRouteHandler:
             nav_point = NavPoint(
                 star_system=system.StarSystem if hasattr(system, "StarSystem") else system.name if hasattr(system, "name") else "",
                 system_address=system.SystemAddress if hasattr(system, "SystemAddress") else system.id64 if hasattr(system, "id64") else -1,
-                star_class=system.StarClass if hasattr(system, "StarClass") else self.get_star_class_from_spansh(system.id64),
+                star_class=system.StarClass if hasattr(system, "StarClass") else self.sh.get_star_class_from_spansh(system_id=system.id64),
                 star_position=pos
             )
             systems.append(nav_point)
         return systems
 
-    def get_star_class_from_spansh(self, system_id: int) -> str:
-        sh = spansh.SpanshHelper()
-        sh.get_system_data(system_id)
-        system_data = sh.system_data
-        body_type  = ""
-        for body in system_data.bodies:
-            try:
-                if body.type == "Star":
-                    if hasattr(body, "spectralClass") and body.spectralClass:
-                        body_type = "".join(char for char in body.spectralClass if char.isalpha())
-                    else:
-                        if "(" in body.subType:
-                            body_type = body.subType.split("(")[1].split(")")[0]
-                        else:
-                            if body.subType == "Neutron Star":
-                                body_type = "N"
-                            else:
-                                body_type = body.subType
-            except Exception as e:
-                print(f"ERROR: {system_id} - {e} - {body}")
-        return body_type
 
     def load_plotted_route(self):
         if not self.nav_route_json.exists():

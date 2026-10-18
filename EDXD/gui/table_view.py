@@ -136,7 +136,7 @@ class BodiesTable(gridlib.Grid):
                 self.loading = False
                 self._on_select_cb(body_id)
         self.ClearSelection()
-        event.Skip()
+        event.Veto()
 
     def _on_range_select(self, event):
         if event.Selecting() and event.GetTopRow() != event.GetBottomRow():

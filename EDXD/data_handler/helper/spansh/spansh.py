@@ -57,6 +57,27 @@ class SpanshHelper:
             # 3. Convert the ENTIRE nested structure to DotDict
             self.system_data = DotDict(data_dict.get("system"))
 
+    def get_star_class_from_spansh(self, system_id: int) -> str:
+        self.get_system_data(system_id)
+        system_data = self.system_data
+        body_type  = ""
+        for body in system_data.bodies:
+            try:
+                if body.type == "Star":
+                    if hasattr(body, "spectralClass") and body.spectralClass:
+                        body_type = "".join(char for char in body.spectralClass if char.isalpha())
+                    else:
+                        if "(" in body.subType:
+                            body_type = body.subType.split("(")[1].split(")")[0]
+                        else:
+                            if body.subType == "Neutron Star":
+                                body_type = "N"
+                            else:
+                                body_type = body.subType
+            except Exception as e:
+                print(f"ERROR: {system_id} - {e} - {body}")
+        return body_type
+
     def get_parent_star_ids(self, current_body: DotDict) -> List[Dict[str, int]]:
         parent_stars: List[Dict[str, int]] = current_body.parents
 
@@ -402,31 +423,6 @@ class SpanshRoutePlotter:
         response_dict: DotDict = create_dot_dict_from_string(response.text)
         spansh_job_id = response_dict.job
         return spansh_job_id
-
-#    @staticmethod
-#    def get_itinerary(job_id: str | None) -> DotDict | None:
-#        spansh_itinerary: DotDict | None = None
-#
-#        url = SPANSH_PLOTTED_ROUTE
-#
-#        while True:
-#            response = requests.request("GET", url + str(job_id))
-#            response_dict: DotDict = create_dot_dict_from_string(response.text)
-#            iso_date =datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
-#            if response.status_code < 200 or response.status_code >= 300:
-#                error_body = response.text
-#                print(f"ERROR: Spansh API returned status {response.status_code}: {error_body}")
-#                break
-#
-#            if response_dict.state == "completed" and response_dict.status == "ok":
-#                spansh_itinerary = DotDict(response_dict.result)
-#                break
-#
-#            print(f"Job ID: {job_id} - state: {response_dict.state} - status: {response_dict.status} - created at: {response_dict.created_at} - current time: {iso_date} - duration: {time_delta(response_dict.created_at, iso_date)}")
-#            sleep(1)
-#
-#        print(f"Job ID: {job_id} - state: {response_dict.state} - status: {response_dict.status} - created at: {response_dict.created_at} - updated at: {response_dict.updated_at} - duration: {time_delta(response_dict.created_at, response_dict.updated_at)}")
-#        return spansh_itinerary
 
 @staticmethod
 def get_itinerary(job_id: str | None,

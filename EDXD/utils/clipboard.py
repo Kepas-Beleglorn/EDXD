@@ -10,6 +10,7 @@ def copy_text_to_clipboard(text: str) -> bool:
         if wx.TheClipboard.Open():
             try:
                 wx.TheClipboard.SetData(wx.TextDataObject(text))
+                print(f"Copied to clipboard: {text}")
             finally:
                 wx.TheClipboard.Close()
             return True

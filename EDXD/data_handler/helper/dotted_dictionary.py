@@ -1,6 +1,8 @@
 import json
-from pathlib import Path
 import requests
+import dataclasses
+from pathlib import Path
+from typing import get_type_hints
 
 class DotDict(dict):
     """A dictionary that allows dot notation access and recursively converts nested dicts."""
@@ -22,7 +24,6 @@ class DotDict(dict):
 
     def __setattr__(self, name, value):
         self[name] = value
-
 
 def load_json_as_dotdict(file_path: str) -> DotDict:
 
@@ -73,3 +74,18 @@ def save_dotdict_to_json(dotdict: DotDict, file_path: str, indent: int = 2) -> N
 
     with open(path, 'w', encoding='utf-8') as f:
         json.dump(dotdict, f, indent=indent, ensure_ascii=False)
+
+def from_dotdict(cls, d):
+    """Recursively rebuild a dataclass instance from a (Dot)Dict."""
+    if not dataclasses.is_dataclass(cls):
+        return d
+    hints = get_type_hints(cls)
+    kwargs = {}
+    for f in dataclasses.fields(cls):
+        value = d[f.name]
+        field_type = hints[f.name]
+        if dataclasses.is_dataclass(field_type):
+            kwargs[f.name] = from_dotdict(field_type, value)
+        else:
+            kwargs[f.name] = value
+    return cls(**kwargs)
