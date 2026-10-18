@@ -97,10 +97,7 @@ ap.add_argument("--journals", type=Path, help="Path to Saved Games/Frontier Deve
 ap.add_argument("--version", action="version", version=__version__)
 ap.add_argument("--portable", help="Portable mode. All configs and data will be stored in the directory where the binary resides", action="store_true")
 ap.add_argument("--debug", help="Enable debug mode", action="store_true")
-args = ap.parse_args()
-
-#if "--debug" not in sys.argv:
-#    wx.Log.SetLogLevel(wx.LOG_Error)
+args = ap.parse_args(sys.argv[1:] if len(sys.argv) > 1 and not sys.argv[1].startswith('--') else None)
 
 if "--portable" in sys.argv:
     setattr(sys, "portable", True)
