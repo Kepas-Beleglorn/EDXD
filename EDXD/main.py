@@ -11,9 +11,6 @@ if 'WAYLAND_DISPLAY' in os.environ:
     os.environ['GTK_BACKEND'] = 'x11'
     # Don't set DISPLAY here - let the system handle it
     print("🖥️  Wayland detected. Forcing X11 backend...")
-else:
-    print("🖥️  X11 detected")
-
 
 import queue
 # version handling
