@@ -140,6 +140,7 @@ class JournalController(PausableThread, threading.Thread):
                     pass
 
         if etype in {"Loadout"}: #, "LoadGame"}:
+            self.spansh_helper.extract_loadout_to_slef(evt)
             self.m.ship_status.ship_type = evt.get("Ship")
             self.m.ship_status.ship_id = evt.get("ShipID")
             self.m.ship_status.ship_name = evt.get("ShipName")
