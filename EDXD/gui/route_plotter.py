@@ -377,7 +377,7 @@ class ExplorationItinerary(DynamicDialog):
             total_distance = self.nav_route.get_total_route_distance()
             remaining_distance = self.nav_route.get_remaining_route_distance()
 
-            lbl_distance = self.general_panel.add_table_item_label(f"{' ' * 6}{remaining_distance:,.2f} Ly of {total_distance:,.2f} Ly ({self.nav_route.remaining_jumps_in_route} jumps) remaining")
+            lbl_distance = self.general_panel.add_table_item_label(f"{' ' * 6}{remaining_distance:,.2f} Ly of {total_distance:,.2f} Ly ({self.nav_route.remaining_jumps_in_route - 1} jumps) remaining")
             self.general_panel.add_table_item_label("")
             self.general_panel.add_table_item_label("", line_height=20)
 
