@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env GIO_MODULE_SKIP=gvfs python3
 import os
 import sys
 
