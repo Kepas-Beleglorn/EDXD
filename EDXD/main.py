@@ -2,6 +2,9 @@
 import os
 import sys
 
+os.environ['GIO_MODULE_SKIP'] = 'gvfs'
+os.environ.pop("GTK_IM_MODULE", None)
+
 # Handle Wayland/X11 backend selection - MUST be before ANY wx import
 if 'WAYLAND_DISPLAY' in os.environ:
     os.environ['GDK_BACKEND'] = 'x11'
@@ -11,8 +14,6 @@ if 'WAYLAND_DISPLAY' in os.environ:
 else:
     print("🖥️  X11 detected")
 
-os.environ['GIO_MODULE_SKIP'] = 'gvfs'
-os.environ.pop("GTK_IM_MODULE", None)
 
 import queue
 # version handling
