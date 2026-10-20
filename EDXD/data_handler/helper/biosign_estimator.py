@@ -74,7 +74,28 @@ def estimate_system_biosigns(model_bodies: Dict[str, Body]) -> Dict[str, List[Di
         pressure_atm = dh.pressure_as_atm_from_pascals(body.pressure)
         present_signal_count = body.biosignals
 
-        # 3. Check DSS & Codex Data
+        # 3. Generate Candidates
+        try:
+            potential_species = estimate_biosigns(
+                planet_type=pt_enum, atmosphere=atm_raw, mean_temp_k=mean_temp,
+                volcanism=volc_raw, gravity=gravity, in_nebula=in_nebula,
+                system_has_earth_like=system_has_earth_like,
+                system_has_ammonia_world=system_has_ammonia_world,
+                system_has_water_giant=system_has_water_giant,
+                system_has_gas_giant_with_water_life=system_has_gas_giant_with_water_life,
+                system_has_gas_giant_with_ammonia_life=system_has_gas_giant_with_ammonia_life,
+                distance_from_star_ls=distance_ls,
+                parent_stars=body_parent_stars,
+            )
+        except Exception as e:
+            if sys.gettrace():
+                print(f"Error estimating {body_id}: {e}")
+            potential_species = []
+
+
+#------------------------------------------------------------------------------------------------------------------------------#
+
+        # 4. Check DSS & Codex Data
         bio_found_data = body.bio_found
 
         scanned_genus_localised = set()
@@ -116,29 +137,9 @@ def estimate_system_biosigns(model_bodies: Dict[str, Body]) -> Dict[str, List[Di
                     confirmed_species_names.add(sp_name)
                     confirmed_variants[sp_name] = color
 
-        # 4. Generate Candidates
-        try:
-            potential_species = estimate_biosigns(
-                planet_type=pt_enum, atmosphere=atm_raw, mean_temp_k=mean_temp,
-                volcanism=volc_raw, gravity=gravity, in_nebula=in_nebula,
-                system_has_earth_like=system_has_earth_like,
-                system_has_ammonia_world=system_has_ammonia_world,
-                system_has_water_giant=system_has_water_giant,
-                system_has_gas_giant_with_water_life=system_has_gas_giant_with_water_life,
-                system_has_gas_giant_with_ammonia_life=system_has_gas_giant_with_ammonia_life,
-                distance_from_star_ls=distance_ls,
-                parent_stars=body_parent_stars,
-            )
-        except Exception as e:
-            if sys.gettrace():
-                print(f"Error estimating {body_id}: {e}")
-            potential_species = []
 
         # 5. Filter & Refine based on Codex Data
         final_species = []
-
-        for item in scanned_genus_localised:
-            potential_species.append(item)
 
         if potential_species:
             # CODEX PHASE: We know exactly what is here.
@@ -151,17 +152,8 @@ def estimate_system_biosigns(model_bodies: Dict[str, Body]) -> Dict[str, List[Di
 
         if scanned_genus_localised:
             # DSS PHASE (Genus known, species unknown): Filter by Genus Prefix (as before)
-            allowed_prefixes = set()
-            for item in scanned_genus_localised:
-                is_confirmed = False
-                for confirmed in confirmed_species_names:
-                    if item is not None and item in confirmed:
-                        is_confirmed = True
-                        break
-                if not is_confirmed:
-                    allowed_prefixes.add(item)
             for sp in potential_species:
-                for p in allowed_prefixes:
+                for p in scanned_genus_localised:
                     if p is not None:
                         matches = p in sp
                         # Special Anemone/Clypeus handling
@@ -169,7 +161,7 @@ def estimate_system_biosigns(model_bodies: Dict[str, Body]) -> Dict[str, List[Di
                             matches = True
                         if "Sinuous Tubers" in sp:
                             matches = True
-                        if "Clypeus" in allowed_prefixes:
+                        if "Clypeus" in sp:
                             matches = True
 
                         if matches and sp not in final_species:
@@ -185,8 +177,32 @@ def estimate_system_biosigns(model_bodies: Dict[str, Body]) -> Dict[str, List[Di
 
             #237 - check if confirmed species are all present in final_species and append if not
             for conf_species in confirmed_species_names:
-                if not conf_species in final_species:
+                if not any(existing.startswith(conf_species) for existing in final_species):
                     final_species.append(conf_species)
+
+            #301 - recheck final vs. confirmed
+            final_species_to_remove = set()
+            for csn in confirmed_species_names:
+                csn_parts = csn.split(" ")
+                for fs in final_species:
+                    if fs == csn:
+                        pass
+
+                    fs_parts = fs.split(" ")
+                    if len(fs_parts) == len(csn_parts):
+                        partial_match = False
+                        complete_match = True
+                        for csn_part in csn_parts:
+                            if csn_part in fs_parts:
+                                partial_match = True
+                            else:
+                                complete_match = False
+
+                        if partial_match and not complete_match:
+                            final_species_to_remove.add(fs)
+
+            for fstr in final_species_to_remove:
+                final_species.remove(fstr)
 
             for species_name in final_species:
                 # If confirmed, probability is 100%, otherwise calculate.

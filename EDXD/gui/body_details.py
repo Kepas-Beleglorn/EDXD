@@ -447,6 +447,9 @@ class BodyDetails(DynamicDialog):
         if label is None:
             return
 
+        if range_current is None or range_current =="N/A":
+            return
+
         if range_current * 1000 > range_min:
             label.SetForegroundColour(wx.GREEN)
         else:
