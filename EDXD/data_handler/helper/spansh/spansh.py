@@ -19,14 +19,11 @@ SPANSH_BASE_URL:str = "https://spansh.co.uk/"
 SPANSH_GET_DUMP: str = SPANSH_BASE_URL + "api/dump/"
 SPANSH_PLOTTED_ROUTE: str = SPANSH_BASE_URL + "api/results/"
 
-SPANSH_ROAD_TO_RICHES_API: str = SPANSH_BASE_URL + "api/riches/route"
-#SPANSH_ROAD_TO_RICHES_REF: str = SPANSH_BASE_URL + "riches"
-
 SPANSH_GALAXY_PLOTTER_API: str = SPANSH_BASE_URL + "api/generic/route"
-#SPANSH_GALAXY_PLOTTER_REF: str = SPANSH_BASE_URL + "exact-plotter"
+
+SPANSH_ROAD_TO_RICHES_API: str = SPANSH_BASE_URL + "api/riches/route"
 
 SPANSH_NEUTRON_ROUTER_API: str = SPANSH_BASE_URL + "api/route"
-#SPANSH_NEUTRON_ROUTER_REF: str = SPANSH_BASE_URL + "plotter"
 
 SPANSH_EXO_MASTERY_API: str = SPANSH_BASE_URL + "api/exobiology/route"
 
@@ -339,14 +336,8 @@ class SpanshHelper:
         with open(SLEF_PATH, "w", encoding="utf-8") as f:
             json.dump([slef_structure], f, indent=4)
 
-
 class SpanshRoutePlotter:
     def __init__(self):
-        self.route_planners = [
-            ("Galaxy Plotter", "exact-plotter"),
-            ("Road to Riches", "riches"),
-            ("Neutron Plotter", "plotter")
-        ]
         self.sm: ShipFSDModules = ShipFSDModules()
 
     @staticmethod

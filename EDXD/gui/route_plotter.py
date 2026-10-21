@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict
+from select import select
 from threading import Thread
 
 import wx
@@ -22,11 +23,22 @@ from EDXD.gui.helper.collapsible_panel import CollapsiblePanel
 import EDXD.data_handler.helper.data_helper as dh
 import EDXD.data_handler.helper.galactic_navigation as gn
 from EDXD.utils.int_range_validator import IntRangeValidator
+from EDXD.utils.float_range_validator import FloatRangeValidator
 from EDXD.data_handler.vessel_status import *
 from EDXD.data_handler.helper.dotted_dictionary import *
 
 TITLE = "Exploration itinerary"
 WINID = "EXPLORATION_ITINERARY"
+
+LABEL_FIXED_TEXT_LENGTH = 24
+BTN_SIZE = wx.Size(250, -1)
+
+ROUTE_PLOTTERS = [
+    ("Galaxy Plotter", "galaxy"),
+    ("Road to Riches", "riches"),
+    ("Expressway to Exomastery", "exobiology"),
+    ("Neutron Router", "neutron"),
+]
 
 # List of (display, value) tuples
 ROUTING_OPTIONS = [
@@ -70,6 +82,11 @@ class ExplorationItinerary(DynamicDialog):
         self.Bind(wx.EVT_SHOW, self._on_show)
 
         # (collapsible) panels with details
+        # select route plotter
+        self.plotter_select_panel = CollapsiblePanel(parent=self.scroll_container, columns=3, label="Select Plotter", show_toggle_bar=False)
+        self.window_box.Add(self.plotter_select_panel, 0, wx.EXPAND, RESIZE_MARGIN)
+        self.plotter_select_panel.Hide()
+
         # spansh parameters
         self.parameter_panel = CollapsiblePanel(parent=self.scroll_container, columns=3, label="Route parameters", show_toggle_bar=True)
         self.window_box.Add(self.parameter_panel, 0, wx.EXPAND, RESIZE_MARGIN)
@@ -86,8 +103,10 @@ class ExplorationItinerary(DynamicDialog):
         self.route_panel.Hide()
 
         self.routing_algo = "optimistic"
+        self.selected_plotter = "galaxy"
 
         self.finalize_layout()
+        self._update_plotter_select()
         self._update_parameter()
 
         self._timer = wx.Timer(self)
@@ -153,130 +172,6 @@ class ExplorationItinerary(DynamicDialog):
 
         evt.Skip()
 
-    def _update_parameter(self):
-        if not self.parameter_panel.IsShown():
-            self.parameter_panel.Show()
-        label_fixed_text_length = 24
-        self.parameter_panel.add_table_item_label(label_text=f"{"Source System"[:label_fixed_text_length]:<{label_fixed_text_length}}", align=wx.ALIGN_BOTTOM)
-        self.txt_source_system = self.parameter_panel.add_table_item_textbox()
-        self.parameter_panel.add_table_item_label("")
-
-        self.parameter_panel.add_table_item_label(label_text=f"{"Destination System"[:label_fixed_text_length]:<{label_fixed_text_length}}", align=wx.ALIGN_BOTTOM)
-        self.txt_destination_system = self.parameter_panel.add_table_item_textbox()
-        self.parameter_panel.add_table_item_label("")
-
-        self.parameter_panel.add_table_item_label(label_text=f"{"Cargo"[:label_fixed_text_length]:<{label_fixed_text_length}}", align=wx.ALIGN_BOTTOM)
-        self.txt_cargo = self.parameter_panel.add_table_item_textbox()
-        self.txt_cargo.SetValidator(IntRangeValidator(min_val=0, max_val=self.ship_status.cargo_capacity, allow_empty=False))
-        self.txt_cargo.SetValue(str(self.ship_status.cargo))
-        self.parameter_panel.add_table_item_label("")
-
-        self.parameter_panel.add_table_item_label(label_text=f"{"Reserve fuel"[:label_fixed_text_length]:<{label_fixed_text_length}}", align=wx.ALIGN_BOTTOM)
-        self.txt_reserve_fuel = self.parameter_panel.add_table_item_textbox()
-        self.txt_reserve_fuel.SetValidator(IntRangeValidator(min_val=0, max_val=self.ship_status.fuel_capacity.main, allow_empty=False))
-        self.txt_reserve_fuel.SetValue("0")
-        self.parameter_panel.add_table_item_label("")
-
-        self.parameter_panel.add_table_item_label("")
-        self.parameter_panel.add_table_item_label("")
-        self.parameter_panel.add_table_item_label("")
-
-        btn_size = wx.Size(250, -1)
-        self.btn_already_supercharged = DynamicToggleButton(
-            label="Already supercharged",
-            parent=self.parameter_panel.content,
-            is_toggled=self.ship_status.jet_cone_boost_factor is not None,
-            size=btn_size
-        )
-        self.parameter_panel.add_table_item_toggle_button(self.btn_already_supercharged)
-
-        self.btn_use_supercharged = DynamicToggleButton(
-            label="Use supercharge",
-            parent=self.parameter_panel.content,
-            is_toggled=True,
-            size=btn_size
-        )
-        self.parameter_panel.add_table_item_toggle_button(self.btn_use_supercharged)
-        self.parameter_panel.add_table_item_label("")
-
-        self.btn_use_fsd_injections_always = DynamicToggleButton(
-            label="Use FSD injections always",
-            parent=self.parameter_panel.content,
-            is_toggled=False,
-            size=btn_size
-        )
-        self.parameter_panel.add_table_item_toggle_button(self.btn_use_fsd_injections_always)
-
-        self.btn_use_fsd_injections_when_required = DynamicToggleButton(
-            label="Use FSD injections when required",
-            parent=self.parameter_panel.content,
-            is_toggled=False,
-            size=btn_size
-        )
-        self.parameter_panel.add_table_item_toggle_button(self.btn_use_fsd_injections_when_required)
-        self.parameter_panel.add_table_item_label("")
-
-        self.btn_exclude_secondary_stars = DynamicToggleButton(
-            label="Exclude secondary stars",
-            parent=self.parameter_panel.content,
-            is_toggled=False,
-            size=btn_size
-        )
-        self.parameter_panel.add_table_item_toggle_button(self.btn_exclude_secondary_stars)
-
-        self.btn_refuel_every_scoopable = DynamicToggleButton(
-            label="Refuel  every scoopable",
-            parent=self.parameter_panel.content,
-            is_toggled=True,
-            size=btn_size
-        )
-        self.parameter_panel.add_table_item_toggle_button(self.btn_refuel_every_scoopable)
-        self.parameter_panel.add_table_item_label("")
-
-        self.parameter_panel.add_table_item_label("")
-        self.parameter_panel.add_table_item_label("")
-        self.parameter_panel.add_table_item_label("")
-
-        self.parameter_panel.add_table_item_label(label_text=f"{"Routing algorithm"[:label_fixed_text_length]:<{label_fixed_text_length}}", align=wx.ALIGN_BOTTOM)
-
-        # Extract display texts for the dropdown
-        display_texts = [opt[0] for opt in ROUTING_OPTIONS]
-
-        # Create combobox
-        self.cmb_routing_algorithm = wx.ComboBox(choices=display_texts, style=wx.CB_READONLY, parent=self.parameter_panel.content, size=btn_size)
-        self.cmb_routing_algorithm.SetValue(display_texts[0])  # Set default
-
-        # Bind event to handle selection
-        self.cmb_routing_algorithm.Bind(wx.EVT_COMBOBOX, self._on_routing_changed)
-
-        self.parameter_panel.add_table_item_generic(self.cmb_routing_algorithm)
-        self.parameter_panel.add_table_item_label("")
-
-        self.parameter_panel.add_table_item_label("")
-        self.parameter_panel.add_table_item_label("")
-        self.parameter_panel.add_table_item_label("")
-
-        self.btn_calculate_route = DynamicButton(parent=self.parameter_panel.content, label="Calculate route", size=btn_size)
-        self.btn_calculate_route.Bind(wx.EVT_BUTTON, self._on_calculate_route)
-        self.parameter_panel.add_table_item_generic(self.btn_calculate_route)
-
-        self.lbl_job_status = self.parameter_panel.add_table_item_label(label_text="", align=wx.ALIGN_BOTTOM)
-        self.parameter_panel.add_table_item_label("")
-
-        self.btn_load_route = DynamicButton(parent=self.parameter_panel.content, label="Load last route", size=btn_size)
-        self.btn_load_route.Bind(wx.EVT_BUTTON, self._on_load_route)
-        self.parameter_panel.add_table_item_generic(self.btn_load_route)
-        self.parameter_panel.add_table_item_label("")
-        self.parameter_panel.add_table_item_label("")
-
-        self.parameter_panel.add_table_item_label("")
-        self.parameter_panel.add_table_item_label("")
-        self.parameter_panel.add_table_item_label("")
-
-        if self.parameter_panel.IsShown():
-            # Force a layout update
-            self.parameter_panel.force_render()
-
     def _on_routing_changed(self, event):
         selected_display = self.cmb_routing_algorithm.GetValue()
         # Find the corresponding value
@@ -284,7 +179,17 @@ class ExplorationItinerary(DynamicDialog):
             (value for display, value in ROUTING_OPTIONS if display == selected_display),
             None
         )
-        self.selected_routing_option = selected_value
+        self.routing_algo = selected_value
+
+    def _on_plotter_changed(self, event):
+        selected_display = self.cmb_selected_plotter.GetValue()
+        # Find the corresponding value
+        selected_value = next(
+            (value for display, value in ROUTE_PLOTTERS if display == selected_display),
+            None
+        )
+        self.selected_plotter = selected_value
+        self._update_parameter()
 
     def  _on_load_route(self, event):
         path = Path(SPANSH_ROUTE)
@@ -308,6 +213,7 @@ class ExplorationItinerary(DynamicDialog):
         self.nav_route  = None
         self.render()
 
+        # ToDo: implement switch according to selected plotter
         self.job_id: str | None = spansh.galaxy_plotter(
             source_system_name=self.txt_source_system.GetValue(),
             destination_system_name=self.txt_destination_system.GetValue(),
@@ -354,6 +260,168 @@ class ExplorationItinerary(DynamicDialog):
             self.lbl_job_status.SetLabel("  Plotting failed.")
 
         self.render()
+
+    def _update_plotter_select(self):
+        if not self.plotter_select_panel.IsShown():
+            self.plotter_select_panel.Show()
+
+        self.plotter_select_panel.add_table_item_label(label_text=f"Selected plotter", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
+
+        # Extract display texts for the dropdown
+        display_texts = [opt[0] for opt in ROUTE_PLOTTERS]
+
+        # Create combobox
+        self.cmb_selected_plotter = wx.ComboBox(choices=display_texts, style=wx.CB_READONLY, parent=self.plotter_select_panel.content, size=BTN_SIZE)
+        self.cmb_selected_plotter.SetValue(display_texts[0])  # Set default
+        self.cmb_selected_plotter.Bind(wx.EVT_LEFT_DOWN, lambda e: None)
+
+        # Bind event to handle selection
+        self.cmb_selected_plotter.Bind(wx.EVT_COMBOBOX, self._on_plotter_changed)
+
+        self.plotter_select_panel.add_table_item_generic(self.cmb_selected_plotter)
+        self.plotter_select_panel.add_table_item_label("")
+
+    def _update_parameter(self):
+        if not self.parameter_panel.IsShown():
+            self.parameter_panel.Show()
+
+        self.parameter_panel.reset_table()
+
+        self.parameter_panel.add_table_item_label(label_text=f"Source System", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
+        self.txt_source_system = self.parameter_panel.add_table_item_textbox()
+        self.parameter_panel.add_table_item_label("")
+
+        self.parameter_panel.add_table_item_label(label_text=f"Destination System", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
+        self.txt_destination_system = self.parameter_panel.add_table_item_textbox(width=BTN_SIZE.width)
+        self.parameter_panel.add_table_item_label("")
+
+        match self.selected_plotter:
+            case "galaxy":
+                self.parameter_panel.add_table_item_label(label_text=f"Cargo", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
+                self.txt_cargo = self.parameter_panel.add_table_item_textbox()
+                self.txt_cargo.SetValidator(IntRangeValidator(min_val=0, max_val=self.ship_status.cargo_capacity, allow_empty=False))
+                self.txt_cargo.SetValue(str(self.ship_status.cargo))
+                self.parameter_panel.add_table_item_label("")
+
+                self.parameter_panel.add_table_item_label(label_text=f"Reserve fuel", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
+                self.txt_reserve_fuel = self.parameter_panel.add_table_item_textbox()
+                self.txt_reserve_fuel.SetValidator(IntRangeValidator(min_val=0, max_val=self.ship_status.fuel_capacity.main, allow_empty=False))
+                self.txt_reserve_fuel.SetValue("0")
+                self.parameter_panel.add_table_item_label("")
+
+                self.parameter_panel.add_table_item_label("")
+                self.parameter_panel.add_table_item_label("")
+                self.parameter_panel.add_table_item_label("")
+
+                self.btn_already_supercharged = DynamicToggleButton(
+                    label="Already supercharged",
+                    parent=self.parameter_panel.content,
+                    is_toggled=self.ship_status.jet_cone_boost_factor is not None,
+                    size=BTN_SIZE
+                )
+                self.parameter_panel.add_table_item_toggle_button(self.btn_already_supercharged)
+
+                self.btn_use_supercharged = DynamicToggleButton(
+                    label="Use supercharge",
+                    parent=self.parameter_panel.content,
+                    is_toggled=True,
+                    size=BTN_SIZE
+                )
+                self.parameter_panel.add_table_item_toggle_button(self.btn_use_supercharged)
+                self.parameter_panel.add_table_item_label("")
+
+                self.btn_use_fsd_injections_always = DynamicToggleButton(
+                    label="Use FSD injections always",
+                    parent=self.parameter_panel.content,
+                    is_toggled=False,
+                    size=BTN_SIZE
+                )
+                self.parameter_panel.add_table_item_toggle_button(self.btn_use_fsd_injections_always)
+
+                self.btn_use_fsd_injections_when_required = DynamicToggleButton(
+                    label="Use FSD injections when required",
+                    parent=self.parameter_panel.content,
+                    is_toggled=False,
+                    size=BTN_SIZE
+                )
+                self.parameter_panel.add_table_item_toggle_button(self.btn_use_fsd_injections_when_required)
+                self.parameter_panel.add_table_item_label("")
+
+                self.btn_exclude_secondary_stars = DynamicToggleButton(
+                    label="Exclude secondary stars",
+                    parent=self.parameter_panel.content,
+                    is_toggled=False,
+                    size=BTN_SIZE
+                )
+                self.parameter_panel.add_table_item_toggle_button(self.btn_exclude_secondary_stars)
+
+                self.btn_refuel_every_scoopable = DynamicToggleButton(
+                    label="Refuel  every scoopable",
+                    parent=self.parameter_panel.content,
+                    is_toggled=True,
+                    size=BTN_SIZE
+                )
+                self.parameter_panel.add_table_item_toggle_button(self.btn_refuel_every_scoopable)
+                self.parameter_panel.add_table_item_label("")
+
+                self.parameter_panel.add_table_item_label("")
+                self.parameter_panel.add_table_item_label("")
+                self.parameter_panel.add_table_item_label("")
+
+                self.parameter_panel.add_table_item_label(label_text=f"Routing algorithm", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
+
+                # Extract display texts for the dropdown
+                display_texts = [opt[0] for opt in ROUTING_OPTIONS]
+
+                # Create combobox
+                self.cmb_routing_algorithm = wx.ComboBox(choices=display_texts, style=wx.CB_READONLY, parent=self.parameter_panel.content, size=BTN_SIZE)
+                self.cmb_routing_algorithm.SetValue(display_texts[0])  # Set default
+                self.cmb_routing_algorithm.Bind(wx.EVT_LEFT_DOWN, lambda e: None)
+
+                # Bind event to handle selection
+                self.cmb_routing_algorithm.Bind(wx.EVT_COMBOBOX, self._on_routing_changed)
+
+                self.parameter_panel.add_table_item_generic(self.cmb_routing_algorithm)
+                self.parameter_panel.add_table_item_label("")
+
+                self.parameter_panel.add_table_item_label("")
+                self.parameter_panel.add_table_item_label("")
+                self.parameter_panel.add_table_item_label("")
+            case  "riches":
+                self.parameter_panel.add_table_item_label("")
+                self.parameter_panel.add_table_item_label(label_text=f"Leave destination blank in order to create a circular tour starting at your source system and returning there at the end.", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width, line_height=80)
+                self.parameter_panel.add_table_item_label("")
+
+                self.parameter_panel.add_table_item_label("")
+                self.parameter_panel.add_table_item_label("")
+                self.parameter_panel.add_table_item_label("")
+
+                self.parameter_panel.add_table_item_label(label_text=f"Max. Jump Range (LY)", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
+                self.txt_jump_range = self.parameter_panel.add_table_item_textbox()
+                self.txt_jump_range.SetValidator(FloatRangeValidator(min_val=0, max_val=self.ship_status.max_jump_range, allow_empty=False))
+                self.txt_jump_range.SetValue(str(self.ship_status.max_jump_range))
+                self.parameter_panel.add_table_item_label("")
+
+        self.btn_calculate_route = DynamicButton(parent=self.parameter_panel.content, label="Calculate route", size=BTN_SIZE)
+        self.btn_calculate_route.Bind(wx.EVT_BUTTON, self._on_calculate_route)
+        self.parameter_panel.add_table_item_generic(self.btn_calculate_route)
+
+        self.lbl_job_status = self.parameter_panel.add_table_item_label(label_text="", align=wx.ALIGN_BOTTOM)
+        self.parameter_panel.add_table_item_label("")
+
+        self.btn_load_route = DynamicButton(parent=self.parameter_panel.content, label="Load last route", size=BTN_SIZE)
+        self.btn_load_route.Bind(wx.EVT_BUTTON, self._on_load_route)
+        self.parameter_panel.add_table_item_generic(self.btn_load_route)
+        self.parameter_panel.add_table_item_label("")
+        self.parameter_panel.add_table_item_label("")
+
+        self.parameter_panel.add_table_item_label("")
+        self.parameter_panel.add_table_item_label("")
+        self.parameter_panel.add_table_item_label("")
+
+        if self.parameter_panel.IsShown():
+            # Force a layout update
+            self.parameter_panel.force_render()
 
     def _update_general(self):
         if self.nav_route is None or self.nav_route.plotted_nav_route is None or len(self.nav_route.plotted_nav_route.nav_points) < 1:
