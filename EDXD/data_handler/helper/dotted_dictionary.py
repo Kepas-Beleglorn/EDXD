@@ -56,16 +56,21 @@ def load_json_from_url_as_dotdict(url: str) -> DotDict:
 
 def create_dot_dict_from_string(data_string: str) -> DotDict:
 
-    data = json.loads(data_string)
+    try:
+        data = json.loads(data_string)
 
-    def convert_to_dotdict(obj):
-        if isinstance(obj, dict):
-            return DotDict({k: convert_to_dotdict(v) for k, v in obj.items()})
-        elif isinstance(obj, list):
-            return [convert_to_dotdict(item) for item in obj]
-        return obj
+        def convert_to_dotdict(obj):
+            if isinstance(obj, dict):
+                return DotDict({k: convert_to_dotdict(v) for k, v in obj.items()})
+            elif isinstance(obj, list):
+                return [convert_to_dotdict(item) for item in obj]
+            return obj
 
-    return convert_to_dotdict(data)
+        return convert_to_dotdict(data)
+    except Exception as e:
+        print(f"{data_string}")
+        print(e)
+        return None
 
 def save_dotdict_to_json(dotdict: DotDict, file_path: str, indent: int = 2) -> None:
     """Save a DotDict (or any JSON-serializable object) to a JSON file."""

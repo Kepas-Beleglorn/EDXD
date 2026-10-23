@@ -4,7 +4,7 @@ import re
 from pathlib import Path
 
 import EDXD.data_handler.helper.bio_helper as bio_helper
-from EDXD.data_handler.helper.dotted_dictionary import DotDict, load_json_as_dotdict, save_dotdict_to_json
+from EDXD.data_handler.helper.dotted_dictionary import DotDict, load_json_as_dotdict, save_dotdict_to_json, create_dot_dict_from_string
 from EDXD.data_handler.helper.galactic_navigation import StarPosition
 from EDXD.data_handler.helper.pausable_thread import PausableThread
 from EDXD.data_handler.helper.spansh.spansh import SpanshHelper
@@ -12,8 +12,9 @@ from EDXD.data_handler.model import *
 from EDXD.data_handler.nav_route import NavRouteHandler, NavPoint
 from EDXD.data_handler.planetary_surface_positioning_system import PSPSCoordinates
 from EDXD.data_handler.vessel_status import *
+from EDXD.data_handler.helper.spansh.ship_modules import ShipFSDModules
 from EDXD.globals import logging, BODY_ID_PREFIX, log_context, JOURNAL_TIMESTAMP_FILE, SHIP_STATUS_FILE, VESSEL_SHIP, \
-    VESSEL_SRV, VESSEL_EV, VESSEL_SLF, BODY_NO_DATA, SPANSH_ROUTE
+    VESSEL_SRV, VESSEL_EV, VESSEL_SLF, BODY_NO_DATA, SPANSH_ROUTE, SLEF_PATH
 
 bip = BODY_ID_PREFIX
 
@@ -146,12 +147,18 @@ class JournalController(PausableThread, threading.Thread):
             self.m.ship_status.ship_name = evt.get("ShipName")
             self.m.ship_status.ship_ident = evt.get("ShipIdent")
             self.m.ship_status.cargo_capacity = evt.get("CargoCapacity")
+            self.m.ship_status.max_jump_range = float(evt.get("MaxJumpRange"))
+            self.m.ship_status.mass_unladen = evt.get("UnladenMass")
+
+            slef: DotDict | None = load_json_as_dotdict(SLEF_PATH)
+            if slef is not None:
+                sfsdm : ShipFSDModules = ShipFSDModules()
+                self.m.ship_status.mass_fsd_optimal = sfsdm.get_optimal_mass(slef)
+            else:
+                self.m.ship_status.mass_fsd_optimal = None
 
             fuel_main       : float = evt.get("FuelCapacity").get("Main")
             fuel_reserve    : float = evt.get("FuelCapacity").get("Reserve")
-
-            self.m.ship_status.max_jump_range = float(evt.get("MaxJumpRange"))
-
             self.m.ship_status.fuel_capacity = FuelLevel(fuel_main, fuel_reserve) or self.m.ship_status.fuel_capacity
 
             dh.update_ship_status(SHIP_STATUS_FILE, self.m.ship_status)

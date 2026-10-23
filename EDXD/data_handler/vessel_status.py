@@ -28,7 +28,7 @@ def log_call(level=LOG_LEVEL):
 
 
 class ShipStatus:
-    __slots__ = ("ship_type", "ship_id", "ship_name", "ship_ident", "fuel_capacity", "max_jump_range", "cargo", "cargo_capacity", "jet_cone_boost_factor", "fsd_injection_factor")
+    __slots__ = ("ship_type", "ship_id", "ship_name", "ship_ident", "fuel_capacity", "max_jump_range", "mass_unladen", "mass_fsd_optimal", "cargo", "cargo_capacity", "jet_cone_boost_factor", "fsd_injection_factor")
 
     def __init__(self,
                  ship_type              : str | None = None,
@@ -37,6 +37,8 @@ class ShipStatus:
                  ship_ident             : str | None = None,
                  fuel_capacity          : Dict[str, FuelLevel] | None = None,
                  max_jump_range         : float | None = None,
+                 mass_unladen           : float | None = None,
+                 mass_fsd_optimal       : float | None = None,
                  cargo                  : int | None = None,
                  cargo_capacity         : int | None = None,
                  jet_cone_boost_factor  : float | None = None,
@@ -49,6 +51,8 @@ class ShipStatus:
         self.ship_ident             = ship_ident
         self.fuel_capacity          = fuel_capacity or FuelLevel()
         self.max_jump_range         = max_jump_range
+        self.mass_unladen           = mass_unladen
+        self.mass_fsd_optimal       = mass_fsd_optimal
         self.cargo                  = cargo
         self.cargo_capacity         = cargo_capacity
         self.jet_cone_boost_factor  = jet_cone_boost_factor
@@ -62,6 +66,8 @@ class ShipStatus:
             self.ship_ident = ship_status.get("ship_ident", None)
             self.fuel_capacity = FuelLevel(ship_status.get("fuel_capacity", None).get("main", None), ship_status.get("fuel_capacity", None).get("reserve", None))
             self.max_jump_range = ship_status.get("max_jump_range", None)
+            self.mass_unladen = ship_status.get("mass_unladen", None)
+            self.mass_fsd_optimal = ship_status.get("mass_fsd_optimal", None)
             self.cargo = ship_status.get("cargo", None)
             self.cargo_capacity = ship_status.get("cargo_capacity", None)
             self.jet_cone_boost_factor = ship_status.get("jet_cone_boost_factor", None)
@@ -82,6 +88,8 @@ class ShipStatus:
                 for fuel_item, fuel in self.fuel_capacity.to_dict().items()
             },
             "max_jump_range": self.max_jump_range,
+            "mass_unladen": self.mass_unladen,
+            "mass_fsd_optimal": self.mass_fsd_optimal,
             "cargo": self.cargo,
             "cargo_capacity": self.cargo_capacity,
             "jet_cone_boost_factor": self.jet_cone_boost_factor,

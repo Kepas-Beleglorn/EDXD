@@ -7,10 +7,11 @@ from threading import Thread
 import wx
 from datetime import datetime, UTC
 from EDXD.data_handler.helper.spansh import spansh
+from EDXD.data_handler.helper.spansh.ship_modules import ShipFSDModules
 from EDXD.data_handler.helper.spansh.spansh import SpanshRoutePlotter
 from EDXD.data_handler.nav_route import NavRouteHandler, NavPoint
 from EDXD.globals import DEFAULT_POS_Y, DEFAULT_POS_X, RESIZE_MARGIN, ICONS, DEFAULT_HEIGHT, DEFAULT_WIDTH, BASE64_CIRCLE_ORANGE, \
-    BASE64_CIRCLE_BLUE, BASE64_LINE_ORANGE, BASE64_LINE_BLUE, SHIP_STATUS_FILE, SPANSH_ROUTE
+    BASE64_CIRCLE_BLUE, BASE64_LINE_ORANGE, BASE64_LINE_BLUE, SHIP_STATUS_FILE, SPANSH_ROUTE, SLEF_PATH
 from EDXD.gui.helper.dynamic_dialog import DynamicDialog
 from EDXD.gui.helper.gui_dynamic_button import DynamicButton
 from EDXD.gui.helper.gui_dynamic_toggle_button import DynamicToggleButton
@@ -63,10 +64,10 @@ class ExplorationItinerary(DynamicDialog):
         self.copied_system_name: str = ""
 
         self.parent = parent
-        self.ship_status = parent.parent.journal_controller.ship_status
-        if self.ship_status is None:
-            self.ship_status = ShipStatus()
+
+        self.ship_status = ShipStatus()
         self.ship_status = self.ship_status.read_from_json(dh.read_ship_status(SHIP_STATUS_FILE, self.ship_status))
+
         self.body = None
         self.nav_route: NavRouteHandler | None = None
 
@@ -396,10 +397,10 @@ class ExplorationItinerary(DynamicDialog):
                 self.parameter_panel.add_table_item_label("")
                 self.parameter_panel.add_table_item_label("")
 
-                self.parameter_panel.add_table_item_label(label_text=f"Max. Jump Range (LY)", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
+                self.parameter_panel.add_table_item_label(label_text=f"Jump Range (LY, default current)", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
                 self.txt_jump_range = self.parameter_panel.add_table_item_textbox()
-                self.txt_jump_range.SetValidator(FloatRangeValidator(min_val=0, max_val=self.ship_status.max_jump_range, allow_empty=False))
-                self.txt_jump_range.SetValue(str(self.ship_status.max_jump_range))
+                self.txt_jump_range.SetValidator(FloatRangeValidator(min_val=0, max_val=100, allow_empty=False))
+                self.txt_jump_range.SetValue(str(self._calculate_current_jump_range()))
                 self.parameter_panel.add_table_item_label("")
 
         self.btn_calculate_route = DynamicButton(parent=self.parameter_panel.content, label="Calculate route", size=BTN_SIZE)
@@ -618,6 +619,47 @@ class ExplorationItinerary(DynamicDialog):
     def _save_last_waypoint_system(spansh_route_data: DotDict, current_system: NavPoint):
         spansh_route_data.last_waypoint = DotDict(asdict(current_system))
         save_dotdict_to_json(spansh_route_data, SPANSH_ROUTE)
+
+    def _calculate_current_jump_range(self):
+        jump_range: float = 0.0
+        try:
+            ship_loadout = load_json_as_dotdict(SLEF_PATH)
+            sfsdm: ShipFSDModules = ShipFSDModules()
+
+            fsd_optimal_mass: float = self.ship_status.mass_fsd_optimal
+            max_fuel_per_jump = sfsdm.get_max_fuel_per_jump(ship_loadout)
+
+            mass_unladen: float = self.ship_status.mass_unladen
+            cargo: int = self.ship_status.cargo
+
+            fuel_main: float = self.ship_status.fuel_capacity.main
+            fuel_reserve: float = self.ship_status.fuel_capacity.reserve
+
+            max_jump_range: float = self.ship_status.max_jump_range
+
+            fuel_multiplier = sfsdm.get_fuel_multiplier(ship_loadout)
+            fuel_power = sfsdm.get_fuel_power(ship_loadout)
+            fsd_boost = sfsdm.get_jump_boost(ship_loadout)
+
+            # Fuel the FSD can actually use for one jump (capped at max fuel per jump)
+            jump_fuel: float = min(fuel_main + fuel_reserve, max_fuel_per_jump)
+
+            # Total mass the FSD has to move (hull + main fuel + cargo, NO reserve tank)
+            jump_mass: float = mass_unladen + fuel_main + fuel_reserve + cargo
+
+            # Frontier's hyperspace fuel equation, inverted, plus Guardian booster flat bonus
+            jump_range: float = (
+                    (fsd_optimal_mass / jump_mass)
+                    * (jump_fuel / fuel_multiplier) ** (1.0 / fuel_power)
+                    + fsd_boost
+            )
+
+        except Exception as e:
+            print(f"Calculate current jump range: {e}")
+            jump_range = max_jump_range or 0.0
+
+        return jump_range
+
 
 class PlotterWorker(Thread):
     """Runs get_itinerary off the main thread and delivers the result back via wx.CallAfter."""
