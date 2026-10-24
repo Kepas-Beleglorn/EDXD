@@ -120,6 +120,7 @@ class CollapsiblePanel(wx.Panel):
             button.SetSize(fixed_size)
             button.SetInitialSize(fixed_size)
 
+        theme_handler.apply_theme(button)
         self.table_sizer.Add(button, 0, wx.ALIGN_CENTER_HORIZONTAL, 0)
         return button
 

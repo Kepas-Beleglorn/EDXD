@@ -6,6 +6,7 @@ import wx.grid as gridlib
 import wx.lib.buttons as buttons
 
 from EDXD.globals import logging
+from EDXD.gui.helper.themed_slider import ThemedSlider
 
 
 # from EDXD.globals import ICON_PATH
@@ -71,7 +72,7 @@ def apply_theme(widget):
         _apply_theme_to_static_text(widget)
     elif widget.Name == "text":
         _apply_theme_to_text(widget)
-    elif widget.Name == "genbutton":
+    elif widget.Name in ("genbutton", "pushbutton", "togglebutton"):
         _apply_theme_to_button(widget)
     elif widget.Name == "gauge":
         _apply_theme_to_gauge(widget)
@@ -81,6 +82,10 @@ def apply_theme(widget):
         _apply_theme_to_dirpickerctrl(widget)
     elif widget.Name == "comboBox":
         _apply_theme_to_combobox(widget)
+    elif widget.Name == "wxSpinCtrl":
+        _apply_theme_to_spin(widget)
+    elif widget.Name == "themed_slider":
+        _apply_theme_to_slider(widget)
     else:
         return
 
@@ -156,3 +161,20 @@ def _apply_theme_to_combobox(widget: wx.ComboBox):
     widget.SetBackgroundColour(theme["background"])
     widget.SetForegroundColour(theme["foreground"])
     widget.SetFont(theme["font"])
+
+def _apply_theme_to_spin(widget: wx.SpinCtrl):
+    theme = get_theme()
+    widget.SetBackgroundColour(theme["background"])
+    widget.SetForegroundColour(theme["foreground"])
+    widget.SetFont(theme["font"])
+
+def _apply_theme_to_slider(widget: ThemedSlider):
+    theme = get_theme()
+    widget.SetBackgroundColour(theme["background"])
+    widget.SetForegroundColour(theme["foreground"])
+    widget.SetFont(theme["font"])
+
+    widget.SetAccentColour(theme["foreground"])
+    widget.SetGrooveColour(theme["background_hover"])
+    widget.SetHandleBgColour(theme["background_hover"])
+    apply_theme(widget.Parent)

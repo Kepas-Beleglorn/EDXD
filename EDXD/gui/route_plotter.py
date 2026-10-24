@@ -17,7 +17,8 @@ from EDXD.gui.helper.gui_dynamic_button import DynamicButton
 from EDXD.gui.helper.gui_dynamic_toggle_button import DynamicToggleButton
 from EDXD.gui.helper.gui_handler import init_widget
 from EDXD.gui.helper.icon_loader import get_bitmap_from_base64
-from EDXD.gui.helper.theme_handler import get_theme
+from EDXD.gui.helper.theme_handler import get_theme, apply_theme
+from EDXD.gui.helper.themed_slider import ThemedSlider
 from EDXD.gui.helper.window_properties import WindowProperties
 from EDXD.utils.clipboard import copy_text_to_clipboard
 from EDXD.gui.helper.collapsible_panel import CollapsiblePanel
@@ -31,7 +32,7 @@ from EDXD.data_handler.helper.dotted_dictionary import *
 TITLE = "Exploration itinerary"
 WINID = "EXPLORATION_ITINERARY"
 
-LABEL_FIXED_TEXT_LENGTH = 24
+SLIDER_FIXED_HEIGHT = 24
 BTN_SIZE = wx.Size(250, -1)
 
 ROUTE_PLOTTERS = [
@@ -294,10 +295,13 @@ class ExplorationItinerary(DynamicDialog):
 
         self.parameter_panel.add_table_item_label(label_text=f"Destination System", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
         self.txt_destination_system = self.parameter_panel.add_table_item_textbox(width=BTN_SIZE.width)
-        self.parameter_panel.add_table_item_label("")
+
+        current_jump_range: str = str(round(self._calculate_current_jump_range(), 2))
 
         match self.selected_plotter:
             case "galaxy":
+                self.parameter_panel.add_table_item_label("")
+
                 self.parameter_panel.add_table_item_label(label_text=f"Cargo", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
                 self.txt_cargo = self.parameter_panel.add_table_item_textbox()
                 self.txt_cargo.SetValidator(IntRangeValidator(min_val=0, max_val=self.ship_status.cargo_capacity, allow_empty=False))
@@ -385,23 +389,95 @@ class ExplorationItinerary(DynamicDialog):
                 self.parameter_panel.add_table_item_generic(self.cmb_routing_algorithm)
                 self.parameter_panel.add_table_item_label("")
 
-                self.parameter_panel.add_table_item_label("")
-                self.parameter_panel.add_table_item_label("")
-                self.parameter_panel.add_table_item_label("")
             case  "riches":
-                self.parameter_panel.add_table_item_label("")
-                self.parameter_panel.add_table_item_label(label_text=f"Leave destination blank in order to create a circular tour starting at your source system and returning there at the end.", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width, line_height=80)
-                self.parameter_panel.add_table_item_label("")
+                self.parameter_panel.add_table_item_label(" 🛈", align=wx.ALIGN_CENTER_VERTICAL).SetToolTip("Leave destination blank in order to create a circular tour starting at your source system and returning there at the end.")
 
                 self.parameter_panel.add_table_item_label("")
                 self.parameter_panel.add_table_item_label("")
                 self.parameter_panel.add_table_item_label("")
 
-                self.parameter_panel.add_table_item_label(label_text=f"Jump Range (LY, default current)", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
+                self.parameter_panel.add_table_item_label(label_text=f"Jump range (LY, default current)", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
                 self.txt_jump_range = self.parameter_panel.add_table_item_textbox()
                 self.txt_jump_range.SetValidator(FloatRangeValidator(min_val=0, max_val=100, allow_empty=False))
-                self.txt_jump_range.SetValue(str(self._calculate_current_jump_range()))
+                self.txt_jump_range.SetValue(current_jump_range)
+                self.parameter_panel.add_table_item_label(" 🛈", align=wx.ALIGN_CENTER_VERTICAL).SetToolTip("Jump range of your ship.")
+
+                self.parameter_panel.add_table_item_label(label_text=f"Radius (LY)", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
+                self.txt_jump_range = self.parameter_panel.add_table_item_textbox()
+                self.txt_jump_range.SetValidator(FloatRangeValidator(min_val=0, max_val=100, allow_empty=False))
+                self.txt_jump_range.SetValue(str(25))
+                self.parameter_panel.add_table_item_label(" 🛈", align=wx.ALIGN_CENTER_VERTICAL).SetToolTip(
+                    "This is the distance in LY around which the plotter will look for valuable worlds for you to visit. A value of 25 LY tends to give a nice balance for A to B routes keeping the number of jumps reasonably low whilst still giving a nice payout. For circular routes (leaving destination blank) you will probably want to increase this to 100-500 LY.")
+
+                self.parameter_panel.add_table_item_label(label_text=f"Maximum systems", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
+                self.txt_jump_range = self.parameter_panel.add_table_item_textbox()
+                self.txt_jump_range.SetValidator(FloatRangeValidator(min_val=0, max_val=100, allow_empty=False))
+                self.txt_jump_range.SetValue(str(100))
+                self.parameter_panel.add_table_item_label(" 🛈", align=wx.ALIGN_CENTER_VERTICAL).SetToolTip(
+                    "This is maximum number of systems that the plotter will route you through, lower this for a shorter trip.")
+
                 self.parameter_panel.add_table_item_label("")
+                self.parameter_panel.add_table_item_label("")
+                self.parameter_panel.add_table_item_label("")
+
+                self.btn_use_mapping_value = DynamicToggleButton(
+                    label="Use mapping value 🛈",
+                    parent=self.parameter_panel.content,
+                    is_toggled=False,
+                    size=BTN_SIZE
+                )
+                self.parameter_panel.add_table_item_toggle_button(self.btn_use_mapping_value)
+                self.btn_use_mapping_value.SetToolTip("Use the mapping value rather than the scan value.")
+
+                self.btn_use_mapping_value = DynamicToggleButton(
+                    label="Avoid Thargoids 🛈",
+                    parent=self.parameter_panel.content,
+                    is_toggled=False,
+                    size=BTN_SIZE
+                )
+                self.parameter_panel.add_table_item_toggle_button(self.btn_use_mapping_value)
+                self.btn_use_mapping_value.SetToolTip("Avoid systems that are at war with or controlled by the Thargoids.")
+                self.parameter_panel.add_table_item_label("")
+
+                self.btn_use_mapping_value = DynamicToggleButton(
+                    label="Avoid Thargoids 🛈",
+                    parent=self.parameter_panel.content,
+                    is_toggled=False,
+                    size=BTN_SIZE
+                )
+                self.parameter_panel.add_table_item_toggle_button(self.btn_use_mapping_value)
+                self.btn_use_mapping_value.SetToolTip("Force the route to return to the starting system.")
+                self.parameter_panel.add_table_item_label("")
+                self.parameter_panel.add_table_item_label("")
+
+                self.parameter_panel.add_table_item_label("")
+                self.parameter_panel.add_table_item_label("")
+                self.parameter_panel.add_table_item_label("")
+
+                self.parameter_panel.add_table_item_label("Maximum Distance To Arrival", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
+                self.parameter_panel.add_table_item_label("")
+                self.parameter_panel.add_table_item_label("")
+                self.spin_max_distance_to_arrival = wx.SpinCtrl(parent=self.parameter_panel.content, min=0, max=1000000, initial=50000, size=wx.Size(BTN_SIZE.width, -1))
+                self.sld_max_distance_to_arrival = ThemedSlider(parent=self.parameter_panel.content, value=50000, min_val=0, max_val=1000000, size=(BTN_SIZE.width, SLIDER_FIXED_HEIGHT), scale="symlog")
+                self.parameter_panel.add_table_item_generic(self.spin_max_distance_to_arrival)
+                self.parameter_panel.add_table_item_generic(self.sld_max_distance_to_arrival)
+                self.parameter_panel.add_table_item_label("")
+
+                self.parameter_panel.add_table_item_label("Minimum Scan Value", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
+                self.parameter_panel.add_table_item_label("")
+                self.parameter_panel.add_table_item_label("")
+                self.spin_min_scan_value = wx.SpinCtrl(parent=self.parameter_panel.content, min=0, max=1000000, initial=100000, size=wx.Size(BTN_SIZE.width, -1))
+                self.sld_min_scan_value = ThemedSlider(parent=self.parameter_panel.content, value=100000, min_val=0, max_val=1000000, size=(BTN_SIZE.width, SLIDER_FIXED_HEIGHT), scale="symlog")
+                self.parameter_panel.add_table_item_generic(self.spin_min_scan_value)
+                self.parameter_panel.add_table_item_generic(self.sld_min_scan_value)
+                self.parameter_panel.add_table_item_label("")
+
+                #self._link_spin_slider(self.spin_max_distance_to_arrival, self.sld_max_distance_to_arrival)
+                #self._link_spin_slider(self.spin_min_scan_value, self.sld_min_scan_value)
+
+        self.parameter_panel.add_table_item_label("")
+        self.parameter_panel.add_table_item_label("")
+        self.parameter_panel.add_table_item_label("")
 
         self.btn_calculate_route = DynamicButton(parent=self.parameter_panel.content, label="Calculate route", size=BTN_SIZE)
         self.btn_calculate_route.Bind(wx.EVT_BUTTON, self._on_calculate_route)
@@ -614,6 +690,16 @@ class ExplorationItinerary(DynamicDialog):
     def _on_close(self,event):
         self._timer.Stop()
         event.Skip()
+
+    def _link_spin_slider(self, spin: wx.SpinCtrl, slider: ThemedSlider):
+        spin.Bind(wx.EVT_SPINCTRL, lambda evt: self._on_spin(evt, slider))
+        slider.Bind(wx.EVT_SLIDER, lambda evt: self._on_slider(evt, spin))
+
+    def _on_spin(self, event, slider: ThemedSlider):
+        slider.SetValue(event.EventObject.GetValue())
+
+    def _on_slider(self, event, spin: wx.SpinCtrl):
+        spin.SetValue(event.EventObject.GetValue())
 
     @staticmethod
     def _save_last_waypoint_system(spansh_route_data: DotDict, current_system: NavPoint):
