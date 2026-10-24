@@ -92,8 +92,6 @@ class NavRouteHandler:
         elif hasattr(data, 'result'):
             nav_points = self._parse_nav_points(data.result)
 
-        #ToDo: show progress for nav_point parsing (it takes a while)
-
         self.plotted_nav_route = PlottedNavRoute(
             timestamp=timestamp,
             nav_points=nav_points
