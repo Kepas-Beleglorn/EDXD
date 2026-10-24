@@ -14,7 +14,7 @@ from EDXD.data_handler.planetary_surface_positioning_system import PSPSCoordinat
 from EDXD.data_handler.vessel_status import *
 from EDXD.data_handler.helper.spansh.ship_modules import ShipFSDModules
 from EDXD.globals import logging, BODY_ID_PREFIX, log_context, JOURNAL_TIMESTAMP_FILE, SHIP_STATUS_FILE, VESSEL_SHIP, \
-    VESSEL_SRV, VESSEL_EV, VESSEL_SLF, BODY_NO_DATA, SPANSH_ROUTE, SLEF_PATH
+    VESSEL_SRV, VESSEL_EV, VESSEL_SLF, BODY_NO_DATA, SPANSH_ROUTE, SLEF_PATH, SPANSH_ACTIVE_ROUTE
 
 bip = BODY_ID_PREFIX
 
@@ -882,6 +882,12 @@ class JournalController(PausableThread, threading.Thread):
             self.m.set_target(self.m.target_body_id )
 
     def _set_current_position_for_spansh(self, evt):
+        str_route_file = dh.read_spansh_active_plotted_route(SPANSH_ACTIVE_ROUTE)
+        if str_route_file is None:
+            return
+
+        route_file = Path(str_route_file)
+
         x: int = evt.get("StarPos")[0]
         y: int = evt.get("StarPos")[1]
         z: int = evt.get("StarPos")[2]
@@ -891,10 +897,10 @@ class JournalController(PausableThread, threading.Thread):
         star_class: str = self.spansh_helper.get_star_class_from_spansh(system_address)
         nav_point: NavPoint = NavPoint(star_system=star_system, system_address=system_address, star_class=star_class, star_position=pos)
 
-        path = Path(SPANSH_ROUTE)
+        path = Path(route_file)
         if not path.exists():
             return
 
-        spansh_route: DotDict = load_json_as_dotdict(SPANSH_ROUTE)
+        spansh_route: DotDict = load_json_as_dotdict(route_file)
         spansh_route.current_system = DotDict(asdict(nav_point))
-        save_dotdict_to_json(spansh_route, SPANSH_ROUTE)
+        save_dotdict_to_json(spansh_route, route_file)

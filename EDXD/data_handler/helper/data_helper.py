@@ -6,6 +6,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
+from EDXD.data_handler.helper.dotted_dictionary import DotDict, save_dotdict_to_json
 from EDXD.data_handler.vessel_status import ShipStatus
 from EDXD.globals import log_context, logging, BODY_NO_DATA
 
@@ -350,6 +351,24 @@ def update_ship_status(ship_status_file, ship_status: ShipStatus):
     if ship_status_file.exists():
         with open(ship_status_file, "w") as f:
             json.dump(ship_status.to_json(), f, indent=4)
+
+def update_spansh_active_plotted_route(active_plotted_route_file, route_file: str):
+    data: DotDict = DotDict()
+    data["active_plotted_route"] = route_file
+    save_dotdict_to_json(data, active_plotted_route_file, 4)
+
+
+def read_spansh_active_plotted_route(active_plotted_route_file) -> str | None:
+    if not active_plotted_route_file.exists():
+        return None
+    try:
+        with open(active_plotted_route_file, "r") as f:
+            data = json.load(f)
+            return data["active_plotted_route"]
+    except FileNotFoundError:
+        return None
+    except json.decoder.JSONDecodeError:
+        return None
 
 def ensure_ship_status_file(ship_status_file, ship_status):
     if not ship_status_file.exists():

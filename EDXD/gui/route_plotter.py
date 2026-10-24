@@ -12,7 +12,7 @@ from EDXD.data_handler.helper.spansh.ship_modules import ShipFSDModules
 from EDXD.data_handler.helper.spansh.spansh import SpanshRoutePlotter
 from EDXD.data_handler.nav_route import NavRouteHandler, NavPoint
 from EDXD.globals import DEFAULT_POS_Y, DEFAULT_POS_X, RESIZE_MARGIN, ICONS, DEFAULT_HEIGHT_SPANSH, DEFAULT_WIDTH_SPANSH, BASE64_CIRCLE_ORANGE, \
-    BASE64_CIRCLE_BLUE, BASE64_LINE_ORANGE, BASE64_LINE_BLUE, SHIP_STATUS_FILE, SPANSH_ROUTE, SLEF_PATH
+    BASE64_CIRCLE_BLUE, BASE64_LINE_ORANGE, BASE64_LINE_BLUE, SHIP_STATUS_FILE, SPANSH_ROUTE, SLEF_PATH, SPANSH_ACTIVE_ROUTE
 from EDXD.gui.helper.dynamic_dialog import DynamicDialog
 from EDXD.gui.helper.gui_dynamic_button import DynamicButton
 from EDXD.gui.helper.gui_dynamic_toggle_button import DynamicToggleButton
@@ -70,7 +70,6 @@ class ExplorationItinerary(DynamicDialog):
 
         self.ship_status = ShipStatus()
         self.ship_status = self.ship_status.read_from_json(dh.read_ship_status(SHIP_STATUS_FILE, self.ship_status))
-
         self.body = None
         self.nav_route: NavRouteHandler | None = None
 
@@ -109,6 +108,7 @@ class ExplorationItinerary(DynamicDialog):
         self.routing_algo = "optimistic"
         self.selected_plotter = "galaxy"
         self._last_route_for_selected_plotter: Path = Path(str(SPANSH_ROUTE).replace("XXX", self.selected_plotter))
+        dh.update_spansh_active_plotted_route(SPANSH_ACTIVE_ROUTE, str(self._last_route_for_selected_plotter))
 
         self.finalize_layout()
         self._update_plotter_select()
@@ -198,6 +198,7 @@ class ExplorationItinerary(DynamicDialog):
         self._update_parameter()
         self.nav_route = None
         self.render()
+        dh.update_spansh_active_plotted_route(SPANSH_ACTIVE_ROUTE, str(self._last_route_for_selected_plotter))
 
     def  _on_load_route(self, event):
         self.lbl_job_status.SetLabel("")
