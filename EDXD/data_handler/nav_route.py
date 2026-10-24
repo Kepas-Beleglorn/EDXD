@@ -2,7 +2,7 @@ import json
 from datetime import datetime
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Callable
 
 import pywinctl, wx
 
@@ -32,7 +32,8 @@ class PlottedNavRoute:
     nav_points: List[NavPoint]
 
 class NavRouteHandler:
-    def __init__(self, nav_route_json: Path, amount_of_upcoming_systems_to_show: int, amount_of_passed_systems_to_show: int):
+    def __init__(self, nav_route_json: Path, amount_of_upcoming_systems_to_show: int, amount_of_passed_systems_to_show: int, progress_cb: Callable[[int, int], None] | None = None):
+        self._progress_cb = progress_cb
         self.nav_route_json: Path = nav_route_json
         self.plotted_nav_route: Optional[PlottedNavRoute] = None
         self.remaining_jumps_in_route: int = 0
@@ -48,6 +49,7 @@ class NavRouteHandler:
     def _parse_nav_points(self, route_data: List[dict]) -> List[NavPoint]:
         """Iterates through the raw route list and builds NavPoint instances."""
         systems = []
+        total_systems = len(route_data)
         for system in route_data:
             # Handle DotDict or standard dict access safely
             if hasattr(system, "StarPos"):
@@ -63,6 +65,9 @@ class NavRouteHandler:
                 star_position=pos
             )
             systems.append(nav_point)
+            i = len(systems)
+            if self._progress_cb and (i % 1 == 0 or i == total_systems - 1):
+                self._progress_cb(i + 1, total_systems)  # don't flood: every 20 items
         return systems
 
 
@@ -82,9 +87,12 @@ class NavRouteHandler:
         # Parse the list of route points into proper dataclass instances
         if hasattr(data, 'Route'):
             nav_points = self._parse_nav_points(data.Route)
-
-        if hasattr(data, 'jumps'):
+        elif hasattr(data, 'jumps'):
             nav_points = self._parse_nav_points(data.jumps)
+        elif hasattr(data, 'result'):
+            nav_points = self._parse_nav_points(data.result)
+
+        #ToDo: show progress for nav_point parsing (it takes a while)
 
         self.plotted_nav_route = PlottedNavRoute(
             timestamp=timestamp,

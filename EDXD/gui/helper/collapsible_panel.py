@@ -78,7 +78,7 @@ class CollapsiblePanel(wx.Panel):
                 child.GetWindow().Destroy()
         self.table_sizer.Clear()
 
-    def add_table_item_label(self, label_text, align=wx.ALIGN_LEFT, line_height: int = -1, width: int = -1) -> wx.StaticText:
+    def add_table_item_label(self, label_text, align=wx.ALIGN_LEFT, line_height: int = -1, width: int = -1, border: int = 0) -> wx.StaticText:
         """Add a row to the table."""
         label = wx.StaticText(self.content)
         init_widget(widget=label, title=label_text)
@@ -93,9 +93,9 @@ class CollapsiblePanel(wx.Panel):
 
 
         if align == wx.ALIGN_CENTER:
-            self.table_sizer.Add(label, 0, align, 0)
+            self.table_sizer.Add(label, 0, align, border)
         else:
-            self.table_sizer.Add(label, 0, align | wx.EXPAND, 0)
+            self.table_sizer.Add(label, 0, align | wx.EXPAND, border)
         return label
 
     def add_table_item_bitmap(self, widget: wx.Bitmap, line_height: int = -1) -> wx.StaticBitmap:

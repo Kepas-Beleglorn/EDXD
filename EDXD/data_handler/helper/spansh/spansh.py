@@ -23,9 +23,9 @@ SPANSH_GALAXY_PLOTTER_API: str = SPANSH_BASE_URL + "api/generic/route"
 
 SPANSH_ROAD_TO_RICHES_API: str = SPANSH_BASE_URL + "api/riches/route"
 
-SPANSH_NEUTRON_ROUTER_API: str = SPANSH_BASE_URL + "api/route"
-
 SPANSH_EXO_MASTERY_API: str = SPANSH_BASE_URL + "api/exobiology/route"
+
+SPANSH_NEUTRON_ROUTER_API: str = SPANSH_BASE_URL + "api/route"
 
 FSD_INJECTION_MULTIPLIER: int = 2
 
@@ -345,6 +345,28 @@ class SpanshRoutePlotter:
         plotted_route: DotDict | None = None
         return plotted_route
 
+    def _send_request(self, url: str, payload) -> str | None:
+
+        headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            "User-Agent": "EDXD (Python)",
+            "X-Requested-With": "XMLHttpRequest"
+        }
+
+        response = requests.request("POST", url, headers=headers, data=payload)
+        spansh_job_id = None
+
+        if response.status_code < 200 or response.status_code >= 300:
+            # Read the body for the error message
+            error_body = response.text
+            print(f"ERROR: Spansh API returned status {response.status_code}: {error_body}")
+            return spansh_job_id
+
+        response_dict: DotDict = create_dot_dict_from_string(response.text)
+        spansh_job_id = response_dict.job
+        return spansh_job_id
+
     def galaxy_plotter(self,
                        source_system_name: str,
                        destination_system_name: str,
@@ -358,8 +380,6 @@ class SpanshRoutePlotter:
                        refuel_every_scoopable: bool = False,
                        algorithm: str =  "optimistic"
                        ) -> str | None:
-        spansh_job_id = None
-
         path = Path(SLEF_PATH)
         if not path.exists():
             raise FileNotFoundError(f"File not found: {SLEF_PATH}")
@@ -398,24 +418,61 @@ class SpanshRoutePlotter:
             "ship_build": ship_loadout_json
         }
 
-        headers = {
-            "Accept": "application/json",
-            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-            "User-Agent": "EDXD (Python)",
-            "X-Requested-With": "XMLHttpRequest"
+        return self._send_request(url, payload)
+
+    def road_to_riches( self,
+                    source_system_name: str,
+                    destination_system_name: str,
+                    jump_range: float,
+                    stray_radius: int,
+                    max_systems: int,
+                    use_mapped_value: bool,
+                    avoid_thargoids: bool,
+                    loop_back: bool,
+                    max_distance_from_arrival: int,
+                    min_scan_value: int
+                    ) -> str | None:
+
+        url = SPANSH_ROAD_TO_RICHES_API
+        payload = {
+            "from": source_system_name,
+            "to": destination_system_name,
+            "range": jump_range,
+            "radius": stray_radius,
+            "max_results": max_systems,
+            "use_mapping_value": 1 if use_mapped_value else 0,
+            "avoid_thargoids": 1 if avoid_thargoids else 0,
+            "loop": 1 if loop_back else 0,
+            "max_distance": max_distance_from_arrival,
+            "min_value": min_scan_value
         }
+        return self._send_request(url, payload)
 
-        response = requests.request("POST", url, headers=headers, data=payload)
+    def exobiology( self,
+                    source_system_name: str,
+                    destination_system_name: str,
+                    jump_range: float,
+                    stray_radius: int,
+                    max_systems: int,
+                    avoid_thargoids: bool,
+                    loop_back: bool,
+                    max_distance_from_arrival: int,
+                    min_scan_value: int
+                    ) -> str | None:
 
-        if response.status_code < 200 or response.status_code >= 300:
-            # Read the body for the error message
-            error_body = response.text
-            print(f"ERROR: Spansh API returned status {response.status_code}: {error_body}")
-            return spansh_job_id
-
-        response_dict: DotDict = create_dot_dict_from_string(response.text)
-        spansh_job_id = response_dict.job
-        return spansh_job_id
+        url = SPANSH_EXO_MASTERY_API
+        payload = {
+            "from": source_system_name,
+            "to": destination_system_name,
+            "range": jump_range,
+            "radius": stray_radius,
+            "max_results": max_systems,
+            "avoid_thargoids": 1 if avoid_thargoids else 0,
+            "loop": 1 if loop_back else 0,
+            "max_distance": max_distance_from_arrival,
+            "min_value": min_scan_value
+        }
+        return self._send_request(url, payload)
 
 @staticmethod
 def get_itinerary(job_id: str | None,
@@ -440,7 +497,13 @@ def get_itinerary(job_id: str | None,
             break
 
         if response_dict.state == "completed" and response_dict.status == "ok":
-            spansh_itinerary = DotDict(response_dict.result)
+            if isinstance(response_dict.result, DotDict):
+                spansh_itinerary: DotDict = response_dict.result
+            elif isinstance(response_dict.result, list):
+                spansh_itinerary: DotDict = response_dict
+                spansh_itinerary["jumps"] = spansh_itinerary.pop("result")
+            else:
+                raise TypeError(f"Unexpected result type: {type(response_dict.result)!r}")
             break
 
         duration = time_delta(response_dict.created_at, iso_date)
