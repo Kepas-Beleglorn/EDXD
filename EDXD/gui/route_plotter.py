@@ -760,6 +760,12 @@ class ExplorationItinerary(DynamicDialog):
         do_copy_to_clipboard: bool = False
 
         for system in spansh_route_data.jumps:
+            # try updating system again
+            if not hasattr(system, "StarClass") or system.StarClass == "":
+                star_class = self.sh.get_star_class_from_spansh(system_id=current_system_address)
+                if star_class:
+                    system["StarClass"] = star_class
+                    save_dotdict_to_json(spansh_route_data, str(self._last_route_for_selected_plotter))
             # If we've reached a waypoint, copy the next name to the clipboard
             if do_copy_to_clipboard:
                 if self.copied_system_name != system.name:
