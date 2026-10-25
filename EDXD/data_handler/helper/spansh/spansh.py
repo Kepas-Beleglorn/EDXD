@@ -64,13 +64,16 @@ class SpanshHelper:
                     if hasattr(body, "spectralClass") and body.spectralClass:
                         body_type = "".join(char for char in body.spectralClass if char.isalpha())
                     else:
-                        if "(" in body.subType:
-                            body_type = body.subType.split("(")[1].split(")")[0]
-                        else:
-                            if body.subType == "Neutron Star":
-                                body_type = "N"
+                        if hasattr(body, "subType"):
+                            if "(" in body.subType:
+                                body_type = body.subType.split("(")[1].split(")")[0]
                             else:
-                                body_type = body.subType
+                                if body.subType == "Neutron Star":
+                                    body_type = "N"
+                                else:
+                                    body_type = body.subType
+                        else:
+                            pass
             except Exception as e:
                 print(f"ERROR: {system_id} - {e} - {body}")
             if body_type != "":
