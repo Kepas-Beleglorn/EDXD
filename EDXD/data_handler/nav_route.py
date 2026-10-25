@@ -52,6 +52,9 @@ class NavRouteHandler:
         total_systems = len(route_data)
         for system in route_data:
             # Handle DotDict or standard dict access safely
+            i = len(systems)
+            if self._progress_cb:
+                self._progress_cb(i + 1, total_systems)  # don't flood: every 20 items
             if hasattr(system, "StarPos"):
                 pos = self._parse_star_position(system.StarPos if isinstance(system, DotDict) else system['StarPos'])
             else:
@@ -65,9 +68,7 @@ class NavRouteHandler:
                 star_position=pos
             )
             systems.append(nav_point)
-            i = len(systems)
-            if self._progress_cb and (i % 1 == 0 or i == total_systems - 1):
-                self._progress_cb(i + 1, total_systems)  # don't flood: every 20 items
+
         return systems
 
 

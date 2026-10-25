@@ -209,12 +209,14 @@ class ExplorationItinerary(DynamicDialog):
             self.lbl_loading_status.Update()
             return
 
+        self._loading_precalculated_route = True
         self.lbl_loading_status.SetLabel(f"Loading last route for \n{self.cmb_selected_plotter.GetValue()}...")
         self.lbl_loading_status.Update()
         self.nav_route = NavRouteHandler(
             self._last_route_for_selected_plotter,
             amount_of_upcoming_systems_to_show=int(self.parent.parent.prefs["amount_of_plotted_upcoming_systems_to_show"]),
-            amount_of_passed_systems_to_show=int(self.parent.parent.prefs["amount_of_plotted_passed_systems_to_show"])
+            amount_of_passed_systems_to_show=int(self.parent.parent.prefs["amount_of_plotted_passed_systems_to_show"]),
+            progress_cb=self._on_parse_progress
         )
         self.nav_route.clear_plotted_route()
         self.nav_route.load_plotted_route()
@@ -285,6 +287,7 @@ class ExplorationItinerary(DynamicDialog):
 
     def on_plot_done(self, result: DotDict | None):
         self.nav_route  = None
+        self._loading_precalculated_route = False
         if result:
             self.itinerary: DotDict = DotDict(result)
             self.itinerary.timestamp = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -328,8 +331,12 @@ class ExplorationItinerary(DynamicDialog):
             self._on_parse_progress(i, total)
 
     def _on_parse_progress(self, done: int, total: int):
-        self.lbl_job_status.SetLabel(f"Preparing waypoints… \nSystems {done}/{total}")
-        self.lbl_job_status.Update()
+        if self._loading_precalculated_route:
+            self.lbl_loading_status.SetLabel(f"Preparing waypoints… \nSystems {done}/{total}")
+            self.lbl_loading_status.Update()
+        else:
+            self.lbl_job_status.SetLabel(f"Preparing waypoints… \nSystems {done}/{total}")
+            self.lbl_job_status.Update()
 
     def _update_plotter_select(self):
         if not self.plotter_select_panel.IsShown():
@@ -765,6 +772,22 @@ class ExplorationItinerary(DynamicDialog):
                 self.nav_route.current_system = current_system
                 self._save_last_waypoint_system(spansh_route_data, current_system)
                 do_copy_to_clipboard = True
+
+        if not do_copy_to_clipboard and hasattr(spansh_route_data, "last_waypoint"):
+            last_waypoint: NavPoint = from_dotdict(NavPoint, spansh_route_data.last_waypoint)
+            self.nav_route.current_system = last_waypoint
+            for system in spansh_route_data.jumps:
+                if do_copy_to_clipboard:
+                    if self.copied_system_name != system.name:
+                        self.copied_system_name = system.name
+                        copy_text_to_clipboard(system.name)
+                        return True
+                    else:
+                        return False
+
+                # check if we reached a waypoint
+                if system.id64 == last_waypoint.system_address:
+                    do_copy_to_clipboard = True
 
         return False
 
