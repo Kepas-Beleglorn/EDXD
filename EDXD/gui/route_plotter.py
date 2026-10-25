@@ -678,6 +678,8 @@ class ExplorationItinerary(DynamicDialog):
 
                 if system:
                     system_type = system.star_class
+                    if system_type == "":
+                        system_type = " ? "
                     if system_type and system_type != "":
                         if system_type[0] in ("K", "G", "B", "F", "O", "A", "M"):
                             system_feature = ICONS["scoopable"]
