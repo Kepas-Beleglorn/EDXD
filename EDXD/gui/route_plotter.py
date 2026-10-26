@@ -730,7 +730,7 @@ class ExplorationItinerary(DynamicDialog):
         next_system: NavPoint | None = None
 
         fixed_height = 20
-        remaining_jumps_offset = 0 if self.selected_plotter != "galaxy" and self.btn_loop_route.GetValue() else 1
+        remaining_jumps_offset = 1
 
         if self.nav_route.plotted_nav_route:
             for i in range(min, max, 1):

@@ -183,9 +183,12 @@ class NavRouteHandler:
                 self.current_system = self.plotted_nav_route.nav_points[0]
             system_address_current_system  = self.current_system.system_address
 
+            system_address_current_system = int(system_address_current_system)
+            system_address_remaining_jumps = int(system_address_remaining_jumps)
+
             if system_address_current_system != system_address_remaining_jumps:
                 for i in range(-1, -1*len(self.plotted_nav_route.nav_points), -1):
-                    if self.get_system_by_index(i).system_address == system_address_current_system:
+                    if int(self.get_system_by_index(i).system_address) == system_address_current_system:
                         self.remaining_jumps_in_route = -1*(i+1)
                         return
 
