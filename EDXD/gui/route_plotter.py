@@ -254,12 +254,30 @@ class ExplorationItinerary(DynamicDialog):
                     if hasattr(data.parameters, "destination_system"): self.txt_destination_system.SetValue(data.parameters.destination_system)
                     if hasattr(data.parameters, "cargo"): self.txt_cargo.SetValue(str(data.parameters.cargo))
                     if hasattr(data.parameters, "reserve_size"): self.txt_reserve_fuel.SetValue(str(data.parameters.reserve_size))
-                    if hasattr(data.parameters, "is_supercharged"): self.btn_already_supercharged._is_toggled = (data.parameters.is_supercharged)
-                    if hasattr(data.parameters, "use_supercharge"): self.btn_use_supercharged._is_toggled = (data.parameters.use_supercharge)
-                    if hasattr(data.parameters, "use_injections"): self.btn_use_fsd_injections_always._is_toggled = (data.parameters.use_injections)
-                    if hasattr(data.parameters, "use_injections_when_required"): self.btn_use_fsd_injections_when_required._is_toggled = (data.parameters.use_injections_when_required)
-                    if hasattr(data.parameters, "exclude_secondary"): self.btn_exclude_secondary_stars._is_toggled = (data.parameters.exclude_secondary)
-                    if hasattr(data.parameters, "refuel_every_scoopable"): self.btn_refuel_every_scoopable._is_toggled = (data.parameters.refuel_every_scoopable == 1)
+                    if hasattr(data.parameters, "is_supercharged"):
+                        toggled = data.parameters.is_supercharged
+                        self.btn_already_supercharged._is_toggled = toggled
+                        self.btn_already_supercharged.SetValue(toggled)
+                    if hasattr(data.parameters, "use_supercharge"):
+                        toggled = data.parameters.use_supercharge
+                        self.btn_use_supercharged._is_toggled = toggled
+                        self.btn_use_supercharged.SetValue(toggled)
+                    if hasattr(data.parameters, "use_injections"):
+                        toggled = data.parameters.use_injections
+                        self.btn_use_fsd_injections_always._is_toggled = toggled
+                        self.btn_use_fsd_injections_always.SetValue(toggled)
+                    if hasattr(data.parameters, "use_injections_when_required"):
+                        toggled = data.parameters.use_injections_when_required
+                        self.btn_use_fsd_injections_when_required._is_toggled = toggled
+                        self.btn_use_fsd_injections_when_required.SetValue(toggled)
+                    if hasattr(data.parameters, "exclude_secondary"):
+                        toggled = data.parameters.exclude_secondary
+                        self.btn_exclude_secondary_stars._is_toggled = toggled
+                        self.btn_exclude_secondary_stars.SetValue(toggled)
+                    if hasattr(data.parameters, "refuel_every_scoopable"):
+                        toggled = (data.parameters.refuel_every_scoopable == 1)
+                        self.btn_refuel_every_scoopable._is_toggled = toggled
+                        self.btn_refuel_every_scoopable.SetValue(toggled)
                     if hasattr(data.parameters, "algorithm"): self._on_routing_loaded(data.parameters.algorithm)
 
                 case _:
@@ -269,9 +287,18 @@ class ExplorationItinerary(DynamicDialog):
                     if hasattr(data.parameters, "range"): self.txt_jump_range.SetValue(data.parameters.range)
                     if hasattr(data.parameters, "radius"): self.txt_stray_radius.SetValue(data.parameters.radius)
                     if hasattr(data.parameters, "max_results"): self.txt_max_systems.SetValue(data.parameters.max_results)
-                    if hasattr(data.parameters, "use_mapping_value"): self.btn_use_mapping_value._is_toggled = (int(data.parameters.use_mapping_value) == 1)
-                    if hasattr(data.parameters, "avoid_thargoids"): self.btn_avoid_thargoids._is_toggled = (int(data.parameters.avoid_thargoids) == 1)
-                    if hasattr(data.parameters, "loop"): self.btn_loop_route._is_toggled = (int(data.parameters.loop) == 1)
+                    if hasattr(data.parameters, "use_mapping_value"):
+                        toggled = (int(data.parameters.use_mapping_value) == 1)
+                        self.btn_use_mapping_value._is_toggled = toggled
+                        self.btn_use_mapping_value.SetValue(toggled)
+                    if hasattr(data.parameters, "avoid_thargoids"):
+                        toggled = (int(data.parameters.avoid_thargoids) == 1)
+                        self.btn_avoid_thargoids._is_toggled = toggled
+                        self.btn_avoid_thargoids.SetValue(toggled)
+                    if hasattr(data.parameters, "loop"):
+                        toggled = (int(data.parameters.loop) == 1)
+                        self.btn_loop_route._is_toggled = toggled
+                        self.btn_loop_route.SetValue(toggled)
                     if hasattr(data.parameters, "min_value"): self.spin_min_scan_value.SetValue(int(data.parameters.min_value))
                     if hasattr(data.parameters, "max_distance"): self.spin_max_distance_to_arrival.SetValue(int(data.parameters.max_distance))
 
