@@ -501,7 +501,9 @@ def get_itinerary(job_id: str | None,
 
         if response_dict.state == "completed" and response_dict.status == "ok":
             if isinstance(response_dict.result, DotDict):
-                spansh_itinerary: DotDict = response_dict.result
+                spansh_itinerary: DotDict = response_dict
+                spansh_itinerary["jumps"] = spansh_itinerary.result.jumps
+                spansh_itinerary.pop("result")
             elif isinstance(response_dict.result, list):
                 spansh_itinerary: DotDict = response_dict
                 spansh_itinerary["jumps"] = spansh_itinerary.pop("result")

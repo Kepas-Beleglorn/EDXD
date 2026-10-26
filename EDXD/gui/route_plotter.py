@@ -186,6 +186,16 @@ class ExplorationItinerary(DynamicDialog):
         )
         self.routing_algo = selected_value
 
+    def _on_routing_loaded(self, algo_value):
+
+        # Find the corresponding value
+        display_value = next(
+            (display for display, value in ROUTING_OPTIONS if value == algo_value),
+            None
+        )
+        self.cmb_routing_algorithm.SetValue(display_value)
+        self.routing_algo = algo_value
+
     def _on_plotter_changed(self, event):
         selected_display = self.cmb_selected_plotter.GetValue()
         # Find the corresponding value
@@ -212,6 +222,8 @@ class ExplorationItinerary(DynamicDialog):
         self._loading_precalculated_route = True
         self.lbl_loading_status.SetLabel(f"Loading last route for \n{self.cmb_selected_plotter.GetValue()}...")
         self.lbl_loading_status.Update()
+        self._load_parameters_from_file(path)
+        self.Update()
         self.nav_route = NavRouteHandler(
             self._last_route_for_selected_plotter,
             amount_of_upcoming_systems_to_show=int(self.parent.parent.prefs["amount_of_plotted_upcoming_systems_to_show"]),
@@ -224,6 +236,44 @@ class ExplorationItinerary(DynamicDialog):
         self.render()
         self.lbl_loading_status.SetLabel("Previous route loaded.")
         self.lbl_loading_status.Update()
+
+    def _load_parameters_from_file(self, json_file: Path):
+        if not json_file.exists():
+            return
+
+        raw_data = json_file.read_text()
+        if len(raw_data) == 0:
+            return
+
+        data = DotDict(json.loads(raw_data))
+
+        if hasattr(data, "parameters") and data.parameters:
+            match self.selected_plotter:
+                case "galaxy":
+                    if hasattr(data.parameters, "source_system"): self.txt_source_system.SetValue(data.parameters.source_system)
+                    if hasattr(data.parameters, "destination_system"): self.txt_destination_system.SetValue(data.parameters.destination_system)
+                    if hasattr(data.parameters, "cargo"): self.txt_cargo.SetValue(str(data.parameters.cargo))
+                    if hasattr(data.parameters, "reserve_size"): self.txt_reserve_fuel.SetValue(str(data.parameters.reserve_size))
+                    if hasattr(data.parameters, "is_supercharged"): self.btn_already_supercharged._is_toggled = (data.parameters.is_supercharged)
+                    if hasattr(data.parameters, "use_supercharge"): self.btn_use_supercharged._is_toggled = (data.parameters.use_supercharge)
+                    if hasattr(data.parameters, "use_injections"): self.btn_use_fsd_injections_always._is_toggled = (data.parameters.use_injections)
+                    if hasattr(data.parameters, "use_injections_when_required"): self.btn_use_fsd_injections_when_required._is_toggled = (data.parameters.use_injections_when_required)
+                    if hasattr(data.parameters, "exclude_secondary"): self.btn_exclude_secondary_stars._is_toggled = (data.parameters.exclude_secondary)
+                    if hasattr(data.parameters, "refuel_every_scoopable"): self.btn_refuel_every_scoopable._is_toggled = (data.parameters.refuel_every_scoopable == 1)
+                    if hasattr(data.parameters, "algorithm"): self._on_routing_loaded(data.parameters.algorithm)
+
+                case _:
+                    if hasattr(data.parameters, "source"): self.txt_source_system.SetValue(data.parameters.source)
+                    if hasattr(data.parameters, "destination"): self.txt_destination_system.SetValue(data.parameters.destination)
+                    else: self.txt_destination_system.Clear()
+                    if hasattr(data.parameters, "range"): self.txt_jump_range.SetValue(data.parameters.range)
+                    if hasattr(data.parameters, "radius"): self.txt_stray_radius.SetValue(data.parameters.radius)
+                    if hasattr(data.parameters, "max_results"): self.txt_max_systems.SetValue(data.parameters.max_results)
+                    if hasattr(data.parameters, "use_mapping_value"): self.btn_use_mapping_value._is_toggled = (int(data.parameters.use_mapping_value) == 1)
+                    if hasattr(data.parameters, "avoid_thargoids"): self.btn_avoid_thargoids._is_toggled = (int(data.parameters.avoid_thargoids) == 1)
+                    if hasattr(data.parameters, "loop"): self.btn_loop_route._is_toggled = (int(data.parameters.loop) == 1)
+                    if hasattr(data.parameters, "min_value"): self.spin_min_scan_value.SetValue(int(data.parameters.min_value))
+                    if hasattr(data.parameters, "max_distance"): self.spin_max_distance_to_arrival.SetValue(int(data.parameters.max_distance))
 
     def  _on_calculate_route(self, event):
         spansh = SpanshRoutePlotter()
@@ -653,6 +703,7 @@ class ExplorationItinerary(DynamicDialog):
         next_system: NavPoint | None = None
 
         fixed_height = 20
+        remaining_jumps_offset = 0 if self.selected_plotter != "galaxy" and self.btn_loop_route.GetValue() else 1
 
         if self.nav_route.plotted_nav_route:
             for i in range(min, max, 1):
@@ -712,7 +763,7 @@ class ExplorationItinerary(DynamicDialog):
                         lbl_5_system.SetForegroundColour(jet_cone_colour)
                         lbl_6_space.SetForegroundColour(jet_cone_colour)
 
-                    if abs(i) > self.nav_route.remaining_jumps_in_route + 1:
+                    if abs(i) > self.nav_route.remaining_jumps_in_route + remaining_jumps_offset:
                         lbl_1_system_indicator.SetForegroundColour(passed_colour)
                         lbl_2_space.SetForegroundColour(passed_colour)
                         lbl_3_star_feature.SetForegroundColour(passed_colour)
@@ -720,7 +771,7 @@ class ExplorationItinerary(DynamicDialog):
                         lbl_5_system.SetForegroundColour(passed_colour)
                         lbl_6_space.SetForegroundColour(passed_colour)
 
-                    if abs(i) == self.nav_route.remaining_jumps_in_route + 1:
+                    if abs(i) == self.nav_route.remaining_jumps_in_route + remaining_jumps_offset:
                         lbl_4_star_class.SetFont(wx.Font(self.theme["font_bold"]))
                         lbl_5_system.SetFont(wx.Font(self.theme["font_bold"]))
 
@@ -765,12 +816,11 @@ class ExplorationItinerary(DynamicDialog):
                 if self.copied_system_name != system.name:
                     self.copied_system_name = system.name
                     copy_text_to_clipboard(system.name)
-                    return True
-                else:
-                    return False
+                    do_copy_to_clipboard = False
+                break
 
             # check if we reached a waypoint
-            if system.id64 == current_system_address:
+            if int(system.id64) == current_system_address:
                 # try updating system again
                 if not hasattr(system, "StarClass") or system.StarClass == "":
                     star_class = self.sh.get_star_class_from_spansh(system_id=current_system_address)
@@ -794,7 +844,7 @@ class ExplorationItinerary(DynamicDialog):
                         return False
 
                 # check if we reached a waypoint
-                if system.id64 == last_waypoint.system_address:
+                if int(system.id64) == int(last_waypoint.system_address):
                     do_copy_to_clipboard = True
 
         return False
