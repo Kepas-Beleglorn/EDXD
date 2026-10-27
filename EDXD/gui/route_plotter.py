@@ -227,14 +227,37 @@ class ExplorationItinerary(DynamicDialog):
         self.lbl_loading_status.Update()
         self._load_parameters_from_file(path)
         self.Update()
-        self.nav_route = NavRouteHandler(
-            self._last_route_for_selected_plotter,
-            amount_of_upcoming_systems_to_show=int(self.parent.parent.prefs["amount_of_plotted_upcoming_systems_to_show"]),
-            amount_of_passed_systems_to_show=int(self.parent.parent.prefs["amount_of_plotted_passed_systems_to_show"]),
-            progress_cb=self._on_parse_progress
+
+        # Delegate the heavy route loading to a background thread
+        # so the GUI stays responsive while the route is being prepared.
+        self.nav_route = None
+        self._route_prep_worker = RoutePrepWorker(
+            itinerary=None,  # load mode: skip enrichment, only build NavRouteHandler
+            sh=self.sh,
+            route_file=self._last_route_for_selected_plotter,
+            upcoming_systems=int(self.parent.parent.prefs["amount_of_plotted_upcoming_systems_to_show"]),
+            passed_systems=int(self.parent.parent.prefs["amount_of_plotted_passed_systems_to_show"]),
+            on_progress=self._on_parse_progress,
+            on_done=self._on_load_route_done,
         )
-        self.nav_route.clear_plotted_route()
-        self.nav_route.load_plotted_route()
+        self._route_prep_worker.start()
+
+    def _on_load_route_done(self, nav_route: NavRouteHandler | None, error: str | None):
+        """Called on the MAIN thread after background route loading finishes."""
+        self._loading_precalculated_route = False
+        if error:
+            self.lbl_loading_status.SetLabel(f"Failed to load route.\n{error}")
+            self.lbl_loading_status.Update()
+            self.render()
+            return
+
+        if nav_route is None:
+            self.lbl_loading_status.SetLabel("Failed to load route.")
+            self.lbl_loading_status.Update()
+            self.render()
+            return
+
+        self.nav_route = nav_route
         self._check_waypoint()
         self.render()
         self.lbl_loading_status.SetLabel("Previous route loaded.")
@@ -387,51 +410,46 @@ class ExplorationItinerary(DynamicDialog):
         self.lbl_job_status.SetLabel(f"Plotting…\n{duration}")
 
     def on_plot_done(self, result: DotDict | None):
-        self.nav_route  = None
+        self.nav_route = None
         self._loading_precalculated_route = False
         if result:
             if not hasattr(result, "error"):
-                self.itinerary: DotDict = DotDict(result)
-                self.itinerary.timestamp = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
-
-                # Enrich jumps with StarClass before persisting
-                self._enrich_route_with_star_classes(self.itinerary.jumps)
-
-                save_dotdict_to_json(self.itinerary, str(self._last_route_for_selected_plotter))
-
-                self.nav_route = NavRouteHandler(
-                    self._last_route_for_selected_plotter,
-                    amount_of_upcoming_systems_to_show=int(self.parent.parent.prefs["amount_of_plotted_upcoming_systems_to_show"]),
-                    amount_of_passed_systems_to_show=int(self.parent.parent.prefs["amount_of_plotted_passed_systems_to_show"]),
-                    progress_cb=self._on_parse_progress
+                # Delegate the heavy route preparation to a background thread
+                # so the GUI stays responsive while the route is being prepared.
+                self._route_prep_worker = RoutePrepWorker(
+                    itinerary=DotDict(result),
+                    sh=self.sh,
+                    route_file=self._last_route_for_selected_plotter,
+                    upcoming_systems=int(self.parent.parent.prefs["amount_of_plotted_upcoming_systems_to_show"]),
+                    passed_systems=int(self.parent.parent.prefs["amount_of_plotted_passed_systems_to_show"]),
+                    on_progress=self._on_parse_progress,
+                    on_done=self._on_route_prep_done,
                 )
-                self.nav_route.clear_plotted_route()
-                self.nav_route.load_plotted_route()
-                self.lbl_job_status.SetLabel("Route ready!")
-                self._check_waypoint(self.nav_route.plotted_nav_route.nav_points[0])
+                self._route_prep_worker.start()
+                return
             else:
                 self.lbl_job_status.SetLabel(f"Plotting failed.\n{result.error}")
         else:
             self.lbl_job_status.SetLabel(f"Plotting failed.")
         self.render()
 
-    def _enrich_route_with_star_classes(self, route_data: list) -> None:
-        """Looks up missing StarClass values and writes them back into the raw jump dicts."""
-        total = len(route_data)
-        for i, jump in enumerate(route_data, start=1):
-            # Already cached? Skip.
-            if jump.get("StarClass"):
-                continue
+    def _on_route_prep_done(self, nav_route: NavRouteHandler | None, error: str | None):
+        """Called on the MAIN thread after background route preparation finishes."""
+        if error:
+            self.lbl_job_status.SetLabel(f"Plotting failed.\n{error}")
+            self.render()
+            return
 
-            system_id = jump.get("id64")
-            if system_id is None:
-                continue
+        if nav_route is None:
+            self.lbl_job_status.SetLabel("Plotting failed.")
+            self.render()
+            return
 
-            star_class = self.sh.get_star_class_from_spansh(system_id=system_id)
-            if star_class:
-                jump["StarClass"] = star_class
-
-            self._on_parse_progress(i, total)
+        self.nav_route = nav_route
+        self.lbl_job_status.SetLabel("Route ready!")
+        if self.nav_route.plotted_nav_route and self.nav_route.plotted_nav_route.nav_points:
+            self._check_waypoint(self.nav_route.plotted_nav_route.nav_points[0])
+        self.render()
 
     def _on_parse_progress(self, done: int, total: int):
         if self._loading_precalculated_route:
@@ -652,7 +670,7 @@ class ExplorationItinerary(DynamicDialog):
                     label_text = ""
                     match self.selected_plotter:
                         case "riches":
-                            label_text = "Minimum scan salue"
+                            label_text = "Minimum scan value"
                         case "exobiology":
                             label_text = "Minimum landmark Value"
 
@@ -984,3 +1002,77 @@ class PlotterWorker(Thread):
 
         # Deliver the final result back onto the main thread
         wx.CallAfter(self.on_done, result)
+
+
+class RoutePrepWorker(Thread):
+    """Enriches a route with StarClass data and builds a NavRouteHandler on a background thread.
+
+    Reports progress via wx.CallAfter so the GUI stays responsive, then delivers
+    the finished NavRouteHandler back on the main thread.
+
+    When *itinerary* is provided (non-empty), the worker enriches and saves it first
+    (plot mode).  When *itinerary* is omitted or empty, it only builds the
+    NavRouteHandler from the existing file on disk (load mode).
+    """
+
+    def __init__(
+        self,
+        itinerary: DotDict | None,
+        sh: SpanshHelper,
+        route_file: Path,
+        upcoming_systems: int,
+        passed_systems: int,
+        on_progress,
+        on_done,
+    ):
+        super().__init__(daemon=True)
+        self.itinerary = itinerary
+        self.sh = sh
+        self.route_file = route_file
+        self.upcoming_systems = upcoming_systems
+        self.passed_systems = passed_systems
+        self.on_progress = on_progress  # callable(done, total) — marshaled via wx.CallAfter
+        self.on_done = on_done          # callable(nav_route, error)
+
+    def run(self):
+        try:
+            # Progress wrapper: always marshal to the GUI thread
+            def _progress(done, total):
+                wx.CallAfter(self.on_progress, done, total)
+
+            # Plot mode: enrich and persist the itinerary first
+            if self.itinerary:
+                self.itinerary.timestamp = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+                if hasattr(self.itinerary, "jumps") and self.itinerary.jumps:
+                    self._enrich_route_with_star_classes(self.itinerary.jumps, self.sh, _progress)
+                save_dotdict_to_json(self.itinerary, str(self.route_file))
+
+            # Build NavRouteHandler (also calls _progress via wx.CallAfter)
+            nav_route = NavRouteHandler(
+                self.route_file,
+                amount_of_upcoming_systems_to_show=self.upcoming_systems,
+                amount_of_passed_systems_to_show=self.passed_systems,
+                progress_cb=_progress,
+            )
+            nav_route.clear_plotted_route()
+            nav_route.load_plotted_route()
+
+            wx.CallAfter(self.on_done, nav_route, None)
+
+        except Exception as exc:
+            wx.CallAfter(self.on_done, None, str(exc))
+
+    @staticmethod
+    def _enrich_route_with_star_classes(route_data: list, sh: SpanshHelper, progress_cb) -> None:
+        """Looks up missing StarClass values and writes them back into the raw jump dicts."""
+        total = len(route_data)
+        for i, jump in enumerate(route_data, start=1):
+            if jump.get("StarClass"):
+                continue
+            system_id = jump.get("id64")
+            if system_id is None:
+                continue
+            star_class = sh.get_star_class_from_spansh(system_id=system_id)
+            if star_class:
+                jump["StarClass"] = star_class
+            progress_cb(i, total)
