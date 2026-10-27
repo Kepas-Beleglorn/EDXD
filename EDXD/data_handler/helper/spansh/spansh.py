@@ -1,10 +1,12 @@
 from time import sleep
 from datetime import datetime, timezone
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import json
 
 import requests
 from pathlib import Path
+
+from packaging.tags import sys_tags
 
 from EDXD.data_handler.helper.data_helper import time_delta
 
@@ -14,6 +16,7 @@ from EDXD.data_handler.model import Model, Atmosphere, Ring
 import EDXD.data_handler.helper.data_helper as dh
 from EDXD.globals import BODY_NO_DATA, SLEF_PATH
 from EDXD.data_handler.helper.spansh.ship_modules import ShipFSDModules
+from EDXD.data_handler.helper.edsm.edsm import EdsmHelper
 
 SPANSH_BASE_URL:str = "https://spansh.co.uk/"
 SPANSH_GET_DUMP: str = SPANSH_BASE_URL + "api/dump/"
@@ -39,6 +42,35 @@ class SpanshHelper:
     def __init__(self):
         self.system_data: DotDict  | None = None
         self.url = None
+        self._edsm_helper: Optional[EdsmHelper] = None
+
+    @property
+    def edsm_helper(self) -> EdsmHelper:
+        if self._edsm_helper is None:
+            self._edsm_helper = EdsmHelper()
+        return self._edsm_helper
+
+    def get_star_class(self, system_id: int) -> str:
+        """
+        Get the star class for a system, querying EDSM first, then falling back to Spansh.
+        
+        Args:
+            system_id: The id64 (SystemAddress) of the star system.
+            
+        Returns:
+            The spectral class string (e.g., "G", "K", "N") or empty string if not found.
+        """
+        # Try EDSM first
+        star_class = self.edsm_helper.get_star_class_from_edsm(system_id)
+        if not star_class:
+            # Fallback to Spansh
+            star_class = self.get_star_class_from_spansh(system_id)
+        if star_class is None or star_class == "":
+            print(f"star class not found for system: {system_id}")
+            print(f"https://www.edsm.net/api-system-v1/bodies?systemId64={system_id}")
+            print(f"https://spansh.co.uk/api/dump/{system_id}")
+
+        return star_class
 
     def get_system_data(self, system_id: int):
         # Check if we need to fetch new data

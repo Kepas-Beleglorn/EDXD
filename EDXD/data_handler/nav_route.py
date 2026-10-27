@@ -64,7 +64,7 @@ class NavRouteHandler:
             nav_point = NavPoint(
                 star_system=system.StarSystem if hasattr(system, "StarSystem") else system.name if hasattr(system, "name") else "",
                 system_address=system.SystemAddress if hasattr(system, "SystemAddress") else system.id64 if hasattr(system, "id64") else -1,
-                star_class=system.StarClass if hasattr(system, "StarClass") else self.sh.get_star_class_from_spansh(system_id=system.id64),
+                star_class=system.StarClass if hasattr(system, "StarClass") else self.sh.get_star_class(system_id=system.id64),
                 star_position=pos
             )
             systems.append(nav_point)

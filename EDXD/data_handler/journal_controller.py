@@ -894,7 +894,7 @@ class JournalController(PausableThread, threading.Thread):
         pos: StarPosition = StarPosition(x, y, z)
         star_system: str = evt.get("StarSystem")
         system_address: int = int(evt.get("SystemAddress"))
-        star_class: str = self.spansh_helper.get_star_class_from_spansh(system_address)
+        star_class: str = self.spansh_helper.get_star_class(system_address)
         nav_point: NavPoint = NavPoint(star_system=star_system, system_address=system_address, star_class=star_class, star_position=pos)
 
         path = Path(route_file)

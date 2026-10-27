@@ -952,7 +952,7 @@ class ExplorationItinerary(DynamicDialog):
             if int(system.id64) == current_system_address:
                 # try updating system again
                 if not hasattr(system, "StarClass") or system.StarClass == "":
-                    star_class = self.sh.get_star_class_from_spansh(system_id=current_system_address)
+                    star_class = self.sh.get_star_class(system_id=current_system_address)
                     if star_class:
                         system["StarClass"] = star_class
                         save_dotdict_to_json(spansh_route_data, str(self._last_route_for_selected_plotter))
@@ -1316,7 +1316,7 @@ class RoutePrepWorker(Thread):
             system_id = jump.get("id64")
             if system_id is None:
                 continue
-            star_class = sh.get_star_class_from_spansh(system_id=system_id)
+            star_class = sh.get_star_class(system_id=system_id)
             if star_class:
                 jump["StarClass"] = star_class
             progress_cb(i, total)
