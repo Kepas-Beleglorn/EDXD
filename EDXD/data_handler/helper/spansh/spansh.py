@@ -50,28 +50,6 @@ class SpanshHelper:
             self._edsm_helper = EdsmHelper()
         return self._edsm_helper
 
-    def get_star_class(self, system_id: int) -> str:
-        """
-        Get the star class for a system, querying EDSM first, then falling back to Spansh.
-        
-        Args:
-            system_id: The id64 (SystemAddress) of the star system.
-            
-        Returns:
-            The spectral class string (e.g., "G", "K", "N") or empty string if not found.
-        """
-        # Try EDSM first
-        star_class = self.edsm_helper.get_star_class_from_edsm(system_id)
-        if not star_class:
-            # Fallback to Spansh
-            star_class = self.get_star_class_from_spansh(system_id)
-        if star_class is None or star_class == "":
-            print(f"star class not found for system: {system_id}")
-            print(f"https://www.edsm.net/api-system-v1/bodies?systemId64={system_id}")
-            print(f"https://spansh.co.uk/api/dump/{system_id}")
-
-        return star_class
-
     def get_system_data(self, system_id: int):
         # Check if we need to fetch new data
         if self.system_data is None or (hasattr(self.system_data, "id64") and int(self.system_data.id64) != system_id):
@@ -111,6 +89,28 @@ class SpanshHelper:
             if body_type != "":
                 break
         return body_type
+
+    def get_star_class(self, system_id: int) -> str:
+        """
+        Get the star class for a system, querying EDSM first, then falling back to Spansh.
+        
+        Args:
+            system_id: The id64 (SystemAddress) of the star system.
+            
+        Returns:
+            The spectral class string (e.g., "G", "K", "N") or empty string if not found.
+        """
+        # Try EDSM first
+        star_class = self.edsm_helper.get_star_class_from_edsm(system_id)
+        if not star_class:
+            # Fallback to Spansh
+            star_class = self.get_star_class_from_spansh(system_id)
+        if star_class is None or star_class == "":
+            print(f"star class not found for system: {system_id}")
+            print(f"https://www.edsm.net/api-system-v1/bodies?systemId64={system_id}")
+            print(f"https://spansh.co.uk/api/dump/{system_id}")
+
+        return star_class
 
     def get_parent_star_ids(self, current_body: DotDict) -> List[Dict[str, int]]:
         parent_stars: List[Dict[str, int]] = current_body.parents
@@ -375,11 +375,6 @@ class SpanshRoutePlotter:
     def __init__(self):
         self.sm: ShipFSDModules = ShipFSDModules()
 
-    @staticmethod
-    def get_route(job_id: str) -> DotDict | None:
-        plotted_route: DotDict | None = None
-        return plotted_route
-
     def _send_request(self, url: str, payload) -> str | None:
 
         headers = {
@@ -552,6 +547,12 @@ class SpanshRoutePlotter:
             payload["via"] = [wp.strip() for wp in via_waypoints if wp.strip()]
 
         return self._send_request(url, payload)
+
+    @staticmethod
+    def get_route(job_id: str) -> DotDict | None:
+        plotted_route: DotDict | None = None
+        return plotted_route
+
 
 @staticmethod
 def get_itinerary(job_id: str | None,

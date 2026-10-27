@@ -123,8 +123,21 @@ class ExplorationItinerary(DynamicDialog):
         # noinspection PyTypeChecker
         wx.CallLater(millis=3000, callableObj=self._loading_finished)
 
+# ==============================================================================
+# Lifecycle & Window Events
+# ==============================================================================
+
     def _loading_finished(self):
         self._loading = False
+
+    def _on_show(self, event):
+        """First time the window becomes visible."""
+        self._ready = True
+        event.Skip()
+
+    def _on_close(self, event):
+        self._timer.Stop()
+        event.Skip()
 
     def _on_timer(self, event):
         if self._check_waypoint():
@@ -151,352 +164,9 @@ class ExplorationItinerary(DynamicDialog):
         if not self.IsShown():
             self.Show()
 
-    def _on_show(self, event):
-        """First time the window becomes visible."""
-        self._ready = True
-        event.Skip()
-
-    @staticmethod
-    def _plain_name_from_label(raw: str) -> str:
-        if not raw:
-            return raw
-        if " (" in raw:
-            raw = raw.split(" (", 1)[0]
-        if " - " in raw:
-            raw = raw.split(" - ", 1)[0]
-        return raw.strip()
-
-    def _on_name_label_double_click(self, evt: wx.Event):
-        name = None
-        # Retrieve the label that triggered the event
-        label = evt.GetEventObject()
-
-        if not name and label:
-            raw = label.GetLabelText()
-            name = self._plain_name_from_label(raw)
-
-        if name:
-            copy_text_to_clipboard(name)
-
-        evt.Skip()
-
-    def _on_routing_changed(self, event):
-        selected_display = self.cmb_routing_algorithm.GetValue()
-        # Find the corresponding value
-        selected_value = next(
-            (value for display, value in ROUTING_OPTIONS if display == selected_display),
-            None
-        )
-        self.routing_algo = selected_value
-
-    def _on_routing_loaded(self, algo_value):
-
-        # Find the corresponding value
-        display_value = next(
-            (display for display, value in ROUTING_OPTIONS if value == algo_value),
-            None
-        )
-        self.cmb_routing_algorithm.SetValue(display_value)
-        self.routing_algo = algo_value
-
-    def _on_plotter_changed(self, event):
-        selected_display = self.cmb_selected_plotter.GetValue()
-        # Find the corresponding value
-        selected_value = next(
-            (value for display, value in ROUTE_PLOTTERS if display == selected_display),
-            None
-        )
-        self.selected_plotter = selected_value
-        self._last_route_for_selected_plotter: Path = Path(str(SPANSH_ROUTE).replace("XXX", self.selected_plotter))
-        self._update_parameter()
-        self.nav_route = None
-        self.render()
-        dh.update_spansh_active_plotted_route(SPANSH_ACTIVE_ROUTE, str(self._last_route_for_selected_plotter))
-
-    def  _on_load_route(self, event):
-        self.lbl_job_status.SetLabel("")
-        self.lbl_loading_status.SetLabel("")
-        path = self._last_route_for_selected_plotter
-        if not path.exists():
-            self.lbl_loading_status.SetLabel(f"No previous route found for \n{self.cmb_selected_plotter.GetValue()}.")
-            self.lbl_loading_status.Update()
-            return
-
-        self._loading_precalculated_route = True
-        self.lbl_loading_status.SetLabel(f"Loading last route for \n{self.cmb_selected_plotter.GetValue()}...")
-        self.lbl_loading_status.Update()
-        self._load_parameters_from_file(path)
-        self.Update()
-
-        # Delegate the heavy route loading to a background thread
-        # so the GUI stays responsive while the route is being prepared.
-        self.nav_route = None
-        self._route_prep_worker = RoutePrepWorker(
-            itinerary=None,  # load mode: skip enrichment, only build NavRouteHandler
-            sh=self.sh,
-            route_file=self._last_route_for_selected_plotter,
-            upcoming_systems=int(self.parent.parent.prefs["amount_of_plotted_upcoming_systems_to_show"]),
-            passed_systems=int(self.parent.parent.prefs["amount_of_plotted_passed_systems_to_show"]),
-            on_progress=self._on_parse_progress,
-            on_done=self._on_load_route_done,
-        )
-        self._route_prep_worker.start()
-
-    def _on_load_route_done(self, nav_route: NavRouteHandler | None, error: str | None):
-        """Called on the MAIN thread after background route loading finishes."""
-        self._loading_precalculated_route = False
-        if error:
-            self.lbl_loading_status.SetLabel(f"Failed to load route.\n{error}")
-            self.lbl_loading_status.Update()
-            self.render()
-            return
-
-        if nav_route is None:
-            self.lbl_loading_status.SetLabel("Failed to load route.")
-            self.lbl_loading_status.Update()
-            self.render()
-            return
-
-        self.nav_route = nav_route
-        self._check_waypoint()
-        self.render()
-        self.lbl_loading_status.SetLabel("Previous route loaded.")
-        self.lbl_loading_status.Update()
-
-    def _load_parameters_from_file(self, json_file: Path):
-        if not json_file.exists():
-            return
-
-        raw_data = json_file.read_text()
-        if len(raw_data) == 0:
-            return
-
-        data = DotDict(json.loads(raw_data))
-        self._update_parameter()
-        if hasattr(data, "parameters") and data.parameters:
-            match self.selected_plotter:
-                case "galaxy":
-                    if hasattr(data.parameters, "source_system"): self.txt_source_system.SetValue(data.parameters.source_system)
-                    if hasattr(data.parameters, "destination_system"): self.txt_destination_system.SetValue(data.parameters.destination_system)
-                    if hasattr(data.parameters, "cargo"): self.txt_cargo.SetValue(str(data.parameters.cargo))
-                    if hasattr(data.parameters, "reserve_size"): self.txt_reserve_fuel.SetValue(str(data.parameters.reserve_size))
-                    if hasattr(data.parameters, "is_supercharged"):
-                        toggled = data.parameters.is_supercharged
-                        self.btn_already_supercharged._is_toggled = toggled
-                        self.btn_already_supercharged.SetValue(toggled)
-                    if hasattr(data.parameters, "use_supercharge"):
-                        toggled = data.parameters.use_supercharge
-                        self.btn_use_supercharged._is_toggled = toggled
-                        self.btn_use_supercharged.SetValue(toggled)
-                    if hasattr(data.parameters, "use_injections"):
-                        toggled = data.parameters.use_injections
-                        self.btn_use_fsd_injections_always._is_toggled = toggled
-                        self.btn_use_fsd_injections_always.SetValue(toggled)
-                    if hasattr(data.parameters, "use_injections_when_required"):
-                        toggled = data.parameters.use_injections_when_required
-                        self.btn_use_fsd_injections_when_required._is_toggled = toggled
-                        self.btn_use_fsd_injections_when_required.SetValue(toggled)
-                    if hasattr(data.parameters, "exclude_secondary"):
-                        toggled = data.parameters.exclude_secondary
-                        self.btn_exclude_secondary_stars._is_toggled = toggled
-                        self.btn_exclude_secondary_stars.SetValue(toggled)
-                    if hasattr(data.parameters, "refuel_every_scoopable"):
-                        toggled = (data.parameters.refuel_every_scoopable == 1)
-                        self.btn_refuel_every_scoopable._is_toggled = toggled
-                        self.btn_refuel_every_scoopable.SetValue(toggled)
-                    if hasattr(data.parameters, "algorithm"): self._on_routing_loaded(data.parameters.algorithm)
-
-                case "neutron":
-                    if hasattr(data.parameters, "from"): self.txt_source_system.SetValue(data.parameters["from"])
-                    if hasattr(data.parameters, "to"): self.txt_destination_system.SetValue(data.parameters.to)
-                    else: self.txt_destination_system.Clear()
-                    if hasattr(data.parameters, "range"): self.txt_jump_range.SetValue(data.parameters.range)
-                    if hasattr(self, "spin_efficiency") and hasattr(self, "sld_efficiency"):
-                        if hasattr(data.parameters, "efficiency"):
-                            eff_val = int(data.parameters.efficiency)
-                            self.spin_efficiency.SetValue(eff_val)
-                            self.sld_efficiency.SetValue(eff_val)
-                    if hasattr(data.parameters, "supercharge_multiplier"):
-                        multiplier = int(data.parameters.supercharge_multiplier)
-                        if multiplier == 6:
-                            self.btn_overcharge_supercharge.SetValue(True)
-                            self.btn_overcharge_supercharge._is_toggled = True
-                            self.btn_normal_supercharge.SetValue(False)
-                            self.btn_normal_supercharge._is_toggled = False
-                            self.btn_normal_supercharge.Refresh()
-                        else:
-                            self.btn_normal_supercharge.SetValue(True)
-                            self.btn_normal_supercharge._is_toggled = True
-                            self.btn_overcharge_supercharge.SetValue(False)
-                            self.btn_overcharge_supercharge._is_toggled = False
-                            self.btn_overcharge_supercharge.Refresh()
-                    # Load via waypoints if present
-                    if hasattr(data.parameters, "via") and data.parameters.via:
-                        via_list = data.parameters.via
-                        if isinstance(via_list, list):
-                            for wp in via_list:
-                                if wp and str(wp).strip():
-                                    self._add_via_waypoint(str(wp))
-
-                case _:
-                    if hasattr(data.parameters, "source"): self.txt_source_system.SetValue(data.parameters.source)
-                    if hasattr(data.parameters, "destination"): self.txt_destination_system.SetValue(data.parameters.destination)
-                    else: self.txt_destination_system.Clear()
-                    if hasattr(data.parameters, "range"): self.txt_jump_range.SetValue(data.parameters.range)
-                    if hasattr(data.parameters, "radius"): self.txt_stray_radius.SetValue(data.parameters.radius)
-                    if hasattr(data.parameters, "max_results"): self.txt_max_systems.SetValue(data.parameters.max_results)
-                    if hasattr(data.parameters, "use_mapping_value") and hasattr(self, "btn_use_mapping_value"):
-                        toggled = (int(data.parameters.use_mapping_value) == 1)
-                        self.btn_use_mapping_value._is_toggled = toggled
-                        self.btn_use_mapping_value.SetValue(toggled)
-                    if hasattr(data.parameters, "avoid_thargoids"):
-                        toggled = (int(data.parameters.avoid_thargoids) == 1)
-                        self.btn_avoid_thargoids._is_toggled = toggled
-                        self.btn_avoid_thargoids.SetValue(toggled)
-                    if hasattr(data.parameters, "loop"):
-                        toggled = (int(data.parameters.loop) == 1)
-                        self.btn_loop_route._is_toggled = toggled
-                        self.btn_loop_route.SetValue(toggled)
-                    if hasattr(data.parameters, "min_value") and hasattr(self, "spin_min_scan_value") and hasattr(self, "sld_min_scan_value"):
-                        self.spin_min_scan_value.SetValue(int(data.parameters.min_value))
-                        self.sld_min_scan_value.SetValue(int(data.parameters.min_value))
-                    if hasattr(data.parameters, "max_distance"):
-                        self.spin_max_distance_to_arrival.SetValue(int(data.parameters.max_distance))
-                        self.sld_max_distance_to_arrival.SetValue(int(data.parameters.max_distance))
-
-    def  _on_calculate_route(self, event):
-        spansh = SpanshRoutePlotter()
-        self.lbl_job_status.SetLabel("")
-        self.lbl_loading_status.SetLabel("")
-        self.nav_route  = None
-        self.render()
-        self.job_id: str | None = None
-
-        match self.selected_plotter:
-            case "galaxy":
-                self.job_id: str | None = spansh.galaxy_plotter(
-                    source_system_name=self.txt_source_system.GetValue(),
-                    destination_system_name=self.txt_destination_system.GetValue(),
-                    cargo=int(self.txt_cargo.GetValue()),
-                    reserve_fuel=int(self.txt_reserve_fuel.GetValue()),
-                    already_supercharged=bool(self.btn_already_supercharged.GetValue()),
-                    use_supercharge=bool(self.btn_use_supercharged.GetValue()),
-                    fsd_inject_always=bool(self.btn_use_fsd_injections_always.GetValue()),
-                    fsd_inject_when_required=bool(self.btn_use_fsd_injections_when_required.GetValue()),
-                    exclude_secondary=bool(self.btn_exclude_secondary_stars.GetValue()),
-                    refuel_every_scoopable=bool(self.btn_refuel_every_scoopable.GetValue()),
-                    algorithm=self.routing_algo)
-            case "riches":
-                self.job_id: str | None = spansh.road_to_riches(
-                    source_system_name=self.txt_source_system.GetValue(),
-                    destination_system_name=self.txt_destination_system.GetValue(),
-                    jump_range=float(self.txt_jump_range.GetValue()),
-                    stray_radius=int(self.txt_stray_radius.GetValue()),
-                    max_systems=int(self.txt_max_systems.GetValue()),
-                    use_mapped_value=self.btn_use_mapping_value.GetValue(),
-                    avoid_thargoids=self.btn_avoid_thargoids.GetValue(),
-                    loop_back=self.btn_loop_route.GetValue(),
-                    max_distance_from_arrival=self.spin_max_distance_to_arrival.GetValue(),
-                    min_scan_value=self.spin_min_scan_value.GetValue(),
-                    riches_mode=self.selected_plotter)
-
-            case "exobiology":
-                self.job_id: str | None = spansh.exobiology(
-                    source_system_name=self.txt_source_system.GetValue(),
-                    destination_system_name=self.txt_destination_system.GetValue(),
-                    jump_range=float(self.txt_jump_range.GetValue()),
-                    stray_radius=int(self.txt_stray_radius.GetValue()),
-                    max_systems=int(self.txt_max_systems.GetValue()),
-                    avoid_thargoids=self.btn_avoid_thargoids.GetValue(),
-                    loop_back=self.btn_loop_route.GetValue(),
-                    max_distance_from_arrival=self.spin_max_distance_to_arrival.GetValue(),
-                    min_scan_value=self.spin_min_scan_value.GetValue())
-            case "neutron":
-                self.job_id: str | None = spansh.neutron_router(
-                    source_system_name=self.txt_source_system.GetValue(),
-                    destination_system_name=self.txt_destination_system.GetValue(),
-                    via_waypoints=self._get_via_waypoints(),
-                    jump_range=float(self.txt_jump_range.GetValue()),
-                    supercharge_multiplier=self._get_neutron_supercharge_multiplier(),
-                    efficiency=self.spin_efficiency.GetValue())
-            case _:
-                self.job_id: str | None = spansh.road_to_riches(
-                    source_system_name=self.txt_source_system.GetValue(),
-                    destination_system_name=self.txt_destination_system.GetValue(),
-                    jump_range=float(self.txt_jump_range.GetValue()),
-                    stray_radius=int(self.txt_stray_radius.GetValue()),
-                    max_systems=int(self.txt_max_systems.GetValue()),
-                    avoid_thargoids=self.btn_avoid_thargoids.GetValue(),
-                    loop_back=self.btn_loop_route.GetValue(),
-                    max_distance_from_arrival=self.spin_max_distance_to_arrival.GetValue(),
-                    riches_mode=self.selected_plotter)
-
-        if "error" in str(self.job_id):
-            job_dict: DotDict = create_dot_dict_from_string(str(self.job_id))
-            if hasattr(job_dict, "error"):
-                self.lbl_job_status.SetLabel(f"Plotting failed.\n{job_dict.error}")
-        else:
-            # Start the background worker; it updates the label while polling
-            self.worker = PlotterWorker(
-                self.job_id,
-                on_progress=self.update_status,
-                on_done=self.on_plot_done,
-            )
-            self.worker.start()
-
-    def update_status(self, state: str, status: str, duration: str):
-        # Called on the MAIN thread via wx.CallAfter — safe to touch widgets
-        self.lbl_job_status.SetLabel(f"Plotting…\n{duration}")
-
-    def on_plot_done(self, result: DotDict | None):
-        self.nav_route = None
-        self._loading_precalculated_route = False
-        if result:
-            if not hasattr(result, "error"):
-                # Delegate the heavy route preparation to a background thread
-                # so the GUI stays responsive while the route is being prepared.
-                self._route_prep_worker = RoutePrepWorker(
-                    itinerary=DotDict(result),
-                    sh=self.sh,
-                    route_file=self._last_route_for_selected_plotter,
-                    upcoming_systems=int(self.parent.parent.prefs["amount_of_plotted_upcoming_systems_to_show"]),
-                    passed_systems=int(self.parent.parent.prefs["amount_of_plotted_passed_systems_to_show"]),
-                    on_progress=self._on_parse_progress,
-                    on_done=self._on_route_prep_done,
-                )
-                self._route_prep_worker.start()
-                return
-            else:
-                self.lbl_job_status.SetLabel(f"Plotting failed.\n{result.error}")
-        else:
-            self.lbl_job_status.SetLabel(f"Plotting failed.")
-        self.render()
-
-    def _on_route_prep_done(self, nav_route: NavRouteHandler | None, error: str | None):
-        """Called on the MAIN thread after background route preparation finishes."""
-        if error:
-            self.lbl_job_status.SetLabel(f"Plotting failed.\n{error}")
-            self.render()
-            return
-
-        if nav_route is None:
-            self.lbl_job_status.SetLabel("Plotting failed.")
-            self.render()
-            return
-
-        self.nav_route = nav_route
-        self.lbl_job_status.SetLabel("Route ready!")
-        if self.nav_route.plotted_nav_route and self.nav_route.plotted_nav_route.nav_points:
-            self._check_waypoint(self.nav_route.plotted_nav_route.nav_points[0])
-        self.render()
-
-    def _on_parse_progress(self, done: int, total: int):
-        if self._loading_precalculated_route:
-            self.lbl_loading_status.SetLabel(f"Preparing waypoints… \nSystems {done}/{total}")
-            self.lbl_loading_status.Update()
-        else:
-            self.lbl_job_status.SetLabel(f"Preparing waypoints… \nSystems {done}/{total}")
-            self.lbl_job_status.Update()
+    # ==============================================================================
+    # Plotter Selection
+    # ==============================================================================
 
     def _update_plotter_select(self):
         if not self.plotter_select_panel.IsShown():
@@ -517,6 +187,24 @@ class ExplorationItinerary(DynamicDialog):
 
         self.plotter_select_panel.add_table_item_generic(self.cmb_selected_plotter)
         self.plotter_select_panel.add_table_item_label("")
+
+    def _on_plotter_changed(self, event):
+        selected_display = self.cmb_selected_plotter.GetValue()
+        # Find the corresponding value
+        selected_value = next(
+            (value for display, value in ROUTE_PLOTTERS if display == selected_display),
+            None
+        )
+        self.selected_plotter = selected_value
+        self._last_route_for_selected_plotter: Path = Path(str(SPANSH_ROUTE).replace("XXX", self.selected_plotter))
+        self._update_parameter()
+        self.nav_route = None
+        self.render()
+        dh.update_spansh_active_plotted_route(SPANSH_ACTIVE_ROUTE, str(self._last_route_for_selected_plotter))
+
+    # ==============================================================================
+    # Parameter Panel UI Building
+    # ==============================================================================
 
     def _update_parameter(self):
         if not self.parameter_panel.IsShown():
@@ -578,236 +266,6 @@ class ExplorationItinerary(DynamicDialog):
         if self.parameter_panel.IsShown():
             # Force a layout update
             self.parameter_panel.force_render()
-
-    def _update_general(self):
-        if self.nav_route is None or self.nav_route.plotted_nav_route is None or len(self.nav_route.plotted_nav_route.nav_points) < 1:
-            self.general_panel.Hide()
-            return
-
-        if not self.general_panel.IsShown():
-            self.general_panel.Show()
-
-        final_destination = "Currently no plotted route..."
-        if self.nav_route.plotted_nav_route and len(self.nav_route.plotted_nav_route.nav_points) > 0:
-            final_destination = f"Final destination: {self.nav_route.get_final_destination().star_system}"
-
-        lbl_final_destination = self.general_panel.add_table_item_label(f"{final_destination}")
-        theme = wx.Font(self.theme["font_bold"])
-        theme.SetPointSize(12)
-        lbl_final_destination.SetFont(theme)
-        self.general_panel.add_table_item_label("")
-
-        if self.nav_route.current_system:
-            total_distance = self.nav_route.get_total_route_distance()
-            remaining_distance = self.nav_route.get_remaining_route_distance()
-
-            lbl_distance = self.general_panel.add_table_item_label(f"{' ' * 6}{remaining_distance:,.2f} Ly of {total_distance:,.2f} Ly ({self.nav_route.remaining_jumps_in_route - 1} jumps) remaining")
-            self.general_panel.add_table_item_label("")
-            self.general_panel.add_table_item_label("", line_height=20)
-
-        if self.general_panel.IsShown():
-            # Force a layout update
-            self.general_panel.force_render()
-
-    def _update_route(self):
-        if self.nav_route is None or self.nav_route.plotted_nav_route is None or len(self.nav_route.plotted_nav_route.nav_points) < 1:
-            self.route_panel.Hide()
-            return
-
-        if not self.route_panel.IsShown():
-            self.route_panel.Show()
-
-        self.nav_route.check_and_update_remaining_jump_count()
-
-        min = -1 * (self.nav_route.amount_of_passed_systems_to_show + 1)
-        max = self.nav_route.amount_of_upcoming_systems_to_show
-
-        if max > self.nav_route.remaining_jumps_in_route:
-            max = self.nav_route.remaining_jumps_in_route
-
-        min = min - self.nav_route.remaining_jumps_in_route
-        max = -1 * (self.nav_route.remaining_jumps_in_route - max)
-
-        small_font = wx.Font(self.theme["font"])
-        small_font.SetPointSize(9)
-
-        tall_font = wx.Font(self.theme["font_bold"])
-        tall_font.SetPointSize(16)
-
-        passed_colour = self.theme["foreground_less"]
-        current_bg_colour = self.theme["background_hover"]
-        jet_cone_colour = wx.Colour(0, 165, 255)
-
-        final_destination_address = self.nav_route.get_final_destination().system_address
-
-        system: NavPoint | None = None
-        next_system: NavPoint | None = None
-
-        fixed_height = 20
-        remaining_jumps_offset = 1
-
-        if self.nav_route.plotted_nav_route:
-            for i in range(min, max, 1):
-                if i == 0:
-                    break
-
-                if abs(i) > len(self.nav_route.plotted_nav_route.nav_points):
-                    continue
-
-                if len(self.nav_route.plotted_nav_route.nav_points) - abs(i) < 0:
-                    print(f"DEBUG[items-abs(i)  <  0]: {len(self.nav_route.plotted_nav_route.nav_points)} = {abs(i) - len(self.nav_route.plotted_nav_route.nav_points)} - {abs(i)}")
-                    continue
-
-                system = self.nav_route.get_system_by_index(i)
-                next_system = self.nav_route.get_system_by_index(i + 1)
-                system_type = ""
-                system_feature = ""
-                system_name = ""
-                distance_next_jump = 0.0
-                has_jet_cone = False
-                system_indicator = self.BMP_CIRCLE_ORANGE
-                distance_indicator = self.BMP_LINE_ORANGE
-
-                if system:
-                    system_type = system.star_class
-                    if system_type == "":
-                        system_type = " ? "
-                    if system_type and system_type != "":
-                        if system_type[0] in ("K", "G", "B", "F", "O", "A", "M"):
-                            system_feature = ICONS["scoopable"]
-                        if system_type[0] in ("N", "D"):
-                            has_jet_cone = True
-                            system_indicator = self.BMP_CIRCLE_BLUE
-                            distance_indicator = self.BMP_LINE_BLUE
-
-                    system_name = system.star_system
-                    system_address = system.system_address
-
-                    if next_system:
-                        distance_next_jump = gn.calculate_star_system_distance(next_system.star_position, system.star_position)
-
-                    lbl_1_system_indicator = self.route_panel.add_table_item_bitmap(system_indicator, 20)
-                    lbl_2_space = self.route_panel.add_table_item_label(f"", line_height=fixed_height)
-                    if final_destination_address == system_address:
-                        lbl_2_space.SetLabelText(f"{' ' * 5}{ICONS["final"]}")
-                    lbl_3_star_feature = self.route_panel.add_table_item_label(f"{' ' * 5}{system_feature}{'  ' * 2}", line_height=fixed_height)
-                    lbl_4_star_class = self.route_panel.add_table_item_label(f"[{system_type}]", line_height=fixed_height)
-                    lbl_5_system = self.route_panel.add_table_item_label(f"{' ' * 2}{system_name}", line_height=fixed_height)
-                    lbl_5_system.Bind(wx.EVT_LEFT_DCLICK, self._on_name_label_double_click)
-                    lbl_6_space = self.route_panel.add_table_item_label(f"", line_height=fixed_height)
-
-                    if has_jet_cone:
-                        lbl_1_system_indicator.SetForegroundColour(jet_cone_colour)
-                        lbl_2_space.SetForegroundColour(jet_cone_colour)
-                        lbl_3_star_feature.SetForegroundColour(jet_cone_colour)
-                        lbl_4_star_class.SetForegroundColour(jet_cone_colour)
-                        lbl_5_system.SetForegroundColour(jet_cone_colour)
-                        lbl_6_space.SetForegroundColour(jet_cone_colour)
-
-                    if abs(i) > self.nav_route.remaining_jumps_in_route + remaining_jumps_offset:
-                        lbl_1_system_indicator.SetForegroundColour(passed_colour)
-                        lbl_2_space.SetForegroundColour(passed_colour)
-                        lbl_3_star_feature.SetForegroundColour(passed_colour)
-                        lbl_4_star_class.SetForegroundColour(passed_colour)
-                        lbl_5_system.SetForegroundColour(passed_colour)
-                        lbl_6_space.SetForegroundColour(passed_colour)
-
-                    if abs(i) == self.nav_route.remaining_jumps_in_route + remaining_jumps_offset:
-                        lbl_4_star_class.SetFont(wx.Font(self.theme["font_bold"]))
-                        lbl_5_system.SetFont(wx.Font(self.theme["font_bold"]))
-
-                        lbl_1_system_indicator.SetBackgroundColour(current_bg_colour)
-                        lbl_2_space.SetBackgroundColour(current_bg_colour)
-                        lbl_3_star_feature.SetBackgroundColour(current_bg_colour)
-                        lbl_4_star_class.SetBackgroundColour(current_bg_colour)
-                        lbl_5_system.SetBackgroundColour(current_bg_colour)
-                        lbl_6_space.SetBackgroundColour(current_bg_colour)
-
-                    if abs(i) > abs(max - 1) and abs(i) <= len(self.nav_route.plotted_nav_route.nav_points):
-                        lbl_1_distance_indicator = self.route_panel.add_table_item_bitmap(distance_indicator, line_height=fixed_height)
-                        lbl_2_distance = self.route_panel.add_table_item_label(f"{' ' * 2}{distance_next_jump:.2f} Ly", align=wx.ALIGN_CENTER_VERTICAL, line_height=fixed_height)
-                        lbl_2_distance.SetFont(small_font)
-                        lbl_3_space = self.route_panel.add_table_item_label(f"", line_height=fixed_height)
-                        lbl_4_space = self.route_panel.add_table_item_label(f"", line_height=fixed_height)
-                        lbl_5_space = self.route_panel.add_table_item_label(f"", line_height=fixed_height)
-                        lbl_6_space = self.route_panel.add_table_item_label(f"", line_height=fixed_height)
-
-        if self.route_panel.IsShown():
-            # Force a layout update
-            self.route_panel.force_render()
-
-    def _check_waypoint(self, current_waypoint: NavPoint | None = None) -> bool:
-        spansh_route_data: DotDict = load_json_as_dotdict(str(self._last_route_for_selected_plotter))
-        current_system: NavPoint
-        if hasattr(spansh_route_data, "current_system"):
-            current_system: NavPoint = from_dotdict(NavPoint, spansh_route_data.current_system)
-        else:
-            if current_waypoint is None:
-                return False
-            else:
-                current_system = current_waypoint
-
-        current_system_address: int = current_system.system_address
-
-        do_copy_to_clipboard: bool = False
-        last_waypoint = None
-        if hasattr(spansh_route_data, "last_waypoint"):
-            last_waypoint: NavPoint = from_dotdict(NavPoint, spansh_route_data.last_waypoint)
-
-        for system in spansh_route_data.jumps:
-            # If we've reached a waypoint, copy the next name to the clipboard
-            if do_copy_to_clipboard:
-                system_name: str = ""
-                if hasattr(system, "name"):
-                    system_name: str = system.name
-                elif hasattr(system, "system"):
-                    system_name: str = system.system
-                if self.copied_system_name != system_name:
-                    self.copied_system_name = system_name
-                    copy_text_to_clipboard(system_name)
-                    do_copy_to_clipboard = False
-                break
-
-            # check if we reached a waypoint
-            if int(system.id64) == current_system_address:
-                # try updating system again
-                if not hasattr(system, "StarClass") or system.StarClass == "":
-                    star_class = self.sh.get_star_class(system_id=current_system_address)
-                    if star_class:
-                        system["StarClass"] = star_class
-                        save_dotdict_to_json(spansh_route_data, str(self._last_route_for_selected_plotter))
-                self.nav_route.current_system = current_system
-                if not last_waypoint or int(system.id64) != int(last_waypoint.system_address):
-                    self._save_last_waypoint_system(spansh_route_data, current_system)
-                do_copy_to_clipboard = True
-
-        if not do_copy_to_clipboard and hasattr(spansh_route_data, "last_waypoint"):
-            last_waypoint: NavPoint = from_dotdict(NavPoint, spansh_route_data.last_waypoint)
-            if self.nav_route:
-                self.nav_route.current_system = last_waypoint
-            for system in spansh_route_data.jumps:
-                system_name: str = ""
-                if hasattr(system, "name"):
-                    system_name: str = system.name
-                elif hasattr(system, "system"):
-                    system_name: str = system.system
-                if do_copy_to_clipboard:
-                    if self.copied_system_name != system_name:
-                        self.copied_system_name = system_name
-                        copy_text_to_clipboard(system_name)
-                        return True
-                    else:
-                        return False
-
-                # check if we reached a waypoint
-                if int(system.id64) == int(last_waypoint.system_address):
-                    do_copy_to_clipboard = True
-
-        return do_copy_to_clipboard
-
-    def _on_close(self,event):
-        self._timer.Stop()
-        event.Skip()
 
     def _build_galaxy_router_ui(self):
         """Build the UI for the Galaxy Router plotter."""
@@ -1078,6 +536,10 @@ class ExplorationItinerary(DynamicDialog):
         self.parameter_panel.add_table_item_label(" 🛈", align=wx.ALIGN_CENTER_VERTICAL).SetToolTip(efficiency_tooltip_text)
         self._link_spin_slider(self.spin_efficiency, self.sld_efficiency)
 
+    # ==============================================================================
+    # Via Waypoint Helpers
+    # ==============================================================================
+
     def _add_via_waypoint(self, value=""):
         """Add a new via waypoint text input as a table row. Returns the text control."""
         via_text = wx.TextCtrl(parent=self.parameter_panel.content, size=wx.Size(BTN_SIZE.width, -1))
@@ -1148,6 +610,19 @@ class ExplorationItinerary(DynamicDialog):
 
             self.parameter_panel.force_render()
 
+    def _get_via_waypoints(self) -> list:
+        """Collect all non-empty via waypoint values."""
+        waypoints = []
+        for ctrl in self._via_waypoints_list:
+            val = ctrl.GetValue().strip()
+            if val:
+                waypoints.append(val)
+        return waypoints
+
+    # ==============================================================================
+    # Supercharge Helpers
+    # ==============================================================================
+
     def _on_supercharge_toggle(self, event):
         """Ensure supercharge toggle buttons are mutually exclusive."""
         clicked_btn = event.EventObject
@@ -1174,14 +649,9 @@ class ExplorationItinerary(DynamicDialog):
         if self.btn_overcharge_supercharge.GetValue():
             return 6
 
-    def _get_via_waypoints(self) -> list:
-        """Collect all non-empty via waypoint values."""
-        waypoints = []
-        for ctrl in self._via_waypoints_list:
-            val = ctrl.GetValue().strip()
-            if val:
-                waypoints.append(val)
-        return waypoints
+    # ==============================================================================
+    # Spin/Slider Helpers
+    # ==============================================================================
 
     def _link_spin_slider(self, spin: wx.SpinCtrl, slider: ThemedSlider):
         spin.Bind(wx.EVT_SPINCTRL, lambda evt: self._on_spin(evt, slider))
@@ -1193,9 +663,588 @@ class ExplorationItinerary(DynamicDialog):
     def _on_slider(self, event, spin: wx.SpinCtrl):
         spin.SetValue(event.EventObject.GetValue())
 
+    # ==============================================================================
+    # Route Calculation
+    # ==============================================================================
+
+    def _on_calculate_route(self, event):
+        spansh = SpanshRoutePlotter()
+        self.lbl_job_status.SetLabel("")
+        self.lbl_loading_status.SetLabel("")
+        self.nav_route  = None
+        self.render()
+        self.job_id: str | None = None
+
+        match self.selected_plotter:
+            case "galaxy":
+                self.job_id: str | None = spansh.galaxy_plotter(
+                    source_system_name=self.txt_source_system.GetValue(),
+                    destination_system_name=self.txt_destination_system.GetValue(),
+                    cargo=int(self.txt_cargo.GetValue()),
+                    reserve_fuel=int(self.txt_reserve_fuel.GetValue()),
+                    already_supercharged=bool(self.btn_already_supercharged.GetValue()),
+                    use_supercharge=bool(self.btn_use_supercharged.GetValue()),
+                    fsd_inject_always=bool(self.btn_use_fsd_injections_always.GetValue()),
+                    fsd_inject_when_required=bool(self.btn_use_fsd_injections_when_required.GetValue()),
+                    exclude_secondary=bool(self.btn_exclude_secondary_stars.GetValue()),
+                    refuel_every_scoopable=bool(self.btn_refuel_every_scoopable.GetValue()),
+                    algorithm=self.routing_algo)
+            case "riches":
+                self.job_id: str | None = spansh.road_to_riches(
+                    source_system_name=self.txt_source_system.GetValue(),
+                    destination_system_name=self.txt_destination_system.GetValue(),
+                    jump_range=float(self.txt_jump_range.GetValue()),
+                    stray_radius=int(self.txt_stray_radius.GetValue()),
+                    max_systems=int(self.txt_max_systems.GetValue()),
+                    use_mapped_value=self.btn_use_mapping_value.GetValue(),
+                    avoid_thargoids=self.btn_avoid_thargoids.GetValue(),
+                    loop_back=self.btn_loop_route.GetValue(),
+                    max_distance_from_arrival=self.spin_max_distance_to_arrival.GetValue(),
+                    min_scan_value=self.spin_min_scan_value.GetValue(),
+                    riches_mode=self.selected_plotter)
+
+            case "exobiology":
+                self.job_id: str | None = spansh.exobiology(
+                    source_system_name=self.txt_source_system.GetValue(),
+                    destination_system_name=self.txt_destination_system.GetValue(),
+                    jump_range=float(self.txt_jump_range.GetValue()),
+                    stray_radius=int(self.txt_stray_radius.GetValue()),
+                    max_systems=int(self.txt_max_systems.GetValue()),
+                    avoid_thargoids=self.btn_avoid_thargoids.GetValue(),
+                    loop_back=self.btn_loop_route.GetValue(),
+                    max_distance_from_arrival=self.spin_max_distance_to_arrival.GetValue(),
+                    min_scan_value=self.spin_min_scan_value.GetValue())
+            case "neutron":
+                self.job_id: str | None = spansh.neutron_router(
+                    source_system_name=self.txt_source_system.GetValue(),
+                    destination_system_name=self.txt_destination_system.GetValue(),
+                    via_waypoints=self._get_via_waypoints(),
+                    jump_range=float(self.txt_jump_range.GetValue()),
+                    supercharge_multiplier=self._get_neutron_supercharge_multiplier(),
+                    efficiency=self.spin_efficiency.GetValue())
+            case _:
+                self.job_id: str | None = spansh.road_to_riches(
+                    source_system_name=self.txt_source_system.GetValue(),
+                    destination_system_name=self.txt_destination_system.GetValue(),
+                    jump_range=float(self.txt_jump_range.GetValue()),
+                    stray_radius=int(self.txt_stray_radius.GetValue()),
+                    max_systems=int(self.txt_max_systems.GetValue()),
+                    avoid_thargoids=self.btn_avoid_thargoids.GetValue(),
+                    loop_back=self.btn_loop_route.GetValue(),
+                    max_distance_from_arrival=self.spin_max_distance_to_arrival.GetValue(),
+                    riches_mode=self.selected_plotter)
+
+        if "error" in str(self.job_id):
+            job_dict: DotDict = create_dot_dict_from_string(str(self.job_id))
+            if hasattr(job_dict, "error"):
+                self.lbl_job_status.SetLabel(f"Plotting failed.\n{job_dict.error}")
+        else:
+            # Start the background worker; it updates the label while polling
+            self.worker = PlotterWorker(
+                self.job_id,
+                on_progress=self.update_status,
+                on_done=self.on_plot_done,
+            )
+            self.worker.start()
+
+    def update_status(self, state: str, status: str, duration: str):
+        # Called on the MAIN thread via wx.CallAfter — safe to touch widgets
+        self.lbl_job_status.SetLabel(f"Plotting…\n{duration}")
+
+    def on_plot_done(self, result: DotDict | None):
+        self.nav_route = None
+        self._loading_precalculated_route = False
+        if result:
+            if not hasattr(result, "error"):
+                # Delegate the heavy route preparation to a background thread
+                # so the GUI stays responsive while the route is being prepared.
+                self._route_prep_worker = RoutePrepWorker(
+                    itinerary=DotDict(result),
+                    sh=self.sh,
+                    route_file=self._last_route_for_selected_plotter,
+                    upcoming_systems=int(self.parent.parent.prefs["amount_of_plotted_upcoming_systems_to_show"]),
+                    passed_systems=int(self.parent.parent.prefs["amount_of_plotted_passed_systems_to_show"]),
+                    on_progress=self._on_parse_progress,
+                    on_done=self._on_route_prep_done,
+                )
+                self._route_prep_worker.start()
+                return
+            else:
+                self.lbl_job_status.SetLabel(f"Plotting failed.\n{result.error}")
+        else:
+            self.lbl_job_status.SetLabel(f"Plotting failed.")
+        self.render()
+
+    # ==============================================================================
+    # Route Loading
+    # ==============================================================================
+
+    def _on_load_route(self, event):
+        self.lbl_job_status.SetLabel("")
+        self.lbl_loading_status.SetLabel("")
+        path = self._last_route_for_selected_plotter
+        if not path.exists():
+            self.lbl_loading_status.SetLabel(f"No previous route found for \n{self.cmb_selected_plotter.GetValue()}.")
+            self.lbl_loading_status.Update()
+            return
+
+        self._loading_precalculated_route = True
+        self.lbl_loading_status.SetLabel(f"Loading last route for \n{self.cmb_selected_plotter.GetValue()}...")
+        self.lbl_loading_status.Update()
+        self._load_parameters_from_file(path)
+        self.Update()
+
+        # Delegate the heavy route loading to a background thread
+        # so the GUI stays responsive while the route is being prepared.
+        self.nav_route = None
+        self._route_prep_worker = RoutePrepWorker(
+            itinerary=None,  # load mode: skip enrichment, only build NavRouteHandler
+            sh=self.sh,
+            route_file=self._last_route_for_selected_plotter,
+            upcoming_systems=int(self.parent.parent.prefs["amount_of_plotted_upcoming_systems_to_show"]),
+            passed_systems=int(self.parent.parent.prefs["amount_of_plotted_passed_systems_to_show"]),
+            on_progress=self._on_parse_progress,
+            on_done=self._on_load_route_done,
+        )
+        self._route_prep_worker.start()
+
+    def _on_load_route_done(self, nav_route: NavRouteHandler | None, error: str | None):
+        """Called on the MAIN thread after background route loading finishes."""
+        self._loading_precalculated_route = False
+        if error:
+            self.lbl_loading_status.SetLabel(f"Failed to load route.\n{error}")
+            self.lbl_loading_status.Update()
+            self.render()
+            return
+
+        if nav_route is None:
+            self.lbl_loading_status.SetLabel("Failed to load route.")
+            self.lbl_loading_status.Update()
+            self.render()
+            return
+
+        self.nav_route = nav_route
+        self._check_waypoint()
+        self.render()
+        self.lbl_loading_status.SetLabel("Previous route loaded.")
+        self.lbl_loading_status.Update()
+
+    def _load_parameters_from_file(self, json_file: Path):
+        if not json_file.exists():
+            return
+
+        raw_data = json_file.read_text()
+        if len(raw_data) == 0:
+            return
+
+        data = DotDict(json.loads(raw_data))
+        self._update_parameter()
+        if hasattr(data, "parameters") and data.parameters:
+            match self.selected_plotter:
+                case "galaxy":
+                    if hasattr(data.parameters, "source_system"): self.txt_source_system.SetValue(data.parameters.source_system)
+                    if hasattr(data.parameters, "destination_system"): self.txt_destination_system.SetValue(data.parameters.destination_system)
+                    if hasattr(data.parameters, "cargo"): self.txt_cargo.SetValue(str(data.parameters.cargo))
+                    if hasattr(data.parameters, "reserve_size"): self.txt_reserve_fuel.SetValue(str(data.parameters.reserve_size))
+                    if hasattr(data.parameters, "is_supercharged"):
+                        toggled = data.parameters.is_supercharged
+                        self.btn_already_supercharged._is_toggled = toggled
+                        self.btn_already_supercharged.SetValue(toggled)
+                    if hasattr(data.parameters, "use_supercharge"):
+                        toggled = data.parameters.use_supercharge
+                        self.btn_use_supercharged._is_toggled = toggled
+                        self.btn_use_supercharged.SetValue(toggled)
+                    if hasattr(data.parameters, "use_injections"):
+                        toggled = data.parameters.use_injections
+                        self.btn_use_fsd_injections_always._is_toggled = toggled
+                        self.btn_use_fsd_injections_always.SetValue(toggled)
+                    if hasattr(data.parameters, "use_injections_when_required"):
+                        toggled = data.parameters.use_injections_when_required
+                        self.btn_use_fsd_injections_when_required._is_toggled = toggled
+                        self.btn_use_fsd_injections_when_required.SetValue(toggled)
+                    if hasattr(data.parameters, "exclude_secondary"):
+                        toggled = data.parameters.exclude_secondary
+                        self.btn_exclude_secondary_stars._is_toggled = toggled
+                        self.btn_exclude_secondary_stars.SetValue(toggled)
+                    if hasattr(data.parameters, "refuel_every_scoopable"):
+                        toggled = (data.parameters.refuel_every_scoopable == 1)
+                        self.btn_refuel_every_scoopable._is_toggled = toggled
+                        self.btn_refuel_every_scoopable.SetValue(toggled)
+                    if hasattr(data.parameters, "algorithm"): self._on_routing_loaded(data.parameters.algorithm)
+
+                case "neutron":
+                    if hasattr(data.parameters, "from"): self.txt_source_system.SetValue(data.parameters["from"])
+                    if hasattr(data.parameters, "to"): self.txt_destination_system.SetValue(data.parameters.to)
+                    else: self.txt_destination_system.Clear()
+                    if hasattr(data.parameters, "range"): self.txt_jump_range.SetValue(data.parameters.range)
+                    if hasattr(self, "spin_efficiency") and hasattr(self, "sld_efficiency"):
+                        if hasattr(data.parameters, "efficiency"):
+                            eff_val = int(data.parameters.efficiency)
+                            self.spin_efficiency.SetValue(eff_val)
+                            self.sld_efficiency.SetValue(eff_val)
+                    if hasattr(data.parameters, "supercharge_multiplier"):
+                        multiplier = int(data.parameters.supercharge_multiplier)
+                        if multiplier == 6:
+                            self.btn_overcharge_supercharge.SetValue(True)
+                            self.btn_overcharge_supercharge._is_toggled = True
+                            self.btn_normal_supercharge.SetValue(False)
+                            self.btn_normal_supercharge._is_toggled = False
+                            self.btn_normal_supercharge.Refresh()
+                        else:
+                            self.btn_normal_supercharge.SetValue(True)
+                            self.btn_normal_supercharge._is_toggled = True
+                            self.btn_overcharge_supercharge.SetValue(False)
+                            self.btn_overcharge_supercharge._is_toggled = False
+                            self.btn_overcharge_supercharge.Refresh()
+                    # Load via waypoints if present
+                    if hasattr(data.parameters, "via") and data.parameters.via:
+                        via_list = data.parameters.via
+                        if isinstance(via_list, list):
+                            for wp in via_list:
+                                if wp and str(wp).strip():
+                                    self._add_via_waypoint(str(wp))
+
+                case _:
+                    if hasattr(data.parameters, "source"): self.txt_source_system.SetValue(data.parameters.source)
+                    if hasattr(data.parameters, "destination"): self.txt_destination_system.SetValue(data.parameters.destination)
+                    else: self.txt_destination_system.Clear()
+                    if hasattr(data.parameters, "range"): self.txt_jump_range.SetValue(data.parameters.range)
+                    if hasattr(data.parameters, "radius"): self.txt_stray_radius.SetValue(data.parameters.radius)
+                    if hasattr(data.parameters, "max_results"): self.txt_max_systems.SetValue(data.parameters.max_results)
+                    if hasattr(data.parameters, "use_mapping_value") and hasattr(self, "btn_use_mapping_value"):
+                        toggled = (int(data.parameters.use_mapping_value) == 1)
+                        self.btn_use_mapping_value._is_toggled = toggled
+                        self.btn_use_mapping_value.SetValue(toggled)
+                    if hasattr(data.parameters, "avoid_thargoids"):
+                        toggled = (int(data.parameters.avoid_thargoids) == 1)
+                        self.btn_avoid_thargoids._is_toggled = toggled
+                        self.btn_avoid_thargoids.SetValue(toggled)
+                    if hasattr(data.parameters, "loop"):
+                        toggled = (int(data.parameters.loop) == 1)
+                        self.btn_loop_route._is_toggled = toggled
+                        self.btn_loop_route.SetValue(toggled)
+                    if hasattr(data.parameters, "min_value") and hasattr(self, "spin_min_scan_value") and hasattr(self, "sld_min_scan_value"):
+                        self.spin_min_scan_value.SetValue(int(data.parameters.min_value))
+                        self.sld_min_scan_value.SetValue(int(data.parameters.min_value))
+                    if hasattr(data.parameters, "max_distance"):
+                        self.spin_max_distance_to_arrival.SetValue(int(data.parameters.max_distance))
+                        self.sld_max_distance_to_arrival.SetValue(int(data.parameters.max_distance))
+
+    # ==============================================================================
+    # Route Preparation Callbacks
+    # ==============================================================================
+
+    def _on_route_prep_done(self, nav_route: NavRouteHandler | None, error: str | None):
+        """Called on the MAIN thread after background route preparation finishes."""
+        if error:
+            self.lbl_job_status.SetLabel(f"Plotting failed.\n{error}")
+            self.render()
+            return
+
+        if nav_route is None:
+            self.lbl_job_status.SetLabel("Plotting failed.")
+            self.render()
+            return
+
+        self.nav_route = nav_route
+        self.lbl_job_status.SetLabel("Route ready!")
+        if self.nav_route.plotted_nav_route and self.nav_route.plotted_nav_route.nav_points:
+            self._check_waypoint(self.nav_route.plotted_nav_route.nav_points[0])
+        self.render()
+
+    def _on_parse_progress(self, done: int, total: int):
+        if self._loading_precalculated_route:
+            self.lbl_loading_status.SetLabel(f"Preparing waypoints… \nSystems {done}/{total}")
+            self.lbl_loading_status.Update()
+        else:
+            self.lbl_job_status.SetLabel(f"Preparing waypoints… \nSystems {done}/{total}")
+            self.lbl_job_status.Update()
+
+    # ==============================================================================
+    # Route Display
+    # ==============================================================================
+
+    def _update_general(self):
+        if self.nav_route is None or self.nav_route.plotted_nav_route is None or len(self.nav_route.plotted_nav_route.nav_points) < 1:
+            self.general_panel.Hide()
+            return
+
+        if not self.general_panel.IsShown():
+            self.general_panel.Show()
+
+        final_destination = "Currently no plotted route..."
+        if self.nav_route.plotted_nav_route and len(self.nav_route.plotted_nav_route.nav_points) > 0:
+            final_destination = f"Final destination: {self.nav_route.get_final_destination().star_system}"
+
+        lbl_final_destination = self.general_panel.add_table_item_label(f"{final_destination}")
+        theme = wx.Font(self.theme["font_bold"])
+        theme.SetPointSize(12)
+        lbl_final_destination.SetFont(theme)
+        self.general_panel.add_table_item_label("")
+
+        if self.nav_route.current_system:
+            total_distance = self.nav_route.get_total_route_distance()
+            remaining_distance = self.nav_route.get_remaining_route_distance()
+
+            lbl_distance = self.general_panel.add_table_item_label(f"{' ' * 6}{remaining_distance:,.2f} Ly of {total_distance:,.2f} Ly ({self.nav_route.remaining_jumps_in_route - 1} jumps) remaining")
+            self.general_panel.add_table_item_label("")
+            self.general_panel.add_table_item_label("", line_height=20)
+
+        if self.general_panel.IsShown():
+            # Force a layout update
+            self.general_panel.force_render()
+
+    def _update_route(self):
+        if self.nav_route is None or self.nav_route.plotted_nav_route is None or len(self.nav_route.plotted_nav_route.nav_points) < 1:
+            self.route_panel.Hide()
+            return
+
+        if not self.route_panel.IsShown():
+            self.route_panel.Show()
+
+        self.nav_route.check_and_update_remaining_jump_count()
+
+        min = -1 * (self.nav_route.amount_of_passed_systems_to_show + 1)
+        max = self.nav_route.amount_of_upcoming_systems_to_show
+
+        if max > self.nav_route.remaining_jumps_in_route:
+            max = self.nav_route.remaining_jumps_in_route
+
+        min = min - self.nav_route.remaining_jumps_in_route
+        max = -1 * (self.nav_route.remaining_jumps_in_route - max)
+
+        small_font = wx.Font(self.theme["font"])
+        small_font.SetPointSize(9)
+
+        tall_font = wx.Font(self.theme["font_bold"])
+        tall_font.SetPointSize(16)
+
+        passed_colour = self.theme["foreground_less"]
+        current_bg_colour = self.theme["background_hover"]
+        jet_cone_colour = wx.Colour(0, 165, 255)
+
+        final_destination_address = self.nav_route.get_final_destination().system_address
+
+        system: NavPoint | None = None
+        next_system: NavPoint | None = None
+
+        fixed_height = 20
+        remaining_jumps_offset = 1
+
+        if self.nav_route.plotted_nav_route:
+            for i in range(min, max, 1):
+                if i == 0:
+                    break
+
+                if abs(i) > len(self.nav_route.plotted_nav_route.nav_points):
+                    continue
+
+                if len(self.nav_route.plotted_nav_route.nav_points) - abs(i) < 0:
+                    print(f"DEBUG[items-abs(i)  <  0]: {len(self.nav_route.plotted_nav_route.nav_points)} = {abs(i) - len(self.nav_route.plotted_nav_route.nav_points)} - {abs(i)}")
+                    continue
+
+                system = self.nav_route.get_system_by_index(i)
+                next_system = self.nav_route.get_system_by_index(i + 1)
+                system_type = ""
+                system_feature = ""
+                system_name = ""
+                distance_next_jump = 0.0
+                has_jet_cone = False
+                system_indicator = self.BMP_CIRCLE_ORANGE
+                distance_indicator = self.BMP_LINE_ORANGE
+
+                if system:
+                    system_type = system.star_class
+                    if system_type == "":
+                        system_type = " ? "
+                    if system_type and system_type != "":
+                        if system_type[0] in ("K", "G", "B", "F", "O", "A", "M"):
+                            system_feature = ICONS["scoopable"]
+                        if system_type[0] in ("N", "D"):
+                            has_jet_cone = True
+                            system_indicator = self.BMP_CIRCLE_BLUE
+                            distance_indicator = self.BMP_LINE_BLUE
+
+                    system_name = system.star_system
+                    system_address = system.system_address
+
+                    if next_system:
+                        distance_next_jump = gn.calculate_star_system_distance(next_system.star_position, system.star_position)
+
+                    lbl_1_system_indicator = self.route_panel.add_table_item_bitmap(system_indicator, 20)
+                    lbl_2_space = self.route_panel.add_table_item_label(f"", line_height=fixed_height)
+                    if final_destination_address == system_address:
+                        lbl_2_space.SetLabelText(f"{' ' * 5}{ICONS["final"]}")
+                    lbl_3_star_feature = self.route_panel.add_table_item_label(f"{' ' * 5}{system_feature}{'  ' * 2}", line_height=fixed_height)
+                    lbl_4_star_class = self.route_panel.add_table_item_label(f"[{system_type}]", line_height=fixed_height)
+                    lbl_5_system = self.route_panel.add_table_item_label(f"{' ' * 2}{system_name}", line_height=fixed_height)
+                    lbl_5_system.Bind(wx.EVT_LEFT_DCLICK, self._on_name_label_double_click)
+                    lbl_6_space = self.route_panel.add_table_item_label(f"", line_height=fixed_height)
+
+                    if has_jet_cone:
+                        lbl_1_system_indicator.SetForegroundColour(jet_cone_colour)
+                        lbl_2_space.SetForegroundColour(jet_cone_colour)
+                        lbl_3_star_feature.SetForegroundColour(jet_cone_colour)
+                        lbl_4_star_class.SetForegroundColour(jet_cone_colour)
+                        lbl_5_system.SetForegroundColour(jet_cone_colour)
+                        lbl_6_space.SetForegroundColour(jet_cone_colour)
+
+                    if abs(i) > self.nav_route.remaining_jumps_in_route + remaining_jumps_offset:
+                        lbl_1_system_indicator.SetForegroundColour(passed_colour)
+                        lbl_2_space.SetForegroundColour(passed_colour)
+                        lbl_3_star_feature.SetForegroundColour(passed_colour)
+                        lbl_4_star_class.SetForegroundColour(passed_colour)
+                        lbl_5_system.SetForegroundColour(passed_colour)
+                        lbl_6_space.SetForegroundColour(passed_colour)
+
+                    if abs(i) == self.nav_route.remaining_jumps_in_route + remaining_jumps_offset:
+                        lbl_4_star_class.SetFont(wx.Font(self.theme["font_bold"]))
+                        lbl_5_system.SetFont(wx.Font(self.theme["font_bold"]))
+
+                        lbl_1_system_indicator.SetBackgroundColour(current_bg_colour)
+                        lbl_2_space.SetBackgroundColour(current_bg_colour)
+                        lbl_3_star_feature.SetBackgroundColour(current_bg_colour)
+                        lbl_4_star_class.SetBackgroundColour(current_bg_colour)
+                        lbl_5_system.SetBackgroundColour(current_bg_colour)
+                        lbl_6_space.SetBackgroundColour(current_bg_colour)
+
+                    if abs(i) > abs(max - 1) and abs(i) <= len(self.nav_route.plotted_nav_route.nav_points):
+                        lbl_1_distance_indicator = self.route_panel.add_table_item_bitmap(distance_indicator, line_height=fixed_height)
+                        lbl_2_distance = self.route_panel.add_table_item_label(f"{' ' * 2}{distance_next_jump:.2f} Ly", align=wx.ALIGN_CENTER_VERTICAL, line_height=fixed_height)
+                        lbl_2_distance.SetFont(small_font)
+                        lbl_3_space = self.route_panel.add_table_item_label(f"", line_height=fixed_height)
+                        lbl_4_space = self.route_panel.add_table_item_label(f"", line_height=fixed_height)
+                        lbl_5_space = self.route_panel.add_table_item_label(f"", line_height=fixed_height)
+                        lbl_6_space = self.route_panel.add_table_item_label(f"", line_height=fixed_height)
+
+        if self.route_panel.IsShown():
+            # Force a layout update
+            self.route_panel.force_render()
+
+    # ==============================================================================
+    # Navigation & Waypoint Logic
+    # ==============================================================================
+
+    def _check_waypoint(self, current_waypoint: NavPoint | None = None) -> bool:
+        spansh_route_data: DotDict = load_json_as_dotdict(str(self._last_route_for_selected_plotter))
+        current_system: NavPoint
+        if hasattr(spansh_route_data, "current_system"):
+            current_system: NavPoint = from_dotdict(NavPoint, spansh_route_data.current_system)
+        else:
+            if current_waypoint is None:
+                return False
+            else:
+                current_system = current_waypoint
+
+        current_system_address: int = current_system.system_address
+
+        do_copy_to_clipboard: bool = False
+        last_waypoint = None
+        if hasattr(spansh_route_data, "last_waypoint"):
+            last_waypoint: NavPoint = from_dotdict(NavPoint, spansh_route_data.last_waypoint)
+
+        for system in spansh_route_data.jumps:
+            # If we've reached a waypoint, copy the next name to the clipboard
+            if do_copy_to_clipboard:
+                system_name: str = ""
+                if hasattr(system, "name"):
+                    system_name: str = system.name
+                elif hasattr(system, "system"):
+                    system_name: str = system.system
+                if self.copied_system_name != system_name:
+                    self.copied_system_name = system_name
+                    copy_text_to_clipboard(system_name)
+                    do_copy_to_clipboard = False
+                break
+
+            # check if we reached a waypoint
+            if int(system.id64) == current_system_address:
+                # try updating system again
+                if not hasattr(system, "StarClass") or system.StarClass == "":
+                    star_class = self.sh.get_star_class(system_id=current_system_address)
+                    if star_class:
+                        system["StarClass"] = star_class
+                        save_dotdict_to_json(spansh_route_data, str(self._last_route_for_selected_plotter))
+                if self.nav_route:
+                    self.nav_route.current_system = current_system
+                if not last_waypoint or int(system.id64) != int(last_waypoint.system_address):
+                    self._save_last_waypoint_system(spansh_route_data, current_system)
+                do_copy_to_clipboard = True
+
+        if not do_copy_to_clipboard and hasattr(spansh_route_data, "last_waypoint"):
+            last_waypoint: NavPoint = from_dotdict(NavPoint, spansh_route_data.last_waypoint)
+            if self.nav_route:
+                self.nav_route.current_system = last_waypoint
+            for system in spansh_route_data.jumps:
+                system_name: str = ""
+                if hasattr(system, "name"):
+                    system_name: str = system.name
+                elif hasattr(system, "system"):
+                    system_name: str = system.system
+                if do_copy_to_clipboard:
+                    if self.copied_system_name != system_name:
+                        self.copied_system_name = system_name
+                        copy_text_to_clipboard(system_name)
+                        return True
+                    else:
+                        return False
+
+                # check if we reached a waypoint
+                if int(system.id64) == int(last_waypoint.system_address):
+                    do_copy_to_clipboard = True
+
+        return do_copy_to_clipboard
+
     def _save_last_waypoint_system(self, spansh_route_data: DotDict, current_system: NavPoint):
         spansh_route_data.last_waypoint = DotDict(asdict(current_system))
         save_dotdict_to_json(spansh_route_data, str(self._last_route_for_selected_plotter))
+
+    # ==============================================================================
+    # Utility Helpers
+    # ==============================================================================
+
+    @staticmethod
+    def _plain_name_from_label(raw: str) -> str:
+        if not raw:
+            return raw
+        if " (" in raw:
+            raw = raw.split(" (", 1)[0]
+        if " - " in raw:
+            raw = raw.split(" - ", 1)[0]
+        return raw.strip()
+
+    def _on_name_label_double_click(self, evt: wx.Event):
+        name = None
+        # Retrieve the label that triggered the event
+        label = evt.GetEventObject()
+
+        if not name and label:
+            raw = label.GetLabelText()
+            name = self._plain_name_from_label(raw)
+
+        if name:
+            copy_text_to_clipboard(name)
+
+        evt.Skip()
+
+    def _on_routing_changed(self, event):
+        selected_display = self.cmb_routing_algorithm.GetValue()
+        # Find the corresponding value
+        selected_value = next(
+            (value for display, value in ROUTING_OPTIONS if display == selected_display),
+            None
+        )
+        self.routing_algo = selected_value
+
+    def _on_routing_loaded(self, algo_value):
+
+        # Find the corresponding value
+        display_value = next(
+            (display for display, value in ROUTING_OPTIONS if value == algo_value),
+            None
+        )
+        self.cmb_routing_algorithm.SetValue(display_value)
+        self.routing_algo = algo_value
 
     def _calculate_current_jump_range(self):
         jump_range: float = 0.0
