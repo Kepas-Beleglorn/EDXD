@@ -40,6 +40,9 @@ ROUTE_PLOTTERS = [
     ("Galaxy Plotter", "galaxy"),
     ("Road to Riches", "riches"),
     ("Expressway to Exomastery", "exobiology"),
+    ("Ammonia World Route", "ammonia"),
+    ("Earth-like World Route", "earth"),
+    ("Rocky body / High metal content world Route", "rocky")
 #    ("Neutron Router", "neutron"),
 ]
 
@@ -287,7 +290,7 @@ class ExplorationItinerary(DynamicDialog):
                     if hasattr(data.parameters, "range"): self.txt_jump_range.SetValue(data.parameters.range)
                     if hasattr(data.parameters, "radius"): self.txt_stray_radius.SetValue(data.parameters.radius)
                     if hasattr(data.parameters, "max_results"): self.txt_max_systems.SetValue(data.parameters.max_results)
-                    if hasattr(data.parameters, "use_mapping_value"):
+                    if hasattr(data.parameters, "use_mapping_value") and hasattr(self, "btn_use_mapping_value"):
                         toggled = (int(data.parameters.use_mapping_value) == 1)
                         self.btn_use_mapping_value._is_toggled = toggled
                         self.btn_use_mapping_value.SetValue(toggled)
@@ -299,8 +302,12 @@ class ExplorationItinerary(DynamicDialog):
                         toggled = (int(data.parameters.loop) == 1)
                         self.btn_loop_route._is_toggled = toggled
                         self.btn_loop_route.SetValue(toggled)
-                    if hasattr(data.parameters, "min_value"): self.spin_min_scan_value.SetValue(int(data.parameters.min_value))
-                    if hasattr(data.parameters, "max_distance"): self.spin_max_distance_to_arrival.SetValue(int(data.parameters.max_distance))
+                    if hasattr(data.parameters, "min_value") and hasattr(self, "spin_min_scan_value") and hasattr(self, "sld_min_scan_value"):
+                        self.spin_min_scan_value.SetValue(int(data.parameters.min_value))
+                        self.sld_min_scan_value.SetValue(int(data.parameters.min_value))
+                    if hasattr(data.parameters, "max_distance"):
+                        self.spin_max_distance_to_arrival.SetValue(int(data.parameters.max_distance))
+                        self.sld_max_distance_to_arrival.SetValue(int(data.parameters.max_distance))
 
     def  _on_calculate_route(self, event):
         spansh = SpanshRoutePlotter()
@@ -335,7 +342,9 @@ class ExplorationItinerary(DynamicDialog):
                     avoid_thargoids=self.btn_avoid_thargoids.GetValue(),
                     loop_back=self.btn_loop_route.GetValue(),
                     max_distance_from_arrival=self.spin_max_distance_to_arrival.GetValue(),
-                    min_scan_value=self.spin_min_scan_value.GetValue())
+                    min_scan_value=self.spin_min_scan_value.GetValue(),
+                    riches_mode=self.selected_plotter)
+
             case "exobiology":
                 self.job_id: str | None = spansh.exobiology(
                     source_system_name=self.txt_source_system.GetValue(),
@@ -349,44 +358,61 @@ class ExplorationItinerary(DynamicDialog):
                     min_scan_value=self.spin_min_scan_value.GetValue())
             case "neutron":
                 pass
+            case _:
+                self.job_id: str | None = spansh.road_to_riches(
+                    source_system_name=self.txt_source_system.GetValue(),
+                    destination_system_name=self.txt_destination_system.GetValue(),
+                    jump_range=float(self.txt_jump_range.GetValue()),
+                    stray_radius=int(self.txt_stray_radius.GetValue()),
+                    max_systems=int(self.txt_max_systems.GetValue()),
+                    avoid_thargoids=self.btn_avoid_thargoids.GetValue(),
+                    loop_back=self.btn_loop_route.GetValue(),
+                    max_distance_from_arrival=self.spin_max_distance_to_arrival.GetValue(),
+                    riches_mode=self.selected_plotter)
 
-        # Start the background worker; it updates the label while polling
-        self.worker = PlotterWorker(
-            self.job_id,
-            on_progress=self.update_status,
-            on_done=self.on_plot_done,
-        )
-        self.worker.start()
+        job_dict: DotDict = create_dot_dict_from_string(str(self.job_id))
+        if hasattr(job_dict, "error"):
+            self.lbl_job_status.SetLabel(f"Plotting failed.\n{job_dict.error}")
+        else:
+            # Start the background worker; it updates the label while polling
+            self.worker = PlotterWorker(
+                self.job_id,
+                on_progress=self.update_status,
+                on_done=self.on_plot_done,
+            )
+            self.worker.start()
 
     def update_status(self, state: str, status: str, duration: str):
         # Called on the MAIN thread via wx.CallAfter — safe to touch widgets
-        self.lbl_job_status.SetLabel(f"Plotting… {duration}")
+        self.lbl_job_status.SetLabel(f"Plotting…\n{duration}")
 
     def on_plot_done(self, result: DotDict | None):
         self.nav_route  = None
         self._loading_precalculated_route = False
         if result:
-            self.itinerary: DotDict = DotDict(result)
-            self.itinerary.timestamp = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+            if not hasattr(result, "error"):
+                self.itinerary: DotDict = DotDict(result)
+                self.itinerary.timestamp = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
-            # Enrich jumps with StarClass before persisting
-            self._enrich_route_with_star_classes(self.itinerary.jumps)
+                # Enrich jumps with StarClass before persisting
+                self._enrich_route_with_star_classes(self.itinerary.jumps)
 
-            save_dotdict_to_json(self.itinerary, str(self._last_route_for_selected_plotter))
+                save_dotdict_to_json(self.itinerary, str(self._last_route_for_selected_plotter))
 
-            self.nav_route = NavRouteHandler(
-                self._last_route_for_selected_plotter,
-                amount_of_upcoming_systems_to_show=int(self.parent.parent.prefs["amount_of_plotted_upcoming_systems_to_show"]),
-                amount_of_passed_systems_to_show=int(self.parent.parent.prefs["amount_of_plotted_passed_systems_to_show"]),
-                progress_cb=self._on_parse_progress
-            )
-            self.nav_route.clear_plotted_route()
-            self.nav_route.load_plotted_route()
-            self.lbl_job_status.SetLabel("Route ready!")
-            self._check_waypoint(self.nav_route.plotted_nav_route.nav_points[0])
+                self.nav_route = NavRouteHandler(
+                    self._last_route_for_selected_plotter,
+                    amount_of_upcoming_systems_to_show=int(self.parent.parent.prefs["amount_of_plotted_upcoming_systems_to_show"]),
+                    amount_of_passed_systems_to_show=int(self.parent.parent.prefs["amount_of_plotted_passed_systems_to_show"]),
+                    progress_cb=self._on_parse_progress
+                )
+                self.nav_route.clear_plotted_route()
+                self.nav_route.load_plotted_route()
+                self.lbl_job_status.SetLabel("Route ready!")
+                self._check_waypoint(self.nav_route.plotted_nav_route.nav_points[0])
+            else:
+                self.lbl_job_status.SetLabel(f"Plotting failed.\n{result.error}")
         else:
-            self.lbl_job_status.SetLabel("Plotting failed.")
-
+            self.lbl_job_status.SetLabel(f"Plotting failed.")
         self.render()
 
     def _enrich_route_with_star_classes(self, route_data: list) -> None:
@@ -419,13 +445,13 @@ class ExplorationItinerary(DynamicDialog):
         if not self.plotter_select_panel.IsShown():
             self.plotter_select_panel.Show()
 
-        self.plotter_select_panel.add_table_item_label(label_text=f"Selected plotter", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
+        self.plotter_select_panel.add_table_item_label(label_text=f"Selected plotter", align=wx.ALIGN_BOTTOM, width=150)
 
         # Extract display texts for the dropdown
         display_texts = [opt[0] for opt in ROUTE_PLOTTERS]
 
         # Create combobox
-        self.cmb_selected_plotter = wx.ComboBox(choices=display_texts, style=wx.CB_READONLY, parent=self.plotter_select_panel.content, size=BTN_SIZE)
+        self.cmb_selected_plotter = wx.ComboBox(choices=display_texts, style=wx.CB_READONLY, parent=self.plotter_select_panel.content) #, size=BTN_SIZE)
         self.cmb_selected_plotter.SetValue(display_texts[0])  # Set default
         self.cmb_selected_plotter.Bind(wx.EVT_LEFT_DOWN, lambda e: None)
 
@@ -541,7 +567,10 @@ class ExplorationItinerary(DynamicDialog):
                 self.parameter_panel.add_table_item_generic(self.cmb_routing_algorithm)
                 self.parameter_panel.add_table_item_label("")
 
-            case "riches" | "exobiology":
+            case "neutron":
+                pass
+
+            case _:
                 self.parameter_panel.add_table_item_label(" 🛈", align=wx.ALIGN_CENTER_VERTICAL).SetToolTip("Leave destination blank in order to create a circular tour starting at your source system and returning there at the end.")
 
                 self.parameter_panel.add_table_item_label("")
@@ -550,20 +579,20 @@ class ExplorationItinerary(DynamicDialog):
 
                 self.parameter_panel.add_table_item_label(label_text=f"Jump range (LY, default current)", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
                 self.txt_jump_range = self.parameter_panel.add_table_item_textbox()
-                self.txt_jump_range.SetValidator(FloatRangeValidator(min_val=0, max_val=100, allow_empty=False))
+                self.txt_jump_range.SetValidator(FloatRangeValidator(min_val=1, max_val=100, allow_empty=False))
                 self.txt_jump_range.SetValue(current_jump_range)
                 self.parameter_panel.add_table_item_label(" 🛈", align=wx.ALIGN_CENTER_VERTICAL).SetToolTip("Jump range of your ship.")
 
                 self.parameter_panel.add_table_item_label(label_text=f"Radius (LY)", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
                 self.txt_stray_radius = self.parameter_panel.add_table_item_textbox()
-                self.txt_stray_radius.SetValidator(FloatRangeValidator(min_val=0, max_val=100, allow_empty=False))
+                self.txt_stray_radius.SetValidator(FloatRangeValidator(min_val=1, max_val=100, allow_empty=False))
                 self.txt_stray_radius.SetValue(str(25))
                 self.parameter_panel.add_table_item_label(" 🛈", align=wx.ALIGN_CENTER_VERTICAL).SetToolTip(
                     "This is the distance in LY around which the plotter will look for valuable worlds for you to visit. A value of 25 LY tends to give a nice balance for A to B routes keeping the number of jumps reasonably low whilst still giving a nice payout. For circular routes (leaving destination blank) you will probably want to increase this to 100-500 LY.")
 
                 self.parameter_panel.add_table_item_label(label_text=f"Maximum systems", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
                 self.txt_max_systems = self.parameter_panel.add_table_item_textbox()
-                self.txt_max_systems.SetValidator(FloatRangeValidator(min_val=0, max_val=100, allow_empty=False))
+                self.txt_max_systems.SetValidator(FloatRangeValidator(min_val=1, max_val=100, allow_empty=False))
                 self.txt_max_systems.SetValue(str(100))
                 self.parameter_panel.add_table_item_label(" 🛈", align=wx.ALIGN_CENTER_VERTICAL).SetToolTip(
                     "This is maximum number of systems that the plotter will route you through, lower this for a shorter trip.")
@@ -596,7 +625,7 @@ class ExplorationItinerary(DynamicDialog):
                 self.btn_loop_route = DynamicToggleButton(
                     label="Loop 🛈",
                     parent=self.parameter_panel.content,
-                    is_toggled=False,
+                    is_toggled = False if self.selected_plotter == "riches" else True,
                     size=BTN_SIZE
                 )
                 self.parameter_panel.add_table_item_toggle_button(self.btn_loop_route)
@@ -612,31 +641,30 @@ class ExplorationItinerary(DynamicDialog):
                 self.parameter_panel.add_table_item_label("Maximum distance to arrival", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
                 self.parameter_panel.add_table_item_label("")
                 self.parameter_panel.add_table_item_label("")
-                self.spin_max_distance_to_arrival = wx.SpinCtrl(parent=self.parameter_panel.content, min=0, max=1000000, initial=50000, size=wx.Size(BTN_SIZE.width, -1))
-                self.sld_max_distance_to_arrival = ThemedSlider(parent=self.parameter_panel.content, value=50000, min_val=0, max_val=1000000, size=(BTN_SIZE.width, SLIDER_FIXED_HEIGHT), scale="symlog")
+                self.spin_max_distance_to_arrival = wx.SpinCtrl(parent=self.parameter_panel.content, min=1, max=1000000, initial=50000, size=wx.Size(BTN_SIZE.width, -1))
+                self.sld_max_distance_to_arrival = ThemedSlider(parent=self.parameter_panel.content, value=50000, min_val=1, max_val=1000000, size=(BTN_SIZE.width, SLIDER_FIXED_HEIGHT), scale="symlog")
                 self.parameter_panel.add_table_item_generic(self.spin_max_distance_to_arrival)
                 self.parameter_panel.add_table_item_generic(self.sld_max_distance_to_arrival)
                 self.parameter_panel.add_table_item_label("")
-
-                label_text = ""
-                match self.selected_plotter:
-                    case "riches":
-                        label_text = "Minimum scan salue"
-                    case "exobiology":
-                        label_text = "Minimum landmark Value"
-
-
-                self.parameter_panel.add_table_item_label(label_text, align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
-                self.parameter_panel.add_table_item_label("")
-                self.parameter_panel.add_table_item_label("")
-                self.spin_min_scan_value = wx.SpinCtrl(parent=self.parameter_panel.content, min=0, max=1000000, initial=100000, size=wx.Size(BTN_SIZE.width, -1))
-                self.sld_min_scan_value = ThemedSlider(parent=self.parameter_panel.content, value=100000, min_val=0, max_val=1000000, size=(BTN_SIZE.width, SLIDER_FIXED_HEIGHT), scale="symlog")
-                self.parameter_panel.add_table_item_generic(self.spin_min_scan_value)
-                self.parameter_panel.add_table_item_generic(self.sld_min_scan_value)
-                self.parameter_panel.add_table_item_label("")
-
                 self._link_spin_slider(self.spin_max_distance_to_arrival, self.sld_max_distance_to_arrival)
-                self._link_spin_slider(self.spin_min_scan_value, self.sld_min_scan_value)
+
+                if self.selected_plotter in ("riches", "exobiology"):
+                    label_text = ""
+                    match self.selected_plotter:
+                        case "riches":
+                            label_text = "Minimum scan salue"
+                        case "exobiology":
+                            label_text = "Minimum landmark Value"
+
+                    self.parameter_panel.add_table_item_label(label_text, align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
+                    self.parameter_panel.add_table_item_label("")
+                    self.parameter_panel.add_table_item_label("")
+                    self.spin_min_scan_value = wx.SpinCtrl(parent=self.parameter_panel.content, min=1, max=1000000, initial=100000, size=wx.Size(BTN_SIZE.width, -1))
+                    self.sld_min_scan_value = ThemedSlider(parent=self.parameter_panel.content, value=100000, min_val=1, max_val=1000000, size=(BTN_SIZE.width, SLIDER_FIXED_HEIGHT), scale="symlog")
+                    self.parameter_panel.add_table_item_generic(self.spin_min_scan_value)
+                    self.parameter_panel.add_table_item_generic(self.sld_min_scan_value)
+                    self.parameter_panel.add_table_item_label("")
+                    self._link_spin_slider(self.spin_min_scan_value, self.sld_min_scan_value)
 
         self.parameter_panel.add_table_item_label("")
         self.parameter_panel.add_table_item_label("")
@@ -645,16 +673,15 @@ class ExplorationItinerary(DynamicDialog):
         self.btn_calculate_route = DynamicButton(parent=self.parameter_panel.content, label="Calculate route", size=BTN_SIZE)
         self.btn_calculate_route.Bind(wx.EVT_BUTTON, self._on_calculate_route)
         self.parameter_panel.add_table_item_generic(self.btn_calculate_route)
-
-        self.lbl_job_status = self.parameter_panel.add_table_item_label(label_text="", align=wx.LEFT | wx.ALIGN_CENTER_VERTICAL, line_height=BTN_SIZE.height, width=BTN_SIZE.width, border=8)
-        self.parameter_panel.add_table_item_label("")
-
         self.btn_load_route = DynamicButton(parent=self.parameter_panel.content, label="Load last route 🛈", size=BTN_SIZE)
-        self.btn_load_route.SetToolTip("Loads the last route that has been plotted with the currently selected plotter. If you're already en-route your last visited waypoint will be highlighted and the next system is copied to the clipboard.")
+        self.btn_load_route.SetToolTip(
+            "Loads the last route that has been plotted with the currently selected plotter. If you're already en-route your last visited waypoint will be highlighted and the next system is copied to the clipboard.")
         self.btn_load_route.Bind(wx.EVT_BUTTON, self._on_load_route)
         self.parameter_panel.add_table_item_generic(self.btn_load_route)
-        self.lbl_loading_status = self.parameter_panel.add_table_item_label(label_text="", align=wx.LEFT | wx.ALIGN_CENTER_VERTICAL, line_height=BTN_SIZE.height, width=BTN_SIZE.width, border=8)
+        self.parameter_panel.add_table_item_label("")
 
+        self.lbl_job_status = self.parameter_panel.add_table_item_label(label_text="", align=wx.LEFT | wx.ALIGN_CENTER_VERTICAL, line_height=int(BTN_SIZE.height*2), width=BTN_SIZE.width)
+        self.lbl_loading_status = self.parameter_panel.add_table_item_label(label_text="", align=wx.LEFT | wx.ALIGN_CENTER_VERTICAL, line_height=int(BTN_SIZE.height*2), width=BTN_SIZE.width)
         self.parameter_panel.add_table_item_label("")
 
         self.parameter_panel.add_table_item_label("")
@@ -836,6 +863,9 @@ class ExplorationItinerary(DynamicDialog):
         current_system_address: int = current_system.system_address
 
         do_copy_to_clipboard: bool = False
+        last_waypoint = None
+        if hasattr(spansh_route_data, "last_waypoint"):
+            last_waypoint: NavPoint = from_dotdict(NavPoint, spansh_route_data.last_waypoint)
 
         for system in spansh_route_data.jumps:
             # If we've reached a waypoint, copy the next name to the clipboard
@@ -855,7 +885,8 @@ class ExplorationItinerary(DynamicDialog):
                         system["StarClass"] = star_class
                         save_dotdict_to_json(spansh_route_data, str(self._last_route_for_selected_plotter))
                 self.nav_route.current_system = current_system
-                self._save_last_waypoint_system(spansh_route_data, current_system)
+                if not last_waypoint or int(system.id64) != int(last_waypoint.system_address):
+                    self._save_last_waypoint_system(spansh_route_data, current_system)
                 do_copy_to_clipboard = True
 
         if not do_copy_to_clipboard and hasattr(spansh_route_data, "last_waypoint"):
@@ -874,7 +905,7 @@ class ExplorationItinerary(DynamicDialog):
                 if int(system.id64) == int(last_waypoint.system_address):
                     do_copy_to_clipboard = True
 
-        return False
+        return do_copy_to_clipboard
 
     def _on_close(self,event):
         self._timer.Stop()

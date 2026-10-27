@@ -364,7 +364,7 @@ class SpanshRoutePlotter:
             # Read the body for the error message
             error_body = response.text
             print(f"ERROR: Spansh API returned status {response.status_code}: {error_body}")
-            return spansh_job_id
+            return error_body
 
         response_dict: DotDict = create_dot_dict_from_string(response.text)
         spansh_job_id = response_dict.job
@@ -394,8 +394,8 @@ class SpanshRoutePlotter:
 
         url = SPANSH_GALAXY_PLOTTER_API
         payload = {
-            "source": source_system_name,
-            "destination": destination_system_name,
+            "source": source_system_name.strip(),
+            "destination": destination_system_name.strip(),
             "is_supercharged": 1 if already_supercharged else 0,
             "use_supercharge": 1 if use_supercharge else 0,
             "use_injections": 1 if fsd_inject_always else 0,
@@ -429,26 +429,46 @@ class SpanshRoutePlotter:
                     jump_range: float,
                     stray_radius: int,
                     max_systems: int,
-                    use_mapped_value: bool,
                     avoid_thargoids: bool,
                     loop_back: bool,
                     max_distance_from_arrival: int,
-                    min_scan_value: int
+                    use_mapped_value: bool = True,
+                    min_scan_value: int = 1,
+                    riches_mode: str = ""
                     ) -> str | None:
 
         url = SPANSH_ROAD_TO_RICHES_API
-        payload = {
-            "from": source_system_name,
-            "to": destination_system_name,
+        payload: dict[str, Any]  = {
+            "from": source_system_name.strip(),
+            "to": destination_system_name.strip(),
             "range": jump_range,
             "radius": stray_radius,
             "max_results": max_systems,
-            "use_mapping_value": 1 if use_mapped_value else 0,
             "avoid_thargoids": 1 if avoid_thargoids else 0,
             "loop": 1 if loop_back else 0,
             "max_distance": max_distance_from_arrival,
-            "min_value": min_scan_value
+            "min_value": min_scan_value,
         }
+
+        match riches_mode:
+            case "rocky":
+                payload["body_types"] = {
+                    "Rocky body",
+                    "High metal content world",
+                }
+            case "ammonia":
+                payload["body_types"] = {
+                    "Ammonia world",
+                }
+            case "earth":
+                payload["body_types"] = {
+                    "Earth-like world",
+                }
+            case "riches":
+                payload["use_mapping_value"] = 1 if use_mapped_value else 0
+            case _:
+                pass
+
         return self._send_request(url, payload)
 
     def exobiology( self,
@@ -464,16 +484,16 @@ class SpanshRoutePlotter:
                     ) -> str | None:
 
         url = SPANSH_EXO_MASTERY_API
-        payload = {
-            "from": source_system_name,
-            "to": destination_system_name,
+        payload: dict[str, Any]  = {
+            "from": source_system_name.strip(),
+            "to": destination_system_name.strip(),
             "range": jump_range,
             "radius": stray_radius,
             "max_results": max_systems,
             "avoid_thargoids": 1 if avoid_thargoids else 0,
             "loop": 1 if loop_back else 0,
             "max_distance": max_distance_from_arrival,
-            "min_value": min_scan_value
+            "min_value": min_scan_value,
         }
         return self._send_request(url, payload)
 
@@ -497,6 +517,7 @@ def get_itinerary(job_id: str | None,
         if response.status_code < 200 or response.status_code >= 300:
             error_body = response.text
             print(f"ERROR: Spansh API returned status {response.status_code}: {error_body}")
+            response_dict = create_dot_dict_from_string(response.text)
             break
 
         if response_dict.state == "completed" and response_dict.status == "ok":
@@ -521,7 +542,10 @@ def get_itinerary(job_id: str | None,
 
         sleep(1)
 
-    print(f"Job ID: {job_id} - state: {response_dict.state} - status: {response_dict.status} "
-          f"- created at: {response_dict.created_at} - updated at: {response_dict.updated_at} "
-          f"- duration: {time_delta(response_dict.created_at, response_dict.updated_at)}")
-    return spansh_itinerary
+    if hasattr(response_dict, "error"):
+        return response_dict
+    else:
+        print(f"Job ID: {job_id} - state: {response_dict.state} - status: {response_dict.status} "
+            f"- created at: {response_dict.created_at} - updated at: {response_dict.updated_at} "
+            f"- duration: {time_delta(response_dict.created_at, response_dict.updated_at)}")
+        return spansh_itinerary
