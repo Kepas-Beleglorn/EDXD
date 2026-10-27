@@ -544,194 +544,14 @@ class ExplorationItinerary(DynamicDialog):
 
         match self.selected_plotter:
             case "galaxy":
-                self.parameter_panel.add_table_item_label("")
-
-                self.parameter_panel.add_table_item_label(label_text=f"Cargo", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
-                self.txt_cargo = self.parameter_panel.add_table_item_textbox()
-                self.txt_cargo.SetValidator(IntRangeValidator(min_val=0, max_val=self.ship_status.cargo_capacity, allow_empty=False))
-                self.txt_cargo.SetValue(str(self.ship_status.cargo))
-                self.parameter_panel.add_table_item_label("")
-
-                self.parameter_panel.add_table_item_label(label_text=f"Reserve fuel", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
-                self.txt_reserve_fuel = self.parameter_panel.add_table_item_textbox()
-                self.txt_reserve_fuel.SetValidator(IntRangeValidator(min_val=0, max_val=self.ship_status.fuel_capacity.main, allow_empty=False))
-                self.txt_reserve_fuel.SetValue("0")
-                self.parameter_panel.add_table_item_label("")
-
-                self.parameter_panel.add_table_item_label("")
-                self.parameter_panel.add_table_item_label("")
-                self.parameter_panel.add_table_item_label("")
-
-                self.btn_already_supercharged = DynamicToggleButton(
-                    label="Already supercharged",
-                    parent=self.parameter_panel.content,
-                    is_toggled=self.ship_status.jet_cone_boost_factor is not None,
-                    size=BTN_SIZE
-                )
-                self.parameter_panel.add_table_item_toggle_button(self.btn_already_supercharged)
-
-                self.btn_use_supercharged = DynamicToggleButton(
-                    label="Use supercharge",
-                    parent=self.parameter_panel.content,
-                    is_toggled=True,
-                    size=BTN_SIZE
-                )
-                self.parameter_panel.add_table_item_toggle_button(self.btn_use_supercharged)
-                self.parameter_panel.add_table_item_label("")
-
-                self.btn_use_fsd_injections_always = DynamicToggleButton(
-                    label="Use FSD injections always",
-                    parent=self.parameter_panel.content,
-                    is_toggled=False,
-                    size=BTN_SIZE
-                )
-                self.parameter_panel.add_table_item_toggle_button(self.btn_use_fsd_injections_always)
-
-                self.btn_use_fsd_injections_when_required = DynamicToggleButton(
-                    label="Use FSD injections when required",
-                    parent=self.parameter_panel.content,
-                    is_toggled=False,
-                    size=BTN_SIZE
-                )
-                self.parameter_panel.add_table_item_toggle_button(self.btn_use_fsd_injections_when_required)
-                self.parameter_panel.add_table_item_label("")
-
-                self.btn_exclude_secondary_stars = DynamicToggleButton(
-                    label="Exclude secondary stars",
-                    parent=self.parameter_panel.content,
-                    is_toggled=False,
-                    size=BTN_SIZE
-                )
-                self.parameter_panel.add_table_item_toggle_button(self.btn_exclude_secondary_stars)
-
-                self.btn_refuel_every_scoopable = DynamicToggleButton(
-                    label="Refuel  every scoopable",
-                    parent=self.parameter_panel.content,
-                    is_toggled=True,
-                    size=BTN_SIZE
-                )
-                self.parameter_panel.add_table_item_toggle_button(self.btn_refuel_every_scoopable)
-                self.parameter_panel.add_table_item_label("")
-
-                self.parameter_panel.add_table_item_label("")
-                self.parameter_panel.add_table_item_label("")
-                self.parameter_panel.add_table_item_label("")
-
-                self.parameter_panel.add_table_item_label(label_text=f"Routing algorithm", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
-
-                # Extract display texts for the dropdown
-                display_texts = [opt[0] for opt in ROUTING_OPTIONS]
-
-                # Create combobox
-                self.cmb_routing_algorithm = wx.ComboBox(choices=display_texts, style=wx.CB_READONLY, parent=self.parameter_panel.content, size=BTN_SIZE)
-                self.cmb_routing_algorithm.SetValue(display_texts[0])  # Set default
-                self.cmb_routing_algorithm.Bind(wx.EVT_LEFT_DOWN, lambda e: None)
-
-                # Bind event to handle selection
-                self.cmb_routing_algorithm.Bind(wx.EVT_COMBOBOX, self._on_routing_changed)
-
-                self.parameter_panel.add_table_item_generic(self.cmb_routing_algorithm)
-                self.parameter_panel.add_table_item_label("")
+                self._build_galaxy_router_ui()
 
             case "neutron":
                 # Neutron UI is already built above, before destination
                 pass
 
             case _:
-                self.parameter_panel.add_table_item_label(" 🛈", align=wx.ALIGN_CENTER_VERTICAL).SetToolTip("Leave destination blank in order to create a circular tour starting at your source system and returning there at the end.")
-
-                self.parameter_panel.add_table_item_label("")
-                self.parameter_panel.add_table_item_label("")
-                self.parameter_panel.add_table_item_label("")
-
-                self.parameter_panel.add_table_item_label(label_text=f"Jump range (LY, default current)", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
-                self.txt_jump_range = self.parameter_panel.add_table_item_textbox()
-                self.txt_jump_range.SetValidator(FloatRangeValidator(min_val=1, max_val=100, allow_empty=False))
-                self.txt_jump_range.SetValue(current_jump_range)
-                self.parameter_panel.add_table_item_label(" 🛈", align=wx.ALIGN_CENTER_VERTICAL).SetToolTip("Jump range of your ship.")
-
-                self.parameter_panel.add_table_item_label(label_text=f"Radius (LY)", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
-                self.txt_stray_radius = self.parameter_panel.add_table_item_textbox()
-                self.txt_stray_radius.SetValidator(FloatRangeValidator(min_val=1, max_val=100, allow_empty=False))
-                self.txt_stray_radius.SetValue(str(25))
-                self.parameter_panel.add_table_item_label(" 🛈", align=wx.ALIGN_CENTER_VERTICAL).SetToolTip(
-                    "This is the distance in LY around which the plotter will look for valuable worlds for you to visit. A value of 25 LY tends to give a nice balance for A to B routes keeping the number of jumps reasonably low whilst still giving a nice payout. For circular routes (leaving destination blank) you will probably want to increase this to 100-500 LY.")
-
-                self.parameter_panel.add_table_item_label(label_text=f"Maximum systems", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
-                self.txt_max_systems = self.parameter_panel.add_table_item_textbox()
-                self.txt_max_systems.SetValidator(FloatRangeValidator(min_val=1, max_val=100, allow_empty=False))
-                self.txt_max_systems.SetValue(str(100))
-                self.parameter_panel.add_table_item_label(" 🛈", align=wx.ALIGN_CENTER_VERTICAL).SetToolTip(
-                    "This is maximum number of systems that the plotter will route you through, lower this for a shorter trip.")
-
-                self.parameter_panel.add_table_item_label("")
-                self.parameter_panel.add_table_item_label("")
-                self.parameter_panel.add_table_item_label("")
-
-                if self.selected_plotter == "riches":
-                    self.btn_use_mapping_value = DynamicToggleButton(
-                        label="Use mapping value 🛈",
-                        parent=self.parameter_panel.content,
-                        is_toggled=True,
-                        size=BTN_SIZE
-                    )
-                    self.parameter_panel.add_table_item_toggle_button(self.btn_use_mapping_value)
-                    self.btn_use_mapping_value.SetToolTip("Use the mapping value rather than the scan value.")
-
-                self.btn_avoid_thargoids = DynamicToggleButton(
-                    label="Avoid Thargoids 🛈",
-                    parent=self.parameter_panel.content,
-                    is_toggled=True,
-                    size=BTN_SIZE
-                )
-                self.parameter_panel.add_table_item_toggle_button(self.btn_avoid_thargoids)
-                self.btn_avoid_thargoids.SetToolTip("Avoid systems that are at war with or controlled by the Thargoids.")
-                if self.selected_plotter == "riches":
-                    self.parameter_panel.add_table_item_label("")
-
-                self.btn_loop_route = DynamicToggleButton(
-                    label="Loop 🛈",
-                    parent=self.parameter_panel.content,
-                    is_toggled = False if self.selected_plotter == "riches" else True,
-                    size=BTN_SIZE
-                )
-                self.parameter_panel.add_table_item_toggle_button(self.btn_loop_route)
-                self.btn_loop_route.SetToolTip("Force the route to return to the starting system.")
-                if self.selected_plotter == "riches":
-                    self.parameter_panel.add_table_item_label("")
-                self.parameter_panel.add_table_item_label("")
-
-                self.parameter_panel.add_table_item_label("")
-                self.parameter_panel.add_table_item_label("")
-                self.parameter_panel.add_table_item_label("")
-
-                self.parameter_panel.add_table_item_label("Maximum distance to arrival", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
-                self.parameter_panel.add_table_item_label("")
-                self.parameter_panel.add_table_item_label("")
-                self.spin_max_distance_to_arrival = wx.SpinCtrl(parent=self.parameter_panel.content, min=1, max=1000000, initial=50000, size=wx.Size(BTN_SIZE.width, -1))
-                self.sld_max_distance_to_arrival = ThemedSlider(parent=self.parameter_panel.content, value=50000, min_val=1, max_val=1000000, size=SLIDER_SIZE, scale="symlog")
-                self.parameter_panel.add_table_item_generic(self.spin_max_distance_to_arrival)
-                self.parameter_panel.add_table_item_generic(self.sld_max_distance_to_arrival)
-                self.parameter_panel.add_table_item_label("")
-                self._link_spin_slider(self.spin_max_distance_to_arrival, self.sld_max_distance_to_arrival)
-
-                if self.selected_plotter in ("riches", "exobiology"):
-                    label_text = ""
-                    match self.selected_plotter:
-                        case "riches":
-                            label_text = "Minimum scan value"
-                        case "exobiology":
-                            label_text = "Minimum landmark Value"
-
-                    self.parameter_panel.add_table_item_label(label_text, align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
-                    self.parameter_panel.add_table_item_label("")
-                    self.parameter_panel.add_table_item_label("")
-                    self.spin_min_scan_value = wx.SpinCtrl(parent=self.parameter_panel.content, min=1, max=1000000, initial=100000, size=wx.Size(BTN_SIZE.width, -1))
-                    self.sld_min_scan_value = ThemedSlider(parent=self.parameter_panel.content, value=100000, min_val=1, max_val=1000000, size=SLIDER_SIZE, scale="symlog")
-                    self.parameter_panel.add_table_item_generic(self.spin_min_scan_value)
-                    self.parameter_panel.add_table_item_generic(self.sld_min_scan_value)
-                    self.parameter_panel.add_table_item_label("")
-                    self._link_spin_slider(self.spin_min_scan_value, self.sld_min_scan_value)
+                self._build_default_router_ui(current_jump_range)
 
         self.parameter_panel.add_table_item_label("")
         self.parameter_panel.add_table_item_label("")
@@ -988,6 +808,196 @@ class ExplorationItinerary(DynamicDialog):
     def _on_close(self,event):
         self._timer.Stop()
         event.Skip()
+
+    def _build_galaxy_router_ui(self):
+        """Build the UI for the Galaxy Router plotter."""
+
+        self.parameter_panel.add_table_item_label("")
+
+        self.parameter_panel.add_table_item_label(label_text=f"Cargo", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
+        self.txt_cargo = self.parameter_panel.add_table_item_textbox()
+        self.txt_cargo.SetValidator(IntRangeValidator(min_val=0, max_val=self.ship_status.cargo_capacity, allow_empty=False))
+        self.txt_cargo.SetValue(str(self.ship_status.cargo))
+        self.parameter_panel.add_table_item_label("")
+
+        self.parameter_panel.add_table_item_label(label_text=f"Reserve fuel", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
+        self.txt_reserve_fuel = self.parameter_panel.add_table_item_textbox()
+        self.txt_reserve_fuel.SetValidator(IntRangeValidator(min_val=0, max_val=self.ship_status.fuel_capacity.main, allow_empty=False))
+        self.txt_reserve_fuel.SetValue("0")
+        self.parameter_panel.add_table_item_label("")
+
+        self.parameter_panel.add_table_item_label("")
+        self.parameter_panel.add_table_item_label("")
+        self.parameter_panel.add_table_item_label("")
+
+        self.btn_already_supercharged = DynamicToggleButton(
+            label="Already supercharged",
+            parent=self.parameter_panel.content,
+            is_toggled=self.ship_status.jet_cone_boost_factor is not None,
+            size=BTN_SIZE
+        )
+        self.parameter_panel.add_table_item_toggle_button(self.btn_already_supercharged)
+
+        self.btn_use_supercharged = DynamicToggleButton(
+            label="Use supercharge",
+            parent=self.parameter_panel.content,
+            is_toggled=True,
+            size=BTN_SIZE
+        )
+        self.parameter_panel.add_table_item_toggle_button(self.btn_use_supercharged)
+        self.parameter_panel.add_table_item_label("")
+
+        self.btn_use_fsd_injections_always = DynamicToggleButton(
+            label="Use FSD injections always",
+            parent=self.parameter_panel.content,
+            is_toggled=False,
+            size=BTN_SIZE
+        )
+        self.parameter_panel.add_table_item_toggle_button(self.btn_use_fsd_injections_always)
+
+        self.btn_use_fsd_injections_when_required = DynamicToggleButton(
+            label="Use FSD injections when required",
+            parent=self.parameter_panel.content,
+            is_toggled=False,
+            size=BTN_SIZE
+        )
+        self.parameter_panel.add_table_item_toggle_button(self.btn_use_fsd_injections_when_required)
+        self.parameter_panel.add_table_item_label("")
+
+        self.btn_exclude_secondary_stars = DynamicToggleButton(
+            label="Exclude secondary stars",
+            parent=self.parameter_panel.content,
+            is_toggled=False,
+            size=BTN_SIZE
+        )
+        self.parameter_panel.add_table_item_toggle_button(self.btn_exclude_secondary_stars)
+
+        self.btn_refuel_every_scoopable = DynamicToggleButton(
+            label="Refuel  every scoopable",
+            parent=self.parameter_panel.content,
+            is_toggled=True,
+            size=BTN_SIZE
+        )
+        self.parameter_panel.add_table_item_toggle_button(self.btn_refuel_every_scoopable)
+        self.parameter_panel.add_table_item_label("")
+
+        self.parameter_panel.add_table_item_label("")
+        self.parameter_panel.add_table_item_label("")
+        self.parameter_panel.add_table_item_label("")
+
+        self.parameter_panel.add_table_item_label(label_text=f"Routing algorithm", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
+
+        # Extract display texts for the dropdown
+        display_texts = [opt[0] for opt in ROUTING_OPTIONS]
+
+        # Create combobox
+        self.cmb_routing_algorithm = wx.ComboBox(choices=display_texts, style=wx.CB_READONLY, parent=self.parameter_panel.content, size=BTN_SIZE)
+        self.cmb_routing_algorithm.SetValue(display_texts[0])  # Set default
+        self.cmb_routing_algorithm.Bind(wx.EVT_LEFT_DOWN, lambda e: None)
+
+        # Bind event to handle selection
+        self.cmb_routing_algorithm.Bind(wx.EVT_COMBOBOX, self._on_routing_changed)
+
+        self.parameter_panel.add_table_item_generic(self.cmb_routing_algorithm)
+        self.parameter_panel.add_table_item_label("")
+
+    def _build_default_router_ui(self, current_jump_range: str):
+        """Build the UI for the default plotters (riches, exobiology, ammonia, earth, rocky)."""
+
+        self.parameter_panel.add_table_item_label(" 🛈", align=wx.ALIGN_CENTER_VERTICAL).SetToolTip("Leave destination blank in order to create a circular tour starting at your source system and returning there at the end.")
+
+        self.parameter_panel.add_table_item_label("")
+        self.parameter_panel.add_table_item_label("")
+        self.parameter_panel.add_table_item_label("")
+
+        self.parameter_panel.add_table_item_label(label_text=f"Jump range (LY, default current)", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
+        self.txt_jump_range = self.parameter_panel.add_table_item_textbox()
+        self.txt_jump_range.SetValidator(FloatRangeValidator(min_val=1, max_val=100, allow_empty=False))
+        self.txt_jump_range.SetValue(current_jump_range)
+        self.parameter_panel.add_table_item_label(" 🛈", align=wx.ALIGN_CENTER_VERTICAL).SetToolTip("Jump range of your ship.")
+
+        self.parameter_panel.add_table_item_label(label_text=f"Radius (LY)", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
+        self.txt_stray_radius = self.parameter_panel.add_table_item_textbox()
+        self.txt_stray_radius.SetValidator(FloatRangeValidator(min_val=1, max_val=100, allow_empty=False))
+        self.txt_stray_radius.SetValue(str(25))
+        self.parameter_panel.add_table_item_label(" 🛈", align=wx.ALIGN_CENTER_VERTICAL).SetToolTip(
+            "This is the distance in LY around which the plotter will look for valuable worlds for you to visit. A value of 25 LY tends to give a nice balance for A to B routes keeping the number of jumps reasonably low whilst still giving a nice payout. For circular routes (leaving destination blank) you will probably want to increase this to 100-500 LY.")
+
+        self.parameter_panel.add_table_item_label(label_text=f"Maximum systems", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
+        self.txt_max_systems = self.parameter_panel.add_table_item_textbox()
+        self.txt_max_systems.SetValidator(FloatRangeValidator(min_val=1, max_val=100, allow_empty=False))
+        self.txt_max_systems.SetValue(str(100))
+        self.parameter_panel.add_table_item_label(" 🛈", align=wx.ALIGN_CENTER_VERTICAL).SetToolTip(
+            "This is maximum number of systems that the plotter will route you through, lower this for a shorter trip.")
+
+        self.parameter_panel.add_table_item_label("")
+        self.parameter_panel.add_table_item_label("")
+        self.parameter_panel.add_table_item_label("")
+
+        if self.selected_plotter == "riches":
+            self.btn_use_mapping_value = DynamicToggleButton(
+                label="Use mapping value 🛈",
+                parent=self.parameter_panel.content,
+                is_toggled=True,
+                size=BTN_SIZE
+            )
+            self.parameter_panel.add_table_item_toggle_button(self.btn_use_mapping_value)
+            self.btn_use_mapping_value.SetToolTip("Use the mapping value rather than the scan value.")
+
+        self.btn_avoid_thargoids = DynamicToggleButton(
+            label="Avoid Thargoids 🛈",
+            parent=self.parameter_panel.content,
+            is_toggled=True,
+            size=BTN_SIZE
+        )
+        self.parameter_panel.add_table_item_toggle_button(self.btn_avoid_thargoids)
+        self.btn_avoid_thargoids.SetToolTip("Avoid systems that are at war with or controlled by the Thargoids.")
+        if self.selected_plotter == "riches":
+            self.parameter_panel.add_table_item_label("")
+
+        self.btn_loop_route = DynamicToggleButton(
+            label="Loop 🛈",
+            parent=self.parameter_panel.content,
+            is_toggled = False if self.selected_plotter == "riches" else True,
+            size=BTN_SIZE
+        )
+        self.parameter_panel.add_table_item_toggle_button(self.btn_loop_route)
+        self.btn_loop_route.SetToolTip("Force the route to return to the starting system.")
+        if self.selected_plotter == "riches":
+            self.parameter_panel.add_table_item_label("")
+        self.parameter_panel.add_table_item_label("")
+
+        self.parameter_panel.add_table_item_label("")
+        self.parameter_panel.add_table_item_label("")
+        self.parameter_panel.add_table_item_label("")
+
+        self.parameter_panel.add_table_item_label("Maximum distance to arrival", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
+        self.parameter_panel.add_table_item_label("")
+        self.parameter_panel.add_table_item_label("")
+        self.spin_max_distance_to_arrival = wx.SpinCtrl(parent=self.parameter_panel.content, min=1, max=1000000, initial=50000, size=wx.Size(BTN_SIZE.width, -1))
+        self.sld_max_distance_to_arrival = ThemedSlider(parent=self.parameter_panel.content, value=50000, min_val=1, max_val=1000000, size=SLIDER_SIZE, scale="symlog")
+        self.parameter_panel.add_table_item_generic(self.spin_max_distance_to_arrival)
+        self.parameter_panel.add_table_item_generic(self.sld_max_distance_to_arrival)
+        self.parameter_panel.add_table_item_label("")
+        self._link_spin_slider(self.spin_max_distance_to_arrival, self.sld_max_distance_to_arrival)
+
+        if self.selected_plotter in ("riches", "exobiology"):
+            label_text = ""
+            match self.selected_plotter:
+                case "riches":
+                    label_text = "Minimum scan value"
+                case "exobiology":
+                    label_text = "Minimum landmark Value"
+
+            self.parameter_panel.add_table_item_label(label_text, align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
+            self.parameter_panel.add_table_item_label("")
+            self.parameter_panel.add_table_item_label("")
+            self.spin_min_scan_value = wx.SpinCtrl(parent=self.parameter_panel.content, min=1, max=1000000, initial=100000, size=wx.Size(BTN_SIZE.width, -1))
+            self.sld_min_scan_value = ThemedSlider(parent=self.parameter_panel.content, value=100000, min_val=1, max_val=1000000, size=SLIDER_SIZE, scale="symlog")
+            self.parameter_panel.add_table_item_generic(self.spin_min_scan_value)
+            self.parameter_panel.add_table_item_generic(self.sld_min_scan_value)
+            self.parameter_panel.add_table_item_label("")
+            self._link_spin_slider(self.spin_min_scan_value, self.sld_min_scan_value)
 
     def _build_neutron_router_ui(self, current_jump_range: str):
         """Build the UI for the Neutron Router plotter."""
