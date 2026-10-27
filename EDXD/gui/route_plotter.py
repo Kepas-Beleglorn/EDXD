@@ -42,8 +42,8 @@ ROUTE_PLOTTERS = [
     ("Expressway to Exomastery", "exobiology"),
     ("Ammonia World Route", "ammonia"),
     ("Earth-like World Route", "earth"),
-    ("Rocky body / High metal content world Route", "rocky")
-#    ("Neutron Router", "neutron"),
+    ("Rocky body / High metal content world Route", "rocky"),
+    ("Neutron Router", "neutron"),
 ]
 
 # List of (display, value) tuples
