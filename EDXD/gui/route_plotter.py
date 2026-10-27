@@ -33,7 +33,7 @@ from EDXD.data_handler.helper.dotted_dictionary import *
 TITLE = "Exploration itinerary"
 WINID = "EXPLORATION_ITINERARY"
 
-SLIDER_FIXED_HEIGHT = 24
+SLIDER_SIZE = wx.Size(240, 24)
 BTN_SIZE = wx.Size(250, 38)
 
 ROUTE_PLOTTERS = [
@@ -272,7 +272,7 @@ class ExplorationItinerary(DynamicDialog):
             return
 
         data = DotDict(json.loads(raw_data))
-
+        self._update_parameter()
         if hasattr(data, "parameters") and data.parameters:
             match self.selected_plotter:
                 case "galaxy":
@@ -305,6 +305,38 @@ class ExplorationItinerary(DynamicDialog):
                         self.btn_refuel_every_scoopable._is_toggled = toggled
                         self.btn_refuel_every_scoopable.SetValue(toggled)
                     if hasattr(data.parameters, "algorithm"): self._on_routing_loaded(data.parameters.algorithm)
+
+                case "neutron":
+                    if hasattr(data.parameters, "from"): self.txt_source_system.SetValue(data.parameters["from"])
+                    if hasattr(data.parameters, "to"): self.txt_destination_system.SetValue(data.parameters.to)
+                    else: self.txt_destination_system.Clear()
+                    if hasattr(data.parameters, "range"): self.txt_jump_range.SetValue(data.parameters.range)
+                    if hasattr(self, "spin_efficiency") and hasattr(self, "sld_efficiency"):
+                        if hasattr(data.parameters, "efficiency"):
+                            eff_val = int(data.parameters.efficiency)
+                            self.spin_efficiency.SetValue(eff_val)
+                            self.sld_efficiency.SetValue(eff_val)
+                    if hasattr(data.parameters, "supercharge_multiplier"):
+                        multiplier = int(data.parameters.supercharge_multiplier)
+                        if multiplier == 6:
+                            self.btn_overcharge_supercharge.SetValue(True)
+                            self.btn_overcharge_supercharge._is_toggled = True
+                            self.btn_normal_supercharge.SetValue(False)
+                            self.btn_normal_supercharge._is_toggled = False
+                            self.btn_normal_supercharge.Refresh()
+                        else:
+                            self.btn_normal_supercharge.SetValue(True)
+                            self.btn_normal_supercharge._is_toggled = True
+                            self.btn_overcharge_supercharge.SetValue(False)
+                            self.btn_overcharge_supercharge._is_toggled = False
+                            self.btn_overcharge_supercharge.Refresh()
+                    # Load via waypoints if present
+                    if hasattr(data.parameters, "via") and data.parameters.via:
+                        via_list = data.parameters.via
+                        if isinstance(via_list, list):
+                            for wp in via_list:
+                                if wp and str(wp).strip():
+                                    self._add_via_waypoint(str(wp))
 
                 case _:
                     if hasattr(data.parameters, "source"): self.txt_source_system.SetValue(data.parameters.source)
@@ -380,7 +412,13 @@ class ExplorationItinerary(DynamicDialog):
                     max_distance_from_arrival=self.spin_max_distance_to_arrival.GetValue(),
                     min_scan_value=self.spin_min_scan_value.GetValue())
             case "neutron":
-                pass
+                self.job_id: str | None = spansh.neutron_router(
+                    source_system_name=self.txt_source_system.GetValue(),
+                    destination_system_name=self.txt_destination_system.GetValue(),
+                    via_waypoints=self._get_via_waypoints(),
+                    jump_range=float(self.txt_jump_range.GetValue()),
+                    supercharge_multiplier=self._get_neutron_supercharge_multiplier(),
+                    efficiency=self.spin_efficiency.GetValue())
             case _:
                 self.job_id: str | None = spansh.road_to_riches(
                     source_system_name=self.txt_source_system.GetValue(),
@@ -393,9 +431,10 @@ class ExplorationItinerary(DynamicDialog):
                     max_distance_from_arrival=self.spin_max_distance_to_arrival.GetValue(),
                     riches_mode=self.selected_plotter)
 
-        job_dict: DotDict = create_dot_dict_from_string(str(self.job_id))
-        if hasattr(job_dict, "error"):
-            self.lbl_job_status.SetLabel(f"Plotting failed.\n{job_dict.error}")
+        if "error" in str(self.job_id):
+            job_dict: DotDict = create_dot_dict_from_string(str(self.job_id))
+            if hasattr(job_dict, "error"):
+                self.lbl_job_status.SetLabel(f"Plotting failed.\n{job_dict.error}")
         else:
             # Start the background worker; it updates the label while polling
             self.worker = PlotterWorker(
@@ -485,14 +524,23 @@ class ExplorationItinerary(DynamicDialog):
 
         self.parameter_panel.reset_table()
 
-        self.parameter_panel.add_table_item_label(label_text=f"Source System", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
-        self.txt_source_system = self.parameter_panel.add_table_item_textbox()
-        self.parameter_panel.add_table_item_label("")
-
-        self.parameter_panel.add_table_item_label(label_text=f"Destination System", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
-        self.txt_destination_system = self.parameter_panel.add_table_item_textbox(width=BTN_SIZE.width)
-
         current_jump_range: str = str(round(self._calculate_current_jump_range(), 2))
+
+        # For the neutron router, source/via/destination order is special
+        if self.selected_plotter == "neutron":
+            self.parameter_panel.add_table_item_label(label_text=f"Source System", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
+            self.txt_source_system = self.parameter_panel.add_table_item_textbox()
+            self.parameter_panel.add_table_item_label("")
+            self.parameter_panel.add_table_item_label("")
+            self.parameter_panel.add_table_item_label("")
+            self._build_neutron_router_ui(current_jump_range)
+        else:
+            self.parameter_panel.add_table_item_label(label_text=f"Source System", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
+            self.txt_source_system = self.parameter_panel.add_table_item_textbox()
+            self.parameter_panel.add_table_item_label("")
+
+            self.parameter_panel.add_table_item_label(label_text=f"Destination System", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
+            self.txt_destination_system = self.parameter_panel.add_table_item_textbox(width=BTN_SIZE.width)
 
         match self.selected_plotter:
             case "galaxy":
@@ -586,6 +634,7 @@ class ExplorationItinerary(DynamicDialog):
                 self.parameter_panel.add_table_item_label("")
 
             case "neutron":
+                # Neutron UI is already built above, before destination
                 pass
 
             case _:
@@ -660,7 +709,7 @@ class ExplorationItinerary(DynamicDialog):
                 self.parameter_panel.add_table_item_label("")
                 self.parameter_panel.add_table_item_label("")
                 self.spin_max_distance_to_arrival = wx.SpinCtrl(parent=self.parameter_panel.content, min=1, max=1000000, initial=50000, size=wx.Size(BTN_SIZE.width, -1))
-                self.sld_max_distance_to_arrival = ThemedSlider(parent=self.parameter_panel.content, value=50000, min_val=1, max_val=1000000, size=(BTN_SIZE.width, SLIDER_FIXED_HEIGHT), scale="symlog")
+                self.sld_max_distance_to_arrival = ThemedSlider(parent=self.parameter_panel.content, value=50000, min_val=1, max_val=1000000, size=SLIDER_SIZE, scale="symlog")
                 self.parameter_panel.add_table_item_generic(self.spin_max_distance_to_arrival)
                 self.parameter_panel.add_table_item_generic(self.sld_max_distance_to_arrival)
                 self.parameter_panel.add_table_item_label("")
@@ -678,7 +727,7 @@ class ExplorationItinerary(DynamicDialog):
                     self.parameter_panel.add_table_item_label("")
                     self.parameter_panel.add_table_item_label("")
                     self.spin_min_scan_value = wx.SpinCtrl(parent=self.parameter_panel.content, min=1, max=1000000, initial=100000, size=wx.Size(BTN_SIZE.width, -1))
-                    self.sld_min_scan_value = ThemedSlider(parent=self.parameter_panel.content, value=100000, min_val=1, max_val=1000000, size=(BTN_SIZE.width, SLIDER_FIXED_HEIGHT), scale="symlog")
+                    self.sld_min_scan_value = ThemedSlider(parent=self.parameter_panel.content, value=100000, min_val=1, max_val=1000000, size=SLIDER_SIZE, scale="symlog")
                     self.parameter_panel.add_table_item_generic(self.spin_min_scan_value)
                     self.parameter_panel.add_table_item_generic(self.sld_min_scan_value)
                     self.parameter_panel.add_table_item_label("")
@@ -888,9 +937,14 @@ class ExplorationItinerary(DynamicDialog):
         for system in spansh_route_data.jumps:
             # If we've reached a waypoint, copy the next name to the clipboard
             if do_copy_to_clipboard:
-                if self.copied_system_name != system.name:
-                    self.copied_system_name = system.name
-                    copy_text_to_clipboard(system.name)
+                system_name: str = ""
+                if hasattr(system, "name"):
+                    system_name: str = system.name
+                elif hasattr(system, "system"):
+                    system_name: str = system.system
+                if self.copied_system_name != system_name:
+                    self.copied_system_name = system_name
+                    copy_text_to_clipboard(system_name)
                     do_copy_to_clipboard = False
                 break
 
@@ -909,12 +963,18 @@ class ExplorationItinerary(DynamicDialog):
 
         if not do_copy_to_clipboard and hasattr(spansh_route_data, "last_waypoint"):
             last_waypoint: NavPoint = from_dotdict(NavPoint, spansh_route_data.last_waypoint)
-            self.nav_route.current_system = last_waypoint
+            if self.nav_route:
+                self.nav_route.current_system = last_waypoint
             for system in spansh_route_data.jumps:
+                system_name: str = ""
+                if hasattr(system, "name"):
+                    system_name: str = system.name
+                elif hasattr(system, "system"):
+                    system_name: str = system.system
                 if do_copy_to_clipboard:
-                    if self.copied_system_name != system.name:
-                        self.copied_system_name = system.name
-                        copy_text_to_clipboard(system.name)
+                    if self.copied_system_name != system_name:
+                        self.copied_system_name = system_name
+                        copy_text_to_clipboard(system_name)
                         return True
                     else:
                         return False
@@ -928,6 +988,190 @@ class ExplorationItinerary(DynamicDialog):
     def _on_close(self,event):
         self._timer.Stop()
         event.Skip()
+
+    def _build_neutron_router_ui(self, current_jump_range: str):
+        """Build the UI for the Neutron Router plotter."""
+
+        # --- Via Waypoints Section ---
+        self._via_waypoints_list: list[wx.TextCtrl] = []
+        self._via_delete_buttons: dict[wx.TextCtrl, wx.StaticText] = {}
+        self.parameter_panel.add_table_item_label("")
+
+        self.parameter_panel.add_table_item_label(label_text="Via Waypoints", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
+        self.btn_add_via = DynamicButton(parent=self.parameter_panel.content, label="Add Via +", size=BTN_SIZE)
+        self.btn_add_via.Bind(wx.EVT_BUTTON, self._on_add_via)
+        self.parameter_panel.add_table_item_generic(self.btn_add_via)
+        self.parameter_panel.add_table_item_label("")
+
+        # Track the insertion index for via waypoints (after the Add Via button row)
+        self._via_insert_index = self.parameter_panel.table_sizer.GetItemCount()
+
+        self.parameter_panel.add_table_item_label("")
+        self.parameter_panel.add_table_item_label("")
+        self.parameter_panel.add_table_item_label("")
+        self.parameter_panel.add_table_item_label(label_text=f"Destination System", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
+        self.txt_destination_system = self.parameter_panel.add_table_item_textbox(width=BTN_SIZE.width)
+        self.parameter_panel.add_table_item_label("")
+
+        # --- Jump Range ---
+        self.parameter_panel.add_table_item_label(label_text="Jump range (LY)", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
+        self.txt_jump_range = self.parameter_panel.add_table_item_textbox()
+        self.txt_jump_range.SetValidator(FloatRangeValidator(min_val=1, max_val=100, allow_empty=False))
+        self.txt_jump_range.SetValue(current_jump_range)
+        self.parameter_panel.add_table_item_label(" 🛈", align=wx.ALIGN_CENTER_VERTICAL).SetToolTip("Jump range of your ship.")
+
+        self.parameter_panel.add_table_item_label("")
+        self.parameter_panel.add_table_item_label("")
+        self.parameter_panel.add_table_item_label("")
+
+        # --- Supercharge Toggle Buttons (mutually exclusive) ---
+        self.btn_normal_supercharge = DynamicToggleButton(
+            label="Normal Supercharge (4x)",
+            parent=self.parameter_panel.content,
+            is_toggled=True,
+            size=BTN_SIZE
+        )
+        self.btn_normal_supercharge.Bind(wx.EVT_BUTTON, self._on_supercharge_toggle)
+        self.parameter_panel.add_table_item_toggle_button(self.btn_normal_supercharge)
+
+        self.btn_overcharge_supercharge = DynamicToggleButton(
+            label="Overcharge Supercruise (6x)",
+            parent=self.parameter_panel.content,
+            is_toggled=False,
+            size=BTN_SIZE
+        )
+        self.btn_overcharge_supercharge.Bind(wx.EVT_BUTTON, self._on_supercharge_toggle)
+        self.parameter_panel.add_table_item_toggle_button(self.btn_overcharge_supercharge)
+        self.parameter_panel.add_table_item_label("")
+
+        self.parameter_panel.add_table_item_label("")
+        self.parameter_panel.add_table_item_label("")
+        self.parameter_panel.add_table_item_label("")
+
+        # --- Efficiency Slider ---
+        efficiency_tooltip_text = (
+            "Increase this to reduce how far off the direct route the system will plot "
+            "to get to a neutron star (An efficiency of 100 will not deviate from the direct "
+            "route in order to plot from A to B and will most likely break down the journey "
+            "into 20000 LY blocks)."
+        )
+
+        self.parameter_panel.add_table_item_label("Efficiency (%)", align=wx.ALIGN_BOTTOM, width=BTN_SIZE.width)
+        self.parameter_panel.add_table_item_label("")
+        self.parameter_panel.add_table_item_label("")
+
+        self.spin_efficiency = wx.SpinCtrl(parent=self.parameter_panel.content, min=0, max=100, initial=60, size=wx.Size(BTN_SIZE.width, -1))
+        self.sld_efficiency = ThemedSlider(parent=self.parameter_panel.content, value=0, min_val=0, max_val=100, size=SLIDER_SIZE)
+
+        self.parameter_panel.add_table_item_generic(self.spin_efficiency)
+        self.parameter_panel.add_table_item_generic(self.sld_efficiency)
+        self.parameter_panel.add_table_item_label(" 🛈", align=wx.ALIGN_CENTER_VERTICAL).SetToolTip(efficiency_tooltip_text)
+        self._link_spin_slider(self.spin_efficiency, self.sld_efficiency)
+
+    def _add_via_waypoint(self, value=""):
+        """Add a new via waypoint text input as a table row. Returns the text control."""
+        via_text = wx.TextCtrl(parent=self.parameter_panel.content, size=wx.Size(BTN_SIZE.width, -1))
+        via_text.SetMinSize(wx.Size(BTN_SIZE.width, -1))
+        via_text.SetValue(value)
+
+        apply_theme(via_text)
+
+        delete_label = wx.StaticText(parent=self.parameter_panel.content, label=" 🗑️ ")
+        delete_label.SetCursor(wx.Cursor(wx.CURSOR_HAND))
+        #delete_btn = DynamicButton(parent=self.parameter_panel.content, label="🗑️", size=wx.Size(30, 30))
+        via_text_ctrl_ref = via_text  # Capture for closure
+        delete_label.Bind(wx.EVT_LEFT_DOWN, lambda e, ctrl=via_text_ctrl_ref: self._on_delete_via(ctrl))
+
+        table_sizer = self.parameter_panel.table_sizer
+
+        # If we have a tracked insertion index, insert at that position; otherwise append
+        if hasattr(self, '_via_insert_index') and self._via_insert_index is not None:
+            # Insert in reverse order so indices remain valid
+            empty_label = wx.StaticText(self.parameter_panel.content)
+            table_sizer.Insert(self._via_insert_index + 1, empty_label, 0, wx.EXPAND, 0)
+            table_sizer.Insert(self._via_insert_index + 1, delete_label, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL, 0)
+            table_sizer.Insert(self._via_insert_index + 1, via_text, 0, wx.EXPAND, 0)
+            self._via_insert_index += 3
+        else:
+            # Fallback: append at end
+            self.parameter_panel.add_table_item_label("")
+            self.parameter_panel.add_table_item_generic(via_text)
+            self.parameter_panel.add_table_item_generic(delete_label)
+
+        self._via_waypoints_list.append(via_text)
+        self._via_delete_buttons[via_text] = delete_label
+        self.parameter_panel.force_render()
+        return via_text
+
+    def _on_add_via(self, event):
+        """Add a new via waypoint text input as a table row."""
+        self._add_via_waypoint()
+
+    def _on_delete_via(self, ctrl: wx.TextCtrl):
+        """Remove a via waypoint text input."""
+        if ctrl in self._via_waypoints_list:
+            self._via_waypoints_list.remove(ctrl)
+            delete_btn = self._via_delete_buttons.pop(ctrl, None)
+
+            # Remove all widgets from the table_sizer (label, textbox, delete button)
+            table_sizer = self.parameter_panel.table_sizer
+            indices_to_remove = []
+            for i in range(table_sizer.GetItemCount()):
+                item = table_sizer.GetItem(i)
+                if item and item.GetWindow() == delete_btn:
+                    indices_to_remove.append(i-2)
+                    indices_to_remove.append(i-1)
+                    indices_to_remove.append(i)
+                    break
+
+            # Remove in reverse order to keep indices valid
+            for i in reversed(indices_to_remove):
+                item = table_sizer.GetItem(i)
+                if item and item.GetWindow():
+                    item.GetWindow().Destroy()
+
+            # Adjust the insertion index so new vias are added at the correct position
+            if hasattr(self, '_via_insert_index') and self._via_insert_index is not None:
+                for idx in reversed(indices_to_remove):
+                    if idx < self._via_insert_index:
+                        self._via_insert_index -= 1
+
+            self.parameter_panel.force_render()
+
+    def _on_supercharge_toggle(self, event):
+        """Ensure supercharge toggle buttons are mutually exclusive."""
+        clicked_btn = event.EventObject
+
+        if clicked_btn == self.btn_normal_supercharge:
+            self.btn_normal_supercharge.SetValue(True)
+            self.btn_normal_supercharge._is_toggled = True
+            self.btn_normal_supercharge.Refresh()
+            self.btn_overcharge_supercharge.SetValue(False)
+            self.btn_overcharge_supercharge._is_toggled = False
+            self.btn_overcharge_supercharge.Refresh()
+        elif clicked_btn == self.btn_overcharge_supercharge:
+            self.btn_normal_supercharge.SetValue(False)
+            self.btn_normal_supercharge._is_toggled = False
+            self.btn_normal_supercharge.Refresh()
+            self.btn_overcharge_supercharge.SetValue(True)
+            self.btn_overcharge_supercharge._is_toggled = True
+            self.btn_overcharge_supercharge.Refresh()
+
+    def _get_neutron_supercharge_multiplier(self) -> int:
+        """Return the supercharge multiplier based on the selected toggle button."""
+        if self.btn_normal_supercharge.GetValue():
+            return 4
+        if self.btn_overcharge_supercharge.GetValue():
+            return 6
+
+    def _get_via_waypoints(self) -> list:
+        """Collect all non-empty via waypoint values."""
+        waypoints = []
+        for ctrl in self._via_waypoints_list:
+            val = ctrl.GetValue().strip()
+            if val:
+                waypoints.append(val)
+        return waypoints
 
     def _link_spin_slider(self, spin: wx.SpinCtrl, slider: ThemedSlider):
         spin.Bind(wx.EVT_SPINCTRL, lambda evt: self._on_spin(evt, slider))

@@ -497,6 +497,30 @@ class SpanshRoutePlotter:
         }
         return self._send_request(url, payload)
 
+    def neutron_router(self,
+                       source_system_name: str,
+                       destination_system_name: str,
+                       via_waypoints: List[str],
+                       jump_range: float,
+                       supercharge_multiplier: int,
+                       efficiency: int
+                       ) -> str | None:
+
+        url = SPANSH_NEUTRON_ROUTER_API
+        payload: dict[str, Any] = {
+            "from": source_system_name.strip(),
+            "to": destination_system_name.strip(),
+            "range": jump_range,
+            "supercharge_multiplier": supercharge_multiplier,
+            "efficiency": efficiency,
+        }
+
+        # Add via waypoints if any are provided
+        if via_waypoints:
+            payload["via"] = [wp.strip() for wp in via_waypoints if wp.strip()]
+
+        return self._send_request(url, payload)
+
 @staticmethod
 def get_itinerary(job_id: str | None,
                   progress_callback=None) -> DotDict | None:
@@ -523,7 +547,10 @@ def get_itinerary(job_id: str | None,
         if response_dict.state == "completed" and response_dict.status == "ok":
             if isinstance(response_dict.result, DotDict):
                 spansh_itinerary: DotDict = response_dict
-                spansh_itinerary["jumps"] = spansh_itinerary.result.jumps
+                if hasattr(spansh_itinerary.result, "jumps"):
+                    spansh_itinerary["jumps"] = spansh_itinerary.result.jumps
+                elif hasattr(spansh_itinerary.result, "system_jumps"):
+                    spansh_itinerary["jumps"] = spansh_itinerary.result.system_jumps
                 spansh_itinerary.pop("result")
             elif isinstance(response_dict.result, list):
                 spansh_itinerary: DotDict = response_dict
