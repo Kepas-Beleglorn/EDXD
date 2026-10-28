@@ -1,3 +1,8 @@
+---
+name: github-issue
+description: Used for creating new issues for the repo.
+---
+
 # GitHub Issue Creation
 
 Guidelines for creating and editing GitHub issues in the EDXD repository.
