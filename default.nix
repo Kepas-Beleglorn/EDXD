@@ -62,6 +62,7 @@ python.pkgs.buildPythonPackage {
   ];
 
   propagatedBuildInputs = [
+    python.pkgs.pywinctl
     python.pkgs.tomli
     python.pkgs.watchdog
     python.pkgs.wxpython
