@@ -13,7 +13,7 @@ import sys, os
 
 from wx import Size
 
-from EDXD.globals import BTN_HEIGHT, BTN_WIDTH, CACHE_DIR, ICONS, MAX_AMOUNT_OF_PLOTTED_UPCOMING_SYSTEMS_TO_SHOW, MAX_AMOUNT_OF_PLOTTED_PASSED_SYSTEMS_TO_SHOW
+from EDXD.globals import BTN_HEIGHT, BTN_WIDTH, CACHE_DIR, ICONS, MAX_AMOUNT_OF_PLOTTED_UPCOMING_SYSTEMS_TO_SHOW, MAX_AMOUNT_OF_PLOTTED_PASSED_SYSTEMS_TO_SHOW, DEFAULT_WORTHWHILE_THRESHOLD, DEFAULT_AMOUNT_OF_PLOTTED_UPCOMING_SYSTEMS_TO_SHOW, DEFAULT_AMOUNT_OF_PLOTTED_PASSED_SYSTEMS_TO_SHOW
 from EDXD.gui.helper.dynamic_dialog import DynamicDialog
 from EDXD.gui.helper.gui_dir_picker import DirPicker
 from EDXD.gui.helper.gui_dynamic_toggle_button import DynamicToggleButton
@@ -126,21 +126,21 @@ class EDXDConfig(DynamicDialog):
         self.system_cache_dir_picker.Refresh()
         self.Layout()
 
-        temp: str = str(self.cfg.get("worthwhile_threshold"))
+        temp: str = str(self.cfg.get("worthwhile_threshold", DEFAULT_WORTHWHILE_THRESHOLD))
         self.txt_worthwhile_threshold.SetValue(temp)
         validator = self.txt_worthwhile_threshold.GetValidator()
         if isinstance(validator, PositiveIntFormatterValidator):
             validator.RefreshFormatAndValidate()
         self.txt_worthwhile_threshold.Refresh()
 
-        temp: str = str(self.cfg.get("amount_of_plotted_upcoming_systems_to_show"))
+        temp: str = str(self.cfg.get("amount_of_plotted_upcoming_systems_to_show", DEFAULT_AMOUNT_OF_PLOTTED_UPCOMING_SYSTEMS_TO_SHOW))
         self.txt_show_upcoming_nav_route_systems.SetValue(temp)
         validator = self.txt_show_upcoming_nav_route_systems.GetValidator()
         if isinstance(validator, IntRangeValidator):
             validator.Validate(self)
         self.txt_show_upcoming_nav_route_systems.Refresh()
 
-        temp: str = str(self.cfg.get("amount_of_plotted_passed_systems_to_show"))
+        temp: str = str(self.cfg.get("amount_of_plotted_passed_systems_to_show", DEFAULT_AMOUNT_OF_PLOTTED_PASSED_SYSTEMS_TO_SHOW))
         self.txt_show_passed_nav_route_systems.SetValue(temp)
         validator = self.txt_show_passed_nav_route_systems.GetValidator()
         if isinstance(validator, IntRangeValidator):

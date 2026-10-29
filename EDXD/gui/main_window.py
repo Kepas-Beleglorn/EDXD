@@ -129,10 +129,13 @@ class MainFrame(DynamicFrame):
     def _init_panels(self):
         # initialise sub windows
 
+        # On fresh install (first_run_done not set), hide all panels except the main window
+        is_fresh_install = not self.prefs.get("first_run_done", False)
+
         # selected body ------------------------------------------------------------------------------------------------
         from EDXD.gui.detail_selected import WINID as winIdSelected
         if self.prefs is None or self.prefs.get(winIdSelected) is None:
-            hidden = False
+            hidden = is_fresh_install
         else:
             hidden = self.prefs.get(winIdSelected).get("is_hidden", False)
         if hidden:
@@ -147,7 +150,7 @@ class MainFrame(DynamicFrame):
         # target body --------------------------------------------------------------------------------------------------
         from EDXD.gui.detail_target import WINID as winIdSelected
         if self.prefs is None or self.prefs.get(winIdSelected) is None:
-            hidden = False
+            hidden = is_fresh_install
         else:
             hidden = self.prefs.get(winIdSelected).get("is_hidden", False)
         if hidden:
@@ -162,7 +165,7 @@ class MainFrame(DynamicFrame):
         # Planetary Surface Positioning System -------------------------------------------------------------------------
         from EDXD.gui.psps_gui import WINID as winIdSelected
         if self.prefs is None or self.prefs.get(winIdSelected) is None:
-            hidden = False
+            hidden = is_fresh_install
         else:
             hidden = self.prefs.get(winIdSelected).get("is_hidden", False)
         if hidden:
@@ -177,7 +180,7 @@ class MainFrame(DynamicFrame):
         # engine status ------------------------------------------------------------------------------------------------
         from EDXD.gui.engine_status  import WINID as winIdSelected
         if self.prefs is None or self.prefs.get(winIdSelected) is None:
-            hidden = False
+            hidden = is_fresh_install
         else:
             hidden = self.prefs.get(winIdSelected).get("is_hidden", False)
         if hidden:
@@ -192,7 +195,7 @@ class MainFrame(DynamicFrame):
         # status flags -------------------------------------------------------------------------------------------------
         from EDXD.gui.status_flags import WINID as winIdSelected
         if self.prefs is None or self.prefs.get(winIdSelected) is None:
-            hidden = False
+            hidden = is_fresh_install
         else:
             hidden = self.prefs.get(winIdSelected).get("is_hidden", False)
         if hidden:
@@ -207,7 +210,7 @@ class MainFrame(DynamicFrame):
         # Signal prediction -------------------------------------------------------------------------
         from EDXD.gui.signal_prediction import WINID as winIdSelected
         if self.prefs is None or self.prefs.get(winIdSelected) is None:
-            hidden = False
+            hidden = is_fresh_install
         else:
             hidden = self.prefs.get(winIdSelected).get("is_hidden", False)
         if hidden:
@@ -222,7 +225,7 @@ class MainFrame(DynamicFrame):
         # Plotted route -----------------------------------------------------------------------------
         from EDXD.gui.current_nav_route import WINID as winIdSelected
         if self.prefs is None or self.prefs.get(winIdSelected) is None:
-            hidden = False
+            hidden = is_fresh_install
         else:
             hidden = self.prefs.get(winIdSelected).get("is_hidden", False)
         if hidden:

@@ -110,6 +110,13 @@ class PositiveIntFormatterValidator(wx.Validator):
         tc = self.GetWindow()
         raw = tc.GetValue()
 
+        # Clear any previous error state when the user types
+        if self._original_bg_color is None:
+            self._original_bg_color = tc.GetBackgroundColour()
+        tc.SetBackgroundColour(self._original_bg_color)
+        tc.SetToolTip("")
+        tc.Refresh()
+
         # Remove anything that isn't a digit
         # We also strip the suffix here if it was pasted in accidentally
         clean = re.sub(r'[^0-9]', '', raw)
