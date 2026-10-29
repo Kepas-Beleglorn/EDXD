@@ -2,6 +2,29 @@
 # THIS CREATES A DEBUG BUILD FROM CURRENT SOURCE CODE! USE AT OWN RISK! PATHS WILL VERY LIKELY DIFFER FROM YOURS!
 set -e # Exit on error
 
+# Parse arguments
+DEFAULT_OUT="/mnt/games/ED/EDXD_test/"
+OUT_DIR=""
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --out)
+            OUT_DIR="$2"
+            shift 2
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Usage: $0 [--out <output_directory>]"
+            exit 1
+            ;;
+    esac
+done
+# Use default if --out was not provided
+if [ -z "$OUT_DIR" ]; then
+    OUT_DIR="$DEFAULT_OUT"
+fi
+# Ensure trailing slash so cp treats it as a directory
+OUT_DIR="${OUT_DIR%/}/"
+
 # --- CONFIGURATION ---
 BASE_VERSION="!!!>>> DEBUG"
 
@@ -46,7 +69,8 @@ pyinstaller --onefile EDXD/main.py --name ed-eXploration-dashboard
 
 # 5. Deploy
 echo "📂 Copying to target directory..."
-cp -fv ./dist/ed-eXploration-dashboard /mnt/games/ED/EDXD_test/
+mkdir -p "$OUT_DIR"
+cp -fv ./dist/ed-eXploration-dashboard "$OUT_DIR"
 
 # 6. Cleanup
 rm EDXD/_version.py
