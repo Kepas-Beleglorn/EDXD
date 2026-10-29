@@ -99,7 +99,7 @@
 | `luminosity` | `str` | Stellar luminosity class (e.g., `"V"`, `"III"`) |
 | `raw_luminosity` | `str` | Raw luminosity string from the game (e.g., `"Va"`, `"Vb"`) |
 | `volcanism` | `str` | Volcanism type (e.g., `"Water"`, `"Molten rock"`) |
-| `present_life` | `str` | Present life classification (e.g., `"Radicoida"`, `"Final"`) |
+| `present_life` | `str` | Present life classification (e.g., `"Radicoida"`, `"Bacterium"`) |
 | `parents` | `list` | List of parent body IDs this body orbits |
 | `parent_distance` | `float` | Distance from parent body in light seconds |
 | `pressure` | `float` | Atmospheric pressure in pascals |
