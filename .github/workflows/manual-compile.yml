@@ -122,3 +122,17 @@ jobs:
           path: |
             edxd-dashboard-${{ matrix.os }}.tar.gz
             edxd-dashboard-${{ matrix.os }}.zip
+
+      - name: Upload check-compatibility.sh artifact
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: check-compatibility-script
+          path: check-compatibility.sh
+
+      - name: Upload cachyOS_install_x11_deps.sh artifact
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: cachyos-x11-deps-script
+          path: cachyOS_install_x11_deps.sh
