@@ -1,7 +1,10 @@
 from __future__ import annotations
+import logging
 
 from EDXD.gui.body_details import BodyDetails
 
+
+logger = logging.getLogger(__name__)
 TITLE = "Selected body"
 WINID = "DETAIL_SELECTED"
 

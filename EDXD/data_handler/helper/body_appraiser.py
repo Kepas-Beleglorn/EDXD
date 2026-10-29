@@ -3,6 +3,10 @@
 # Ported from the EDSM code base.
 # 2025-06-11 - Initially built by @joncage and released under the MIT License: https://github.com/joncage/ed-scout/blob/master/LICENSE
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 star_types = {
     # Main sequence
     'O': 1,
@@ -132,7 +136,7 @@ def encode_body_type(body_info):
             return None  # Belt clusters for example do not have a planet class
         return body_types[body_info['PlanetClass']]
     except Exception as e:
-        print(f"ERROR(body_appraiser.encode_body_type): {e}")
+        logger.error("encode_body_type: %s", e)
         return None
 
 def encode_terraform_state(body_info):
@@ -141,7 +145,7 @@ def encode_terraform_state(body_info):
             return None
         return terraform_states[body_info['TerraformState']]
     except Exception as e:
-        print(f"ERROR(body_appraiser.encode_terraform_state): {e}")
+        logger.error("encode_terraform_state: %s", e)
         return None
 
 
@@ -149,7 +153,7 @@ def encode_star_type(body_info):
     try:
         return star_types[body_info['StarType']]
     except Exception as e:
-        print(f"ERROR(body_appraiser.encode_star_type): {e}")
+        logger.error("encode_star_type: %s", e)
         return None
 
 def appraise_body(body_info, just_scanned_value=True):
@@ -185,7 +189,7 @@ def appraise_body(body_info, just_scanned_value=True):
             'isFirstMapper': first_mapper,
         }
     except Exception as e:
-        print(f"ERROR(body_appraiser.encode_body_type): {e}")
+        logger.error("appraise_body: %s", e)
         return None
 
     return calculate_estimated_value(main_type, specific_type, mass, terraform_state, options)

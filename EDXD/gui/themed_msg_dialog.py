@@ -1,9 +1,12 @@
+import logging
 import wx
 from EDXD.gui.helper.gui_handler import init_widget
 from EDXD.gui.helper.dynamic_dialog import DynamicDialog
 from EDXD.gui.helper.window_properties import WindowProperties
 from EDXD.gui.helper.gui_dynamic_button import DynamicButton
 from EDXD.globals import DEFAULT_HEIGHT, DEFAULT_WIDTH, DEFAULT_POS_X, DEFAULT_POS_Y, BTN_WIDTH, BTN_HEIGHT, RESIZE_MARGIN
+
+logger = logging.getLogger(__name__)
 WINID = "RESTART_MSG_DLG"
 
 class ThemedMessageDialog(DynamicDialog):

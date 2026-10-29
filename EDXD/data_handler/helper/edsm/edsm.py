@@ -1,5 +1,8 @@
+import logging
 import requests
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 EDSM_BASE_URL: str = "https://www.edsm.net/"
 EDSM_SYSTEM_BODIES_API: str = EDSM_BASE_URL + "api-system-v1/bodies"

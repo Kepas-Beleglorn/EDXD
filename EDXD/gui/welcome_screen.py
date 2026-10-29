@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 welcome_screen.py – Welcome screen for first-time users
 =======================================================
@@ -5,8 +7,7 @@ welcome_screen.py – Welcome screen for first-time users
 • Hints that the configuration panel will open after closing
 • Used only on first run to guide new users
 """
-
-from __future__ import annotations
+import logging
 
 import wx
 
@@ -16,6 +17,8 @@ from EDXD.gui.helper.window_properties import WindowProperties
 from EDXD.gui.helper.gui_dynamic_button import DynamicButton
 from EDXD.gui.helper.gui_handler import init_widget
 
+
+logger = logging.getLogger(__name__)
 TITLE = "Welcome to EDXD"
 WINID = "EDXD_WELCOME_SCREEN"
 
@@ -53,6 +56,7 @@ class WelcomeScreen(DynamicDialog):
             "details, navigation routes, engine status, and more.\n\n"
             "To get started, you'll need to configure EDXD to point to your Elite Dangerous "
             "journal files.\n\n"
+            "It's recommended to run the Journal Historian first to process your historical journal files.\n\n"
             "The configuration panel will open automatically after you close this window."
         )
 

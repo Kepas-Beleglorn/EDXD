@@ -3,29 +3,13 @@ import wx
 from EDXD.gui.helper.gui_handler import init_widget
 
 from EDXD.globals import logging, SIZE_CTRL_BUTTONS, SIZE_APP_ICON, ICON_PNG_B64
-import inspect, functools
 import base64
 from io import BytesIO
 
 from EDXD.gui.helper.gui_dynamic_button import DynamicButton
 
-def log_call(level=logging.INFO):
-    """Decorator that logs function name and bound arguments."""
-    def decorator(fn):
-        logger = logging.getLogger(fn.__module__)   # one logger per module
-        sig = inspect.signature(fn)                 # capture once, not on every call
 
-        @functools.wraps(fn)
-        def wrapper(*args, **kwargs):
-            bound = sig.bind_partial(*args, **kwargs)
-            arg_str = ", ".join(f"{k}={v!r}" for k, v in bound.arguments.items())
-            logger.log(level, "%s(%s)", fn.__name__, arg_str)
-            return fn(*args, **kwargs)
-
-        return wrapper
-    return decorator
-
-
+logger = logging.getLogger(__name__)
 class CustomTitleBar(wx.Panel):
     def __init__(self, parent, title, show_minimize: bool = False, show_maximize: bool = False, show_close: bool = False):
         super().__init__(parent)
@@ -119,7 +103,6 @@ class CustomTitleBar(wx.Panel):
             if self.HasCapture():
                 self.ReleaseMouse()
 
-    @log_call(logging.DEBUG)
     def on_maximize(self, event):
         if getattr(self.parent, "_is_maximized", False):
             # Restore
@@ -144,7 +127,6 @@ class CustomTitleBar(wx.Panel):
         event.Skip()
 
     # horizontal taskbar offest must be read from the custom title bar, not from the parent!
-    #@log_call()
     def _resize_if_required(self):
         pos_x, pos_y = self.parent.GetPosition()
         alt_pos_x, alt_pos_y = self._current_pos

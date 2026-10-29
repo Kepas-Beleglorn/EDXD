@@ -1,13 +1,15 @@
-import inspect
 import json
+import logging
 import threading
 import time
 from pathlib import Path
 
+logger = logging.getLogger(__name__)
+
 from EDXD.data_handler.helper.pausable_thread import PausableThread
 from EDXD.data_handler.model import Model
 from EDXD.data_handler.vessel_status import FuelLevel
-from EDXD.globals import DEBUG_STATUS_JSON, DEBUG_PATH, BODY_ID_PREFIX, logging, log_context, VESSEL_EV, VESSEL_SLF, \
+from EDXD.globals import DEBUG_STATUS_JSON, DEBUG_PATH, BODY_ID_PREFIX, logging, VESSEL_EV, VESSEL_SLF, \
     VESSEL_SRV, VESSEL_SHIP
 
 bip = BODY_ID_PREFIX
@@ -82,8 +84,7 @@ class StatusWatcher(PausableThread, threading.Thread):
         except FileNotFoundError:
             pass
         except Exception as e:
-            log_context(level=logging.WARN, frame=inspect.currentframe(), e=e)
-            logging.log(logging.WARN, f"raw_data(is None?): {raw_data is None}:{raw_data}")
+            logger.warning("Failed to parse Status.json: %s", e)
             pass  # ignore read/JSON errors
         time.sleep(self.poll)
 

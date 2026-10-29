@@ -42,43 +42,154 @@ def get_system_cache_dir():
     return cache_dir
 
 import logging
+from datetime import datetime, timedelta
 
-LOG_LEVEL = logging.ERROR
+LOG_DIR: Path  # Set by setup_logging()
+LOG_RETENTION_DAYS = 14
 
-# 1️⃣ Configure the root logger once, ideally at program start
-logging.basicConfig(
-    level=LOG_LEVEL,
-    format="%(asctime)s.%(msecs)03d | %(levelname)s | %(name)s | %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",  # No .%f here!
-)
 
-def log_call(level=logging.INFO):
-    """Logs qualified name plus bound arguments, even for inner functions."""
-    def deco(fn):
-        logger = logging.getLogger(fn.__module__)
-        sig = inspect.signature(fn)
+def mask_home(path: Path) -> str:
+    """Replace the home directory prefix with '~' to avoid exposing the username."""
+    try:
+        home = Path.home()
+        if str(path).startswith(str(home)):
+            return "~/" + str(path.relative_to(home))
+    except (ValueError, RuntimeError):
+        pass
+    return str(path)
 
-        @functools.wraps(fn)
-        def wrapper(*args, **kwargs):
-            bound = sig.bind_partial(*args, **kwargs)
-            arglist = ", ".join(f"{k}={v!r}" for k, v in bound.arguments.items())
-            qualname = fn.__qualname__  # includes outer.<locals>.inner
-            logger.log(level, "%s(%s)", qualname, arglist)
-            return fn(*args, **kwargs)
 
-        return wrapper
+def get_display_info() -> tuple[str, str]:
+    """Return (display_server, desktop_env) tuple for the current platform."""
+    system = platform.system()
+    if system == "Linux":
+        display_server = os.getenv("XDG_SESSION_TYPE") or "unknown"
+        desktop_env = os.getenv("XDG_CURRENT_DESKTOP") or "unknown"
+        return display_server, desktop_env
+    elif system == "Darwin":
+        return "Apple WindowServer", "Aqua"
+    elif system == "Windows":
+        return "WDDM", "Windows"
+    else:
+        return "unknown", "unknown"
 
-    return deco
 
-def log_context(frame, e, level=logging.DEBUG):
-    class_name = inspect.getmodule(frame).__name__
-    func_name = frame.f_code.co_name
-    arg_info = inspect.getargvalues(frame)
-    logging.log(level, f"{'_' * 10}")
-    logging.log(level, f"Exception in {class_name}.{func_name} with arguments {arg_info.locals}")
-    logging.log(level, f"Exception type: {type(e).__name__}")
-    logging.log(level, f"Exception args: {e.args}")
-    logging.log(level, f"Exception str: {str(e)}")
+def clean_old_logs(log_dir: Path, retention_days: int = LOG_RETENTION_DAYS) -> int:
+    """Delete log files older than retention_days. Returns number of files removed."""
+    if not log_dir.exists():
+        return 0
+    cutoff = datetime.now() - timedelta(days=retention_days)
+    count = 0
+    for log_file in log_dir.glob("EDXD.*.log"):
+        try:
+            file_mtime = datetime.fromtimestamp(log_file.stat().st_mtime)
+            if file_mtime < cutoff:
+                log_file.unlink()
+                count += 1
+        except OSError:
+            pass
+    return count
+
+
+def apply_log_level(log_level_str: str) -> None:
+    """
+    Apply a log level to all existing handlers and the root logger.
+    Call this when the user changes the log level in the config dialog.
+    """
+    log_level = getattr(logging, log_level_str.upper(), logging.INFO)
+    root_logger = logging.getLogger()
+    root_logger.setLevel(log_level)
+    for handler in root_logger.handlers:
+        handler.setLevel(log_level)
+    logger = logging.getLogger("EDXD.globals")
+    logger.info("Log level changed to: %s", log_level_str)
+
+
+def setup_logging() -> Path:
+    """
+    Initialize app-wide logging with file + console handlers.
+    Must be called early at startup (before other modules log).
+    Returns the LOG_DIR path for use by the config dialog.
+    """
+    global LOG_DIR
+
+    # Determine log directory
+    LOG_DIR = APP_DIR / "logs"
+    LOG_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Clean old logs
+    old_count = clean_old_logs(LOG_DIR)
+
+    # Create session-based log file
+    timestamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
+    log_filename = f"EDXD.{timestamp}.log"
+    log_file_path = LOG_DIR / log_filename
+
+    # Determine log level from config or CLI flag
+    log_level_str = "INFO"  # default
+    try:
+        if CFG_FILE.exists():
+            cfg = json.loads(CFG_FILE.read_text())
+            log_level_str = cfg.get("log_level", "INFO")
+    except (json.JSONDecodeError, OSError):
+        pass
+
+    # --debug flag overrides to DEBUG
+    if args.debug:
+        log_level_str = "DEBUG"
+
+    log_level = getattr(logging, log_level_str.upper(), logging.INFO)
+
+    # Configure root logger
+    root_logger = logging.getLogger()
+    root_logger.setLevel(log_level)
+
+    # Remove existing handlers to avoid duplicates
+    for handler in root_logger.handlers[:]:
+        root_logger.removeHandler(handler)
+
+    # Format
+    formatter = logging.Formatter(
+        "%(asctime)s.%(msecs)03d | %(levelname)-8s | %(name)s | %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+
+    # File handler
+    try:
+        file_handler = logging.FileHandler(str(log_file_path), encoding="utf-8")
+        file_handler.setLevel(log_level)
+        file_handler.setFormatter(formatter)
+        root_logger.addHandler(file_handler)
+    except OSError:
+        # If we can't write to the log file, fall back to console-only
+        pass
+
+    # Console handler
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(log_level)
+    console_handler.setFormatter(formatter)
+    root_logger.addHandler(console_handler)
+
+    # Get module logger for header
+    logger = logging.getLogger("EDXD.globals")
+
+    # Write log header
+    display_server, desktop_env = get_display_info()
+    logger.info("=" * 40)
+    logger.info("EDXD %s starting", __version__)
+    logger.info("Python %s (%s)", platform.python_version(), platform.python_compiler())
+    logger.info("OS: %s", platform.platform())
+    logger.info("Display: %s / Desktop: %s", display_server, desktop_env)
+    logger.info("Portable mode: %s", getattr(sys, "portable", False))
+    logger.info("Log directory: %s", mask_home(LOG_DIR))
+    logger.info("Log file: %s", log_filename)
+    logger.info("Log level: %s", log_level_str)
+    if old_count > 0:
+        logger.info("Old logs cleaned: %d files removed", old_count)
+    logger.info("=" * 40)
+
+    return LOG_DIR
+
 
 # -----------------------------------------------------------------------
 try:
@@ -133,14 +244,14 @@ GIT_REPO = "EDXD"
 # DEBUGGING OPTIONS
 DEFAULT_HEIGHT = 500
 DEFAULT_WIDTH = 500
-DEFAULT_HEIGHT_CONFIG = 630
-DEFAULT_WIDTH_CONFIG = 950
+DEFAULT_HEIGHT_CONFIG = 720
+DEFAULT_WIDTH_CONFIG = 1170
 DEFAULT_HEIGHT_MAIN = 1000
 DEFAULT_WIDTH_MAIN = 1500
 DEFAULT_HEIGHT_JH = 275
-DEFAULT_WIDTH_JH = 800
+DEFAULT_WIDTH_JH = 900
 DEFAULT_HEIGHT_PSPS = 200
-DEFAULT_WIDTH_PSPS = 500
+DEFAULT_WIDTH_PSPS = 600
 DEFAULT_HEIGHT_ABOUT = 345
 DEFAULT_WIDTH_ABOUT = 600
 DEFAULT_HEIGHT_MINERALS_FILTER = 330

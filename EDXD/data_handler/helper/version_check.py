@@ -2,11 +2,13 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import urllib.error
 import urllib.request
 from typing import Optional, Tuple
 
+logger = logging.getLogger(__name__)
 
 def _http_get(url: str, timeout: float = 5.0) -> bytes:
     req = urllib.request.Request(
@@ -61,7 +63,10 @@ def fetch_latest_release_version(owner: str, repo: str, include_prereleases: boo
         if not include_prereleases:
             data = json.loads(_http_get(base + "/latest").decode("utf-8"))
             ver = data.get("tag_name") or data.get("name") or ""
-            return _normalize(ver) or None
+            version = _normalize(ver) or None
+            if version:
+                logger.info("Latest release version: %s", version)
+            return version
         else:
             arr = json.loads(_http_get(base).decode("utf-8"))
             for rel in arr:
@@ -72,12 +77,14 @@ def fetch_latest_release_version(owner: str, repo: str, include_prereleases: boo
                 ver = rel.get("tag_name") or rel.get("name") or ""
                 ver = _normalize(ver)
                 if ver:
+                    logger.info("Latest prerelease version: %s", ver)
                     return ver
             return None
     except urllib.error.HTTPError as e:
-        # e.g., no releases yet -> 404 on /latest
+        logger.debug("GitHub API HTTP error fetching releases: %s", e)
         return None
-    except Exception:
+    except Exception as e:
+        logger.warning("Failed to fetch latest release version: %s", e)
         return None
 
 def is_update_available(current_version: str, latest_version: str) -> bool:

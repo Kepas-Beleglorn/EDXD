@@ -1,9 +1,12 @@
 import json
+import logging
 import queue
 import re
 from pathlib import Path
 
 import EDXD.data_handler.helper.bio_helper as bio_helper
+
+logger = logging.getLogger(__name__)
 from EDXD.data_handler.helper.dotted_dictionary import DotDict, load_json_as_dotdict, save_dotdict_to_json, create_dot_dict_from_string
 from EDXD.data_handler.helper.galactic_navigation import StarPosition
 from EDXD.data_handler.helper.pausable_thread import PausableThread
@@ -13,7 +16,7 @@ from EDXD.data_handler.nav_route import NavRouteHandler, NavPoint
 from EDXD.data_handler.planetary_surface_positioning_system import PSPSCoordinates
 from EDXD.data_handler.vessel_status import *
 from EDXD.data_handler.helper.spansh.ship_modules import ShipFSDModules
-from EDXD.globals import logging, BODY_ID_PREFIX, log_context, JOURNAL_TIMESTAMP_FILE, SHIP_STATUS_FILE, VESSEL_SHIP, \
+from EDXD.globals import logging, BODY_ID_PREFIX, JOURNAL_TIMESTAMP_FILE, SHIP_STATUS_FILE, VESSEL_SHIP, \
     VESSEL_SRV, VESSEL_EV, VESSEL_SLF, BODY_NO_DATA, SPANSH_ROUTE, SLEF_PATH, SPANSH_ACTIVE_ROUTE
 
 bip = BODY_ID_PREFIX
@@ -42,7 +45,7 @@ class JournalController(PausableThread, threading.Thread):
         try:
             evt = json.loads(self.q.get())
         except Exception as e:
-            log_context(level=logging.ERROR, frame=inspect.currentframe(), e=e)
+            logger.error("Failed to parse journal event: %s", e)
             return
 
         self.process_event(evt=evt, update_gui=True)
@@ -77,7 +80,7 @@ class JournalController(PausableThread, threading.Thread):
                 if list(body_parent.keys())[0] == "Star":
                     return parent_stars
         except  Exception as e:
-            print(f"ERROR: journal_controller.get_parent_star_ids[1] {current_body.body_id}/{current_body.body_name}/{current_body.body_type}/{current_body.parents}: {e}")
+            logger.error("get_parent_star_ids[1] %s/%s/%s/%s: %s", current_body.body_id, current_body.body_name, current_body.body_type, current_body.parents, e)
 
         try:
             for body_parent in parent_stars:
@@ -90,7 +93,7 @@ class JournalController(PausableThread, threading.Thread):
                             for item in parent_results:
                                 parent_stars.append(item)
         except  Exception as e:
-            print(f"ERROR: journal_controller.get_parent_star_ids[2] {current_body.body_id}/{current_body.body_name}/{current_body.body_type}/{current_body.parents}: {e}")
+            logger.error("get_parent_star_ids[2] %s/%s/%s/%s: %s", current_body.body_id, current_body.body_name, current_body.body_type, current_body.parents, e)
 
         try:
             for body_parent in parent_stars:
@@ -103,7 +106,7 @@ class JournalController(PausableThread, threading.Thread):
                                 if list(star_parent.keys())[0] == "Null" and list(star_parent.values())[0] == parent_id:
                                     parent_stars.append({str("Star"): int(body.body_id)})
         except  Exception as e:
-            print(f"ERROR: journal_controller.get_parent_star_ids[3] {current_body.body_id}/{current_body.body_name}/{current_body.body_type}/{current_body.parents}: {e}")
+            logger.error("get_parent_star_ids[3] %s/%s/%s/%s: %s", current_body.body_id, current_body.body_name, current_body.body_type, current_body.parents, e)
 
         return parent_stars
 
@@ -274,7 +277,7 @@ class JournalController(PausableThread, threading.Thread):
                     try:
                         self.spansh_helper.update_system_data(self.m)
                     except Exception as e:
-                        print(f"ERROR: journal_controller[{systemaddress}/{evt}] {e}")
+                        logger.error("FSSDiscoveryScan update_system_data failed [%s/%s]: %s", systemaddress, evt.get("event"), e)
 
         if etype == "FSSAllBodiesFound":
             self.m.total_bodies = evt.get("Count")
@@ -284,7 +287,7 @@ class JournalController(PausableThread, threading.Thread):
                 try:
                     self.spansh_helper.update_system_data(self.m)
                 except Exception as e:
-                    print(f"ERROR: journal_controller[{systemaddress}/{evt}] {e}")
+                    logger.error("FSSAllBodiesFound update_system_data failed [%s/%s]: %s", systemaddress, evt.get("event"), e)
 
         # initialize all parameters for update_body
         body_id                 = None
@@ -587,7 +590,7 @@ class JournalController(PausableThread, threading.Thread):
         if etype == "FSSBodySignals":
             if body_name.endswith("Ring"):
                 # todo: #168 process rings properly
-                print(f"Ring processing on FSSBodySignals - relevant? -> {body_id}: {body_name}")
+                logger.debug("Ring processing on FSSBodySignals - relevant? -> %s: %s", body_id, body_name)
                 pass  # skip for now
             else:
                 for signal in evt.get("Signals", []):

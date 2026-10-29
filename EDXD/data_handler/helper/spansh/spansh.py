@@ -2,9 +2,12 @@ from time import sleep
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 import json
+import logging
 
 import requests
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 from packaging.tags import sys_tags
 
@@ -85,7 +88,7 @@ class SpanshHelper:
                         else:
                             pass
             except Exception as e:
-                print(f"ERROR: {system_id} - {e} - {body}")
+                logger.error("get_star_class_from_spansh[%s]: %s - %s", system_id, e, body)
             if body_type != "":
                 break
         return body_type
@@ -106,9 +109,7 @@ class SpanshHelper:
             # Fallback to Spansh
             star_class = self.get_star_class_from_spansh(system_id)
         if star_class is None or star_class == "":
-            print(f"star class not found for system: {system_id}")
-            print(f"https://www.edsm.net/api-system-v1/bodies?systemId64={system_id}")
-            print(f"https://spansh.co.uk/api/dump/{system_id}")
+            logger.warning("Star class not found for system: %s. EDSM: https://www.edsm.net/api-system-v1/bodies?systemId64=%s | Spansh: https://spansh.co.uk/api/dump/%s", system_id, system_id, system_id)
 
         return star_class
 
@@ -121,7 +122,7 @@ class SpanshHelper:
                 if list(body_parent.keys())[0] == "Star":
                     return parent_stars
         except  Exception as e:
-            print(f"ERROR: get_parent_star_ids[1] {current_body.bodyId}/{current_body.name}/{current_body.type}/{current_body.parents}: {e}")
+            logger.error("get_parent_star_ids[1] %s/%s/%s/%s: %s", current_body.bodyId, current_body.name, current_body.type, current_body.parents, e)
 
         try:
             for body_parent in parent_stars:
@@ -133,7 +134,7 @@ class SpanshHelper:
                             for item in parent_results:
                                 parent_stars.append(item)
         except  Exception as e:
-            print(f"ERROR: get_parent_star_ids[2] {current_body.bodyId}/{current_body.name}/{current_body.type}/{current_body.parents}: {e}")
+            logger.error("get_parent_star_ids[2] %s/%s/%s/%s: %s", current_body.bodyId, current_body.name, current_body.type, current_body.parents, e)
 
         try:
             for body_parent in parent_stars:
@@ -145,7 +146,7 @@ class SpanshHelper:
                                 if list(star_parent.keys())[0] == "Null" and list(star_parent.values())[0] == parent_id:
                                     parent_stars.append({str("Star"): int(body.bodyId)})
         except  Exception as e:
-            print(f"ERROR: get_parent_star_ids[3] {current_body.bodyId}/{current_body.name}/{current_body.type}/{current_body.parents}: {e}")
+            logger.error("get_parent_star_ids[3] %s/%s/%s/%s: %s", current_body.bodyId, current_body.name, current_body.type, current_body.parents, e)
 
         return parent_stars
 
@@ -246,8 +247,8 @@ class SpanshHelper:
                                     body_type = "N"
                                 else:
                                     body_type = body.subType
-                                    print(f"body.subType used as body type: [{body_type}]")
-                            print(f"update_system_data[{systemaddress}] {self.system_data.name}: {body.name}[{body_id}] TYPE - [{body.subType}] -> [{body_type}]")
+                                    logger.debug("body.subType used as body type: [%s]", body_type)
+                            logger.debug("update_system_data[%s] %s: %s[%s] TYPE - [%s] -> [%s]", systemaddress, self.system_data.name, body.name, body_id, body.subType, body_type)
                     else:
                         body_type = body.subType
 
@@ -336,7 +337,7 @@ class SpanshHelper:
                         pressure=pressure
                     )
             except Exception as e:
-                print(f"WARNING (update_system_data; after 'system_model.update_body'): [{systemaddress}] {self.system_data.name} - Body: {body.bodyId} | {body.name} | {body.type} - {e}\nGET: {self.url}\nplease consider using EDMC to help keeping spansh, EDSM and other databases up to date.\nsystem@spansh: https://spansh.co.uk/system/{systemaddress}#system-main")
+                logger.warning("update_system_data[%s] %s - Body: %s | %s | %s - %s | GET: %s", systemaddress, self.system_data.name, body.bodyId, body.name, body.type, e, self.url)
 
         pop_items: List[str] = []
         for body in system_model.bodies:
@@ -390,7 +391,7 @@ class SpanshRoutePlotter:
         if response.status_code < 200 or response.status_code >= 300:
             # Read the body for the error message
             error_body = response.text
-            print(f"ERROR: Spansh API returned status {response.status_code}: {error_body}")
+            logger.error("Spansh API returned status %d: %s", response.status_code, error_body)
             return error_body
 
         response_dict: DotDict = create_dot_dict_from_string(response.text)
@@ -573,7 +574,7 @@ def get_itinerary(job_id: str | None,
 
         if response.status_code < 200 or response.status_code >= 300:
             error_body = response.text
-            print(f"ERROR: Spansh API returned status {response.status_code}: {error_body}")
+            logger.error("Spansh API returned status %d: %s", response.status_code, error_body)
             response_dict = create_dot_dict_from_string(response.text)
             break
 
@@ -593,8 +594,9 @@ def get_itinerary(job_id: str | None,
             break
 
         duration = time_delta(response_dict.created_at, iso_date)
-        print(f"Job ID: {job_id} - state: {response_dict.state} - status: {response_dict.status} "
-              f"- created at: {response_dict.created_at} - current time: {iso_date} - duration: {duration}")
+        logger.debug("Job ID: %s - state: %s - status: %s - created at: %s - current time: %s - duration: %s",
+                      job_id, response_dict.state, response_dict.status,
+                      response_dict.created_at, iso_date, duration)
 
         # Push progress to the GUI (callback runs on the worker thread)
         if progress_callback:
@@ -605,7 +607,8 @@ def get_itinerary(job_id: str | None,
     if hasattr(response_dict, "error"):
         return response_dict
     else:
-        print(f"Job ID: {job_id} - state: {response_dict.state} - status: {response_dict.status} "
-            f"- created at: {response_dict.created_at} - updated at: {response_dict.updated_at} "
-            f"- duration: {time_delta(response_dict.created_at, response_dict.updated_at)}")
+        logger.info("Job ID: %s - state: %s - status: %s - created at: %s - updated at: %s - duration: %s",
+            job_id, response_dict.state, response_dict.status,
+            response_dict.created_at, response_dict.updated_at,
+            time_delta(response_dict.created_at, response_dict.updated_at))
         return spansh_itinerary

@@ -10,9 +10,12 @@ model.py – core logic for ED Mineral Viewer
 
 from __future__ import annotations
 
+import logging
 import threading
 from dataclasses import dataclass, asdict, field
 from typing import Optional, List
+
+logger = logging.getLogger(__name__)
 
 import EDXD.data_handler.helper.data_helper as dh
 
@@ -26,25 +29,7 @@ bip = BODY_ID_PREFIX
 # ---------------------------------------------------------------------------
 # paths (shared with other modules)
 # ---------------------------------------------------------------------------
-from EDXD.globals import CACHE_DIR
-from EDXD.globals import logging, LOG_LEVEL
-import inspect, functools
-
-def log_call(level=LOG_LEVEL):
-    """Decorator that logs function name and bound arguments."""
-    def decorator(fn):
-        logger = logging.getLogger(fn.__module__)   # one logger per module
-        sig = inspect.signature(fn)                 # capture once, not on every call
-
-        @functools.wraps(fn)
-        def wrapper(*args, **kwargs):
-            bound = sig.bind_partial(*args, **kwargs)
-            arg_str = ", ".join(f"{k}={v!r}" for k, v in bound.arguments.items())
-            logger.log(level, "%s(%s)", fn.__name__, arg_str)
-            return fn(*args, **kwargs)
-
-        return wrapper
-    return decorator
+from EDXD.globals import CACHE_DIR, logging
 
 @dataclass
 class Body:
@@ -268,7 +253,6 @@ class Model:
             cb(body_id)
 
     # ----- mutators ----------------------------------------------------------
-    #@log_call()
     def reset_system(self, system_name: str, address: Optional[int]):
         tmp_selected_body_id = self.selected_body_id
         """Clear all bodies and load cached system if available."""

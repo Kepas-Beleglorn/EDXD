@@ -8,12 +8,16 @@ set_mineral_filter.py – filter & preferences window
 
 from __future__ import annotations
 
+import logging
+import subprocess
 import wx, json
 import sys, os
 
 from wx import Size
 
-from EDXD.globals import BTN_HEIGHT, BTN_WIDTH, CACHE_DIR, ICONS, MAX_AMOUNT_OF_PLOTTED_UPCOMING_SYSTEMS_TO_SHOW, MAX_AMOUNT_OF_PLOTTED_PASSED_SYSTEMS_TO_SHOW, DEFAULT_WORTHWHILE_THRESHOLD, DEFAULT_AMOUNT_OF_PLOTTED_UPCOMING_SYSTEMS_TO_SHOW, DEFAULT_AMOUNT_OF_PLOTTED_PASSED_SYSTEMS_TO_SHOW
+from EDXD.globals import BTN_HEIGHT, BTN_WIDTH, CACHE_DIR, ICONS, LOG_DIR, LOG_RETENTION_DAYS, MAX_AMOUNT_OF_PLOTTED_UPCOMING_SYSTEMS_TO_SHOW, MAX_AMOUNT_OF_PLOTTED_PASSED_SYSTEMS_TO_SHOW, DEFAULT_WORTHWHILE_THRESHOLD, DEFAULT_AMOUNT_OF_PLOTTED_UPCOMING_SYSTEMS_TO_SHOW, DEFAULT_AMOUNT_OF_PLOTTED_PASSED_SYSTEMS_TO_SHOW, apply_log_level
+
+logger = logging.getLogger(__name__)
 from EDXD.gui.helper.dynamic_dialog import DynamicDialog
 from EDXD.gui.helper.gui_dir_picker import DirPicker
 from EDXD.gui.helper.gui_dynamic_toggle_button import DynamicToggleButton
@@ -109,8 +113,44 @@ class EDXDConfig(DynamicDialog):
         self.grid_options.Add(self.txt_show_passed_nav_route_systems, flag=wx.LEFT | wx.EXPAND, border=10)
         self.grid_options.Add(wx.StaticText(self.scroll_container, label=""), 0, wx.ALIGN_LEFT | wx.EXPAND, 0)
 
+        # Log level selector
+        self.lbl_log_level = wx.StaticText(self.scroll_container, label="\nLog level:")
+        self.grid_options.Add(self.lbl_log_level, flag=wx.LEFT | wx.EXPAND, border=10)
+        self.cmb_log_level = wx.ComboBox(
+            parent=self.scroll_container,
+            choices=["DEBUG", "INFO", "WARN", "ERROR"],
+            style=wx.CB_READONLY,
+            size=wx.Size(BTN_WIDTH, BTN_HEIGHT),
+        )
+        init_widget(self.cmb_log_level)
+        self.grid_options.Add(self.cmb_log_level, flag=wx.LEFT | wx.EXPAND, border=10)
+
+        # Retention hint label
+        self.lbl_log_retention = wx.StaticText(
+            self.scroll_container,
+            label=f"Log files are automatically deleted after {LOG_RETENTION_DAYS} days.",
+        )
+        self.grid_options.Add(self.lbl_log_retention, flag=wx.LEFT | wx.EXPAND, border=10)
+
         # Add the grid to your main sizer
         self.window_box.Add(self.grid_options, flag=wx.ALL | wx.EXPAND, border=10)
+
+        # Log directory button grid
+        self.grid_log_dir = wx.FlexGridSizer(cols=2, hgap=8, vgap=4)
+        self.grid_log_dir.AddGrowableCol(0)
+
+        self.btn_open_log_dir = DynamicButton(
+            parent=self.scroll_container,
+            label="Open log directory",
+            size=wx.Size(BTN_WIDTH, BTN_HEIGHT),
+            draw_border=True,
+        )
+        self.grid_log_dir.Add(self.btn_open_log_dir, flag=wx.LEFT | wx.EXPAND, border=10)
+        self.grid_log_dir.Add(wx.StaticText(self.scroll_container, label=""), 0, wx.EXPAND)
+
+        self.window_box.Add(self.grid_log_dir, flag=wx.ALL | wx.EXPAND, border=10)
+
+        self.btn_open_log_dir.Bind(wx.EVT_BUTTON, self._on_open_log_dir)
 
         # A bit of explanation of the panel toggle
         self.lbl_panel_toggle_hint = wx.StaticText(self.scroll_container, label="\nToggle visibility of panels you want to use. Main window is always on.")
@@ -146,6 +186,12 @@ class EDXDConfig(DynamicDialog):
         if isinstance(validator, IntRangeValidator):
             validator.Validate(self)
         self.txt_show_passed_nav_route_systems.Refresh()
+
+        # Log level default
+        log_level = self.cfg.get("log_level", "INFO")
+        if log_level not in ["DEBUG", "INFO", "WARN", "ERROR"]:
+            log_level = "INFO"
+        self.cmb_log_level.SetValue(log_level)
 
         # Config items grid for buttons
         self.grid_windows = wx.FlexGridSizer(cols=2, hgap=8, vgap=4)
@@ -215,6 +261,23 @@ class EDXDConfig(DynamicDialog):
 
     def _load_config(self):
         self.cfg = json.loads(CFG_FILE.read_text()) if CFG_FILE.exists() else {}
+        logger.info("Config loaded from %s", CFG_FILE)
+
+    def _on_open_log_dir(self, event):
+        """Open the log directory in the OS file manager."""
+        if LOG_DIR is None:
+            logger.warning("Log directory not initialized yet")
+            return
+        try:
+            if sys.platform == "win32":
+                os.startfile(str(LOG_DIR))
+            elif sys.platform == "darwin":
+                subprocess.run(["open", str(LOG_DIR)], check=True)
+            else:
+                subprocess.run(["xdg-open", str(LOG_DIR)], check=True)
+            logger.info("Opened log directory: %s", LOG_DIR)
+        except Exception as e:
+            logger.error("Failed to open log directory: %s", e)
 
     def _save_config(self, event):
         for win_id, btn in self.window_buttons.items():
@@ -248,6 +311,11 @@ class EDXDConfig(DynamicDialog):
         show_passed_nav_route_systems_raw = str(self.txt_show_passed_nav_route_systems.GetValue())
         if show_passed_nav_route_systems_raw != "":
             self.cfg["amount_of_plotted_passed_systems_to_show"] = int(show_passed_nav_route_systems_raw)
+
+        # Save log level and apply immediately
+        new_log_level = self.cmb_log_level.GetValue()
+        self.cfg["log_level"] = new_log_level
+        apply_log_level(new_log_level)
 
         def _save():
             data = {k: v for k, v in self.cfg.items() if k != "save"}

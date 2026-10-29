@@ -1,14 +1,16 @@
-import inspect
 import json
+import logging
 import re
 import wx
 from datetime import datetime
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 from typing import Optional
 
 from EDXD.data_handler.helper.dotted_dictionary import DotDict, save_dotdict_to_json
 from EDXD.data_handler.vessel_status import ShipStatus
-from EDXD.globals import log_context, logging, BODY_NO_DATA
+from EDXD.globals import logging, BODY_NO_DATA
 
 TEMPERATURE_LOW = 170
 TEMPERATURE_HIGH = 320
@@ -24,15 +26,15 @@ def load(path: Path, default):
     except FileNotFoundError:
         return default
     except Exception as e:
-        log_context(level=logging.WARN, frame=inspect.currentframe(), e=e)
+        logger.warning("Failed to load %s: %s", path, e)
         return default
 
 def save(path: Path, data):
     try:
-        logging.debug(f"{data}\n{json.dumps(data, indent=4)}")
+        logger.debug("Saving data to %s", path)
         path.write_text(json.dumps(data, indent=2))
     except Exception as e:
-        log_context(level=logging.ERROR, frame=inspect.currentframe(), e=e)
+        logger.error("Failed to save %s: %s", path, e)
 
 #133 - change sorting of journal files
 def _extract_timestamp_from_filename(path: Path) -> Optional[datetime]:
@@ -275,7 +277,7 @@ def latest_journal(folder: Path) -> Optional[Path]:
     for f in files:
         ts = _extract_timestamp_from_filename(f)
         if ts is None:
-            logging.debug(f"Could not parse timestamp from journal filename: {f.name}")
+            logger.debug("Could not parse timestamp from journal filename: %s", f.name)
             continue
         parsed.append((ts, f))
 

@@ -1,3 +1,4 @@
+import logging
 import wx
 
 from EDXD.data_handler.planetary_surface_positioning_system import PSPSCoordinates
@@ -6,21 +7,7 @@ from EDXD.gui.helper.gui_dynamic_button import DynamicButton
 from EDXD.gui.helper.theme_handler import get_theme
 
 
-def log_call(level=logging.INFO):
-    """Decorator that logs function name and bound arguments."""
-    def decorator(fn):
-        logger = logging.getLogger(fn.__module__)   # one logger per module
-        sig = inspect.signature(fn)                 # capture once, not on every call
-
-        @functools.wraps(fn)
-        def wrapper(*args, **kwargs):
-            bound = sig.bind_partial(*args, **kwargs)
-            arg_str = ", ".join(f"{k}={v!r}" for k, v in bound.arguments.items())
-            logger.log(level, "%s(%s)", fn.__name__, arg_str)
-            return fn(*args, **kwargs)
-
-        return wrapper
-    return decorator
+logger = logging.getLogger(__name__)
 
 
 class PSPSButtons(wx.Panel):

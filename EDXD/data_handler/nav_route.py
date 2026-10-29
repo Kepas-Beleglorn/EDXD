@@ -1,10 +1,13 @@
 import json
+import logging
 from datetime import datetime
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, Callable
 
 import pywinctl, wx
+
+logger = logging.getLogger(__name__)
 
 import EDXD.data_handler.helper.galactic_navigation as gn
 import EDXD.data_handler.helper.data_helper as dh
@@ -207,7 +210,7 @@ class NavRouteHandler:
 
     def _show_message(self, title: str, message: str|None, ie: IndexError|None) -> None:
         if ie is not None:
-            print(f"IndexError: {ie}\n{ERR_MSG}")
+            logger.error("IndexError: %s\n%s", ie, ERR_MSG)
 
         if self.is_window_visible("PLOTTED_NAV_ROUTE"):
             try:
@@ -215,7 +218,7 @@ class NavRouteHandler:
                 dlg.ShowModal()
                 dlg.Destroy()
             except Exception as ex:
-                print(ex)
+                logger.error("Failed to show nav route error dialog: %s", ex)
 
 
     def is_window_visible(self, window_title_part: str) -> bool:

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 import wx, re
 
 from EDXD.gui.helper.dynamic_dialog import DynamicDialog
@@ -20,6 +22,8 @@ WINID = "LANDING_PAD_INDICATOR"
 from EDXD.globals import DEFAULT_LANDING_PAD_WIDTH, DEFAULT_LANDING_PAD_HEIGHT, DEFAULT_POS_Y, DEFAULT_POS_X
 
 
+
+logger = logging.getLogger(__name__)
 class LandingPadFrame(DynamicDialog):
     """Main application frame"""
 

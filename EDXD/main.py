@@ -12,6 +12,13 @@ if 'WAYLAND_DISPLAY' in os.environ:
     # Don't set DISPLAY here - let the system handle it
     print("🖥️  Wayland detected. Forcing X11 backend...")
 
+# Initialize logging early, before any other module logs
+from EDXD.globals import setup_logging
+setup_logging()
+
+import logging
+logger = logging.getLogger(__name__)
+
 import queue
 # version handling
 from pathlib import Path
@@ -105,6 +112,8 @@ def _show_onboarding_flow(app: wx.App, cfg: dict) -> dict:
     return cfg
 
 def main():
+    logger.info("Application starting")
+
     # check if another instance of EDXD is already running (working from v0.6.0.0)
     global _instance
     _instance = SingleInstance()
@@ -140,13 +149,18 @@ def main():
     # First-run onboarding: show welcome screen regardless of whether journal_dir is set
     # Skip onboarding if --journals is provided on command line (user is configuring manually)
     if not args.journals and (_is_first_run(cfg) or not CFG_FILE.exists()):
+        logger.info("First run detected, showing onboarding flow")
         cfg = _show_onboarding_flow(app, cfg)
         # Reload journal_dir from the updated config
         journal_dir = Path(cfg.get("journal_dir", ""))
+        logger.info("Onboarding flow completed, journal_dir: %s", journal_dir)
 
     # If still no valid journal directory after onboarding, exit
     if not journal_dir.is_dir():
+        logger.error("Invalid journal directory: %s", journal_dir)
         sys.exit("Run once with --journals <Saved Games …>")
+    else:
+        logger.info("Journal directory: %s", journal_dir)
 
     cfg.setdefault("land", False)
     cfg.setdefault("ringed", False)
@@ -163,8 +177,10 @@ def main():
     model = Model()
     journal_reader = JournalReader(journal_dir, q)
     journal_reader.start()
+    logger.info("Journal reader started")
     journal_controller = JournalController(q, model, cfg)
     journal_controller.start()
+    logger.info("Journal controller started")
 
     def _save():
         data = {k: v for k, v in cfg.items() if k != "save"}
@@ -176,8 +192,10 @@ def main():
 
     status_watcher = StatusWatcher(journal_dir / "Status.json", model)
     status_watcher.start()
+    logger.info("Status watcher started")
 
     frame = MainFrame(model=model, prefs=cfg, journal_reader=journal_reader, journal_controller=journal_controller, status_watcher=status_watcher)
+    logger.info("Main window created")
 
     # Try to apply the app font/theme using the font_utils helper (if available).
     # This is optional: if font_utils implements apply_app_fonts or set helpers, use them.
@@ -192,8 +210,13 @@ def main():
         logging.getLogger(__name__).exception("Applying app fonts failed")
 
     frame.Show()
+    logger.info("Application main loop starting")
 
     app.MainLoop()
+
+    logger.info("Application shutting down")
+    if _instance is not None:
+        _instance.release()
 
 if __name__ == "__main__":
     main()

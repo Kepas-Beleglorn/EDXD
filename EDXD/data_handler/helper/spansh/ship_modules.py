@@ -1,5 +1,9 @@
 from EDXD.data_handler.helper.dotted_dictionary import DotDict, create_dot_dict_from_string, load_json_from_url_as_dotdict
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 SOURCE_FSD_MODULES = "https://raw.githubusercontent.com/EDCD/coriolis-data/master/modules/standard/frame_shift_drive.json"
 SOURCE_FSD_BOOSTER = "https://raw.githubusercontent.com/EDCD/coriolis-data/master/modules/internal/guardian_fsd_booster.json"
@@ -46,9 +50,9 @@ class ShipFSDModules:
                             break
 
         except AttributeError as e:
-            print(f"Access Error: {e}")
+            logger.debug("Access Error: %s", e)
         except Exception as e:
-            print(f"Unexpected error: {e}")
+            logger.debug("Unexpected error: %s", e)
 
         if optimal_mass == 0:
             for mod in self.fsd_modules.fsd:
@@ -68,9 +72,9 @@ class ShipFSDModules:
                 fsd_item = fsd_module.Item
 
         except AttributeError as e:
-            print(f"Access Error: {e}")
+            logger.debug("Access Error: %s", e)
         except Exception as e:
-            print(f"Unexpected error: {e}")
+            logger.debug("Unexpected error: %s", e)
 
         for mod in self.fsd_modules.fsd:
             if mod.symbol.lower() == fsd_item.lower():
@@ -89,9 +93,9 @@ class ShipFSDModules:
                 fsd_item = fsd_module.Item
 
         except AttributeError as e:
-            print(f"Access Error: {e}")
+            logger.debug("Access Error: %s", e)
         except Exception as e:
-            print(f"Unexpected error: {e}")
+            logger.debug("Unexpected error: %s", e)
 
         for mod in self.fsd_modules.fsd:
             if mod.symbol.lower() == fsd_item.lower():
@@ -110,9 +114,9 @@ class ShipFSDModules:
                 fsd_item = fsd_module.Item
 
         except AttributeError as e:
-            print(f"Access Error: {e}")
+            logger.debug("Access Error: %s", e)
         except Exception as e:
-            print(f"Unexpected error: {e}")
+            logger.debug("Unexpected error: %s", e)
 
         for mod in self.fsd_modules.fsd:
             if mod.symbol.lower() == fsd_item.lower():
@@ -131,9 +135,9 @@ class ShipFSDModules:
                 fsd_item = fsd_module.Item
 
         except AttributeError as e:
-            print(f"Access Error: {e}")
+            logger.debug("Access Error: %s", e)
         except Exception as e:
-            print(f"Unexpected error: {e}")
+            logger.debug("Unexpected error: %s", e)
 
         for mod in self.fsd_booster.gfsb:
             if mod.symbol.lower() == fsd_item.lower():
@@ -152,14 +156,11 @@ class ShipFSDModules:
                 fsd_item = fsd_module.Item
 
         except AttributeError as e:
-            print(f"Access Error: {e}")
+            logger.debug("Access Error: %s", e)
         except Exception as e:
-            print(f"Unexpected error: {e}")
+            logger.debug("Unexpected error: %s", e)
 
         if str(fsd_item).lower().endswith("_mkii"):
             sc_multiplier = 6
 
         return sc_multiplier
-
-
-

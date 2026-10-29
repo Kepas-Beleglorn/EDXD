@@ -1,5 +1,6 @@
 
 from __future__ import annotations
+import logging
 
 from typing import Optional, Dict
 
@@ -17,6 +18,8 @@ from EDXD.gui.helper.collapsible_panel import CollapsiblePanel
 import EDXD.data_handler.helper.data_helper as dh
 import EDXD.data_handler.helper.bio_helper as bh
 import EDXD.data_handler.helper.technical2humanreadable as t2h
+
+logger = logging.getLogger(__name__)
 
 TITLE = "BODY DETAILS"
 WINID = "BODY_DETAILS"

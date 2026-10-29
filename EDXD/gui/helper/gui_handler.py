@@ -1,29 +1,12 @@
 import wx
 import wx.lib.buttons as buttons
 
-from EDXD.globals import DEFAULT_HEIGHT, DEFAULT_WIDTH, DEFAULT_POS_X, DEFAULT_POS_Y
+from EDXD.globals import logging, DEFAULT_HEIGHT, DEFAULT_WIDTH, DEFAULT_POS_X, DEFAULT_POS_Y
 from EDXD.gui.helper.theme_handler import apply_theme
 
-from EDXD.globals import logging
-import inspect, functools
+logger = logging.getLogger(__name__)
 
-def log_call(level=logging.INFO):
-    """Decorator that logs function name and bound arguments."""
-    def decorator(fn):
-        logger = logging.getLogger(fn.__module__)   # one logger per module
-        sig = inspect.signature(fn)                 # capture once, not on every call
 
-        @functools.wraps(fn)
-        def wrapper(*args, **kwargs):
-            bound = sig.bind_partial(*args, **kwargs)
-            arg_str = ", ".join(f"{k}={v!r}" for k, v in bound.arguments.items())
-            logger.log(level, "%s(%s)", fn.__name__, arg_str)
-            return fn(*args, **kwargs)
-
-        return wrapper
-    return decorator
-
-#@log_call()
 def init_widget(widget, width: int = DEFAULT_WIDTH, height: int = DEFAULT_HEIGHT, posx: int = DEFAULT_POS_X, posy: int = DEFAULT_POS_Y, title: str = "", is_ctrl_box: bool = False):
     apply_theme(widget=widget)
     if widget.Name == "frame":
@@ -42,7 +25,7 @@ def init_widget(widget, width: int = DEFAULT_WIDTH, height: int = DEFAULT_HEIGHT
         else:
             init_gen_button(widget=widget, title=title)
     else:
-        logging.info(f"{widget.Name} - {widget}")
+        logger.debug("Unknown widget type: %s - %s", widget.Name, widget)
         return
 
 
@@ -74,4 +57,3 @@ def init_gen_button(widget: buttons.GenButton, title: str):
 def init_gen_button_ctrl_box(widget: buttons.GenButton, title: str):
     widget.SetLabelText(title)
     widget.SetCursor(wx.Cursor(wx.CURSOR_HAND))
-

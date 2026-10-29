@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import functools
-import inspect
 import random
 from typing import Dict
 
@@ -33,22 +31,7 @@ from EDXD.gui.landing_pad_indicator import LandingPadFrame
 
 from EDXD.utils.clipboard import copy_text_to_clipboard
 
-
-def log_call(level=logging.INFO):
-    """Decorator that logs function name and bound arguments."""
-    def decorator(fn):
-        logger = logging.getLogger(fn.__module__)   # one logger per module
-        sig = inspect.signature(fn)                 # capture once, not on every call
-
-        @functools.wraps(fn)
-        def wrapper(*args, **kwargs):
-            bound = sig.bind_partial(*args, **kwargs)
-            arg_str = ", ".join(f"{k}={v!r}" for k, v in bound.arguments.items())
-            logger.log(level, "%s(%s)", fn.__name__, arg_str)
-            return fn(*args, **kwargs)
-
-        return wrapper
-    return decorator
+logger = logging.getLogger(__name__)
 
 TITLE = "ED eXploration Dashboard"
 WINID = "EDXD_MAIN_WINDOW"
@@ -273,6 +256,7 @@ class MainFrame(DynamicFrame):
 
     def _update_assigned_landing_pad(self):
         from EDXD.gui.landing_pad_indicator import WINID as winIdSelected
+
         if self.prefs is None or self.prefs.get(winIdSelected) is None:
             hidden = False
         else:
@@ -380,7 +364,6 @@ class MainFrame(DynamicFrame):
     # ------------------------------------------------------------------
     # periodic refresh
     # ------------------------------------------------------------------
-    #@log_call()
     def _refresh(self):
         if self.options.historian and self.options.historian.is_running:
             return

@@ -1,4 +1,4 @@
-import inspect
+import logging
 import re
 from typing import Dict, Callable, Optional
 
@@ -7,15 +7,15 @@ import wx.grid as gridlib
 import EDXD.data_handler.helper.data_helper as dh
 
 from EDXD.data_handler.model import Body, FlatRowDataMainWindow
-from EDXD.globals import SYMBOL, logging, RAW_MATS, ICONS, log_call, DEBUG_MODE, log_context, \
-    DEFAULT_WORTHWHILE_THRESHOLD
+from EDXD.globals import SYMBOL, logging, RAW_MATS, ICONS, DEBUG_MODE, DEFAULT_WORTHWHILE_THRESHOLD
 from EDXD.utils.clipboard import copy_text_to_clipboard
 import EDXD.data_handler.helper.technical2humanreadable as t2h
+
+logger = logging.getLogger(__name__)
 
 
 class BodiesTable(gridlib.Grid):
     """Table with Status | Body | 🛬 | 🌿 | 🌋 | one column per mineral."""
-    #@log_call()
     def __init__(self, parent, on_select: Callable[[str], None]):
         super().__init__(parent)
 
@@ -155,7 +155,6 @@ class BodiesTable(gridlib.Grid):
             return  # Ignore event
         event.Skip()
 
-    @log_call(logging.DEBUG)
     def refresh(
             self,
             bodies: Dict[str, Body],
@@ -276,7 +275,7 @@ class BodiesTable(gridlib.Grid):
                 rows_data.append(row)
 
             except Exception as e:
-                log_context(level=logging.ERROR, frame=inspect.currentframe(), e=e)
+                logger.error("Error building row data for body %s: %s", body.body_id, e)
                 
 
         needed_rows = len(rows_data)
@@ -297,8 +296,7 @@ class BodiesTable(gridlib.Grid):
                 try:
                     self.SetCellValue(r, c, row.get(colname, ("", ""))[0])
                 except Exception as e:
-                    log_context(level=logging.ERROR, frame=inspect.currentframe(), e=e)
-                    logging.error(f"Failed to set value to {colname}(row[{r}]:col[{c}])")
+                    logger.error("Failed to set value to %s(row[%d]:col[%d]): %s", colname, r, c, e)
 
 
         for r in range(len(rows_data), self.GetNumberRows()):
@@ -347,8 +345,7 @@ class BodiesTable(gridlib.Grid):
                 try:
                     self.SetCellValue(r, c, row.get(colname, ("", ""))[0])
                 except Exception as e:
-                    log_context(level=logging.ERROR, frame=inspect.currentframe(), e=e)
-                    logging.error(f"Failed to set value to {colname}(row[{r}]:col[{c}])")
+                    logger.error("Failed to set value to %s(row[%d]:col[%d]): %s", colname, r, c, e)
 
         self._set_g_force_color()
 

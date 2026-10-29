@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import wx
 
 from EDXD.data_handler.helper import galactic_navigation
@@ -16,6 +17,8 @@ from EDXD.gui.helper.collapsible_panel import CollapsiblePanel
 import EDXD.data_handler.helper.data_helper as dh
 import EDXD.data_handler.helper.galactic_navigation as gn
 import EDXD.data_handler.helper.technical2humanreadable as t2h
+
+logger = logging.getLogger(__name__)
 
 TITLE = "Currently plotted route"
 WINID = "PLOTTED_NAV_ROUTE"
@@ -187,7 +190,7 @@ class PlottedNavRoute(DynamicDialog):
                     continue
 
                 if len(self.plotted_route.plotted_nav_route.nav_points) - abs(i) < 0:
-                    print(f"DEBUG[items-abs(i)  <  0]: {len(self.plotted_route.plotted_nav_route.nav_points)} = {abs(i) - len(self.plotted_route.plotted_nav_route.nav_points)} - {abs(i)}")
+                    logger.debug("DEBUG[items-abs(i) < 0]: %d = %d - %d", len(self.plotted_route.plotted_nav_route.nav_points), abs(i) - len(self.plotted_route.plotted_nav_route.nav_points), abs(i))
                     continue
 
                 system = self.plotted_route.get_system_by_index(i)

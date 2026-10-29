@@ -1,5 +1,6 @@
-
 from __future__ import annotations
+
+import logging
 
 from typing import Dict, List, Set
 
@@ -13,6 +14,8 @@ from EDXD.gui.helper.window_properties import WindowProperties
 from EDXD.gui.helper.collapsible_panel import CollapsiblePanel
 from EDXD.data_handler.helper.bio_helper import get_genus_value_range
 import EDXD.data_handler.helper.data_helper as dh
+
+logger = logging.getLogger(__name__)
 
 TITLE = "Biosignal prediction"
 WINID = "BIOSIGNAL_PREDICTION"

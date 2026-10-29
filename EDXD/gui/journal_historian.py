@@ -1,4 +1,4 @@
-import inspect
+import logging
 import json
 import shutil
 import threading
@@ -10,13 +10,15 @@ import wx
 from EDXD.data_handler.journal_controller import JournalController
 from EDXD.data_handler.journal_reader import JournalReader
 from EDXD.data_handler.status_json_watcher import StatusWatcher
-from EDXD.globals import CACHE_DIR, logging, log_context, JOURNAL_TIMESTAMP_FILE
+from EDXD.globals import CACHE_DIR, logging, JOURNAL_TIMESTAMP_FILE
 from EDXD.globals import DEFAULT_HEIGHT_JH, DEFAULT_WIDTH_JH, DEFAULT_POS_Y, DEFAULT_POS_X, RESIZE_MARGIN
 from EDXD.gui.helper.dynamic_frame import DynamicFrame
 from EDXD.gui.helper.gui_dynamic_button import DynamicButton
 from EDXD.gui.helper.gui_handler import init_widget
 from EDXD.gui.helper.window_properties import WindowProperties
 
+
+logger = logging.getLogger(__name__)
 TITLE = "ED journal historian"
 WINID = "EDXD_JOURNAL_HISTORIAN"
 
@@ -116,14 +118,14 @@ class JournalHistorian(DynamicFrame):
 
         journal_files = self._get_sorted_journal_files(self.journal_dir)
         for idx, file_path in enumerate(journal_files, 1):
-            logging.debug(f"Processing {str(file_path)}")
+            logger.debug("Processing %s", file_path)
             with open(file_path, encoding="utf-8") as f:
                 for line in f:
                     try:
                         evt = json.loads(line)
                         self.journal_controller.process_event(evt=evt, update_gui=False, set_timestamp=False)
                     except Exception as e:
-                        log_context(level=logging.WARN, frame=inspect.currentframe(), e=e)
+                        logger.warning("Failed to parse journal line: %s", e)
                         continue
                     wx.CallAfter(self._update_ui, idx, file_path, str(evt)[14:80])
 

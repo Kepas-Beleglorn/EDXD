@@ -1,8 +1,11 @@
 import json
+import logging
 import requests
 import dataclasses
 from pathlib import Path
 from typing import get_type_hints
+
+logger = logging.getLogger(__name__)
 
 class DotDict(dict):
     """A dictionary that allows dot notation access and recursively converts nested dicts."""
@@ -68,8 +71,7 @@ def create_dot_dict_from_string(data_string: str) -> DotDict:
 
         return convert_to_dotdict(data)
     except Exception as e:
-        print(f"{data_string}")
-        print(e)
+        logger.error("Failed to parse JSON string: %s. Error: %s", data_string, e)
         return None
 
 def save_dotdict_to_json(dotdict: DotDict, file_path: str, indent: int = 2) -> None:

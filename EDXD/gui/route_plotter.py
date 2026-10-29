@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 from dataclasses import asdict
 from select import select
 from threading import Thread
@@ -30,6 +32,8 @@ from EDXD.utils.float_range_validator import FloatRangeValidator
 from EDXD.data_handler.vessel_status import *
 from EDXD.data_handler.helper.dotted_dictionary import *
 
+
+logger = logging.getLogger(__name__)
 TITLE = "Exploration itinerary"
 WINID = "EXPLORATION_ITINERARY"
 
@@ -1040,7 +1044,7 @@ class ExplorationItinerary(DynamicDialog):
                     continue
 
                 if len(self.nav_route.plotted_nav_route.nav_points) - abs(i) < 0:
-                    print(f"DEBUG[items-abs(i)  <  0]: {len(self.nav_route.plotted_nav_route.nav_points)} = {abs(i) - len(self.nav_route.plotted_nav_route.nav_points)} - {abs(i)}")
+                    logger.debug("DEBUG[items-abs(i) < 0]: %d = %d - %d", len(self.nav_route.plotted_nav_route.nav_points), abs(i) - len(self.nav_route.plotted_nav_route.nav_points), abs(i))
                     continue
 
                 system = self.nav_route.get_system_by_index(i)
@@ -1281,7 +1285,7 @@ class ExplorationItinerary(DynamicDialog):
             )
 
         except Exception as e:
-            print(f"Calculate current jump range: {e}")
+            logger.error("Calculate current jump range: %s", e)
             jump_range = max_jump_range or 0.0
 
         return jump_range

@@ -1,5 +1,6 @@
-
 from __future__ import annotations
+
+import logging
 
 from typing import Optional
 
@@ -14,6 +15,8 @@ from EDXD.gui.helper.theme_handler import get_theme
 from EDXD.gui.helper.window_properties import WindowProperties
 from EDXD.gui.psps_gui_buttons import PSPSButtons
 
+
+logger = logging.getLogger(__name__)
 TITLE = "Planetary Surface Positioning System"
 WINID = "PSPS"
 

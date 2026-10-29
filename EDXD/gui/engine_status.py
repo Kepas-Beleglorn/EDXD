@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 import time
 import wx
 from wx import Size, DateTime
@@ -18,6 +20,8 @@ WINID = "ENGINE_STATUS"
 
 from EDXD.globals import DEFAULT_HEIGHT_ENGINE_STATUS, DEFAULT_WIDTH_ENGINE_STATUS, DEFAULT_POS_Y, DEFAULT_POS_X, VESSEL_SLF, VESSEL_SRV, VESSEL_EV, VESSEL_SHIP, SCO_COOLDOWN
 
+
+logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 class EngineStatus(DynamicDialog):
     def __init__(self, parent):
