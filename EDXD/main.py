@@ -64,8 +64,22 @@ from typing import Optional
 _instance: Optional[SingleInstance] = None
 
 def _is_first_run(cfg: dict) -> bool:
-    """Check if this is the first run of EDXD (no config or first_run_done not set)."""
-    return not cfg.get("first_run_done", False)
+    """
+    Check if this is a truly fresh install of EDXD.
+    
+    A fresh install is one where:
+    - first_run_done is not set AND
+    - no journal_dir is configured (meaning the user has never set up the app)
+    
+    This ensures that users upgrading from an older version (which may not have
+    the first_run_done flag) do not see the welcome screen unnecessarily.
+    """
+    if cfg.get("first_run_done", False):
+        return False
+    # If journal_dir is already configured, this is an existing installation (possibly upgraded)
+    if cfg.get("journal_dir"):
+        return False
+    return True
 
 def _mark_first_run_done(cfg: dict) -> None:
     """Mark the first run as complete in the config."""
