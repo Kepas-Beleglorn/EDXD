@@ -12,7 +12,7 @@ python.pkgs.buildPythonPackage {
 
   doCheck = false;
 
-  pythonRelaxDeps = [ "tomli" "filelock" "pywinctl" ];
+  pythonRelaxDeps = [ "tomli" "filelock" "PyWinCtl" ];
   nativeBuildInputs = [ python.pkgs.pythonRelaxDepsHook ];
 
   pyproject = true;
