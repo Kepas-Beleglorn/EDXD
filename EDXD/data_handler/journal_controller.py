@@ -114,7 +114,9 @@ class JournalController(PausableThread, threading.Thread):
 
         return parent_stars
 
-    def process_event(self, evt, update_gui: bool, set_timestamp: bool = True):
+    def process_event(self, evt, update_gui: bool, set_timestamp: bool = True, journal_file: str = None, journal_line: str = None):
+        self._journal_file = journal_file
+        self._journal_line = journal_line
         etype = evt.get("event")
 
         #121 - determine fuel capacity of current ship
@@ -617,7 +619,10 @@ class JournalController(PausableThread, threading.Thread):
                         break
 
                 if body_id == original_body_id:
-                    logger.warning("Ring %s signals found, but parent body %s is not in the model (body_id %s not found). Skipping ring processing.", ring_name, parent_body_name, body_id)
+                    if self._journal_file and self._journal_line:
+                        logger.warning("Ring %s signals found, but parent body %s is not in the model (body_id %s not found). Skipping ring processing. Journal: %s, Line: %s", ring_name, parent_body_name, body_id, self._journal_file, self._journal_line)
+                    else:
+                        logger.warning("Ring %s signals found, but parent body %s is not in the model (body_id %s not found). Skipping ring processing.", ring_name, parent_body_name, body_id)
 
                 body_name = None
                 scandata = None

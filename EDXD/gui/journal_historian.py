@@ -123,7 +123,7 @@ class JournalHistorian(DynamicFrame):
                 for lineno, line in enumerate(f, 1):
                     try:
                         evt = json.loads(line)
-                        self.journal_controller.process_event(evt=evt, update_gui=False, set_timestamp=False)
+                        self.journal_controller.process_event(evt=evt, update_gui=False, set_timestamp=False, journal_file=str(file_path), journal_line=line.strip())
                     except Exception as e:
                         logger.warning("Failed to parse journal line in %s (line %d): %s — %s", file_path.name, lineno, line.strip()[:120], e)
                         continue
