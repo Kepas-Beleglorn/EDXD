@@ -120,12 +120,12 @@ class JournalHistorian(DynamicFrame):
         for idx, file_path in enumerate(journal_files, 1):
             logger.debug("Processing %s", file_path)
             with open(file_path, encoding="utf-8") as f:
-                for line in f:
+                for lineno, line in enumerate(f, 1):
                     try:
                         evt = json.loads(line)
                         self.journal_controller.process_event(evt=evt, update_gui=False, set_timestamp=False)
                     except Exception as e:
-                        logger.warning("Failed to parse journal line: %s", e)
+                        logger.warning("Failed to parse journal line in %s (line %d): %s — %s", file_path.name, lineno, line.strip()[:120], e)
                         continue
                     wx.CallAfter(self._update_ui, idx, file_path, str(evt)[14:80])
 
