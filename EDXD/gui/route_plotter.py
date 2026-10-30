@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import json
 import logging
 
 from dataclasses import asdict
+from pathlib import Path
 from select import select
 from threading import Thread
 
@@ -29,9 +31,13 @@ import EDXD.data_handler.helper.data_helper as dh
 import EDXD.data_handler.helper.galactic_navigation as gn
 from EDXD.utils.int_range_validator import IntRangeValidator
 from EDXD.utils.float_range_validator import FloatRangeValidator
-from EDXD.data_handler.vessel_status import *
-from EDXD.data_handler.helper.dotted_dictionary import *
-
+from EDXD.data_handler.vessel_status import ShipStatus
+from EDXD.data_handler.helper.dotted_dictionary import (
+    DotDict,
+    create_dot_dict_from_string,
+    load_json_as_dotdict,
+    save_dotdict_to_json, from_dotdict,
+)
 
 logger = logging.getLogger(__name__)
 TITLE = "Exploration itinerary"

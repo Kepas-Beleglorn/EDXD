@@ -2,19 +2,23 @@ import json
 import logging
 import queue
 import re
+import threading
+from dataclasses import asdict
+from typing import List, Dict
 from pathlib import Path
 
 import EDXD.data_handler.helper.bio_helper as bio_helper
+import EDXD.data_handler.helper.data_helper as dh
 
 logger = logging.getLogger(__name__)
 from EDXD.data_handler.helper.dotted_dictionary import DotDict, load_json_as_dotdict, save_dotdict_to_json, create_dot_dict_from_string
 from EDXD.data_handler.helper.galactic_navigation import StarPosition
 from EDXD.data_handler.helper.pausable_thread import PausableThread
 from EDXD.data_handler.helper.spansh.spansh import SpanshHelper
-from EDXD.data_handler.model import *
+from EDXD.data_handler.model import Body, Ring, Genus, CodexEntry, Atmosphere, Model
 from EDXD.data_handler.nav_route import NavRouteHandler, NavPoint
 from EDXD.data_handler.planetary_surface_positioning_system import PSPSCoordinates
-from EDXD.data_handler.vessel_status import *
+from EDXD.data_handler.vessel_status import ShipStatus, FuelLevel
 from EDXD.data_handler.helper.spansh.ship_modules import ShipFSDModules
 from EDXD.globals import logging, BODY_ID_PREFIX, JOURNAL_TIMESTAMP_FILE, SHIP_STATUS_FILE, VESSEL_SHIP, \
     VESSEL_SRV, VESSEL_EV, VESSEL_SLF, BODY_NO_DATA, SPANSH_ROUTE, SLEF_PATH, SPANSH_ACTIVE_ROUTE

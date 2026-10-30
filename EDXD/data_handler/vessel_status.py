@@ -3,6 +3,8 @@ from __future__ import annotations
 import logging
 from typing import Dict
 
+__all__ = ["ShipStatus", "FuelLevel"]
+
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------

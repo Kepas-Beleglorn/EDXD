@@ -13,7 +13,12 @@ from __future__ import annotations
 import logging
 import threading
 from dataclasses import dataclass, asdict, field
-from typing import Optional, List
+from typing import Optional, List, Dict
+
+__all__ = [
+    "Body", "Ring", "Genus", "CodexEntry", "Atmosphere",
+    "Model",
+]
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +26,7 @@ import EDXD.data_handler.helper.data_helper as dh
 
 from EDXD.data_handler.helper.body_appraiser import appraise_body
 from EDXD.data_handler.planetary_surface_positioning_system import PSPSCoordinates
-from EDXD.data_handler.vessel_status import *
+from EDXD.data_handler.vessel_status import ShipStatus, FuelLevel
 from EDXD.globals import BODY_ID_PREFIX
 
 bip = BODY_ID_PREFIX

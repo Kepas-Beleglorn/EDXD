@@ -184,6 +184,9 @@ def setup_logging() -> Path:
     logger.info("Log directory: %s", mask_home(LOG_DIR))
     logger.info("Log file: %s", log_filename)
     logger.info("Log level: %s", log_level_str)
+    logger.debug("Root logger level: %d (%s)", root_logger.level, logging.getLevelName(root_logger.level))
+    logger.debug("Handler count: %d, levels: %s", len(root_logger.handlers),
+                 [logging.getLevelName(h.level) for h in root_logger.handlers])
     if old_count > 0:
         logger.info("Old logs cleaned: %d files removed", old_count)
     logger.info("=" * 40)

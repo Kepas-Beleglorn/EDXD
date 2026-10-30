@@ -7,14 +7,21 @@ import logging
 import requests
 from pathlib import Path
 
-logger = logging.getLogger(__name__)
-
 from packaging.tags import sys_tags
 
 from EDXD.data_handler.helper.data_helper import time_delta
 
 from EDXD.data_handler.helper.spansh import spansh2edjournal
-from EDXD.data_handler.helper.dotted_dictionary import *
+from EDXD.data_handler.helper.dotted_dictionary import (
+    DotDict,
+    create_dot_dict_from_string,
+    from_dotdict,
+    load_json_as_dotdict,
+    load_json_from_url_as_dotdict,
+    save_dotdict_to_json,
+)
+
+logger = logging.getLogger(__name__)
 from EDXD.data_handler.model import Model, Atmosphere, Ring
 import EDXD.data_handler.helper.data_helper as dh
 from EDXD.globals import BODY_NO_DATA, SLEF_PATH

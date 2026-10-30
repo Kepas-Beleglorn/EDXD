@@ -5,6 +5,15 @@ import dataclasses
 from pathlib import Path
 from typing import get_type_hints
 
+__all__ = [
+    "DotDict",
+    "create_dot_dict_from_string",
+    "from_dotdict",
+    "load_json_as_dotdict",
+    "load_json_from_url_as_dotdict",
+    "save_dotdict_to_json",
+]
+
 logger = logging.getLogger(__name__)
 
 class DotDict(dict):
