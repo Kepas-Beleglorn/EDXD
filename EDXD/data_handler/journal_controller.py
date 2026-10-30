@@ -610,18 +610,24 @@ class JournalController(PausableThread, threading.Thread):
                 ring_id = body_id
                 ring_name = body_name
                 parent_body_name = " ".join(body_name.split()[:-2])
+                original_body_id = body_id
                 for body_item in self.m.bodies:
                     if self.m.bodies[body_item].body_name == parent_body_name:
                         body_id = self.m.bodies[body_item].body_id
                         break
 
+                if body_id == original_body_id:
+                    logger.warning("Ring %s signals found, but parent body %s is not in the model (body_id %s not found). Skipping ring processing.", ring_name, parent_body_name, body_id)
+
                 body_name = None
                 scandata = None
-                rings_found = self.m.bodies[body_id].rings
-                journal_signals = evt.get("Signals")
-                ring_id_is_name = False
-                rings_found_dict = {}
-                if body_id in self.m.bodies:
+                if body_id not in self.m.bodies:
+                    pass  # parent body missing, already logged above, skip ring processing
+                else:
+                    rings_found = self.m.bodies[body_id].rings
+                    journal_signals = evt.get("Signals")
+                    ring_id_is_name = False
+                    rings_found_dict = {}
                     # do we have a proper ring ID?
                     if ring_id in self.m.bodies[body_id].rings:
                         rings_found_dict = self.m.bodies[body_id].rings[ring_id]
@@ -631,25 +637,25 @@ class JournalController(PausableThread, threading.Thread):
                         rings_found_dict = self.m.bodies[body_id].rings[ring_name]
                         ring_id_is_name = True
 
-                if rings_found_dict == {}:
-                    ring = Ring(body_id=ring_id, body_name=ring_name, signals=journal_signals)
-                else:
-                    if ring_id_is_name:
-                        final_ring_id = ring_id
+                    if rings_found_dict == {}:
+                        ring = Ring(body_id=ring_id, body_name=ring_name, signals=journal_signals)
                     else:
-                        final_ring_id = rings_found_dict.body_id
-                    ring = Ring(
-                        body_id=final_ring_id,
-                        body_name=rings_found_dict.body_name or ring_name,
-                        ring_class=rings_found_dict.ring_class or "",
-                        signals=rings_found_dict.signals or journal_signals
-                    )
+                        if ring_id_is_name:
+                            final_ring_id = ring_id
+                        else:
+                            final_ring_id = rings_found_dict.body_id
+                        ring = Ring(
+                            body_id=final_ring_id,
+                            body_name=rings_found_dict.body_name or ring_name,
+                            ring_class=rings_found_dict.ring_class or "",
+                            signals=rings_found_dict.signals or journal_signals
+                        )
 
-                # clean up the mess from previous scans without proper body ID for the ring
-                if ring_id_is_name:
-                    rings_found.pop(ring_name, None)
+                    # clean up the mess from previous scans without proper body ID for the ring
+                    if ring_id_is_name:
+                        rings_found.pop(ring_name, None)
 
-                rings_found[ring_id] = ring
+                    rings_found[ring_id] = ring
 
             else:
                 for signal in evt.get("Signals", []):
