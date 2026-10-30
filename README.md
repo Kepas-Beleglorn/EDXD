@@ -2,14 +2,6 @@
 
 ---
 
-#### Known issue [#263](https://github.com/Kepas-Beleglorn/EDXD/issues/263) - Windows can't be moved on Wayland
-
-**Known workarounds:**
-- Run with `GDK_BACKEND=x11 ./ed-eXploration-dashboard`
-- On KDE you could try moving/positioning the panels with window-rules (system settings), 
-- Switch from Wayland to X11.
----
-
 ### A cross-platform, real-time dashboard for explorers:
 * **100 % Python** – runs on Linux, macOS and Windows.
 
@@ -22,24 +14,29 @@
 * **Distance from entry point** - time for a hutton-mug of coffee?
 * **Planetary surface materials** – instantly see every deposit in a system.
 * **Dark “ED” theme** – looks at home next to EDMC / EDSM.
+* **Current navigation** The route you just plotted in-game
+* **Spansh-integration** Plot an entire route via spansh. Shows the next few systems and loads the next waypoint to the clipboard when you reach a waypoint.
+* **Landing pad indicator** Back from the black and no clue were int the Coriolis station your assigned pad is? This is for you.
 
 #### A more detailed description will be maintained here: [EDXD on edcodex.info](https://edcodex.info/?m=tools&entry=608)
 
+## Binary Compatibility (Required for Linux only)
 
-### Planned:
-* show first discovered (EDSM)
-* show potential types of geosigns, if any; update on DSS
-* maybe more...
+| Binary | glibc | Ubuntu Base | Distros |
+|--------|-------|-------------|---------|
+| ubuntu-22.04 | 2.35 | 22.04 LTS | Ubuntu 22.04, Linux Mint 21, Debian 12 |
+| ubuntu-24.04 | 2.39 | 24.04 LTS | Ubuntu 24.04, Linux Mint 22, ZorinOS 17, Fedora 40 |
+| ubuntu-latest | 2.43+ | 26.04 | Ubuntu 26.04+, latest distributions |
+
+**Don't know which to use?** Run: `bash check-compatibility.sh`
+
+**Or just download the latest releases `Source Code (tar.gz)` and build it from scratch with `build.sh` (Requires python 3.14+)
 
 ---
 
 ## Installation
 
-Just download the zip for your platform, unpack the contents anywhere you like and run with 
-
-`
-./ed-eXploration-dashboard
-`
+Just download the zip for your platform, unpack the contents anywhere you like and run with `./ed-eXploration-dashboard`.
 ```
 options:
   -h, --help           show this help message and exit
@@ -51,7 +48,6 @@ options:
 ```
 
 On first run, after you set the path to your journal files in the configuration, you should start the "Journal Historian" to process all of your available journal files. Same goes for major updates of EDXD, as newer versions process more data from the journals. 
-
 
 ### NixOs and Nix package manager
 

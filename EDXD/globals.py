@@ -1,13 +1,13 @@
-import functools
-import inspect
 import sys
 import os
+
+import functools
+import inspect
 import json
 import platform
 from pathlib import Path
 from typing import List
 import argparse
-
 
 def get_app_dir():
     # PORTABLE mode (parameter --portable)
@@ -42,43 +42,157 @@ def get_system_cache_dir():
     return cache_dir
 
 import logging
+from datetime import datetime, timedelta
 
-LOG_LEVEL = logging.ERROR
+LOG_DIR: Path  # Set by setup_logging()
+LOG_RETENTION_DAYS = 14
 
-# 1️⃣ Configure the root logger once, ideally at program start
-logging.basicConfig(
-    level=LOG_LEVEL,
-    format="%(asctime)s.%(msecs)03d | %(levelname)s | %(name)s | %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",  # No .%f here!
-)
 
-def log_call(level=logging.INFO):
-    """Logs qualified name plus bound arguments, even for inner functions."""
-    def deco(fn):
-        logger = logging.getLogger(fn.__module__)
-        sig = inspect.signature(fn)
+def mask_home(path: Path) -> str:
+    """Replace the home directory prefix with '~' to avoid exposing the username."""
+    try:
+        home = Path.home()
+        if str(path).startswith(str(home)):
+            return "~/" + str(path.relative_to(home))
+    except (ValueError, RuntimeError):
+        pass
+    return str(path)
 
-        @functools.wraps(fn)
-        def wrapper(*args, **kwargs):
-            bound = sig.bind_partial(*args, **kwargs)
-            arglist = ", ".join(f"{k}={v!r}" for k, v in bound.arguments.items())
-            qualname = fn.__qualname__  # includes outer.<locals>.inner
-            logger.log(level, "%s(%s)", qualname, arglist)
-            return fn(*args, **kwargs)
 
-        return wrapper
+def get_display_info() -> tuple[str, str]:
+    """Return (display_server, desktop_env) tuple for the current platform."""
+    system = platform.system()
+    if system == "Linux":
+        display_server = os.getenv("XDG_SESSION_TYPE") or "unknown"
+        desktop_env = os.getenv("XDG_CURRENT_DESKTOP") or "unknown"
+        return display_server, desktop_env
+    elif system == "Darwin":
+        return "Apple WindowServer", "Aqua"
+    elif system == "Windows":
+        return "WDDM", "Windows"
+    else:
+        return "unknown", "unknown"
 
-    return deco
 
-def log_context(frame, e, level=logging.DEBUG):
-    class_name = inspect.getmodule(frame).__name__
-    func_name = frame.f_code.co_name
-    arg_info = inspect.getargvalues(frame)
-    logging.log(level, f"{'_' * 10}")
-    logging.log(level, f"Exception in {class_name}.{func_name} with arguments {arg_info.locals}")
-    logging.log(level, f"Exception type: {type(e).__name__}")
-    logging.log(level, f"Exception args: {e.args}")
-    logging.log(level, f"Exception str: {str(e)}")
+def clean_old_logs(log_dir: Path, retention_days: int = LOG_RETENTION_DAYS) -> int:
+    """Delete log files older than retention_days. Returns number of files removed."""
+    if not log_dir.exists():
+        return 0
+    cutoff = datetime.now() - timedelta(days=retention_days)
+    count = 0
+    for log_file in log_dir.glob("EDXD.*.log"):
+        try:
+            file_mtime = datetime.fromtimestamp(log_file.stat().st_mtime)
+            if file_mtime < cutoff:
+                log_file.unlink()
+                count += 1
+        except OSError:
+            pass
+    return count
+
+
+def apply_log_level(log_level_str: str) -> None:
+    """
+    Apply a log level to all existing handlers and the root logger.
+    Call this when the user changes the log level in the config dialog.
+    """
+    log_level = getattr(logging, log_level_str.upper(), logging.INFO)
+    root_logger = logging.getLogger()
+    root_logger.setLevel(log_level)
+    for handler in root_logger.handlers:
+        handler.setLevel(log_level)
+    logger = logging.getLogger("EDXD.globals")
+    logger.info("Log level changed to: %s", log_level_str)
+
+
+def setup_logging() -> Path:
+    """
+    Initialize app-wide logging with file + console handlers.
+    Must be called early at startup (before other modules log).
+    Returns the LOG_DIR path for use by the config dialog.
+    """
+    global LOG_DIR
+
+    # Determine log directory
+    LOG_DIR = APP_DIR / "logs"
+    LOG_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Clean old logs
+    old_count = clean_old_logs(LOG_DIR)
+
+    # Create session-based log file
+    timestamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
+    log_filename = f"EDXD.{timestamp}.log"
+    log_file_path = LOG_DIR / log_filename
+
+    # Determine log level from config or CLI flag
+    log_level_str = "INFO"  # default
+    try:
+        if CFG_FILE.exists():
+            cfg = json.loads(CFG_FILE.read_text())
+            log_level_str = cfg.get("log_level", "INFO")
+    except (json.JSONDecodeError, OSError):
+        pass
+
+    # --debug flag overrides to DEBUG
+    if args.debug:
+        log_level_str = "DEBUG"
+
+    log_level = getattr(logging, log_level_str.upper(), logging.INFO)
+
+    # Configure root logger
+    root_logger = logging.getLogger()
+    root_logger.setLevel(log_level)
+
+    # Remove existing handlers to avoid duplicates
+    for handler in root_logger.handlers[:]:
+        root_logger.removeHandler(handler)
+
+    # Format
+    formatter = logging.Formatter(
+        "%(asctime)s.%(msecs)03d | %(levelname)-8s | %(name)s | %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+
+    # File handler
+    try:
+        file_handler = logging.FileHandler(str(log_file_path), encoding="utf-8")
+        file_handler.setLevel(log_level)
+        file_handler.setFormatter(formatter)
+        root_logger.addHandler(file_handler)
+    except OSError:
+        # If we can't write to the log file, fall back to console-only
+        pass
+
+    # Console handler
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(log_level)
+    console_handler.setFormatter(formatter)
+    root_logger.addHandler(console_handler)
+
+    # Get module logger for header
+    logger = logging.getLogger("EDXD.globals")
+
+    # Write log header
+    display_server, desktop_env = get_display_info()
+    logger.info("=" * 40)
+    logger.info("EDXD %s starting", __version__)
+    logger.info("Python %s (%s)", platform.python_version(), platform.python_compiler())
+    logger.info("OS: %s", platform.platform())
+    logger.info("Display: %s / Desktop: %s", display_server, desktop_env)
+    logger.info("Portable mode: %s", getattr(sys, "portable", False))
+    logger.info("Log directory: %s", mask_home(LOG_DIR))
+    logger.info("Log file: %s", log_filename)
+    logger.info("Log level: %s", log_level_str)
+    logger.debug("Root logger level: %d (%s)", root_logger.level, logging.getLevelName(root_logger.level))
+    logger.debug("Handler count: %d, levels: %s", len(root_logger.handlers),
+                 [logging.getLevelName(h.level) for h in root_logger.handlers])
+    if old_count > 0:
+        logger.info("Old logs cleaned: %d files removed", old_count)
+    logger.info("=" * 40)
+
+    return LOG_DIR
+
 
 # -----------------------------------------------------------------------
 try:
@@ -90,11 +204,11 @@ ap = argparse.ArgumentParser()
 ap.add_argument("--journals", type=Path, help="Path to Saved Games/Frontier Developments/Elite Dangerous")
 ap.add_argument("--version", action="version", version=__version__)
 ap.add_argument("--portable", help="Portable mode. All configs and data will be stored in the directory where the binary resides", action="store_true")
+ap.add_argument("--debug", help="Enable debug mode", action="store_true")
 args = ap.parse_args()
 
 if "--portable" in sys.argv:
     setattr(sys, "portable", True)
-
 
 # general paths for storing data
 APP_DIR = get_app_dir()
@@ -107,6 +221,15 @@ iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAAAXNSR0IB2cksfwAAAARnQU1BAACxjwv8
 """.strip()
 JOURNAL_TIMESTAMP_FILE = APP_DIR / "edxd_timestamp.json"
 SHIP_STATUS_FILE = APP_DIR / "edxd_ship_status.json"
+SLEF_PATH = APP_DIR / "slef_loadout.json"
+SPANSH_ROUTE = APP_DIR / "spansh_route_XXX.json"
+SPANSH_ACTIVE_ROUTE = APP_DIR / "spansh_active_route.json"
+
+# Images for route display
+BASE64_CIRCLE_ORANGE    = "iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAABAklEQVR4nNWUvWoCQRRGzzVJmzxAAikSSGOXlxBShUCKJF3KEMijpEheIMRGRBsfwdbSQlDEnxdQCwXF8e5q487szgjbeGB3h9nvHob5K5AzBXImd+Fp2g9T4YIln9p80udu191BqGrVjzwzcdWJU/ZHkRMa2rzGzUArH+SFtlcYj2ylQcMl2Yw5o5gcqT2HS74CZBFXcTaBLRQeCcWRtRfFcEsohhu/MIqFY2Vd+7BLOD2/UKgTTs0vXPOt7xF+hizibLZQ3pjqzJS02Sedvm78krwzs+rTKsw/5/r50ER09O533a346M35dckyhXvy8nY15dWfP+LrK0EzMBc2h4ewAQV7NMsSS/HSAAAAAElFTkSuQmCC"
+BASE64_CIRCLE_BLUE      = "iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAA/UlEQVR4nNWUuw4BQRSG/+PS8gAkChKNzktIVCJRoFOKxKMoeAGhEaHxCFqlQkI2Li+AgmTFOLu2YHd2ZyTb+JKdTGb+82Uyl40gZCIImdCFMd+ZiUjCRId7Vf7yzugGhClX9VGjs6yMpLKhKCCKBfcykLPnyjLqtFYLrZU9sIZACsGcEEfBvVLvHproasgs0nbWhVdIqEAXSdZ7KAI56CKQVQutmD6erOwebqHPTi0kzKHPTC18osftEWoOuNtZhbBJF96ZEvcM+GPwxS+hRVf3BPmWjESC2zYnrKdXdEZX9tO7YSCTBQs/GYv3aTZImf/n39c3S82c5h7+wAv7aDTLzH1jfAAAAABJRU5ErkJggg=="
+BASE64_LINE_ORANGE      = "iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAMklEQVR4nO3MsQ0AMAgDQRNly8yXOUFMAAUN0n/jxrqrRv7lufZk1fdoOEBAQEDALWAAHxUDKxZs768AAAAASUVORK5CYII="
+BASE64_LINE_BLUE        = "iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAMUlEQVR4nO3MsQkAQAgEQX2+S+uzTgUb0MBE2E0uOebLJI+oNdXu+mQ5QEBAQMArYAIdFQMriMEAhAAAAABJRU5ErkJggg=="
 
 # -----------------------------------------------------------------------
 # DEBUGGING OPTIONS
@@ -124,22 +247,28 @@ GIT_REPO = "EDXD"
 # DEBUGGING OPTIONS
 DEFAULT_HEIGHT = 500
 DEFAULT_WIDTH = 500
-DEFAULT_HEIGHT_CONFIG = 500
-DEFAULT_WIDTH_CONFIG = 950
+DEFAULT_HEIGHT_CONFIG = 720
+DEFAULT_WIDTH_CONFIG = 1170
 DEFAULT_HEIGHT_MAIN = 1000
 DEFAULT_WIDTH_MAIN = 1500
-DEFAULT_HEIGHT_JH = 250
-DEFAULT_WIDTH_JH = 800
+DEFAULT_HEIGHT_JH = 275
+DEFAULT_WIDTH_JH = 900
 DEFAULT_HEIGHT_PSPS = 200
-DEFAULT_WIDTH_PSPS = 500
-DEFAULT_HEIGHT_ABOUT = 322
-DEFAULT_WIDTH_ABOUT = 388
+DEFAULT_WIDTH_PSPS = 600
+DEFAULT_HEIGHT_ABOUT = 345
+DEFAULT_WIDTH_ABOUT = 600
 DEFAULT_HEIGHT_MINERALS_FILTER = 330
 DEFAULT_WIDTH_MINERALS_FILTER = 524
 DEFAULT_HEIGHT_PSPS_MANUAL_COORDINATES = 200
 DEFAULT_WIDTH_PSPS_MANUAL_COORDINATES = 500
 DEFAULT_HEIGHT_ENGINE_STATUS = 310
 DEFAULT_WIDTH_ENGINE_STATUS = 400
+DEFAULT_HEIGHT_CURRENT_NAV_ROUTE = 280
+DEFAULT_WIDTH_CURRENT_NAV_ROUTE= 500
+DEFAULT_LANDING_PAD_HEIGHT = 800
+DEFAULT_LANDING_PAD_WIDTH = 800
+DEFAULT_WIDTH_SPANSH = 540
+DEFAULT_HEIGHT_SPANSH = 800
 
 MIN_HEIGHT = 100
 MIN_WIDTH = 200
@@ -156,11 +285,18 @@ BTN_WIDTH = 192
 BTN_MARGIN = 1
 
 DEFAULT_WORTHWHILE_THRESHOLD = 1000000
+DEFAULT_AMOUNT_OF_PLOTTED_UPCOMING_SYSTEMS_TO_SHOW = 10
+DEFAULT_AMOUNT_OF_PLOTTED_PASSED_SYSTEMS_TO_SHOW = 2
+MAX_AMOUNT_OF_PLOTTED_UPCOMING_SYSTEMS_TO_SHOW = 30
+MAX_AMOUNT_OF_PLOTTED_PASSED_SYSTEMS_TO_SHOW = 10
+
 DEFAULT_FUEL_LOW_THRESHOLD = 10
 
 # -----------------------------------------------------------------------
 # prefix to stringify body_id
 BODY_ID_PREFIX = "body_"
+
+BODY_NO_DATA = "🚫 no data 🚫"
 
 # ----------------------------------------------------------------------
 # vessel identifiers
@@ -225,7 +361,8 @@ ICONS = {
     "atmosphere_present"    : "☁️",
     "has_rings"             : "🪐",
     "ring_hotspots"         : "⛏️",
-    "radicoida"             : "🫚"
+    "radicoida"             : "🫚",
+    "final"                 : "🏁"
 }
 
 # -----------------------------------------------------------------------

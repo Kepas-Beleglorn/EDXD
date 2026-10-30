@@ -1,9 +1,11 @@
 import wx
+
+from EDXD.gui.helper import theme_handler
 from EDXD.gui.helper.gui_handler import init_widget
 from EDXD.gui.helper.gui_dynamic_toggle_button import DynamicToggleButton
 
 class CollapsiblePanel(wx.Panel):
-    def __init__(self, parent, label="Panel Title", collapsed=False, columns: int = 1):
+    def __init__(self, parent, label="Panel Title", collapsed=False, columns: int = 1, show_toggle_bar: bool = True):
         super().__init__(parent)
         self.parent = parent
         self.label = label
@@ -11,32 +13,34 @@ class CollapsiblePanel(wx.Panel):
         self.columns = columns
         self.animation_duration = 200  # ms
         self.content_height = 0
+        self.show_toggle_bar = show_toggle_bar
 
         # Main sizer
         self.main_sizer = wx.BoxSizer(wx.VERTICAL)
 
-        # Header
-        self.header = wx.Panel(self)
-        self.header_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.header_label = wx.StaticText(self.header, label=self.label)
-        # Toggle button
-        self.toggle_button = DynamicToggleButton(parent=self.header,
-                label="–",
-                is_toggled=self.collapsed,
-                size=wx.Size(20,20),
-                style=wx.FONTWEIGHT_BOLD
-        )
-        self.toggle_button.Bind(wx.EVT_BUTTON, self.on_toggle)
+        if self.show_toggle_bar:
+            # Header
+            self.header = wx.Panel(self)
+            self.header_sizer = wx.BoxSizer(wx.HORIZONTAL)
+            self.header_label = wx.StaticText(self.header, label=self.label)
+            # Toggle button
+            self.toggle_button = DynamicToggleButton(parent=self.header,
+                    label="–",
+                    is_toggled=self.collapsed,
+                    size=wx.Size(20,20),
+                    style=wx.FONTWEIGHT_BOLD
+            )
+            self.toggle_button.Bind(wx.EVT_BUTTON, self.on_toggle)
 
-        init_widget(widget=self.header, title=self.label)
-        init_widget(widget=self.header_label, title=self.label)
-        init_widget(widget=self.toggle_button)
+            init_widget(widget=self.header, title=self.label)
+            init_widget(widget=self.header_label, title=self.label)
+            init_widget(widget=self.toggle_button)
 
-        self.header.SetBackgroundColour(wx.Colour("#221511"))
+            self.header.SetBackgroundColour(wx.Colour("#221511"))
 
-        self.header_sizer.Add(self.toggle_button, 0, wx.ALL, 5)
-        self.header_sizer.Add(self.header_label, 1, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
-        self.header.SetSizer(self.header_sizer)
+            self.header_sizer.Add(self.toggle_button, 0, wx.ALL, 5)
+            self.header_sizer.Add(self.header_label, 1, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+            self.header.SetSizer(self.header_sizer)
 
         # Content container
         self.content = wx.Panel(self)
@@ -49,7 +53,8 @@ class CollapsiblePanel(wx.Panel):
         self.setup_table()
 
         # Layout
-        self.main_sizer.Add(self.header, 0, wx.EXPAND)
+        if self.show_toggle_bar:
+            self.main_sizer.Add(self.header, 0, wx.EXPAND)
         self.main_sizer.Add(self.content, 1, wx.EXPAND)
         self.SetSizer(self.main_sizer)
 
@@ -61,7 +66,7 @@ class CollapsiblePanel(wx.Panel):
         """Set up a table-like layout with two columns."""
         self.table_sizer = wx.FlexGridSizer(cols=self.columns)  # 2 columns, 5px gaps
         self.table_sizer.AddGrowableCol(self.columns - 1)
-        self.content_sizer.Add(self.table_sizer, 1, wx.EXPAND | wx.ALL, 5)
+        self.content_sizer.Add(self.table_sizer, 1, wx.EXPAND | wx.ALL, 0)
         self.content_height = self.content.GetBestSize().height
         self.main_sizer.Layout()
 
@@ -73,12 +78,80 @@ class CollapsiblePanel(wx.Panel):
                 child.GetWindow().Destroy()
         self.table_sizer.Clear()
 
-    def add_table_item(self, label_text, align=wx.ALIGN_LEFT) -> wx.StaticText:
+    def add_table_item_label(self, label_text, align=wx.ALIGN_LEFT, line_height: int = -1, width: int = -1, border: int = 0) -> wx.StaticText:
         """Add a row to the table."""
         label = wx.StaticText(self.content)
         init_widget(widget=label, title=label_text)
-        self.table_sizer.Add(label, 0, align | wx.EXPAND, 5)
+
+        if line_height > 0 or width > 0:
+            fixed_size = wx.Size(width, line_height)
+            label.SetMaxSize(fixed_size)
+            label.SetMinSize(fixed_size)
+            label.SetSize(fixed_size)
+            label.SetInitialSize(fixed_size)
+
+
+
+        if align == wx.ALIGN_CENTER:
+            self.table_sizer.Add(label, 0, align, border)
+        else:
+            self.table_sizer.Add(label, 0, align | wx.EXPAND, border)
         return label
+
+    def add_table_item_bitmap(self, widget: wx.Bitmap, line_height: int = -1) -> wx.StaticBitmap:
+        icon =  wx.StaticBitmap(self.content, bitmap=widget)
+
+        if line_height > 0:
+            fixed_size = wx.Size(-1, line_height)
+            icon.SetMaxSize(fixed_size)
+            icon.SetMinSize(fixed_size)
+            icon.SetSize(fixed_size)
+            icon.SetInitialSize(fixed_size)
+
+        self.table_sizer.Add(icon, 0, wx.ALIGN_CENTER_HORIZONTAL, 0)
+        return icon
+
+    def add_table_item_toggle_button(self, button: DynamicToggleButton, line_height: int = -1) -> DynamicToggleButton:
+
+        if line_height > 0:
+            fixed_size = wx.Size(-1, line_height)
+            button.SetMaxSize(fixed_size)
+            button.SetMinSize(fixed_size)
+            button.SetSize(fixed_size)
+            button.SetInitialSize(fixed_size)
+
+        theme_handler.apply_theme(button)
+        self.table_sizer.Add(button, 0, wx.ALIGN_CENTER_HORIZONTAL, 0)
+        return button
+
+    def add_table_item_generic(self, item: wx.Control, line_height: int = -1):
+        if line_height > 0:
+            fixed_size = wx.Size(-1, line_height)
+            item.SetMaxSize(fixed_size)
+            item.SetMinSize(fixed_size)
+            item.SetSize(fixed_size)
+            item.SetInitialSize(fixed_size)
+
+        theme_handler.apply_theme(item)
+
+        self.table_sizer.Add(item, 0, wx.ALIGN_CENTER_HORIZONTAL, 0)
+
+    def add_table_item_textbox(self, align=wx.ALIGN_LEFT, line_height: int = -1, width: int = -1) -> wx.TextCtrl:
+        text = wx.TextCtrl(self.content)
+        init_widget(widget=text)
+
+        if line_height > 0 or width > 0:
+            fixed_size = wx.Size(width, line_height)
+            text.SetMaxSize(fixed_size)
+            text.SetMinSize(fixed_size)
+            text.SetSize(fixed_size)
+            text.SetInitialSize(fixed_size)
+
+        if align == wx.ALIGN_CENTER:
+            self.table_sizer.Add(text, 0, align, 0)
+        else:
+            self.table_sizer.Add(text, 0, align | wx.EXPAND, 0)
+        return text
 
     def on_toggle(self, event):
         """Toggle collapse/expand state with animation."""

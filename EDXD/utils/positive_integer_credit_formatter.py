@@ -30,6 +30,7 @@ class PositiveIntFormatterValidator(wx.Validator):
         self.Bind(wx.EVT_TEXT, self.OnText)
         self.Bind(wx.EVT_KILL_FOCUS, self.OnFormat)
         self.Bind(wx.EVT_SET_FOCUS, self.OnUnformat)
+        self._original_bg_color = None
 
     def Clone(self):
         """Required by wx.Validator to create copies."""
@@ -43,6 +44,9 @@ class PositiveIntFormatterValidator(wx.Validator):
         tc = self.GetWindow()
         if not isinstance(tc, wx.TextCtrl):
             return True
+
+        if self._original_bg_color is None:
+            self._original_bg_color = tc.GetBackgroundColour()
 
         text = tc.GetValue().strip()
 
@@ -65,7 +69,7 @@ class PositiveIntFormatterValidator(wx.Validator):
             return False
 
         # Valid: Reset color and tooltip
-        tc.SetBackgroundColour(wx.NullColour)
+        tc.SetBackgroundColour(self._original_bg_color)
         tc.SetToolTip("")
         tc.Refresh()
         return True
@@ -105,6 +109,13 @@ class PositiveIntFormatterValidator(wx.Validator):
         """Sanitize pasted text or programmatic changes."""
         tc = self.GetWindow()
         raw = tc.GetValue()
+
+        # Clear any previous error state when the user types
+        if self._original_bg_color is None:
+            self._original_bg_color = tc.GetBackgroundColour()
+        tc.SetBackgroundColour(self._original_bg_color)
+        tc.SetToolTip("")
+        tc.Refresh()
 
         # Remove anything that isn't a digit
         # We also strip the suffix here if it was pasted in accidentally

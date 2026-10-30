@@ -47,7 +47,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-20.04, windows-latest, macos-latest]
+        os: [ubuntu-22.04, ubuntu-24.04, ubuntu-latest, windows-latest, macos-latest]
 
     steps:
       - name: Checkout code
@@ -116,9 +116,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ steps.reqhash.outputs.reqhash }}
+          key: ${{ matrix.os }}-pip-${{ steps.reqhash.outputs.reqhash }}
           restore-keys: |
-            ${{ runner.os }}-pip-
+            ${{ matrix.os }}-pip-
 
       - name: Install dependencies
         run: |
@@ -135,26 +135,31 @@ jobs:
         run: |
           mkdir release
           cp dist/ed-eXploration-dashboard* release/
+          if [ "${{ runner.os }}" = "Linux" ]; then
+            cp check-compatibility.sh release/
+            cp cachyOS_install_x11_deps.sh release/
+            chmod +x release/*.sh
+          fi
         shell: bash
 
       - name: Archive release for Linux/macOS
         if: runner.os != 'Windows'
         run: |
-          tar -czvf edxd-dashboard-${{ runner.os }}.tar.gz -C release .
+          tar -czvf edxd-dashboard-${{ matrix.os }}.tar.gz -C release .
         shell: bash
 
       - name: Archive release for Windows
         if: runner.os == 'Windows'
         run: |
-          powershell Compress-Archive -Path release\* -DestinationPath edxd-dashboard-${{ runner.os }}.zip
+          powershell Compress-Archive -Path release\* -DestinationPath edxd-dashboard-${{ matrix.os }}.zip
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: edxd-dashboard-${{ runner.os }}
+          name: edxd-dashboard-${{ matrix.os }}
           path: |
-            edxd-dashboard-${{ runner.os }}.tar.gz
-            edxd-dashboard-${{ runner.os }}.zip
+            edxd-dashboard-${{ matrix.os }}.tar.gz
+            edxd-dashboard-${{ matrix.os }}.zip
 
   tag-and-release:
     name: Tag & Create GitHub Release
@@ -249,4 +254,23 @@ jobs:
                 "https://uploads.github.com/repos/Kepas-Beleglorn/EDXD/releases/$RELEASE_ID/assets?name=$filename" \
                 --header "Accept: application/vnd.github.v3+json"
             fi
+          done
+
+      - name: Upload individual scripts to release
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
+        run: |
+          TAG="${{ needs.check-version-commit.outputs.tag }}"
+          RELEASE_ID=$(curl -s \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/Kepas-Beleglorn/EDXD/releases/tags/$TAG | jq -r '.id')
+          
+          for script in check-compatibility.sh cachyOS_install_x11_deps.sh; do
+            curl -X POST \
+              -H "Authorization: token $GITHUB_TOKEN" \
+              -H "Content-Type: application/octet-stream" \
+              --data-binary @"$script" \
+              "https://uploads.github.com/repos/Kepas-Beleglorn/EDXD/releases/$RELEASE_ID/assets?name=$script" \
+              --header "Accept: application/vnd.github.v3+json"
           done

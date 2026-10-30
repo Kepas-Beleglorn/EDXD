@@ -11,9 +11,12 @@ In CI run this before building the binary so the generated module is
 included in the packaged artifact.
 """
 import base64
+import logging
 import sys
 import textwrap
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 ROOT = Path(__file__).resolve().parent
 FONTS_DIR = ROOT / "noto"
@@ -44,13 +47,13 @@ def encode_font(path: Path) -> str:
 
 def main():
     if not FONTS_DIR.exists():
-        print("Fonts directory not found:", FONTS_DIR, file=sys.stderr)
+        logger.error("Fonts directory not found: %s", FONTS_DIR)
         sys.exit(1)
     entries = []
     for f in sorted(FONTS_DIR.glob("*")):
         if f.suffix.lower() not in (".ttf", ".otf"):
             continue
-        print("Embedding", f.name)
+        logger.info("Embedding %s", f.name)
         encoded = encode_font(f)
         # generate as a triple-quoted string so large content is OK
         entry = f'    "{f.name}": base64.b64decode("""\\\n{encoded}\\\n"""),\n'
@@ -58,7 +61,7 @@ def main():
 
     out = HEADER + "".join(entries) + FOOTER
     OUT_FILE.write_text(out, encoding="utf-8")
-    print("Wrote", OUT_FILE)
+    logger.info("Wrote %s", OUT_FILE)
 
 
 if __name__ == "__main__":

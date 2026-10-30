@@ -1,6 +1,3 @@
-import functools
-import inspect
-
 import wx
 
 from EDXD.globals import *
@@ -11,23 +8,10 @@ from EDXD.gui.helper.theme_handler import get_theme
 from EDXD.gui.journal_historian import JournalHistorian
 from EDXD.gui.set_mineral_filter import MineralsFilter
 from EDXD.gui.config import EDXDConfig
+from EDXD.gui.route_plotter import ExplorationItinerary
 
 
-def log_call(level=logging.INFO):
-    """Decorator that logs function name and bound arguments."""
-    def decorator(fn):
-        logger = logging.getLogger(fn.__module__)   # one logger per module
-        sig = inspect.signature(fn)                 # capture once, not on every call
-
-        @functools.wraps(fn)
-        def wrapper(*args, **kwargs):
-            bound = sig.bind_partial(*args, **kwargs)
-            arg_str = ", ".join(f"{k}={v!r}" for k, v in bound.arguments.items())
-            logger.log(level, "%s(%s)", fn.__name__, arg_str)
-            return fn(*args, **kwargs)
-
-        return wrapper
-    return decorator
+logger = logging.getLogger(__name__)
 
 # current version
 try:
@@ -40,6 +24,8 @@ class MainWindowOptions(wx.Panel):
         super().__init__(parent)
         self.parent = parent
         self.theme = get_theme()
+        self.historian = None
+        self.exploration_itinerary = None
 
         self._check_version(self, self.parent.prefs)
 
@@ -70,6 +56,15 @@ class MainWindowOptions(wx.Panel):
         options_box.Add(self.btn_load_history, 0, wx.ALIGN_CENTER_VERTICAL | wx.TOP | wx.BOTTOM, margin)
         self.btn_load_history.Bind(wx.EVT_BUTTON, self._load_all_logs)
 
+        # Show spansh plotter
+        self.btn_show_exploration_itinerary = DynamicButton(parent=self, label="Exploration itinerary",
+                                             size=wx.Size(BTN_WIDTH + self.theme["button_border_width"],
+                                                          BTN_HEIGHT + self.theme["button_border_width"]),
+                                             draw_border=True)
+        margin = self.theme["button_border_margin"] + self.theme["button_border_width"]
+        options_box.Add(self.btn_show_exploration_itinerary, 0, wx.ALIGN_CENTER_VERTICAL | wx.TOP | wx.BOTTOM, margin)
+        self.btn_show_exploration_itinerary.Bind(wx.EVT_BUTTON, self._plot_exploration_itinerary)
+
         # Show config dialog
         self.btn_show_config = DynamicButton(parent=self, label="Configuration",
                                               size=wx.Size(BTN_WIDTH + self.theme["button_border_width"],
@@ -92,13 +87,28 @@ class MainWindowOptions(wx.Panel):
         self.Bind(wx.EVT_PAINT, self._on_paint)
 
     def _load_all_logs(self, event):
-        historian = JournalHistorian(journal_reader=self.parent.journal_reader, journal_controller=self.parent.journal_controller, status_json_watcher=self.parent.status_watcher)
-        historian.Show()
+        if self.historian is None:
+            self.historian = JournalHistorian(journal_reader=self.parent.journal_reader, journal_controller=self.parent.journal_controller, status_json_watcher=self.parent.status_watcher)
+            self.historian.Bind(wx.EVT_CLOSE, lambda evt: setattr(self, 'historian', None) or evt.Skip())
+            self.historian.Show()
+        else:
+            self.historian.Raise()
+            self.historian.SetFocus()
 
     def _edit_config(self, event):
         config_dialog = EDXDConfig(self)
         config_dialog.ShowModal()
         self.parent.update_panels()
+
+    def _plot_exploration_itinerary(self, event):
+        if self.exploration_itinerary is None:
+            self.exploration_itinerary = ExplorationItinerary(self)
+            self.exploration_itinerary.Bind(wx.EVT_CLOSE, lambda evt: setattr(self, 'exploration_itinerary', None) or evt.Skip())
+            self.exploration_itinerary.Show()
+            self.exploration_itinerary.render()
+        else:
+            self.exploration_itinerary.Raise()
+            self.exploration_itinerary.SetFocus()
 
     def _on_paint(self, event):
         dc = wx.PaintDC(self)

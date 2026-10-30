@@ -1,5 +1,6 @@
-
 from __future__ import annotations
+
+import logging
 
 from typing import Optional
 
@@ -14,6 +15,8 @@ from EDXD.gui.helper.theme_handler import get_theme
 from EDXD.gui.helper.window_properties import WindowProperties
 from EDXD.gui.psps_gui_buttons import PSPSButtons
 
+
+logger = logging.getLogger(__name__)
 TITLE = "Planetary Surface Positioning System"
 WINID = "PSPS"
 
@@ -46,21 +49,24 @@ class PositionTracker(DynamicDialog):
         self.window_box.Add(self.buttons, 0, wx.EXPAND | wx.EAST | wx.WEST, RESIZE_MARGIN)
 
         # current position
-        self.txt_current_position = wx.TextCtrl(parent=self.scroll_container, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE)
-        init_widget(self.txt_current_position, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
-        self.txt_current_position.SetEditable(False)
+        #self.txt_current_position = wx.TextCtrl(parent=self.scroll_container, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE)
+        self.txt_current_position = wx.StaticText(parent=self.scroll_container, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE)
+        init_widget(self.txt_current_position, width=props.width, height=props.height, posx=props.posx, posy=props.posy)
+        #self.txt_current_position.SetEditable(False)
         self.window_box.Add(self.txt_current_position, 0, wx.EXPAND | wx.EAST | wx.WEST | wx.SOUTH, RESIZE_MARGIN)
 
         # pinned position
-        self.txt_pinned_position = wx.TextCtrl(parent=self.scroll_container, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE)
-        init_widget(self.txt_pinned_position, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
-        self.txt_pinned_position.SetEditable(False)
+        #self.txt_pinned_position = wx.TextCtrl(parent=self.scroll_container, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE)
+        self.txt_pinned_position = wx.StaticText(parent=self.scroll_container, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE)
+        init_widget(self.txt_pinned_position, width=props.width, height=props.height, posx=props.posx, posy=props.posy)
+        #self.txt_pinned_position.SetEditable(False)
         self.window_box.Add(self.txt_pinned_position, 0, wx.EXPAND | wx.EAST | wx.WEST | wx.SOUTH, RESIZE_MARGIN)
 
         # distance to target
-        self.txt_distance_to_target = wx.TextCtrl(parent=self.scroll_container, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE)
-        init_widget(self.txt_distance_to_target, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
-        self.txt_distance_to_target.SetEditable(False)
+        #self.txt_distance_to_target = wx.TextCtrl(parent=self.scroll_container, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE)
+        self.txt_distance_to_target = wx.StaticText(parent=self.scroll_container, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE)
+        init_widget(self.txt_distance_to_target, width=props.width, height=props.height, posx=props.posx, posy=props.posy)
+        #self.txt_distance_to_target.SetEditable(False)
         self.window_box.Add(self.txt_distance_to_target, 0, wx.EXPAND | wx.EAST | wx.WEST | wx.SOUTH, RESIZE_MARGIN)
 
         self.finalize_layout()
@@ -74,9 +80,9 @@ class PositionTracker(DynamicDialog):
     # ------------------------------------------------------------------
     def render(self, body: Optional[Body], current_position: Optional[PSPSCoordinates], current_heading: Optional[int]) -> None:
         self.lbl_body.SetLabelText(text=body.body_name if body else "")
-        self.txt_pinned_position.Clear()
-        self.txt_current_position.Clear()
-        self.txt_distance_to_target.Clear()
+        self.txt_pinned_position.SetLabelText("")
+        self.txt_current_position.SetLabelText("")
+        self.txt_distance_to_target.SetLabelText("")
 
         if current_position:
             self.current_position = current_position
@@ -85,26 +91,26 @@ class PositionTracker(DynamicDialog):
             current_ok: bool = False
             pinned_ok: bool = False
             if self.current_position.latitude and self.current_position.longitude:
-                self.txt_current_position.SetValue(f"{ICONS['status_target']} Lat: {self.current_position.latitude:.5f}° :: Long: {self.current_position.longitude:.5f}°")
+                self.txt_current_position.SetLabelText(f"{ICONS['status_target']} Lat: {self.current_position.latitude:.5f}° :: Long: {self.current_position.longitude:.5f}°")
                 current_ok = True
             else:
                 self.current_position = None
                 self.pinned_position = None
-                self.txt_current_position.Clear()
-                self.txt_pinned_position.Clear()
-                self.txt_distance_to_target.Clear()
+                self.txt_current_position.SetLabelText("")
+                self.txt_pinned_position.SetLabelText("")
+                self.txt_distance_to_target.SetLabelText("")
 
             if current_ok and self.pinned_position and self.pinned_position.latitude is not None and self.pinned_position.longitude is not None:
-                self.txt_pinned_position.SetValue(f"{ICONS['pinned']} Lat: {self.pinned_position.latitude:.5f}° :: Long: {self.pinned_position.longitude:.5f}°")
+                self.txt_pinned_position.SetLabelText(f"{ICONS['pinned']} Lat: {self.pinned_position.latitude:.5f}° :: Long: {self.pinned_position.longitude:.5f}°")
                 pinned_ok = True
             if current_ok and pinned_ok:
                 formatted_distance = self.psps.get_distance(current_coordinates=self.current_position, target_coordinates=self.pinned_position)
                 bearing_indicator = self.psps.get_relative_bearing(self.current_position, current_heading=current_heading)
-                self.txt_distance_to_target.SetValue(f"Distance: {bearing_indicator} {formatted_distance}")
+                self.txt_distance_to_target.SetLabelText(f"Distance: {bearing_indicator} {formatted_distance}")
         else:
-            self.txt_pinned_position.Clear()
-            self.txt_current_position.Clear()
-            self.txt_distance_to_target.Clear()
+            self.txt_pinned_position.SetLabelText("")
+            self.txt_current_position.SetLabelText("")
+            self.txt_distance_to_target.SetLabelText("")
             self.current_position = None
             self.pinned_position = None
             self.psps = None

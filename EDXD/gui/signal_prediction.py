@@ -1,5 +1,6 @@
-
 from __future__ import annotations
+
+import logging
 
 from typing import Dict, List, Set
 
@@ -13,6 +14,8 @@ from EDXD.gui.helper.window_properties import WindowProperties
 from EDXD.gui.helper.collapsible_panel import CollapsiblePanel
 from EDXD.data_handler.helper.bio_helper import get_genus_value_range
 import EDXD.data_handler.helper.data_helper as dh
+
+logger = logging.getLogger(__name__)
 
 TITLE = "Biosignal prediction"
 WINID = "BIOSIGNAL_PREDICTION"
@@ -108,11 +111,11 @@ class SignalPrediction(DynamicDialog):
             else:
                 genus_value_string = f"  {genus_value:,} Cr"
 
-            prediction_panel.add_table_item(f"  {genus_name}")
-            prediction_panel.add_table_item(f" {genus_variant}")
-            self._set_probability_colour(prediction_panel.add_table_item(f"  {dh.format_probability(genus_probability)}", align=wx.ALIGN_RIGHT), genus_probability)
-            prediction_panel.add_table_item(f"  {genus_value_string}", align=wx.ALIGN_RIGHT)
-            prediction_panel.add_table_item("")
+            prediction_panel.add_table_item_label(f"  {genus_name}")
+            prediction_panel.add_table_item_label(f" {genus_variant}")
+            self._set_probability_colour(prediction_panel.add_table_item_label(f"  {dh.format_probability(genus_probability)}", align=wx.ALIGN_RIGHT), genus_probability)
+            prediction_panel.add_table_item_label(f"  {genus_value_string}", align=wx.ALIGN_RIGHT)
+            prediction_panel.add_table_item_label("")
 
 
         if prediction_panel.IsShown():

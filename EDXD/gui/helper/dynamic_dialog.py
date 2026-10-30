@@ -1,5 +1,3 @@
-import functools
-import inspect
 import wx
 
 from EDXD.globals import logging
@@ -8,21 +6,7 @@ from EDXD.gui.helper.icon_loader import make_icon_bundle
 from EDXD.gui.helper.window_properties import WindowProperties
 
 
-def log_call(level=logging.INFO):
-    def decorator(fn):
-        logger = logging.getLogger(fn.__module__)
-        sig = inspect.signature(fn)
-
-        @functools.wraps(fn)
-        def wrapper(*args, **kwargs):
-            bound = sig.bind_partial(*args, **kwargs)
-            arg_str = ", ".join(f"{k}={v!r}" for k, v in bound.arguments.items())
-            logger.log(level, "%s(%s)", fn.__name__, arg_str)
-            return fn(*args, **kwargs)
-
-        return wrapper
-
-    return decorator
+logger = logging.getLogger(__name__)
 
 
 class DynamicDialog(wx.Dialog):

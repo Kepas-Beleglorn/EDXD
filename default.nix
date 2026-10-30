@@ -12,7 +12,7 @@ python.pkgs.buildPythonPackage {
 
   doCheck = false;
 
-  pythonRelaxDeps = [ "tomli" "filelock" ];
+  pythonRelaxDeps = [ "tomli" "filelock" "PyWinCtl" ];
   nativeBuildInputs = [ python.pkgs.pythonRelaxDepsHook ];
 
   pyproject = true;
@@ -55,12 +55,21 @@ python.pkgs.buildPythonPackage {
     python.pkgs.watchdog
     python.pkgs.wxpython
     python.pkgs.filelock
+    python.pkgs.requests
+    python.pkgs.matplotlib
+    python.pkgs.seaborn
+    python.pkgs.pandas
   ];
 
   propagatedBuildInputs = [
+    python.pkgs.pywinctl
     python.pkgs.tomli
     python.pkgs.watchdog
     python.pkgs.wxpython
     python.pkgs.filelock
+    python.pkgs.requests
+    python.pkgs.matplotlib
+    python.pkgs.seaborn
+    python.pkgs.pandas
   ];
 }

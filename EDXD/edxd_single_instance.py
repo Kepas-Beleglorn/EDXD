@@ -16,12 +16,15 @@ This module:
 from __future__ import annotations
 
 import atexit
+import logging
 import os
 import signal
 import socket
 import sys
 from pathlib import Path
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 # try filelock
 try:
@@ -85,6 +88,8 @@ class SingleInstance:
         else:
             raise ValueError("unknown method: %r" % self.method)
 
+        logger.info("Lock acquired using %s method", self.method)
+
         # register cleanup and signal handlers so lock is released
         atexit.register(self.release)
         for sig in (signal.SIGINT, signal.SIGTERM):
@@ -102,8 +107,7 @@ class SingleInstance:
             lock.acquire(timeout=0)  # timeout=0 -> raise immediately if locked
         except Timeout:
             # another instance is running
-            # lightweight, non-verbose exit (change to logging if you prefer)
-            print("EDXD is already running (file lock). Exiting.")
+            logger.warning("EDXD is already running (file lock). Exiting.")
             sys.exit(0)
         self._file_lock = lock
         self._locked = True
@@ -117,7 +121,7 @@ class SingleInstance:
             s.bind(("127.0.0.1", self.socket_port))
             s.listen(1)
         except OSError:
-            print(f"EDXD is already running (socket {self.socket_port}). Exiting.")
+            logger.warning("EDXD is already running (socket %d). Exiting.", self.socket_port)
             try:
                 s.close()
             except Exception:
@@ -153,6 +157,7 @@ class SingleInstance:
                 pass
             self._socket = None
         self._locked = False
+        logger.info("Lock released")
 
     def is_locked(self) -> bool:
         return self._locked

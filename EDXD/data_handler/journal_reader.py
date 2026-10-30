@@ -1,7 +1,10 @@
+import logging
 import threading, time, queue
 import EDXD.data_handler.helper.data_helper as dh
 from EDXD.data_handler.helper.pausable_thread import PausableThread
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # tailer thread – reads the newest Journal file
@@ -13,6 +16,7 @@ class JournalReader(PausableThread, threading.Thread):
         self.queue  = out_queue
         self.fp     = None
         self.cur    = None
+        logger.info("Journal reader initialized for folder: %s", folder)
 
     def _process_data(self):
         if self.fp is None:
@@ -21,6 +25,7 @@ class JournalReader(PausableThread, threading.Thread):
                 time.sleep(1)
                 return
             self.fp = self.cur.open("r", encoding="utf-8")  # start at top
+            logger.info("Journal file opened: %s", self.cur.name)
 
         line = self.fp.readline()
         if line:
@@ -31,5 +36,6 @@ class JournalReader(PausableThread, threading.Thread):
                 self.fp.close()
                 self.cur = lat
                 self.fp = self.cur.open("r", encoding="utf-8")
+                logger.info("New journal detected: %s", self.cur.name)
             else:
                 time.sleep(0.2)
