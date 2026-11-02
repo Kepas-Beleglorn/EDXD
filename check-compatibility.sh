@@ -20,6 +20,6 @@ elif [ $VERSION_NUM -lt 243 ]; then
     echo "✅ Compatible with: edxd-dashboard-ubuntu-24.04.tar.gz"
     echo "   (Ubuntu 24.04, Linux Mint 22, ZorinOS 17, etc.)"
 else
-    echo "✅ Compatible with: edxd-dashboard-ubuntu-latest.tar.gz"
+    echo "✅ Compatible with: edxd-dashboard-ubuntu-26.04.tar.gz"
     echo "   (Ubuntu 26.04+, newest distributions)"
 fi
