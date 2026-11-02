@@ -1,0 +1,6 @@
+ED BUGS for Bug Tacker
+
+NavRoute.json not being updated on "re-calculate route"
+[journal] { "timestamp":"2026-09-16T18:51:02Z", "event":"NavRoute" }
+[journal] { "timestamp":"2026-09-16T18:51:02Z", "event":"FSDTarget", "Name":"LHS 3163", "SystemAddress":3515170687339, "StarClass":"DA", "RemainingJumpsInRoute":110 }
+[journal] { "timestamp":"2026-09-16T18:51:18Z", "event":"FSDTarget", "Name":"Kenyalivun", "SystemAddress":5306465719002, "StarClass":"G", "RemainingJumpsInRoute":138 }
