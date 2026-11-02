@@ -26,7 +26,7 @@
 |--------|-------|-------------|---------|
 | ubuntu-22.04 | 2.35 | 22.04 LTS | Ubuntu 22.04, Linux Mint 21, Debian 12 |
 | ubuntu-24.04 | 2.39 | 24.04 LTS | Ubuntu 24.04, Linux Mint 22, ZorinOS 17, Fedora 40 |
-| ubuntu-latest | 2.43+ | 26.04 | Ubuntu 26.04+, latest distributions |
+| ubuntu-26.04 | 2.43+ | 26.04 LTS | Ubuntu 26.04+, latest distributions |
 
 **Don't know which to use?** Run: `bash check-compatibility.sh`
 
@@ -45,6 +45,7 @@ options:
   --version            show program's version number and exit
   --portable           Portable mode. All configs and data will be stored in
                        the directory where the binary resides
+  --debug              temporarily  set loglevel to DEBUG
 ```
 
 On first run, after you set the path to your journal files in the configuration, you should start the "Journal Historian" to process all of your available journal files. Same goes for major updates of EDXD, as newer versions process more data from the journals. 
