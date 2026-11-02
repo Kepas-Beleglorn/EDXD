@@ -2,7 +2,6 @@
 import os
 import sys
 
-os.environ['GIO_USE_VFS'] = 'local'
 os.environ.pop("GTK_IM_MODULE", None)
 
 # Handle Wayland/X11 backend selection - MUST be before ANY wx import
