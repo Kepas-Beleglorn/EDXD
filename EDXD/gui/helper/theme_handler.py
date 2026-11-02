@@ -45,9 +45,10 @@ def _get_dark_theme():
     return ed_dark_theme
 
 def apply_theme(widget):
+    # Name-based matching (explicit names set by init_widget or Dynamic* classes)
     if widget.Name == "frame":
         _apply_theme_to_frame(widget)
-    if widget.Name == "dialog":
+    elif widget.Name == "dialog":
         _apply_theme_to_dialog(widget)
     elif widget.Name == "panel":
         _apply_theme_to_panel(widget)
@@ -69,6 +70,21 @@ def apply_theme(widget):
         _apply_theme_to_spin(widget)
     elif widget.Name == "themed_slider":
         _apply_theme_to_slider(widget)
+    # Fallback: type-based matching for widgets created without an explicit name
+    elif isinstance(widget, wx.StaticText):
+        _apply_theme_to_static_text(widget)
+    elif isinstance(widget, wx.TextCtrl):
+        _apply_theme_to_text(widget)
+    elif isinstance(widget, wx.ComboBox):
+        _apply_theme_to_combobox(widget)
+    elif isinstance(widget, wx.DirPickerCtrl):
+        _apply_theme_to_dirpickerctrl(widget)
+    elif isinstance(widget, wx.SpinCtrl):
+        _apply_theme_to_spin(widget)
+    elif isinstance(widget, wx.grid.Grid):
+        _apply_theme_to_grid(widget)
+    elif isinstance(widget, (buttons.GenButton, buttons.GenBitmapButton)):
+        _apply_theme_to_button(widget)
     else:
         return
 
@@ -77,18 +93,33 @@ def _apply_theme_to_frame(widget: wx.Frame):
     widget.SetBackgroundColour(theme["background"])
     widget.SetForegroundColour(theme["foreground"])
     #widget.SetIcon(wx.Icon(ICON_PATH.as_posix(), wx.BITMAP_TYPE_ICO))
+    # Recursively theme all child widgets
+    _apply_theme_to_children(widget)
 
 def _apply_theme_to_dialog(widget: wx.Dialog):
     theme = get_theme()
     widget.SetBackgroundColour(theme["background"])
     widget.SetForegroundColour(theme["foreground"])
     #widget.SetIcon(wx.Icon(ICON_PATH.as_posix(), wx.BITMAP_TYPE_ICO))
+    # Recursively theme all child widgets
+    _apply_theme_to_children(widget)
 
 def _apply_theme_to_panel(widget: wx.Panel):
     theme = get_theme()
     widget.SetBackgroundColour(theme["background"])
     widget.SetForegroundColour(theme["foreground"])
     widget.SetFont(theme["font_bold"])
+    # Recursively theme all child widgets
+    _apply_theme_to_children(widget)
+
+
+def _apply_theme_to_children(parent):
+    """Recursively apply theme to all child widgets of a parent."""
+    for child in parent.GetChildren():
+        apply_theme(child)
+        # Recurse into containers that may have their own children
+        if isinstance(child, (wx.Panel, wx.Window)):
+            _apply_theme_to_children(child)
 
 def _apply_theme_to_gauge(widget: wx.Gauge):
     pass

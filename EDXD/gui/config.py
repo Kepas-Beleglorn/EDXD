@@ -250,14 +250,23 @@ class EDXDConfig(DynamicDialog):
         self.finalize_layout()
 
     def restart_app(self):
-        """Restart the application by replacing the current process."""
+        """Restart the application by launching a new process."""
         # Close all wx windows gracefully first
         for top_level in wx.GetTopLevelWindows():
             top_level.Close(force=True)
 
-        # Replace current process with new instance
-        os.execv(sys.executable, sys.argv)
-        # Code after execv never runs unless it fails
+        if getattr(sys, "frozen", False):
+            # PyInstaller frozen build: use the original executable path
+            # os.execv() is problematic with --onefile on Windows because the temp
+            # extraction directory may not be fully released, causing ModuleNotFoundError
+            # for built-in modules (e.g., 'select') in the new process.
+            # Use subprocess.Popen() instead to properly spawn a new process.
+            exe_path = os.path.abspath(sys.argv[0])
+            args = [exe_path] + sys.argv[1:]
+            subprocess.Popen(args)
+        else:
+            # Running from source: use Python interpreter with os.execv()
+            os.execv(sys.executable, sys.argv)
 
     def _load_config(self):
         self.cfg = json.loads(CFG_FILE.read_text()) if CFG_FILE.exists() else {}
