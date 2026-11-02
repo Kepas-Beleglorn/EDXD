@@ -96,6 +96,7 @@ jobs:
           elif apt-cache show libwebkit2gtk-4.0-dev >/dev/null 2>&1; then
             sudo apt-get install -y libwebkit2gtk-4.0-dev
           fi
+
       - name: Extract version & bake into EDXD/_version.py
         id: ver
         shell: bash
