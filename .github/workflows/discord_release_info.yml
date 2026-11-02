@@ -16,6 +16,7 @@ jobs:
         id: release
         env:
           EVENT_NAME: ${{ github.event_name }}
+          GH_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
         run: |
           if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
             release_json=$(gh api "repos/$GITHUB_REPOSITORY/releases/latest")
