@@ -3,19 +3,40 @@ name: Update Discord release message
 on:
   release:
     types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   update-discord:
     runs-on: ubuntu-latest
     steps:
+      - name: Resolve release
+        id: release
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            release_json=$(gh api "repos/$GITHUB_REPOSITORY/releases/latest")
+          else
+            release_json=$(jq -c '.release' "$GITHUB_EVENT_PATH")
+          fi
+
+          {
+            echo "tag_name=$(jq -r '.tag_name' <<< "$release_json")"
+            echo "html_url=$(jq -r '.html_url' <<< "$release_json")"
+            echo "body_b64=$(jq -r '(.body // "") | @base64' <<< "$release_json")"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Build Discord payload
         id: payload
+        env:
+          RELEASE_TAG: ${{ steps.release.outputs.tag_name }}
+          RELEASE_URL: ${{ steps.release.outputs.html_url }}
+          RELEASE_BODY_B64: ${{ steps.release.outputs.body_b64 }}
         run: |
-          # Put the release body into a shell variable *with* newlines
-          desc=$(cat << 'EOF'
-          ${{ github.event.release.body }}
-          EOF
-          )
+          desc=$(printf '%s' "$RELEASE_BODY_B64" | base64 --decode)
 
           # Discord embed descriptions are limited to 4096 characters.
           desc_length=$(jq -nr --arg desc "$desc" '$desc | length')
@@ -24,26 +45,25 @@ jobs:
             desc=$(jq -nr --arg desc "$desc" '$desc[:4000] + "..."')
           fi
 
-          # Use jq to build valid JSON and escape newlines properly
           jq -n \
-          --arg title "EDXD ${{ github.event.release.tag_name }} released" \
-          --arg url   "${{ github.event.release.html_url }}" \
-          --arg desc  "$desc" \
-          '{
-            content: "",
-            embeds: [{
-              title: $title,
-              url:   $url,
-              description: $desc
-            }]
-          }' > payload.json
+            --arg title "EDXD $RELEASE_TAG released" \
+            --arg url "$RELEASE_URL" \
+            --arg desc "$desc" \
+            '{
+              content: "",
+              embeds: [{
+                title: $title,
+                url: $url,
+                description: $desc
+              }]
+            }' > payload.json
 
       - name: Edit pinned Discord message
+        env:
+          WEBHOOK_ANNOUNCEMENT_URL: ${{ secrets.DISCORD_WEBHOOK_ANNOUNCE_URL }}
+          WEBHOOK_PINNED_URL: ${{ secrets.DISCORD_WEBHOOK_PINNED_URL }}
+          MESSAGE_PINNED_ID: ${{ secrets.DISCORD_MESSAGE_ID }}
         run: |
-          WEBHOOK_ANNOUNCEMENT_URL="${{ secrets.DISCORD_WEBHOOK_ANNOUNCE_URL }}"
-          WEBHOOK_PINNED_URL="${{ secrets.DISCORD_WEBHOOK_PINNED_URL }}"
-          MESSAGE_PINNED_ID="${{ secrets.DISCORD_MESSAGE_ID }}"
-
           curl -X PATCH \
                -H "Content-Type: application/json" \
                -d @payload.json \
@@ -53,3 +73,4 @@ jobs:
                -H "Content-Type: application/json" \
                -d @payload.json \
                "$WEBHOOK_ANNOUNCEMENT_URL"
+          
