@@ -1,8 +1,30 @@
 #!/usr/bin/env python3
 import os
 import sys
+from pathlib import Path
 
 os.environ.pop("GTK_IM_MODULE", None)
+
+# Workaround for wxPython + GTK3 + KDE Plasma crashes:
+# On KDE, the default GTK theme negotiation can trigger GTK3 text attribute
+# assertion failures (e.g., gtk_text_attributes_ref: assertion 'values != NULL' failed).
+# Explicitly setting the Breeze GTK theme avoids these issues because Breeze is the
+# native KDE GTK theme and is properly tested with wxPython on KDE.
+# See: https://github.com/flathub/org.gtk.Gtk3theme.Breeze/issues/170
+desktop_env = os.getenv("XDG_CURRENT_DESKTOP", "")
+if "KDE" in desktop_env:
+    # Detect dark mode preference from GTK3 settings
+    prefer_dark = False
+    gtk_settings = Path(os.getenv("XDG_CONFIG_HOME", str(Path.home() / ".config"))) / "gtk-3.0" / "settings.ini"
+    if gtk_settings.is_file():
+        try:
+            for line in gtk_settings.read_text(encoding="utf-8").splitlines():
+                if line.strip().startswith("gtk-application-prefer-dark-theme"):
+                    prefer_dark = line.strip().split("=", 1)[1].strip().lower() in ("true", "yes", "1")
+                    break
+        except Exception:
+            pass
+    os.environ["GTK_THEME"] = "Breeze-Dark" if prefer_dark else "Breeze"
 
 # Handle Wayland/X11 backend selection - MUST be before ANY wx import
 if 'WAYLAND_DISPLAY' in os.environ:
