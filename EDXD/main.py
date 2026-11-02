@@ -12,14 +12,6 @@ if 'WAYLAND_DISPLAY' in os.environ:
     # Don't set DISPLAY here - let the system handle it
     print("🖥️  Wayland detected. Forcing X11 backend...")
 
-# Workaround for wxPython + GTK3 + KDE Plasma crashes:
-# The Breeze GTK theme engine can cause segfaults in wxPython's MainLoop().
-# Force Adwaita theme on KDE to avoid the crash.
-# See: https://github.com/wxWidgets/Phoenix/issues/2455
-desktop_env = os.getenv("XDG_CURRENT_DESKTOP", "")
-if "KDE" in desktop_env:
-    os.environ["GTK_THEME"] = "Adwaita"
-
 # Initialize logging early, before any other module logs
 from EDXD.globals import setup_logging
 setup_logging()
