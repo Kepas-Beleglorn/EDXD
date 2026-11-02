@@ -90,7 +90,7 @@ jobs:
 
       - name: Build with PyInstaller
         run: |
-          pyinstaller --onefile --exclude-system-libraries EDXD/main.py --name ed-eXploration-dashboard
+          pyinstaller --onefile EDXD/main.py --name ed-eXploration-dashboard
         shell: bash
 
       - name: Prepare release directory
