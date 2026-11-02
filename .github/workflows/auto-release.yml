@@ -70,7 +70,7 @@ jobs:
             echo "reqhash=$reqhash" >> $GITHUB_OUTPUT
           else
             if [ -f pyproject.toml ]; then
-              reqhash=$(python -c "import hashlib,sys;print(hashlib.sha256(open('pyprooject.toml','rb').read()).hexdigest())")
+              reqhash=$(python -c "import hashlib,sys;print(hashlib.sha256(open('pyproject.toml','rb').read()).hexdigest())")
               echo "reqhash=$reqhash" >> $GITHUB_OUTPUT
             else
               echo "reqhash=missing" >> $GITHUB_OUTPUT
