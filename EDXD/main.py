@@ -14,11 +14,22 @@ if 'WAYLAND_DISPLAY' in os.environ:
 
 # Workaround for wxPython + GTK3 + KDE Plasma crashes:
 # The Breeze GTK theme engine can cause segfaults in wxPython's MainLoop().
-# Force Adwaita theme on KDE to avoid the crash.
+# Force Adwaita theme on KDE to avoid the crash, respecting dark mode preference.
 # See: https://github.com/wxWidgets/Phoenix/issues/2455
 desktop_env = os.getenv("XDG_CURRENT_DESKTOP", "")
 if "KDE" in desktop_env:
-    os.environ["GTK_THEME"] = "Adwaita"
+    # Detect dark mode preference from GTK3 settings
+    prefer_dark = False
+    gtk_settings = Path(os.getenv("XDG_CONFIG_HOME", str(Path.home() / ".config"))) / "gtk-3.0" / "settings.ini"
+    if gtk_settings.is_file():
+        try:
+            for line in gtk_settings.read_text(encoding="utf-8").splitlines():
+                if line.strip().startswith("gtk-application-prefer-dark-theme"):
+                    prefer_dark = line.strip().split("=", 1)[1].strip().lower() in ("true", "yes", "1")
+                    break
+        except Exception:
+            pass
+    os.environ["GTK_THEME"] = "Adwaita:Dark" if prefer_dark else "Adwaita"
 
 # Initialize logging early, before any other module logs
 from EDXD.globals import setup_logging
