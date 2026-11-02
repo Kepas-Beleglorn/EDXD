@@ -17,5 +17,4 @@
 SCREENSHOTS TO UPDATE
 - Main window
 - Biosign predictor
-- about
 -> After that: clear cloudflare cache
