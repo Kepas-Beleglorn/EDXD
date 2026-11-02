@@ -15,6 +15,4 @@
 - Spansh Route:                                https://img.edxd.app/apps/files_sharing/publicpreview/zQF7gCZzKYASJec?file=/&fileId=85536&x=-1&y=-1
 
 SCREENSHOTS TO UPDATE
-- Main window
-- Biosign predictor
 -> After that: clear cloudflare cache
