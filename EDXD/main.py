@@ -3,27 +3,8 @@ import os
 import sys
 from pathlib import Path
 
+os.environ['GIO_MODULE_SKIP'] = 'gvfs'
 os.environ.pop("GTK_IM_MODULE", None)
-
-# Workaround for wxPython + GTK3 + KDE Plasma crashes in PyInstaller --onefile builds:
-# When wxPython is bundled via PyInstaller, the GTK theme negotiation can trigger
-# CSS inheritance assertion failures on KDE. Only apply this workaround for frozen
-# builds — local/source builds use system wxPython which works correctly.
-if getattr(sys, "frozen", False):
-    desktop_env = os.getenv("XDG_CURRENT_DESKTOP", "")
-    if "KDE" in desktop_env:
-        # Detect dark mode preference from GTK3 settings
-        prefer_dark = False
-        gtk_settings = Path(os.getenv("XDG_CONFIG_HOME", str(Path.home() / ".config"))) / "gtk-3.0" / "settings.ini"
-        if gtk_settings.is_file():
-            try:
-                for line in gtk_settings.read_text(encoding="utf-8").splitlines():
-                    if line.strip().startswith("gtk-application-prefer-dark-theme"):
-                        prefer_dark = line.strip().split("=", 1)[1].strip().lower() in ("true", "yes", "1")
-                        break
-            except Exception:
-                pass
-        os.environ["GTK_THEME"] = "Breeze-Dark" if prefer_dark else "Breeze"
 
 # Handle Wayland/X11 backend selection - MUST be before ANY wx import
 if 'WAYLAND_DISPLAY' in os.environ:
