@@ -192,31 +192,12 @@ def setup_logging() -> Path:
         header_lines.append(f"Old logs cleaned: {old_count} files removed")
     header_lines.append("=" * 40)
 
-    # Write header to file handler directly, bypassing log level filtering
+    # Write header to all handlers directly, bypassing log level filtering
+    header_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     for handler in root_logger.handlers:
-        if isinstance(handler, logging.FileHandler):
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            for line in header_lines:
-                handler.stream.write(f"{timestamp} | INFO     | EDXD.globals | {line}\n")
-            handler.stream.flush()
-            break
-
-    # Also log to console/logger for backward compatibility
-    logger.info("=" * 40)
-    logger.info("EDXD %s starting", __version__)
-    logger.info("Python %s (%s)", platform.python_version(), platform.python_compiler())
-    logger.info("OS: %s", platform.platform())
-    logger.info("Display: %s / Desktop: %s", display_server, desktop_env)
-    logger.info("Portable mode: %s", getattr(sys, "portable", False))
-    logger.info("Log directory: %s", mask_home(LOG_DIR))
-    logger.info("Log file: %s", log_filename)
-    logger.info("Log level: %s", log_level_str)
-    logger.debug("Root logger level: %d (%s)", root_logger.level, logging.getLevelName(root_logger.level))
-    logger.debug("Handler count: %d, levels: %s", len(root_logger.handlers),
-                 [logging.getLevelName(h.level) for h in root_logger.handlers])
-    if old_count > 0:
-        logger.info("Old logs cleaned: %d files removed", old_count)
-    logger.info("=" * 40)
+        for line in header_lines:
+            handler.stream.write(f"{header_timestamp} | INFO     | EDXD.globals | {line}\n")
+        handler.stream.flush()
 
     return LOG_DIR
 
