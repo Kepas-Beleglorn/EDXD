@@ -27,11 +27,20 @@ except Exception:
 # ---------------------------------------------------------------------------
 class AboutInfo(DynamicDialog):
     def __init__(self, parent, prefs: Dict):
-        # 1. Load saved properties (or use defaults)
+
         props = WindowProperties.load(WINID, default_height=DEFAULT_HEIGHT_ABOUT, default_width=DEFAULT_WIDTH_ABOUT, default_posx=DEFAULT_POS_X, default_posy=DEFAULT_POS_Y)
         DynamicDialog.__init__(self, parent=parent, style=wx.NO_BORDER | wx.FRAME_SHAPED | wx.STAY_ON_TOP, title=TITLE, win_id=WINID, show_minimize=False, show_maximize=False, show_close=True)
         # 2. Apply geometry
         init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
+
+        max_height = wx.Size(-1, DEFAULT_HEIGHT_ABOUT)
+        min_width = wx.Size(DEFAULT_WIDTH_ABOUT, -1)
+        if props.width < min_width.width:
+            props.width = min_width.width
+        if props.height > max_height.height:
+            props.height = max_height.height
+        self.SetMinSize(min_width)
+        self.SetMaxSize(max_height)
 
         self.theme = get_theme()
         self.parent = parent
@@ -69,6 +78,24 @@ class AboutInfo(DynamicDialog):
         self.txt_edcodex_tool = LinkLabel(self.scroll_container)
         self.window_box.Add(self.txt_edcodex_tool, 0, wx.EXPAND | wx.EAST | wx.WEST, RESIZE_MARGIN + 10)
 
+        # spansh hint
+        self.txt_spansh = wx.StaticText(parent=self.scroll_container,
+                                             style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE)
+        self.window_box.Add(self.txt_spansh, 0, wx.EXPAND | wx.EAST | wx.WEST | wx.NORTH, RESIZE_MARGIN + 10)
+
+        # link to spansh
+        self.txt_spansh_tool = LinkLabel(self.scroll_container)
+        self.window_box.Add(self.txt_spansh_tool, 0, wx.EXPAND | wx.EAST | wx.WEST, RESIZE_MARGIN + 10)
+
+        # EDSM hint
+        self.txt_edsm = wx.StaticText(parent=self.scroll_container,
+                                             style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE)
+        self.window_box.Add(self.txt_edsm, 0, wx.EXPAND | wx.EAST | wx.WEST | wx.NORTH, RESIZE_MARGIN + 10)
+
+        # link to EDSM
+        self.txt_edsm_tool = LinkLabel(self.scroll_container)
+        self.window_box.Add(self.txt_edsm_tool, 0, wx.EXPAND | wx.EAST | wx.WEST, RESIZE_MARGIN + 10)
+
         # close button
         hbox = wx.BoxSizer(wx.HORIZONTAL)
         btn_close = DynamicButton(parent=self.scroll_container, label="Close", size=wx.Size(BTN_WIDTH + self.theme["button_border_width"], BTN_HEIGHT + self.theme["button_border_width"]), draw_border=True)
@@ -95,13 +122,13 @@ class AboutInfo(DynamicDialog):
         else:
             self.txt_edxd_update.SetLabelText(f"Congratulations! EDXD is up to date.")
 
-        str_git_project = f"https://github.com/{GIT_OWNER}/{GIT_REPO}"
-        str_git_release = f"{str_git_project}/releases/latest"
 
+        str_git_project = f"https://github.com/{GIT_OWNER}/{GIT_REPO}"
         self.txt_edxd_proj.SetLabelText("Project on github:")
         self.txt_git_proj.SetLabelText(f"{str_git_project}")
         self.txt_git_proj.url = f"{str_git_project}"
 
+        str_git_release = f"{str_git_project}/releases/latest"
         self.txt_edxd_latest.SetLabelText("Latest release:")
         self.txt_git_release.SetLabelText(f"{str_git_release}")
         self.txt_git_release.url = f"{str_git_release}"
@@ -110,4 +137,14 @@ class AboutInfo(DynamicDialog):
         self.txt_edcodex.SetLabelText("Project on edcodex.info:")
         self.txt_edcodex_tool.SetLabelText(f"{str_edcodex}")
         self.txt_edcodex_tool.url = f"{str_edcodex}"
+
+        str_spansh = f"https://spansh.co.uk"
+        self.txt_spansh.SetLabelText("Galactic navigation powered by spansh")
+        self.txt_spansh_tool.SetLabelText(f"{str_spansh}")
+        self.txt_spansh_tool.url = f"{str_spansh}"
+
+        str_edsm = f"https://edsm.net"
+        self.txt_edsm.SetLabelText("Galactic data enrichment powered by EDSM")
+        self.txt_edsm_tool.SetLabelText(f"{str_edsm}")
+        self.txt_edsm_tool.url = f"{str_edsm}"
 
