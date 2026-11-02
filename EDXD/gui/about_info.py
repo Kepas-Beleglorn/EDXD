@@ -33,14 +33,13 @@ class AboutInfo(DynamicDialog):
         # 2. Apply geometry
         init_widget(self, width=props.width, height=props.height, posx=props.posx, posy=props.posy, title=TITLE)
 
-        max_height = wx.Size(-1, DEFAULT_HEIGHT_ABOUT)
-        min_width = wx.Size(DEFAULT_WIDTH_ABOUT, -1)
-        if props.width < min_width.width:
-            props.width = min_width.width
-        if props.height > max_height.height:
-            props.height = max_height.height
-        self.SetMinSize(min_width)
-        self.SetMaxSize(max_height)
+        min_size = wx.Size(DEFAULT_WIDTH_ABOUT, DEFAULT_HEIGHT_ABOUT)
+        if props.width < min_size.width:
+            props.width = min_size.width
+        if props.height < min_size.height:
+            props.height = min_size.height
+        self.SetMinSize(min_size)
+        self.SetSize(min_size)
 
         self.theme = get_theme()
         self.parent = parent
