@@ -173,8 +173,35 @@ def setup_logging() -> Path:
     # Get module logger for header
     logger = logging.getLogger("EDXD.globals")
 
-    # Write log header
+    # Write log header directly to file, regardless of log level
     display_server, desktop_env = get_display_info()
+    header_lines = [
+        "=" * 40,
+        f"EDXD {__version__} starting",
+        f"Python {platform.python_version()} ({platform.python_compiler()})",
+        f"OS: {platform.platform()}",
+        f"Display: {display_server} / Desktop: {desktop_env}",
+        f"Portable mode: {getattr(sys, 'portable', False)}",
+        f"Log directory: {mask_home(LOG_DIR)}",
+        f"Log file: {log_filename}",
+        f"Log level: {log_level_str}",
+        f"Root logger level: {root_logger.level} ({logging.getLevelName(root_logger.level)})",
+        f"Handler count: {len(root_logger.handlers)}, levels: {[logging.getLevelName(h.level) for h in root_logger.handlers]}",
+    ]
+    if old_count > 0:
+        header_lines.append(f"Old logs cleaned: {old_count} files removed")
+    header_lines.append("=" * 40)
+
+    # Write header to file handler directly, bypassing log level filtering
+    for handler in root_logger.handlers:
+        if isinstance(handler, logging.FileHandler):
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            for line in header_lines:
+                handler.stream.write(f"{timestamp} | INFO     | EDXD.globals | {line}\n")
+            handler.stream.flush()
+            break
+
+    # Also log to console/logger for backward compatibility
     logger.info("=" * 40)
     logger.info("EDXD %s starting", __version__)
     logger.info("Python %s (%s)", platform.python_version(), platform.python_compiler())
