@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 import time
 import wx
 from wx import Size, DateTime
@@ -18,6 +20,8 @@ WINID = "ENGINE_STATUS"
 
 from EDXD.globals import DEFAULT_HEIGHT_ENGINE_STATUS, DEFAULT_WIDTH_ENGINE_STATUS, DEFAULT_POS_Y, DEFAULT_POS_X, VESSEL_SLF, VESSEL_SRV, VESSEL_EV, VESSEL_SHIP, SCO_COOLDOWN
 
+
+logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 class EngineStatus(DynamicDialog):
     def __init__(self, parent):
@@ -88,14 +92,16 @@ class EngineStatus(DynamicDialog):
         fuel_capacity_total = 0
         reservoir_fuel_level = 0
         fuel_level = 0
+        #ToDo: #258 - Nomad counts as SRV!
         if vehicle == VESSEL_SHIP:
             fuel_capacity_total = fuel_capacity_main + fuel_capacity_reservoir
         if vehicle == VESSEL_EV:
             fuel_capacity_total = fuel_capacity_reservoir
         if vehicle == VESSEL_SRV:
-            fuel_capacity_total = fuel_capacity_reservoir or 0.5
+            fuel_capacity_total = 0.5
         if vehicle == VESSEL_SLF:
-            fuel_capacity_total = fuel_capacity_reservoir or 0.5
+            # fighter has infinite fuel
+            fuel_capacity_total = fuel_current_reservoir
 
         self.vessel_type = vehicle
         if fuel_capacity_total > 0:
@@ -143,18 +149,18 @@ class EngineStatus(DynamicDialog):
         else:
             self.lbl_fsd_injection.SetLabelText(f"FSD injection active: +{self.parent.model.ship_status.fsd_injection_factor * 100}%")
 
-        if self.parent.model is None or self.parent.model.ship_status is None:
+        if self.parent.model is None or self.parent.model.ship_status is None or self.parent.model.flags2 is None:
             self.lbl_sco_status.SetLabelText("")
         else:
             t_now: DateTime = DateTime.UNow()
-            if self.parent.model.flags2 and (self.parent.model.flags2 & pow(2, 20)) == 0:
+            if self.parent.model.flags2 and (self.parent.model.flags2 & pow(2, 20)) == 0 or self.parent.model.flags2 == 0:
                 if self.last_sco_state:
                     self.last_sco_state = False
                     self.sco_cooldown_end_time = t_now.Add(self.sco_cooldown_duration)
 
                 if t_now and self.sco_cooldown_end_time:
                     if self.sco_cooldown_end_time >= t_now:
-                        self.lbl_sco_status.SetLabelText(f"SCO cooldown in progress - remaining duration: {self.sco_cooldown_end_time.Subtract(t_now).GetMilliseconds()/1000} seconds")
+                        self.lbl_sco_status.SetLabelText(f"SCO cooldown in progress - remaining duration: {self.sco_cooldown_end_time.Subtract(t_now).GetMilliseconds()/1000:.2f} seconds")
                     else:
                         self.lbl_sco_status.SetLabelText(f"SCO ready")
             else:

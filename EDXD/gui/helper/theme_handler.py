@@ -1,30 +1,14 @@
-import functools
-import inspect
-
 import wx
 import wx.grid as gridlib
 import wx.lib.buttons as buttons
 
 from EDXD.globals import logging
+from EDXD.gui.helper.themed_slider import ThemedSlider
 
 
+
+logger = logging.getLogger(__name__)
 # from EDXD.globals import ICON_PATH
-
-def log_call(level=logging.INFO):
-    """Decorator that logs function name and bound arguments."""
-    def decorator(fn):
-        logger = logging.getLogger(fn.__module__)   # one logger per module
-        sig = inspect.signature(fn)                 # capture once, not on every call
-
-        @functools.wraps(fn)
-        def wrapper(*args, **kwargs):
-            bound = sig.bind_partial(*args, **kwargs)
-            arg_str = ", ".join(f"{k}={v!r}" for k, v in bound.arguments.items())
-            logger.log(level, "%s(%s)", fn.__name__, arg_str)
-            return fn(*args, **kwargs)
-
-        return wrapper
-    return decorator
 
 def get_theme(theme: str = "dark"):
     # Data for theme_handler
@@ -40,6 +24,7 @@ def _get_dark_theme():
         background_click        = wx.Colour("#663322"),
         background_toggled      = wx.Colour("#553322"),
         foreground              = wx.Colour("#ff9a00"),
+        foreground_less         = wx.Colour("#ff9a0088"),
         foreground_accent       = wx.Colour("#ff9a33"),
         foreground_hover        = wx.Colour("#ff9a33"),
         foreground_click        = wx.Colour("#ffbb55"),
@@ -60,9 +45,10 @@ def _get_dark_theme():
     return ed_dark_theme
 
 def apply_theme(widget):
+    # Name-based matching (explicit names set by init_widget or Dynamic* classes)
     if widget.Name == "frame":
         _apply_theme_to_frame(widget)
-    if widget.Name == "dialog":
+    elif widget.Name == "dialog":
         _apply_theme_to_dialog(widget)
     elif widget.Name == "panel":
         _apply_theme_to_panel(widget)
@@ -70,7 +56,7 @@ def apply_theme(widget):
         _apply_theme_to_static_text(widget)
     elif widget.Name == "text":
         _apply_theme_to_text(widget)
-    elif widget.Name == "genbutton":
+    elif widget.Name in ("genbutton", "pushbutton", "togglebutton"):
         _apply_theme_to_button(widget)
     elif widget.Name == "gauge":
         _apply_theme_to_gauge(widget)
@@ -78,6 +64,27 @@ def apply_theme(widget):
         _apply_theme_to_grid(widget)
     elif widget.Name == "dirpickerctrl":
         _apply_theme_to_dirpickerctrl(widget)
+    elif widget.Name == "comboBox":
+        _apply_theme_to_combobox(widget)
+    elif widget.Name == "wxSpinCtrl":
+        _apply_theme_to_spin(widget)
+    elif widget.Name == "themed_slider":
+        _apply_theme_to_slider(widget)
+    # Fallback: type-based matching for widgets created without an explicit name
+    elif isinstance(widget, wx.StaticText):
+        _apply_theme_to_static_text(widget)
+    elif isinstance(widget, wx.TextCtrl):
+        _apply_theme_to_text(widget)
+    elif isinstance(widget, wx.ComboBox):
+        _apply_theme_to_combobox(widget)
+    elif isinstance(widget, wx.DirPickerCtrl):
+        _apply_theme_to_dirpickerctrl(widget)
+    elif isinstance(widget, wx.SpinCtrl):
+        _apply_theme_to_spin(widget)
+    elif isinstance(widget, wx.grid.Grid):
+        _apply_theme_to_grid(widget)
+    elif isinstance(widget, (buttons.GenButton, buttons.GenBitmapButton)):
+        _apply_theme_to_button(widget)
     else:
         return
 
@@ -86,18 +93,32 @@ def _apply_theme_to_frame(widget: wx.Frame):
     widget.SetBackgroundColour(theme["background"])
     widget.SetForegroundColour(theme["foreground"])
     #widget.SetIcon(wx.Icon(ICON_PATH.as_posix(), wx.BITMAP_TYPE_ICO))
+    # Recursively theme all child widgets
+    _apply_theme_to_children(widget)
 
 def _apply_theme_to_dialog(widget: wx.Dialog):
     theme = get_theme()
     widget.SetBackgroundColour(theme["background"])
     widget.SetForegroundColour(theme["foreground"])
     #widget.SetIcon(wx.Icon(ICON_PATH.as_posix(), wx.BITMAP_TYPE_ICO))
+    # Recursively theme all child widgets
+    _apply_theme_to_children(widget)
 
 def _apply_theme_to_panel(widget: wx.Panel):
     theme = get_theme()
     widget.SetBackgroundColour(theme["background"])
     widget.SetForegroundColour(theme["foreground"])
-    widget.SetFont(theme["font_bold"])
+    # Recursively theme all child widgets
+    _apply_theme_to_children(widget)
+
+
+def _apply_theme_to_children(parent):
+    """Recursively apply theme to all child widgets of a parent."""
+    for child in parent.GetChildren():
+        apply_theme(child)
+        # Recurse into containers that may have their own children
+        if isinstance(child, (wx.Panel, wx.Window)):
+            _apply_theme_to_children(child)
 
 def _apply_theme_to_gauge(widget: wx.Gauge):
     pass
@@ -147,3 +168,26 @@ def _apply_theme_to_dirpickerctrl(widget: wx.DirPickerCtrl):
     widget.TextCtrl.SetBackgroundColour(theme["background"])
     widget.TextCtrl.SetForegroundColour(theme["foreground"])
     widget.SetFont(theme["font"])
+
+def _apply_theme_to_combobox(widget: wx.ComboBox):
+    theme = get_theme()
+    widget.SetBackgroundColour(theme["background"])
+    widget.SetForegroundColour(theme["foreground"])
+    widget.SetFont(theme["font"])
+
+def _apply_theme_to_spin(widget: wx.SpinCtrl):
+    theme = get_theme()
+    widget.SetBackgroundColour(theme["background"])
+    widget.SetForegroundColour(theme["foreground"])
+    widget.SetFont(theme["font"])
+
+def _apply_theme_to_slider(widget: ThemedSlider):
+    theme = get_theme()
+    widget.SetBackgroundColour(theme["background"])
+    widget.SetForegroundColour(theme["foreground"])
+    widget.SetFont(theme["font"])
+
+    widget.SetAccentColour(theme["foreground"])
+    widget.SetGrooveColour(theme["background_hover"])
+    widget.SetHandleBgColour(theme["background_hover"])
+    apply_theme(widget.Parent)

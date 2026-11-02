@@ -1,6 +1,3 @@
-import functools
-import inspect
-
 import wx
 
 from EDXD.globals import logging
@@ -9,21 +6,8 @@ from EDXD.gui.helper.icon_loader import make_icon_bundle
 from EDXD.gui.helper.window_properties import WindowProperties
 
 
-def log_call(level=logging.INFO):
-    """Decorator that logs function name and bound arguments."""
-    def decorator(fn):
-        logger = logging.getLogger(fn.__module__)   # one logger per module
-        sig = inspect.signature(fn)                 # capture once, not on every call
+logger = logging.getLogger(__name__)
 
-        @functools.wraps(fn)
-        def wrapper(*args, **kwargs):
-            bound = sig.bind_partial(*args, **kwargs)
-            arg_str = ", ".join(f"{k}={v!r}" for k, v in bound.arguments.items())
-            logger.log(level, "%s(%s)", fn.__name__, arg_str)
-            return fn(*args, **kwargs)
-
-        return wrapper
-    return decorator
 
 class DynamicFrame(wx.Frame):
     from EDXD.globals import RESIZE_MARGIN  # px area at edge/corner for resizing
@@ -55,7 +39,6 @@ class DynamicFrame(wx.Frame):
 
         self.Bind(wx.EVT_CLOSE, self.on_close)
 
-    # @log_call()
     def hit_test(self, pos):
         # Returns direction: 'left', 'right', 'top', 'bottom', or 'corner' (for diagonal)
         x, y = pos
@@ -69,7 +52,6 @@ class DynamicFrame(wx.Frame):
 
         return directions
 
-    # @log_call()
     def on_mouse_down(self, evt):
         directions = self.hit_test(evt.GetPosition())
         if directions:
@@ -79,13 +61,11 @@ class DynamicFrame(wx.Frame):
             self._frame_start = self.GetSize(), self.GetPosition()
         evt.Skip()
 
-    # @log_call()
     def on_mouse_up(self, evt):
         self._resizing = False
         self._resize_dir = None
         evt.Skip()
 
-    # @log_call()
     def on_mouse_move(self, evt):
         if self._resizing and evt.Dragging() and evt.LeftIsDown():
             dx = evt.GetPosition().x - self._mouse_start.x

@@ -10,15 +10,23 @@ model.py – core logic for ED Mineral Viewer
 
 from __future__ import annotations
 
+import logging
 import threading
 from dataclasses import dataclass, asdict, field
-from typing import Optional, List
+from typing import Optional, List, Dict
+
+__all__ = [
+    "Body", "Ring", "Genus", "CodexEntry", "Atmosphere",
+    "Model",
+]
+
+logger = logging.getLogger(__name__)
 
 import EDXD.data_handler.helper.data_helper as dh
 
 from EDXD.data_handler.helper.body_appraiser import appraise_body
 from EDXD.data_handler.planetary_surface_positioning_system import PSPSCoordinates
-from EDXD.data_handler.vessel_status import *
+from EDXD.data_handler.vessel_status import ShipStatus, FuelLevel
 from EDXD.globals import BODY_ID_PREFIX
 
 bip = BODY_ID_PREFIX
@@ -26,25 +34,7 @@ bip = BODY_ID_PREFIX
 # ---------------------------------------------------------------------------
 # paths (shared with other modules)
 # ---------------------------------------------------------------------------
-from EDXD.globals import CACHE_DIR
-from EDXD.globals import logging, LOG_LEVEL
-import inspect, functools
-
-def log_call(level=LOG_LEVEL):
-    """Decorator that logs function name and bound arguments."""
-    def decorator(fn):
-        logger = logging.getLogger(fn.__module__)   # one logger per module
-        sig = inspect.signature(fn)                 # capture once, not on every call
-
-        @functools.wraps(fn)
-        def wrapper(*args, **kwargs):
-            bound = sig.bind_partial(*args, **kwargs)
-            arg_str = ", ".join(f"{k}={v!r}" for k, v in bound.arguments.items())
-            logger.log(level, "%s(%s)", fn.__name__, arg_str)
-            return fn(*args, **kwargs)
-
-        return wrapper
-    return decorator
+from EDXD.globals import CACHE_DIR, logging
 
 @dataclass
 class Body:
@@ -238,20 +228,23 @@ class Model:
     """Keeps the bodies of the *current* system; notifies target listeners."""
     def __init__(self):
         self.lock               = threading.Lock()
-        self.system_name        : Optional[str]             = None
-        self.system_addr        : Optional[int]             = None
-        self.bodies             : Dict[str, Body]           = {}
-        self.target_body_id     : Optional[str]             = None
-        self.selected_body_id   : Optional[str]             = None
-        self.total_bodies       : Optional[int]             = None
-        self._target_cbs        : List                      = [] # listeners
-        self.current_position   : Optional[PSPSCoordinates] = None
-        self.current_heading    : Optional[int]             = None
-        self.ship_status        : Optional[ShipStatus]      = None
-        self.fuel_level         : Optional[FuelLevel]       = None
-        self.current_vessel     : Optional[str]             = None
-        self.flags              : Optional[int]             = None
-        self.flags2             : Optional[int]             = None
+        self.system_name            : Optional[str]             = None
+        self.system_addr            : Optional[int]             = None
+        self.bodies                 : Dict[str, Body]           = {}
+        self.target_body_id         : Optional[str]             = None
+        self.selected_body_id       : Optional[str]             = None
+        self.total_bodies           : Optional[int]             = None
+        self._target_cbs            : List                      = [] # listeners
+        self.current_position       : Optional[PSPSCoordinates] = None
+        self.current_heading        : Optional[int]             = None
+        self.ship_status            : Optional[ShipStatus]      = None
+        self.fuel_level             : Optional[FuelLevel]       = None
+        self.current_vessel         : Optional[str]             = None
+        self.flags                  : Optional[int]             = None
+        self.flags2                 : Optional[int]             = None
+        self.station_type           : Optional[str]             = None
+        self.station_name           : Optional[str]             = None
+        self.station_landing_pad    : Optional[int]             = None
 
     # ----- listeners ---------------------------------------------------------
     def register_target_listener(self, cb):
@@ -265,7 +258,6 @@ class Model:
             cb(body_id)
 
     # ----- mutators ----------------------------------------------------------
-    #@log_call()
     def reset_system(self, system_name: str, address: Optional[int]):
         tmp_selected_body_id = self.selected_body_id
         """Clear all bodies and load cached system if available."""
@@ -364,12 +356,12 @@ class Model:
                     pressure=pressure
                 )
 
-    def update_body(self, systemaddress: int, body_id: str, body_name: str = None, body_type: str = None, is_star: bool = None, scoopable: bool = None, distance: int = None, landable: bool = None,
-                    biosignals: int = None, geosignals: int = None, materials: Dict[str, float] = None, scandata = None,
-                    bio_found: Dict[str, Genus] = None, geo_found: Dict[str, CodexEntry] = None, has_rings: bool = False, rings: Dict[str, Ring] = None, total_bodies: int = None, radius: float = 0.0, mapped: bool = False,
-                    geo_complete: bool = False, geo_scanned: int = 0, bio_complete: bool = False, bio_scanned: int = 0,
-                    first_discovered: int = 0, first_mapped: int = 0, first_footfalled: int = 0, g_force: float = 0.0, atmosphere: Atmosphere = None,
-                    mean_temp: float = 0.0, luminosity: str = "", raw_luminosity: str = "", volcanism: str = "", present_life: str = "", parents: List[Dict[str, int]] = None, parent_distance: float = 0.0, pressure: float = 0.0
+    def update_body(self, systemaddress: int, body_id: str, body_name: str | None = None, body_type: str | None = None, is_star: bool | None = None, scoopable: bool | None = None, distance: int | None = None, landable: bool | None = None,
+                    biosignals: int | None = None, geosignals: int | None = None, materials: Dict[str, float] | None = None, scandata = None,
+                    bio_found: Dict[str, Genus] | None = None, geo_found: Dict[str, CodexEntry] | None = None, has_rings: bool | None = False, rings: Dict[str, Ring] | None = None, total_bodies: int | None = None, radius: float | None = 0.0, mapped: bool | None = False,
+                    geo_complete: bool | None = False, geo_scanned: int | None = 0, bio_complete: bool | None = False, bio_scanned: int | None = 0,
+                    first_discovered: int | None = 0, first_mapped: int | None = 0, first_footfalled: int | None = 0, g_force: float | None = 0.0, atmosphere: Atmosphere | None = None,
+                    mean_temp: float | None = 0.0, luminosity: str | None = "", raw_luminosity: str | None = "", volcanism: str | None = "", present_life: str | None = "", parents: List[Dict[str, int]] | None = None, parent_distance: float | None = 0.0, pressure: float | None = 0.0
                     ):
         with self.lock:
             self.system_addr = systemaddress

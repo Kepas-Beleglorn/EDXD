@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 set_mineral_filter.py – filter & preferences window
 ============================================
@@ -5,8 +7,7 @@ set_mineral_filter.py – filter & preferences window
 • 4-column alphabetic grid with a (De)select-all toggle
 • Writes changes back to the `prefs` dict supplied by MainWindow
 """
-
-from __future__ import annotations
+import logging
 
 import wx
 
@@ -23,6 +24,8 @@ FLAG_BTN_HEIGHT = 45
 
 from EDXD.globals import DEFAULT_HEIGHT_MINERALS_FILTER, DEFAULT_WIDTH_MINERALS_FILTER, DEFAULT_POS_Y, DEFAULT_POS_X
 
+
+logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 class StatusFlags(DynamicDialog):
     def __init__(self, parent):
@@ -115,7 +118,7 @@ class StatusFlags(DynamicDialog):
                                 "FSD Hyperdrive Charging",
                                 "Supercruise Overcharge Active",
                                 "Supercruise Assist Active",
-                                "UNKNOWN",
+                                "NPC Crew present",
                                 "UNKNOWN",
                                 "UNKNOWN",
                                 "UNKNOWN",

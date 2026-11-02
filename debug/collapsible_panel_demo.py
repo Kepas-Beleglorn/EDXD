@@ -14,17 +14,17 @@ class MyFrame(wx.Frame):
         self.panel1 = CollapsiblePanel(self, label="Details", columns=4)
 
         # Add rows
-        self.panel1.add_table_item("short")
-        self.panel1.add_table_item("long first row")
-        self.panel1.add_table_item("short2")
-        self.panel1.add_table_item("looooooong")
+        self.panel1.add_table_item_label("short")
+        self.panel1.add_table_item_label("long first row")
+        self.panel1.add_table_item_label("short2")
+        self.panel1.add_table_item_label("looooooong")
 
 
         self.panel2 = CollapsiblePanel(self, label="Details2", columns=2)
-        self.panel2.add_table_item("short")
-        self.panel2.add_table_item("long first row")
-        self.panel2.add_table_item("short2")
-        self.panel2.add_table_item("looooooong")
+        self.panel2.add_table_item_label("short")
+        self.panel2.add_table_item_label("long first row")
+        self.panel2.add_table_item_label("short2")
+        self.panel2.add_table_item_label("looooooong")
 
         # Add panels to the main sizer with wx.EXPAND flag
         main_sizer.Add(self.panel1, 0, wx.EXPAND)

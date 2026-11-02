@@ -6,11 +6,15 @@ Call register_embedded_fonts() early in your wx.App.OnInit (before creating wind
 """
 import atexit
 import ctypes
+import logging
 import shutil
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
+
+
+logger = logging.getLogger(__name__)
 
 # try to import the generated module; if it's missing, nothing to do
 _FONT_FILES = {}
@@ -33,7 +37,9 @@ except Exception:
 
 if _fb is not None:
     _FONT_FILES = getattr(_fb, "FONT_FILES", {}) or {}
+    logger.info("Loaded %d embedded font(s)", len(_FONT_FILES))
 else:
+    logger.warning("No embedded fonts module found; font registration will be skipped")
     _FONT_FILES = {}
 
 # track temp files/dirs for cleanup
@@ -132,7 +138,12 @@ def register_embedded_fonts():
         return False
 
     if sys.platform.startswith("win"):
-        return _register_fonts_windows_from_memory()
+        ok = _register_fonts_windows_from_memory()
+        if ok:
+            logger.info("Registered embedded fonts on Windows")
+        else:
+            logger.warning("Failed to register embedded fonts on Windows")
+        return ok
 
     # for other platforms, write to a temp directory and register
     written = _write_fonts_to_temp()
@@ -148,6 +159,10 @@ def register_embedded_fonts():
     else:
         # unknown platform -> leave as written files (they might be picked up)
         ok = True
+    if ok:
+        logger.info("Registered embedded fonts on %s", sys.platform)
+    else:
+        logger.warning("Failed to register embedded fonts on %s", sys.platform)
     return ok
 
 
@@ -160,8 +175,9 @@ def cleanup_embedded_fonts(remove_temp=True):
     if _temp_dir and remove_temp:
         try:
             shutil.rmtree(_temp_dir)
-        except Exception:
-            pass
+            logger.debug("Cleaned up temporary font directory: %s", _temp_dir)
+        except Exception as e:
+            logger.warning("Failed to clean up temporary font directory: %s", e)
         _temp_dir = None
     # keep the windows buffers alive until process exit; no extra cleanup required
 

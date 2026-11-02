@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-import functools
-import inspect
+import random
 from typing import Dict
 
 import wx, json
@@ -9,11 +8,13 @@ import wx, json
 from EDXD.data_handler.journal_controller import JournalController
 from EDXD.data_handler.journal_reader import JournalReader
 from EDXD.data_handler.model import Model, Body
+from EDXD.data_handler.nav_route import NavRouteHandler
 from EDXD.data_handler.status_json_watcher import StatusWatcher
 from EDXD.data_handler.helper.biosign_estimator import estimate_system_biosigns
 
 from EDXD.globals import DEFAULT_HEIGHT_MAIN, DEFAULT_WIDTH_MAIN, DEFAULT_POS_Y, DEFAULT_POS_X, RESIZE_MARGIN
 from EDXD.globals import logging, CFG_FILE
+from EDXD.gui.current_nav_route import PlottedNavRoute
 
 from EDXD.gui.detail_selected import DetailSelected
 from EDXD.gui.detail_target import DetailTargeted
@@ -26,25 +27,11 @@ from EDXD.gui.psps_gui import PositionTracker
 from EDXD.gui.table_view import BodiesTable
 from EDXD.gui.status_flags import StatusFlags
 from EDXD.gui.signal_prediction import SignalPrediction
+from EDXD.gui.landing_pad_indicator import LandingPadFrame
 
 from EDXD.utils.clipboard import copy_text_to_clipboard
 
-
-def log_call(level=logging.INFO):
-    """Decorator that logs function name and bound arguments."""
-    def decorator(fn):
-        logger = logging.getLogger(fn.__module__)   # one logger per module
-        sig = inspect.signature(fn)                 # capture once, not on every call
-
-        @functools.wraps(fn)
-        def wrapper(*args, **kwargs):
-            bound = sig.bind_partial(*args, **kwargs)
-            arg_str = ", ".join(f"{k}={v!r}" for k, v in bound.arguments.items())
-            logger.log(level, "%s(%s)", fn.__name__, arg_str)
-            return fn(*args, **kwargs)
-
-        return wrapper
-    return decorator
+logger = logging.getLogger(__name__)
 
 TITLE = "ED eXploration Dashboard"
 WINID = "EDXD_MAIN_WINDOW"
@@ -75,6 +62,8 @@ class MainFrame(DynamicFrame):
         self.win_engine_status = None
         self.win_status_flags = None
         self.win_sig_pred = None
+        self.win_nav_route = None
+        self.win_landing_pads = None
 
         # Add options panel (mineral filter, landable, and maybe more in the future
         self.options = MainWindowOptions(parent=self)
@@ -122,10 +111,14 @@ class MainFrame(DynamicFrame):
 
     def _init_panels(self):
         # initialise sub windows
+
+        # On fresh install (first_run_done not set), hide all panels except the main window
+        is_fresh_install = not self.prefs.get("first_run_done", False)
+
         # selected body ------------------------------------------------------------------------------------------------
         from EDXD.gui.detail_selected import WINID as winIdSelected
         if self.prefs is None or self.prefs.get(winIdSelected) is None:
-            hidden = False
+            hidden = is_fresh_install
         else:
             hidden = self.prefs.get(winIdSelected).get("is_hidden", False)
         if hidden:
@@ -140,7 +133,7 @@ class MainFrame(DynamicFrame):
         # target body --------------------------------------------------------------------------------------------------
         from EDXD.gui.detail_target import WINID as winIdSelected
         if self.prefs is None or self.prefs.get(winIdSelected) is None:
-            hidden = False
+            hidden = is_fresh_install
         else:
             hidden = self.prefs.get(winIdSelected).get("is_hidden", False)
         if hidden:
@@ -155,7 +148,7 @@ class MainFrame(DynamicFrame):
         # Planetary Surface Positioning System -------------------------------------------------------------------------
         from EDXD.gui.psps_gui import WINID as winIdSelected
         if self.prefs is None or self.prefs.get(winIdSelected) is None:
-            hidden = False
+            hidden = is_fresh_install
         else:
             hidden = self.prefs.get(winIdSelected).get("is_hidden", False)
         if hidden:
@@ -170,7 +163,7 @@ class MainFrame(DynamicFrame):
         # engine status ------------------------------------------------------------------------------------------------
         from EDXD.gui.engine_status  import WINID as winIdSelected
         if self.prefs is None or self.prefs.get(winIdSelected) is None:
-            hidden = False
+            hidden = is_fresh_install
         else:
             hidden = self.prefs.get(winIdSelected).get("is_hidden", False)
         if hidden:
@@ -185,7 +178,7 @@ class MainFrame(DynamicFrame):
         # status flags -------------------------------------------------------------------------------------------------
         from EDXD.gui.status_flags import WINID as winIdSelected
         if self.prefs is None or self.prefs.get(winIdSelected) is None:
-            hidden = False
+            hidden = is_fresh_install
         else:
             hidden = self.prefs.get(winIdSelected).get("is_hidden", False)
         if hidden:
@@ -200,7 +193,7 @@ class MainFrame(DynamicFrame):
         # Signal prediction -------------------------------------------------------------------------
         from EDXD.gui.signal_prediction import WINID as winIdSelected
         if self.prefs is None or self.prefs.get(winIdSelected) is None:
-            hidden = False
+            hidden = is_fresh_install
         else:
             hidden = self.prefs.get(winIdSelected).get("is_hidden", False)
         if hidden:
@@ -211,6 +204,29 @@ class MainFrame(DynamicFrame):
             if self.win_sig_pred is None:
                 self.win_sig_pred = SignalPrediction(self)
                 self.win_sig_pred.Show(True)
+
+        # Plotted route -----------------------------------------------------------------------------
+        from EDXD.gui.current_nav_route import WINID as winIdSelected
+        if self.prefs is None or self.prefs.get(winIdSelected) is None:
+            hidden = is_fresh_install
+        else:
+            hidden = self.prefs.get(winIdSelected).get("is_hidden", False)
+        if hidden:
+            if self.win_nav_route is not None:
+                self.win_nav_route.Close()
+                self.win_nav_route = None
+        else:
+            if self.win_nav_route is None:
+                self.win_nav_route = PlottedNavRoute(self)
+                self.win_nav_route.Show(True)
+
+        if self.win_nav_route and self.win_nav_route.plotted_route:
+            self.win_nav_route.plotted_route.amount_of_upcoming_systems_to_show = int(self.prefs.get("amount_of_plotted_upcoming_systems_to_show"))
+            self.win_nav_route.plotted_route.amount_of_passed_systems_to_show = int(self.prefs.get("amount_of_plotted_passed_systems_to_show"))
+
+        # Landing pad indicator ---------------------------------------------------------------------
+        # Landing pad indicator is only relevant when landing permission was requested
+        # So directly after game start it's irrelevant. Same goes for docking complete
 
     def _update_system(self, title: str = ""):
         init_widget(widget=self.lbl_sys, title=title)
@@ -230,9 +246,35 @@ class MainFrame(DynamicFrame):
             )
 
     def _update_biosign_prediction(self, body_data):
-        prediction_data = estimate_system_biosigns(body_data)
-        if self.win_sig_pred and prediction_data:
+        if self.win_sig_pred:
+            prediction_data = estimate_system_biosigns(body_data)
             self.win_sig_pred.render(prediction=prediction_data)
+
+    def _update_current_nav_route(self):
+        if self.win_nav_route:
+            self.win_nav_route.render(self.journal_controller.nav_route)
+
+    def _update_assigned_landing_pad(self):
+        from EDXD.gui.landing_pad_indicator import WINID as winIdSelected
+
+        if self.prefs is None or self.prefs.get(winIdSelected) is None:
+            hidden = False
+        else:
+            hidden = self.prefs.get(winIdSelected).get("is_hidden", False)
+        if hidden:
+            if self.win_landing_pads is not None:
+                self.win_landing_pads.Close()
+                self.win_landing_pads = None
+        else:
+            if self.model.station_name and self.model.station_type and self.model.station_landing_pad:
+                if self.win_landing_pads is None:
+                    self.win_landing_pads = LandingPadFrame(self, station_name=self.model.station_name, station_type=self.model.station_type, landing_pad=self.model.station_landing_pad)
+                    self.win_landing_pads.Show(True)
+            else:
+                if self.win_landing_pads is not None:
+                    self.win_landing_pads.Close()
+                    self.win_landing_pads = None
+
 
     # ------------------------------------------------------------------
     # event handlers
@@ -322,8 +364,10 @@ class MainFrame(DynamicFrame):
     # ------------------------------------------------------------------
     # periodic refresh
     # ------------------------------------------------------------------
-    #@log_call()
     def _refresh(self):
+        if self.options.historian and self.options.historian.is_running:
+            return
+
         self.table_view.refresh(
             bodies=self.model.snapshot_bodies(),
             filters=self.prefs["mat_sel"],
@@ -369,10 +413,16 @@ class MainFrame(DynamicFrame):
 
         self._update_fuel_status()
 
+        self._update_current_nav_route()
+
+        self._update_assigned_landing_pad()
+
         # noinspection PyTypeChecker
         if self._refresh_timer:
             self._refresh_timer.Stop()
-        self._refresh_timer = wx.CallLater(millis=500, callableObj=self._refresh)  # schedule next update
+
+        refresh_millis = random.randint(75, 125)
+        self._refresh_timer = wx.CallLater(millis=refresh_millis, callableObj=self._refresh)  # schedule next update
 
     def on_close(self, event):
         if self.win_sel             : self.win_sel.Close(True)
@@ -381,5 +431,7 @@ class MainFrame(DynamicFrame):
         if self.win_engine_status   : self.win_engine_status.Close(True)
         if self.win_status_flags    : self.win_status_flags.Close(True)
         if self.win_sig_pred        : self.win_sig_pred.Close(True)
+        if self.win_nav_route       : self.win_nav_route.Close(True)
+        if self.win_landing_pads    : self.win_landing_pads.Close(True)
         self.save_geometry()
         event.Skip()

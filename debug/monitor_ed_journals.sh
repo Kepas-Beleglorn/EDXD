@@ -126,7 +126,7 @@ start_pipeline() {
           # truncated/replaced -> move cursor but do not replay old data
           last=$new
         fi
-        inotifywait -qq -e close_write -- "$f" >/dev/null 2>&1 || sleep 0.2
+        sleep 0.2
       done
     }
 

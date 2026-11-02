@@ -159,25 +159,31 @@ class FuelGauge(wx.Panel):
         dc = wx.MemoryDC(bmp)
         gc = wx.GCDC(dc)
 
-        # background
+        # compute fill fraction
+        frac = self._level / float(self._range)
+        in_warning = frac * 100.0 <= self._warning_threshold
+
+        # pulse brightness if in warning zone
+        if in_warning:
+            # pulse between 0.6 and 1.0 brightness
+            pulse = 0.5 * (1.0 + math.sin(2 * math.pi * self._pulse_phase))
+            brightness = 0.6 + 0.4 * pulse
+        else:
+            brightness = 1.0
+
+        # background — pulsate entire panel when in warning mode
         bg = self.GetBackgroundColour()
+        if in_warning:
+            bg_r = min(255, bg.Red() + int(140 * brightness))
+            bg_g = int(bg.Green() * 0.4 * brightness)
+            bg_b = int(bg.Blue() * 0.4 * brightness)
+            bg = wx.Colour(bg_r, bg_g, bg_b)
         gc.SetBrush(wx.Brush(bg))
         gc.SetPen(wx.Pen(bg))
         gc.DrawRectangle(0, 0, width, height)
 
         rect = wx.Rect(0, 0, width, height)
         bar_rect = self._get_bar_rect(rect)
-
-        # compute fill fraction
-        frac = self._level / float(self._range)
-
-        # pulse brightness if in warning zone
-        if frac * 100.0 <= self._warning_threshold:
-            # pulse between 0.6 and 1.0 brightness
-            pulse = 0.5 * (1.0 + math.sin(2 * math.pi * self._pulse_phase))
-            brightness = 0.6 + 0.4 * pulse
-        else:
-            brightness = 1.0
 
         # draw bar background
         radius = min(bar_rect.height // 2, 8)

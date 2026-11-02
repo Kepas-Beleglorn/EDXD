@@ -35,14 +35,14 @@ class PSPSManualCoordinates(DynamicDialog):
 
         # latitude
         self.lbl_latitude = wx.StaticText(parent=self.scroll_container, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE, size=Size(BTN_WIDTH-50, BTN_HEIGHT))
-        grid.Add(self.lbl_latitude, 0, wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.BOTTOM, -4)
+        grid.Add(self.lbl_latitude, flag=wx.TOP | wx.EXPAND, border=10)
 
         self.txt_latitude = wx.TextCtrl(parent=self.scroll_container, style=wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_SIMPLE, size=Size(BTN_WIDTH-50, BTN_HEIGHT), validator=FloatRangeValidator(min_val=-90.0, max_val=90.0))
         grid.Add(self.txt_latitude, 0, wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.BOTTOM, -4)
 
         # longitude
         self.lbl_longitude = wx.StaticText(parent=self.scroll_container, style=wx.TE_READONLY | wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_NONE, size=Size(BTN_WIDTH-50, BTN_HEIGHT))
-        grid.Add(self.lbl_longitude, 0, wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.BOTTOM, -4)
+        grid.Add(self.lbl_longitude, flag=wx.TOP | wx.EXPAND, border=10)
 
         self.txt_longitude = wx.TextCtrl(parent=self.scroll_container, style=wx.TEXT_ALIGNMENT_LEFT | wx.ALIGN_TOP | wx.BORDER_SIMPLE, size=Size(BTN_WIDTH-50, BTN_HEIGHT), validator=FloatRangeValidator(min_val=-180.0, max_val=180.0))
         grid.Add(self.txt_longitude, 0, wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.BOTTOM, -4)

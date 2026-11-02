@@ -1,13 +1,16 @@
-import inspect
 import json
+import logging
 import re
 import wx
 from datetime import datetime
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 from typing import Optional
 
+from EDXD.data_handler.helper.dotted_dictionary import DotDict, save_dotdict_to_json
 from EDXD.data_handler.vessel_status import ShipStatus
-from EDXD.globals import log_context, logging
+from EDXD.globals import logging, BODY_NO_DATA
 
 TEMPERATURE_LOW = 170
 TEMPERATURE_HIGH = 320
@@ -23,15 +26,15 @@ def load(path: Path, default):
     except FileNotFoundError:
         return default
     except Exception as e:
-        log_context(level=logging.WARN, frame=inspect.currentframe(), e=e)
+        logger.warning("Failed to load %s: %s", path, e)
         return default
 
 def save(path: Path, data):
     try:
-        logging.debug(f"{data}\n{json.dumps(data, indent=4)}")
+        logger.debug("Saving data to %s", path)
         path.write_text(json.dumps(data, indent=2))
     except Exception as e:
-        log_context(level=logging.ERROR, frame=inspect.currentframe(), e=e)
+        logger.error("Failed to save %s: %s", path, e)
 
 #133 - change sorting of journal files
 def _extract_timestamp_from_filename(path: Path) -> Optional[datetime]:
@@ -166,6 +169,11 @@ def pressure_as_atm_from_pascals(pressure_pascal):
     # 1 atm = 101,325 Pascals
     return pressure_pascal / 101325.0
 
+def pressure_as_pascals_from_atm(pressure_atm):
+    # 1 atm = 101,325 Pascals
+    return pressure_atm * 101325.0
+
+
 def get_clean_luminosity(luminosity: str) -> str:
     return re.sub(r'[^A-Z]', '', luminosity)
 
@@ -269,7 +277,7 @@ def latest_journal(folder: Path) -> Optional[Path]:
     for f in files:
         ts = _extract_timestamp_from_filename(f)
         if ts is None:
-            logging.debug(f"Could not parse timestamp from journal filename: {f.name}")
+            logger.debug("Could not parse timestamp from journal filename: %s", f.name)
             continue
         parsed.append((ts, f))
 
@@ -318,6 +326,18 @@ def ensure_timestamp_file(journal_timestamp_file, new_timestamp):
         with open(journal_timestamp_file, "w") as f:
             json.dump(default_data, f, indent=2)
 
+def time_delta(str_start: str, str_end: str) -> str:
+    # 1. Define the format matching your strings
+    time_format = "%Y-%m-%dT%H:%M:%S"
+
+    # 2. Parse strings into datetime objects
+    time_start = datetime.strptime(str_start, time_format)
+    time_end = datetime.strptime(str_end, time_format)
+
+    # 3. Calculate the difference (returns a timedelta object)
+    delta = time_end - time_start
+    return str(delta)
+
 def read_ship_status(ship_status_file, ship_status):
     ensure_ship_status_file(ship_status_file, ship_status)
     try:
@@ -334,12 +354,35 @@ def update_ship_status(ship_status_file, ship_status: ShipStatus):
         with open(ship_status_file, "w") as f:
             json.dump(ship_status.to_json(), f, indent=4)
 
+def update_spansh_active_plotted_route(active_plotted_route_file, route_file: str):
+    data: DotDict = DotDict()
+    data["active_plotted_route"] = route_file
+    save_dotdict_to_json(data, active_plotted_route_file, 4)
+
+
+def read_spansh_active_plotted_route(active_plotted_route_file) -> str | None:
+    if not active_plotted_route_file.exists():
+        return None
+    try:
+        with open(active_plotted_route_file, "r") as f:
+            data = json.load(f)
+            return data["active_plotted_route"]
+    except FileNotFoundError:
+        return None
+    except json.decoder.JSONDecodeError:
+        return None
+
 def ensure_ship_status_file(ship_status_file, ship_status):
     if not ship_status_file.exists():
         # You can choose any default value for "last_timestamp"
-        default_data = ship_status
-        with open(ship_status_file, "w") as f:
-            json.dump(default_data, f, indent=2)
+        try:
+            default_data = ship_status
+            with open(ship_status_file, "w") as f:
+                json.dump(default_data, f, indent=2)
+        except FileNotFoundError:
+            pass
+        except TypeError:
+            pass
 
 def add_spaces_to_camel_case(s):
     return re.sub(r'(?<!^)(?=[A-Z])', ' ', s)
@@ -353,3 +396,29 @@ def rings_have_hotspots(body) -> bool:
 def km_to_ls(kilometers):
     SPEED_OF_LIGHT_KM_S = 299792.458
     return kilometers / SPEED_OF_LIGHT_KM_S
+
+def count_belt_clusters(system_data):
+    count = 0
+    # Iterate over the dictionary values (the body objects)
+    for body in system_data.bodies.values():
+        if body.body_type == "Belt Cluster":
+            count += 1
+    return count
+
+def has_no_data_bodies(system_data):
+        # Iterate over the dictionary values (the body objects)
+    for body in system_data.bodies.values():
+        if body.body_type == BODY_NO_DATA or body.body_name == BODY_NO_DATA:
+            return True
+    return False
+
+def unique_dict_list(data: list[dict]) -> list[dict]:
+    seen = set()
+    result = []
+    for item in data:
+        # Create a hashable signature of the dictionary
+        signature = tuple(sorted(item.items()))
+        if signature not in seen:
+            seen.add(signature)
+            result.append(item)
+    return result

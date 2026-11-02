@@ -1,14 +1,27 @@
 import json
+import logging
 import queue
 import re
+import threading
+from dataclasses import asdict
+from typing import List, Dict
+from pathlib import Path
 
 import EDXD.data_handler.helper.bio_helper as bio_helper
+import EDXD.data_handler.helper.data_helper as dh
+
+logger = logging.getLogger(__name__)
+from EDXD.data_handler.helper.dotted_dictionary import DotDict, load_json_as_dotdict, save_dotdict_to_json, create_dot_dict_from_string
+from EDXD.data_handler.helper.galactic_navigation import StarPosition
 from EDXD.data_handler.helper.pausable_thread import PausableThread
-from EDXD.data_handler.model import *
+from EDXD.data_handler.helper.spansh.spansh import SpanshHelper
+from EDXD.data_handler.model import Body, Ring, Genus, CodexEntry, Atmosphere, Model
+from EDXD.data_handler.nav_route import NavRouteHandler, NavPoint
 from EDXD.data_handler.planetary_surface_positioning_system import PSPSCoordinates
-from EDXD.data_handler.vessel_status import *
-from EDXD.globals import logging, BODY_ID_PREFIX, log_context, JOURNAL_TIMESTAMP_FILE, SHIP_STATUS_FILE, VESSEL_SHIP, \
-    VESSEL_SRV, VESSEL_EV, VESSEL_SLF
+from EDXD.data_handler.vessel_status import ShipStatus, FuelLevel
+from EDXD.data_handler.helper.spansh.ship_modules import ShipFSDModules
+from EDXD.globals import logging, BODY_ID_PREFIX, JOURNAL_TIMESTAMP_FILE, SHIP_STATUS_FILE, VESSEL_SHIP, \
+    VESSEL_SRV, VESSEL_EV, VESSEL_SLF, BODY_NO_DATA, SPANSH_ROUTE, SLEF_PATH, SPANSH_ACTIVE_ROUTE
 
 bip = BODY_ID_PREFIX
 
@@ -16,18 +29,27 @@ bip = BODY_ID_PREFIX
 # controller thread – turns Journal lines into Model updates
 # ---------------------------------------------------------------------------
 class JournalController(PausableThread, threading.Thread):
-    def __init__(self, q: "queue.Queue[str]", model: Model):
+    def __init__(self, q: "queue.Queue[str]", model: Model, cfg):
         super().__init__()
+        self.cfg = cfg
         self.q = q
         self.m = model
         self.last_event = None
         self.ship_status = None
+        self.spansh_helper = SpanshHelper()
+        self.journal_path = None
+        self.nav_route = None
+        self.landing_in_progress = False
+
+        if cfg and "journal_dir" in cfg.keys() and cfg["journal_dir"] and cfg["journal_dir"] != "":
+            self.journal_path: Path = Path(cfg["journal_dir"])
+            self.nav_route: NavRouteHandler = NavRouteHandler(nav_route_json=self.journal_path / "NavRoute.json", amount_of_upcoming_systems_to_show=int(cfg["amount_of_plotted_upcoming_systems_to_show"]), amount_of_passed_systems_to_show=int(cfg["amount_of_plotted_passed_systems_to_show"]))
 
     def _process_data(self):
         try:
             evt = json.loads(self.q.get())
         except Exception as e:
-            log_context(level=logging.ERROR, frame=inspect.currentframe(), e=e)
+            logger.error("Failed to parse journal event: %s", e)
             return
 
         self.process_event(evt=evt, update_gui=True)
@@ -50,38 +72,51 @@ class JournalController(PausableThread, threading.Thread):
         genus_id = re.sub(r'_\d+_[^_]+(?=_Name;)', '_Genus', genus_id)
         return genus_id
 
-    def get_parent_star_ids(self, body_name: str, body_parents: List[Dict[str, int]]) -> List[Dict[str, int]]:
-        parent_stars: List[Dict[str, int]] = body_parents
-        system_name = self.m.system_name
-        body_name_without_system = body_name.removeprefix(system_name).strip()
+    def get_parent_star_ids(self, current_body:  Body, body_parents: List[Dict[str, int]] = None) -> List[Dict[str, int]]:
+        parent_stars: List[Dict[str, int]] = current_body.parents
+        if body_parents:
+            for item in body_parents:
+                parent_stars.append(item)
 
-        # If body name is empty after removing the system name from it, we are in a single star system. So nothing to do here
-        if len(body_name_without_system) == 0:
-            return parent_stars
+        try:
+            # does the planet already have Stars listed as parents?
+            for body_parent in parent_stars:
+                if list(body_parent.keys())[0] == "Star":
+                    return parent_stars
+        except  Exception as e:
+            logger.error("get_parent_star_ids[1] %s/%s/%s/%s: %s", current_body.body_id, current_body.body_name, current_body.body_type, current_body.parents, e)
 
-        # If body has only one part (e.g. "A", not "A 1" or A 1 a" and so on) it is a star itself
-        if len(body_name_without_system.split(" ")) == 1:
-            return parent_stars
+        try:
+            for body_parent in parent_stars:
+                if list(body_parent.keys())[0] == "Planet":
+                    parent_id = "body_" + str(list(body_parent.values())[0])
+                    for body in self.m.bodies:
+                        body =  Body(body)
+                        if body.body_id == parent_id:
+                            parent_results = self.get_parent_star_ids(body, None)
+                            for item in parent_results:
+                                parent_stars.append(item)
+        except  Exception as e:
+            logger.error("get_parent_star_ids[2] %s/%s/%s/%s: %s", current_body.body_id, current_body.body_name, current_body.body_type, current_body.parents, e)
 
-        # does the planet already have Stars listed as parents?
-        for body_parent in parent_stars:
-            if list(body_parent)[0] == "Star":
-                return parent_stars
-
-        body_name_star_hint = body_name_without_system.split(" ")[0]
-
-        for i in range(0, len(body_name_star_hint), 1):
-            star_name = system_name + " " + body_name_star_hint[i]
-            for body_id in self.m.bodies:
-                body = self.m.bodies[body_id]
-                if not body.is_star:
-                    continue
-                if body.body_name == star_name:
-                    parent_stars.append({str("Star"): int(body_id.split("_")[-1])})
+        try:
+            for body_parent in parent_stars:
+                if list(body_parent.keys())[0] == "Null":
+                    parent_id = list(body_parent.values())[0]
+                    for body in self.m.bodies:
+                        body = Body(body)
+                        if body.body_type == "Star":
+                            for star_parent in body.parents:
+                                if list(star_parent.keys())[0] == "Null" and list(star_parent.values())[0] == parent_id:
+                                    parent_stars.append({str("Star"): int(body.body_id)})
+        except  Exception as e:
+            logger.error("get_parent_star_ids[3] %s/%s/%s/%s: %s", current_body.body_id, current_body.body_name, current_body.body_type, current_body.parents, e)
 
         return parent_stars
 
-    def process_event(self, evt, update_gui: bool, set_timestamp: bool = True):
+    def process_event(self, evt, update_gui: bool, set_timestamp: bool = True, journal_file: str = None, journal_line: str = None):
+        self._journal_file = journal_file
+        self._journal_line = journal_line
         etype = evt.get("event")
 
         #121 - determine fuel capacity of current ship
@@ -106,31 +141,58 @@ class JournalController(PausableThread, threading.Thread):
 
             dh.update_ship_status(SHIP_STATUS_FILE, self.m.ship_status)
 
+        if etype in {"Cargo"}:
+            match evt.get("Vessel"):
+                case "Ship":
+                    self.m.ship_status.cargo = int(evt.get("Count"))
+                    dh.update_ship_status(SHIP_STATUS_FILE, self.m.ship_status)
+                case _:
+                    pass
+
         if etype in {"Loadout"}: #, "LoadGame"}:
-            if self.m.current_vessel == VESSEL_EV:
-                # on foot
-                pass
+            self.spansh_helper.extract_loadout_to_slef(evt)
+            self.m.ship_status.ship_type = evt.get("Ship")
+            self.m.ship_status.ship_id = evt.get("ShipID")
+            self.m.ship_status.ship_name = evt.get("ShipName")
+            self.m.ship_status.ship_ident = evt.get("ShipIdent")
+            self.m.ship_status.cargo_capacity = evt.get("CargoCapacity")
+            self.m.ship_status.max_jump_range = float(evt.get("MaxJumpRange"))
+            self.m.ship_status.mass_unladen = evt.get("UnladenMass")
 
-            if self.m.current_vessel == VESSEL_SRV:
-                # SRV
-                pass
+            slef: DotDict | None = load_json_as_dotdict(SLEF_PATH)
+            if slef is not None:
+                sfsdm : ShipFSDModules = ShipFSDModules()
+                self.m.ship_status.mass_fsd_optimal = sfsdm.get_optimal_mass(slef)
+            else:
+                self.m.ship_status.mass_fsd_optimal = None
 
-            if self.m.current_vessel == VESSEL_SLF:
-                # SLF
-                pass
+            fuel_main       : float = evt.get("FuelCapacity").get("Main")
+            fuel_reserve    : float = evt.get("FuelCapacity").get("Reserve")
+            self.m.ship_status.fuel_capacity = FuelLevel(fuel_main, fuel_reserve) or self.m.ship_status.fuel_capacity
 
-            if self.m.current_vessel == VESSEL_SHIP:
-                self.m.ship_status.ship_type = evt.get("Ship") or self.ship_status.ship_type
-                self.m.ship_status.ship_id = evt.get("ShipID") or self.ship_status.ship_id
-                self.m.ship_status.ship_name = evt.get("ShipName") or self.ship_status.ship_name
-                self.m.ship_status.ship_ident = evt.get("ShipIdent") or self.ship_status.ship_ident
+            dh.update_ship_status(SHIP_STATUS_FILE, self.m.ship_status)
 
-                fuel_main       : float = evt.get("FuelCapacity").get("Main")
-                fuel_reserve    : float = evt.get("FuelCapacity").get("Reserve")
+        if etype in ["DockingCancelled", "Docked", "DockingTimeout" ,"StartJump", "DockingDenied"]:
+            self.landing_in_progress = False
 
-                self.m.ship_status.fuel_capacity = FuelLevel(fuel_main, fuel_reserve) or self.m.ship_status.fuel_capacity
+        if self.landing_in_progress == False:
+            self.m.station_type = None
+            self.m.station_name = None
+            self.m.station_landing_pad = None
 
-                dh.update_ship_status(SHIP_STATUS_FILE, self.m.ship_status)
+        if etype == "DockingRequested":
+            self.landing_in_progress = True
+            self.m.station_type = evt.get("StationType")
+            if self.m.station_type == "FleetCarrier":
+                pad_structure = DotDict(evt.get("LandingPads"))
+                if hasattr(pad_structure, "Small") and pad_structure.Small == 8:
+                    self.m.station_type = "SquadronCarrier"
+
+            self.m.station_name = evt.get("StationName")
+
+        if etype == "DockingGranted":
+            self.landing_in_progress = True
+            self.m.station_landing_pad = evt.get("LandingPad")
 
         # reset FSD boosts
         if etype == "StartJump":
@@ -139,6 +201,17 @@ class JournalController(PausableThread, threading.Thread):
                 self.m.ship_status.jet_cone_boost_factor = None
                 dh.update_ship_status(SHIP_STATUS_FILE, self.m.ship_status)
 
+        if etype == "NavRoute":
+            if update_gui:
+                self.nav_route = NavRouteHandler(nav_route_json=self.journal_path / "NavRoute.json", amount_of_upcoming_systems_to_show=int(self.cfg["amount_of_plotted_upcoming_systems_to_show"]), amount_of_passed_systems_to_show=int(self.cfg["amount_of_plotted_passed_systems_to_show"]))
+                self.nav_route.clear_plotted_route()
+                self.nav_route.load_plotted_route()
+
+        if etype in ("FSDJump", "Location") and update_gui:
+            if self.nav_route and self.nav_route.plotted_nav_route is None:
+                self.nav_route.load_plotted_route()
+                self.nav_route.set_current_system_from_journal_data(evt)
+            self._set_current_position_for_spansh(evt)
 
         #113:   after app-start, load only current SYSTEM.json
         #       store last read journal line (timestamp) and process only newer lines
@@ -159,18 +232,27 @@ class JournalController(PausableThread, threading.Thread):
                 self.last_event = evt
                 dh.update_last_timestamp(JOURNAL_TIMESTAMP_FILE, current_evt_timestamp_str)
 
-        #141: don't load system data of FSDTarget, if targeted system has been visited before.
-        #137: reset_system no longer uses <evt.get("Name")>, as this NEVER holds the systems name
+        if etype == "NavRouteClear":
+            if update_gui:
+                self.nav_route = None
+
+
         if etype != "FSDTarget":
             systemaddress = evt.get("SystemAddress")
             total_bodies = None
             if systemaddress is not None:
                 self.m.total_bodies = None
                 self.m.reset_system(evt.get("StarSystem") or self.m.system_name, systemaddress)
-
         else:
             systemaddress = self.m.system_addr
             total_bodies = self.m.total_bodies
+            if update_gui:
+                if self.nav_route.plotted_nav_route is None:
+                    self.nav_route.load_plotted_route()
+                if evt.get("RemainingJumpsInRoute")  is  not None and evt.get("RemainingJumpsInRoute") != "":
+                    self.nav_route.remaining_jumps_in_route = int(evt.get("RemainingJumpsInRoute"))
+                    if evt.get("SystemAddress") is not None and evt.get("SystemAddress") != "":
+                        self.nav_route.check_nav_route_consistency(int(evt.get("RemainingJumpsInRoute")), int(evt.get("SystemAddress")))
 
         # ───── jump to a new system ───────────────────────────────
         #124: system/selection is no longer reset when entering super cruise
@@ -190,13 +272,29 @@ class JournalController(PausableThread, threading.Thread):
             )
 
         if etype == "FSSDiscoveryScan":
+            if self.m.system_name in ("No System", "", None):
+                self.m.reset_system(system_name=evt.get("StarSystem"), address=systemaddress)
+                self.m.system_name = evt.get("SystemName")
             if evt.get("Progress")*1 == 1:
-                self.m.total_bodies = evt.get("Count")
+                self.m.total_bodies = evt.get("BodyCount")
                 total_bodies = self.m.total_bodies
+                if self.m.total_bodies and self.m.total_bodies + dh.count_belt_clusters(self.m) != len(self.m.bodies) or dh.has_no_data_bodies(self.m):
+                    self.spansh_helper.get_system_data(system_id=int(systemaddress))
+                    try:
+                        self.spansh_helper.update_system_data(self.m)
+                    except Exception as e:
+                        logger.error("FSSDiscoveryScan update_system_data failed [%s/%s]: %s", systemaddress, evt.get("event"), e)
 
         if etype == "FSSAllBodiesFound":
             self.m.total_bodies = evt.get("Count")
             total_bodies = self.m.total_bodies
+            if self.m.total_bodies and self.m.total_bodies + dh.count_belt_clusters(self.m) != len(self.m.bodies) or dh.has_no_data_bodies(self.m):
+                self.spansh_helper.get_system_data(system_id=int(systemaddress))
+                try:
+                    self.spansh_helper.update_system_data(self.m)
+                except Exception as e:
+                    logger.error("FSSAllBodiesFound update_system_data failed [%s/%s]: %s", systemaddress, evt.get("event"), e)
+
         # initialize all parameters for update_body
         body_id                 = None
         body_name               = None
@@ -246,6 +344,7 @@ class JournalController(PausableThread, threading.Thread):
                 body_name = evt.get("BodyName")
             if body_name is None and etype == "FSDJump" and "Body" in evt:
                 body_name = evt.get("Body")
+                is_star = True
             if body_name is None and body_id in self.m.bodies:
                 body_name = self.m.bodies[body_id].body_name
             if etype == "ScanBaryCentre":
@@ -262,8 +361,9 @@ class JournalController(PausableThread, threading.Thread):
 
         if body_id in self.m.bodies:
             first_discovered = self.m.bodies[body_id].first_discovered or first_discovered
-            first_mapped = self.m.bodies[body_id].first_mapped or first_mapped
-            first_footfalled = self.m.bodies[body_id].first_footfalled or first_footfalled
+            if evt.get("BodyType") and evt.get("BodyType") != "Star":
+                first_mapped = self.m.bodies[body_id].first_mapped or first_mapped
+                first_footfalled = self.m.bodies[body_id].first_footfalled or first_footfalled
 
         # FSS - body scan in system
         if etype == "Scan":
@@ -381,7 +481,9 @@ class JournalController(PausableThread, threading.Thread):
                     scoopable = body_type[0] in ["K", "G", "B", "F", "O", "A", "M"]
                 materials = {m["Name"]: m["Percent"] for m in evt.get("Materials", [])}
                 parents = evt.get("Parents", [])
-                parents = self.get_parent_star_ids(body_name, parents)
+                #parents = self.get_parent_star_ids(body_name, parents)
+                if body_id in self.m.bodies.keys():
+                        parents = self.get_parent_star_ids(self.m.bodies[body_id], parents)
 
                 # first analyse data during FSS
                 if evt.get("ScanType") in {"AutoScan", "Detailed"}:
@@ -393,22 +495,26 @@ class JournalController(PausableThread, threading.Thread):
                             first_discovered = 1
 
                     # Is that thing mapped?
-                    if not evt.get("WasMapped"):
-                        # It could be I've been there, but haven't sold the mapping data yet.
-                        if first_mapped != 2:
-                            first_mapped = 0
+                    if is_star:
+                        first_mapped = 0
+                        first_footfalled = 0
                     else:
-                        if first_mapped != 2:
-                            first_mapped = 1
+                        if not evt.get("WasMapped"):
+                            # It could be I've been there, but haven't sold the mapping data yet.
+                            if first_mapped != 2:
+                                first_mapped = 0
+                        else:
+                            if first_mapped != 2:
+                                first_mapped = 1
 
-                    # Has anyone set foot on that rock?
-                    if not evt.get("WasFootfalled"):
-                        # It could be I've been there, but haven't sold the mapping data yet.
-                        if first_footfalled != 2:
-                            first_footfalled = 0
-                    else:
-                        if first_footfalled != 2:
-                            first_footfalled = 1
+                        # Has anyone set foot on that rock?
+                        if not evt.get("WasFootfalled"):
+                            # It could be I've been there, but haven't sold the mapping data yet.
+                            if first_footfalled != 2:
+                                first_footfalled = 0
+                        else:
+                            if first_footfalled != 2:
+                                first_footfalled = 1
 
                     if evt.get("AtmosphereType") or evt.get("AtmosphereComposition") or evt.get("Atmosphere"):
                         atmos_composition = {a["Name"]: a["Percent"] for a in evt.get("AtmosphereComposition", [])}
@@ -490,7 +596,7 @@ class JournalController(PausableThread, threading.Thread):
         if etype == "FSSBodySignals":
             if body_name.endswith("Ring"):
                 # todo: #168 process rings properly
-                print(f"Ring processing on FSSBodySignals - relevant? -> {body_id}: {body_name}")
+                logger.debug("Ring processing on FSSBodySignals - relevant? -> %s: %s", body_id, body_name)
                 pass  # skip for now
             else:
                 for signal in evt.get("Signals", []):
@@ -506,18 +612,27 @@ class JournalController(PausableThread, threading.Thread):
                 ring_id = body_id
                 ring_name = body_name
                 parent_body_name = " ".join(body_name.split()[:-2])
+                original_body_id = body_id
                 for body_item in self.m.bodies:
                     if self.m.bodies[body_item].body_name == parent_body_name:
                         body_id = self.m.bodies[body_item].body_id
                         break
 
+                if body_id == original_body_id:
+                    if self._journal_file and self._journal_line:
+                        logger.warning("Ring %s signals found, but parent body %s is not in the model (body_id %s not found). Skipping ring processing. Journal: %s, Line: %s", ring_name, parent_body_name, body_id, self._journal_file, self._journal_line)
+                    else:
+                        logger.warning("Ring %s signals found, but parent body %s is not in the model (body_id %s not found). Skipping ring processing.", ring_name, parent_body_name, body_id)
+
                 body_name = None
                 scandata = None
-                rings_found = self.m.bodies[body_id].rings
-                journal_signals = evt.get("Signals")
-                ring_id_is_name = False
-                rings_found_dict = {}
-                if body_id in self.m.bodies:
+                if body_id not in self.m.bodies:
+                    pass  # parent body missing, already logged above, skip ring processing
+                else:
+                    rings_found = self.m.bodies[body_id].rings
+                    journal_signals = evt.get("Signals")
+                    ring_id_is_name = False
+                    rings_found_dict = {}
                     # do we have a proper ring ID?
                     if ring_id in self.m.bodies[body_id].rings:
                         rings_found_dict = self.m.bodies[body_id].rings[ring_id]
@@ -527,25 +642,25 @@ class JournalController(PausableThread, threading.Thread):
                         rings_found_dict = self.m.bodies[body_id].rings[ring_name]
                         ring_id_is_name = True
 
-                if rings_found_dict == {}:
-                    ring = Ring(body_id=ring_id, body_name=ring_name, signals=journal_signals)
-                else:
-                    if ring_id_is_name:
-                        final_ring_id = ring_id
+                    if rings_found_dict == {}:
+                        ring = Ring(body_id=ring_id, body_name=ring_name, signals=journal_signals)
                     else:
-                        final_ring_id = rings_found_dict.body_id
-                    ring = Ring(
-                        body_id=final_ring_id,
-                        body_name=rings_found_dict.body_name or ring_name,
-                        ring_class=rings_found_dict.ring_class or "",
-                        signals=rings_found_dict.signals or journal_signals
-                    )
+                        if ring_id_is_name:
+                            final_ring_id = ring_id
+                        else:
+                            final_ring_id = rings_found_dict.body_id
+                        ring = Ring(
+                            body_id=final_ring_id,
+                            body_name=rings_found_dict.body_name or ring_name,
+                            ring_class=rings_found_dict.ring_class or "",
+                            signals=rings_found_dict.signals or journal_signals
+                        )
 
-                # clean up the mess from previous scans without proper body ID for the ring
-                if ring_id_is_name:
-                    rings_found.pop(ring_name, None)
+                    # clean up the mess from previous scans without proper body ID for the ring
+                    if ring_id_is_name:
+                        rings_found.pop(ring_name, None)
 
-                rings_found[ring_id] = ring
+                    rings_found[ring_id] = ring
 
             else:
                 for signal in evt.get("Signals", []):
@@ -731,11 +846,11 @@ class JournalController(PausableThread, threading.Thread):
         self.m.total_bodies = total_bodies or self.m.total_bodies
         # workaround for empty body type
         if body_type is None and body_id in self.m.bodies:
-            body_type = self.m.bodies[body_id].body_type or "🚫 no data 🚫"
+            body_type = self.m.bodies[body_id].body_type or BODY_NO_DATA
         if body_type is None:
-            body_type = "🚫 no data 🚫"
+            body_type = BODY_NO_DATA
 
-        if body_id is not None and (body_name is None or not body_name.endswith("Ring")):
+        if body_id is not None and (body_name is None or not body_name.endswith("Ring")) and evt.get("StationType") is None:
             self.m.update_body(
                 systemaddress=systemaddress,
                 body_id=body_id,
@@ -784,4 +899,26 @@ class JournalController(PausableThread, threading.Thread):
         if update_gui and self.m.target_body_id :
             self.m.set_target(self.m.target_body_id )
 
+    def _set_current_position_for_spansh(self, evt):
+        str_route_file = dh.read_spansh_active_plotted_route(SPANSH_ACTIVE_ROUTE)
+        if str_route_file is None:
+            return
 
+        route_file = Path(str_route_file)
+
+        x: int = evt.get("StarPos")[0]
+        y: int = evt.get("StarPos")[1]
+        z: int = evt.get("StarPos")[2]
+        pos: StarPosition = StarPosition(x, y, z)
+        star_system: str = evt.get("StarSystem")
+        system_address: int = int(evt.get("SystemAddress"))
+        star_class: str = self.spansh_helper.get_star_class(system_address)
+        nav_point: NavPoint = NavPoint(star_system=star_system, system_address=system_address, star_class=star_class, star_position=pos)
+
+        path = Path(route_file)
+        if not path.exists():
+            return
+
+        spansh_route: DotDict = load_json_as_dotdict(route_file)
+        spansh_route.current_system = DotDict(asdict(nav_point))
+        save_dotdict_to_json(spansh_route, route_file)
