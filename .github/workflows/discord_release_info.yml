@@ -16,7 +16,14 @@ jobs:
           ${{ github.event.release.body }}
           EOF
           )
-            
+
+          # Discord embed descriptions are limited to 4096 characters.
+          desc_length=$(jq -nr --arg desc "$desc" '$desc | length')
+          if (( desc_length > 4096 )); then
+            echo "::warning::Release notes are ${desc_length} characters; truncating the embed description to Discord's 4096-character limit."
+            desc=$(jq -nr --arg desc "$desc" '$desc[:4000] + "..."')
+          fi
+
           # Use jq to build valid JSON and escape newlines properly
           jq -n \
           --arg title "EDXD ${{ github.event.release.tag_name }} released" \
