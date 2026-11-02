@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import os
 import sys
-from pathlib import Path
 
 os.environ['GIO_MODULE_SKIP'] = 'gvfs'
 os.environ.pop("GTK_IM_MODULE", None)
