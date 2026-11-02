@@ -108,7 +108,6 @@ def _apply_theme_to_panel(widget: wx.Panel):
     theme = get_theme()
     widget.SetBackgroundColour(theme["background"])
     widget.SetForegroundColour(theme["foreground"])
-    widget.SetFont(theme["font_bold"])
     # Recursively theme all child widgets
     _apply_theme_to_children(widget)
 
