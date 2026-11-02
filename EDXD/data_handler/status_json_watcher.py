@@ -84,7 +84,7 @@ class StatusWatcher(PausableThread, threading.Thread):
         except FileNotFoundError:
             pass
         except Exception as e:
-            logger.warning("Failed to parse Status.json: %s", e)
+            logger.debug("Failed to parse Status.json: %s | File content: %r", e, raw_data)
             pass  # ignore read/JSON errors
         time.sleep(self.poll)
 
