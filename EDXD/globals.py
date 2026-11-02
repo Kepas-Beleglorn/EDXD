@@ -170,7 +170,7 @@ def setup_logging() -> Path:
 
     # Format
     formatter = logging.Formatter(
-        "%(asctime)s.%(msecs)03d | %(levelname)-8s | %(name)s | %(message)s",
+        "%(asctime)s.%(msecs)03d | %(levelname)-8s | %(name)-40s | %(lineno)4d | %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
