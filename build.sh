@@ -5,7 +5,7 @@ set -e # Exit on error
 
 # --- CONFIGURATION ---
 PYTHON_VERSION="3.14"
-OUTPUT_DIR="."
+OUTPUT_DIR="./bin"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Parse command line arguments
