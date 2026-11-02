@@ -74,6 +74,26 @@ def get_display_info() -> tuple[str, str]:
         return "unknown", "unknown"
 
 
+def get_os_release() -> dict[str, str]:
+    """Read key-value pairs from /etc/os-release (Linux only). Returns empty dict on other platforms."""
+    if platform.system() != "Linux":
+        return {}
+    release_file = Path("/etc/os-release")
+    if not release_file.is_file():
+        return {}
+    try:
+        data = {}
+        for line in release_file.read_text(encoding="utf-8").splitlines():
+            if "=" in line:
+                key, _, value = line.partition("=")
+                key = key.strip()
+                value = value.strip().strip('"').strip("'")
+                data[key] = value
+        return data
+    except OSError:
+        return {}
+
+
 def clean_old_logs(log_dir: Path, retention_days: int = LOG_RETENTION_DAYS) -> int:
     """Delete log files older than retention_days. Returns number of files removed."""
     if not log_dir.exists():
@@ -175,11 +195,20 @@ def setup_logging() -> Path:
 
     # Write log header directly to file, regardless of log level
     display_server, desktop_env = get_display_info()
+    os_release = get_os_release()
+    pretty_name = os_release.get("PRETTY_NAME", "")
+    os_version = os_release.get("VERSION", "")
     header_lines = [
         "=" * 40,
         f"EDXD {__version__} starting",
         f"Python {platform.python_version()} ({platform.python_compiler()})",
         f"OS: {platform.platform()}",
+    ]
+    if pretty_name:
+        header_lines.append(f"Distro: {pretty_name}")
+    if os_version:
+        header_lines.append(f"Version: {os_version}")
+    header_lines.extend([
         f"Display: {display_server} / Desktop: {desktop_env}",
         f"Portable mode: {getattr(sys, 'portable', False)}",
         f"Log directory: {mask_home(LOG_DIR)}",
@@ -187,7 +216,7 @@ def setup_logging() -> Path:
         f"Log level: {log_level_str}",
         f"Root logger level: {root_logger.level} ({logging.getLevelName(root_logger.level)})",
         f"Handler count: {len(root_logger.handlers)}, levels: {[logging.getLevelName(h.level) for h in root_logger.handlers]}",
-    ]
+    ])
     if old_count > 0:
         header_lines.append(f"Old logs cleaned: {old_count} files removed")
     header_lines.append("=" * 40)
