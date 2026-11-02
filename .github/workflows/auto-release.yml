@@ -127,6 +127,13 @@ jobs:
           pip install -e .
 
       - name: Build with PyInstaller
+        if: runner.os == 'Linux'
+        run: |
+          pyinstaller --onefile EDXD/main.py --name ed-eXploration-dashboard
+        shell: bash
+
+      - name: Build with PyInstaller (non-Linux)
+        if: runner.os != 'Linux'
         run: |
           pyinstaller --onefile EDXD/main.py --name ed-eXploration-dashboard
         shell: bash
