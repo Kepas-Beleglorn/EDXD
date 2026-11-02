@@ -24,4 +24,3 @@ ed-eXploration-dashboard = "EDXD.main:main"
 [tool.setuptools.packages.find]
 include = ["EDXD*"]
 exclude = ["EDXD/resources*"]
-
