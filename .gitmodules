@@ -1,0 +1,3 @@
+[submodule ".junie"]
+	path = .junie
+ url = git@github.com:Kepas-Beleglorn/EDXD-junie.git
