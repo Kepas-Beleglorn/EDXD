@@ -29,7 +29,8 @@ from EDXD.data_handler.journal_reader import JournalReader
 from EDXD.data_handler.model import Model
 from EDXD.data_handler.status_json_watcher import StatusWatcher
 from EDXD.globals import CFG_FILE, RAW_MATS, DEFAULT_WORTHWHILE_THRESHOLD, DEFAULT_FUEL_LOW_THRESHOLD, args, \
-    DEFAULT_AMOUNT_OF_PLOTTED_UPCOMING_SYSTEMS_TO_SHOW, DEFAULT_AMOUNT_OF_PLOTTED_PASSED_SYSTEMS_TO_SHOW
+    DEFAULT_AMOUNT_OF_PLOTTED_UPCOMING_SYSTEMS_TO_SHOW, DEFAULT_AMOUNT_OF_PLOTTED_PASSED_SYSTEMS_TO_SHOW, \
+    STAR_CLASS_CACHE_FILE
 from EDXD.gui.main_window import MainFrame
 
 import wx
@@ -230,6 +231,12 @@ def main():
     app.MainLoop()
 
     logger.info("Application shutting down")
+    
+    # Delete the star class cache on quit so it doesn't grow endlessly across sessions
+    if STAR_CLASS_CACHE_FILE.exists():
+        STAR_CLASS_CACHE_FILE.unlink()
+        logger.info("Star class cache cleared")
+
     if _instance is not None:
         _instance.release()
 
