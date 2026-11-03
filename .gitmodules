@@ -5,4 +5,4 @@
 [submodule "debug"]
 	path = debug
 	url = https://github.com/Kepas-Beleglorn/EDXD-debug.git
-	branch = debug
+	branch = debug-main
