@@ -24,7 +24,7 @@ from EDXD.data_handler.helper.dotted_dictionary import (
 logger = logging.getLogger(__name__)
 from EDXD.data_handler.model import Model, Atmosphere, Ring
 import EDXD.data_handler.helper.data_helper as dh
-from EDXD.globals import BODY_NO_DATA, SLEF_PATH
+from EDXD.globals import BODY_NO_DATA, SLEF_PATH, STAR_CLASS_CACHE_FILE
 from EDXD.data_handler.helper.spansh.ship_modules import ShipFSDModules
 from EDXD.data_handler.helper.edsm.edsm import EdsmHelper
 
@@ -60,13 +60,17 @@ class SpanshHelper:
             self._edsm_helper = EdsmHelper()
         return self._edsm_helper
 
-    def get_system_data(self, system_id: int):
+    def get_system_data(self, system_id: int, lookup_star_class: bool = False):
         # Check if we need to fetch new data
-        if self.system_data is None or (hasattr(self.system_data, "id64") and int(self.system_data.id64) != system_id):
+        if lookup_star_class or self.system_data is None or (hasattr(self.system_data, "id64") and int(self.system_data.id64) != system_id):
             # 1. Make the request
             self.url = SPANSH_GET_DUMP + str(system_id)
             response = requests.get(self.url)
-            response.raise_for_status()  # Raise error if request failed
+            try:
+                response.raise_for_status()  # Raise error if request failed
+            except Exception as e:
+                logger.error("get_system_data[%s]: %s - %s", system_id, lookup_star_class, e)
+                return
 
             # 2. Parse JSON into a standard Python dict
             data_dict = response.json()
@@ -75,7 +79,7 @@ class SpanshHelper:
             self.system_data = DotDict(data_dict.get("system"))
 
     def get_star_class_from_spansh(self, system_id: int) -> str:
-        self.get_system_data(system_id)
+        self.get_system_data(system_id ,True)
         system_data = self.system_data
         body_type  = ""
         for body in system_data.bodies:
@@ -102,7 +106,7 @@ class SpanshHelper:
 
     def get_star_class(self, system_id: int) -> str:
         """
-        Get the star class for a system, querying EDSM first, then falling back to Spansh.
+        Get the star class for a system, checking the local cache first, then querying EDSM, then falling back to Spansh.
         
         Args:
             system_id: The id64 (SystemAddress) of the star system.
@@ -110,6 +114,15 @@ class SpanshHelper:
         Returns:
             The spectral class string (e.g., "G", "K", "N") or empty string if not found.
         """
+        # First, check the local cache (populated from StartJump events)
+        if STAR_CLASS_CACHE_FILE.exists():
+            cache_data = load_json_as_dotdict(str(STAR_CLASS_CACHE_FILE))
+            if cache_data:
+                cached_class = cache_data.get(str(system_id))
+                if cached_class:
+                    logger.debug(f"Cached star class: [{cached_class}]")
+                    return str(cached_class)
+
         # Try EDSM first
         star_class = self.edsm_helper.get_star_class_from_edsm(system_id)
         if not star_class:

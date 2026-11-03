@@ -22,7 +22,7 @@ from EDXD.data_handler.vessel_status import ShipStatus, FuelLevel
 from EDXD.data_handler.helper.spansh.ship_modules import ShipFSDModules
 from EDXD.globals import logging, BODY_ID_PREFIX, JOURNAL_TIMESTAMP_FILE, SHIP_STATUS_FILE, VESSEL_SHIP, \
     VESSEL_SRV, VESSEL_EV, VESSEL_SLF, BODY_NO_DATA, SPANSH_ROUTE, SLEF_PATH, SPANSH_ACTIVE_ROUTE, \
-    CURRENT_SYSTEM_FILE
+    CURRENT_SYSTEM_FILE, STAR_CLASS_CACHE_FILE
 
 bip = BODY_ID_PREFIX
 
@@ -195,12 +195,24 @@ class JournalController(PausableThread, threading.Thread):
             self.landing_in_progress = True
             self.m.station_landing_pad = evt.get("LandingPad")
 
-        # reset FSD boosts
+        # reset FSD boosts and cache star class from StartJump
         if etype == "StartJump":
             if evt.get("JumpType") is not None and evt.get("JumpType") == "Hyperspace":
                 self.m.ship_status.fsd_injection_factor = None
                 self.m.ship_status.jet_cone_boost_factor = None
                 dh.update_ship_status(SHIP_STATUS_FILE, self.m.ship_status)
+
+                # Cache the star class from StartJump so it's available for routes when Spansh/EDSM has no data
+                star_class = evt.get("StarClass")
+                system_address = evt.get("SystemAddress")
+                if star_class and system_address:
+                    cache = {}
+                    if STAR_CLASS_CACHE_FILE.exists():
+                        cache_data = load_json_as_dotdict(str(STAR_CLASS_CACHE_FILE))
+                        if cache_data:
+                            cache = {str(k): v for k, v in cache_data.items()}
+                    cache[str(system_address)] = star_class
+                    save_dotdict_to_json(DotDict(cache), str(STAR_CLASS_CACHE_FILE))
 
         if etype == "NavRoute":
             if update_gui:

@@ -1067,7 +1067,7 @@ class ExplorationItinerary(DynamicDialog):
 
                 if system:
                     system_type = system.star_class
-                    if system_type == "":
+                    if system_type in ("", "None"):
                         system_type = " ? "
                     if system_type and system_type != "":
                         if system_type[0] in ("K", "G", "B", "F", "O", "A", "M"):
@@ -1112,6 +1112,12 @@ class ExplorationItinerary(DynamicDialog):
                     if abs(i) == self.nav_route.remaining_jumps_in_route + remaining_jumps_offset:
                         lbl_4_star_class.SetFont(wx.Font(self.theme["font_bold"]))
                         lbl_5_system.SetFont(wx.Font(self.theme["font_bold"]))
+
+                        if system.star_class in  ("", "None"):
+                            logger.debug(f"current: systemID: {system_address} - system_name: {system_name} - system_type: {system_type}")
+                            system.star_class = self.sh.get_star_class(system_address)
+                            system_type = system.star_class
+                            logger.debug(f"current: systemID: {system_address} - system_name: {system_name} - system_type: {system_type}")
 
                         lbl_1_system_indicator.SetBackgroundColour(current_bg_colour)
                         lbl_2_space.SetBackgroundColour(current_bg_colour)
@@ -1166,7 +1172,6 @@ class ExplorationItinerary(DynamicDialog):
                 if self.copied_system_name != system_name:
                     self.copied_system_name = system_name
                     copy_text_to_clipboard(system_name)
-                    do_copy_to_clipboard = False
                 break
 
             # check if we reached a waypoint
@@ -1197,9 +1202,7 @@ class ExplorationItinerary(DynamicDialog):
                     if self.copied_system_name != system_name:
                         self.copied_system_name = system_name
                         copy_text_to_clipboard(system_name)
-                        return True
-                    else:
-                        return False
+                    break
 
                 # check if we reached a waypoint
                 if int(system.id64) == int(last_waypoint.system_address):
@@ -1217,7 +1220,6 @@ class ExplorationItinerary(DynamicDialog):
             if system_name and self.copied_system_name != system_name:
                 self.copied_system_name = system_name
                 copy_text_to_clipboard(system_name)
-                return True
 
         return do_copy_to_clipboard
 
@@ -1402,9 +1404,11 @@ class RoutePrepWorker(Thread):
         total = len(route_data)
         for i, jump in enumerate(route_data, start=1):
             if jump.get("StarClass"):
+                progress_cb(i, total)
                 continue
             system_id = jump.get("id64")
             if system_id is None:
+                progress_cb(i, total)
                 continue
             star_class = sh.get_star_class(system_id=system_id)
             if star_class:
