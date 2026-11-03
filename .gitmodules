@@ -1,6 +1,8 @@
 [submodule ".junie"]
 	path = .junie
 	url = https://github.com/Kepas-Beleglorn/EDXD-junie.git
+	branch = junie-main
 [submodule "debug"]
 	path = debug
 	url = https://github.com/Kepas-Beleglorn/EDXD-debug.git
+	branch = debug
