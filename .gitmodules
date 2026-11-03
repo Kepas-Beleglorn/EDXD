@@ -1,3 +1,6 @@
 [submodule ".junie"]
 	path = .junie
  url = git@github.com:Kepas-Beleglorn/EDXD-junie.git
+[submodule "debug"]
+	path = debug
+	url = git@github.com:Kepas-Beleglorn/EDXD-debug.git

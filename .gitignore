@@ -22,11 +22,8 @@ result
 
 
 /EDXD/_version.py
-/EDXD/debug/statistics/*
 /EDXD/edxd_timestamp.json
-/debug/statistics/
 /EDXD/resources/ICON_PNG_B64.txt
-/debug/
 /temp_releasenotes.md
 /screenshots.md
 /EDXD/edxd_ship_status.json
