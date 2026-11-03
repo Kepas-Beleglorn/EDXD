@@ -679,6 +679,7 @@ class ExplorationItinerary(DynamicDialog):
     # ==============================================================================
 
     def _on_calculate_route(self, event):
+        self.copied_system_name = ""
         spansh = SpanshRoutePlotter()
         self.lbl_job_status.SetLabel("")
         self.lbl_loading_status.SetLabel("")
@@ -1203,6 +1204,20 @@ class ExplorationItinerary(DynamicDialog):
                 # check if we reached a waypoint
                 if int(system.id64) == int(last_waypoint.system_address):
                     do_copy_to_clipboard = True
+
+        # If we still haven't copied anything, we haven't reached the first waypoint yet —
+        # copy the first system in the route so the pilot knows where to go
+        if not do_copy_to_clipboard and hasattr(spansh_route_data, "jumps") and spansh_route_data.jumps:
+            first_system = spansh_route_data.jumps[0]
+            system_name = ""
+            if hasattr(first_system, "name"):
+                system_name = first_system.name
+            elif hasattr(first_system, "system"):
+                system_name = first_system.system
+            if system_name and self.copied_system_name != system_name:
+                self.copied_system_name = system_name
+                copy_text_to_clipboard(system_name)
+                return True
 
         return do_copy_to_clipboard
 
