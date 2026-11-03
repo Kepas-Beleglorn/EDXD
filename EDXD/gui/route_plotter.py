@@ -16,7 +16,8 @@ from EDXD.data_handler.helper.spansh.ship_modules import ShipFSDModules
 from EDXD.data_handler.helper.spansh.spansh import SpanshRoutePlotter
 from EDXD.data_handler.nav_route import NavRouteHandler, NavPoint
 from EDXD.globals import DEFAULT_POS_Y, DEFAULT_POS_X, RESIZE_MARGIN, ICONS, DEFAULT_HEIGHT_SPANSH, DEFAULT_WIDTH_SPANSH, BASE64_CIRCLE_ORANGE, \
-    BASE64_CIRCLE_BLUE, BASE64_LINE_ORANGE, BASE64_LINE_BLUE, SHIP_STATUS_FILE, SPANSH_ROUTE, SLEF_PATH, SPANSH_ACTIVE_ROUTE
+    BASE64_CIRCLE_BLUE, BASE64_LINE_ORANGE, BASE64_LINE_BLUE, SHIP_STATUS_FILE, SPANSH_ROUTE, SLEF_PATH, SPANSH_ACTIVE_ROUTE, \
+    CURRENT_SYSTEM_FILE
 from EDXD.gui.helper.dynamic_dialog import DynamicDialog
 from EDXD.gui.helper.gui_dynamic_button import DynamicButton
 from EDXD.gui.helper.gui_dynamic_toggle_button import DynamicToggleButton
@@ -1358,6 +1359,11 @@ class RoutePrepWorker(Thread):
                 self.itinerary.timestamp = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
                 if hasattr(self.itinerary, "jumps") and self.itinerary.jumps:
                     self._enrich_route_with_star_classes(self.itinerary.jumps, self.sh, _progress)
+                # Read current system from the separate JSON file written on FSDJump and add it to the route
+                if CURRENT_SYSTEM_FILE.exists():
+                    current_system_data = load_json_as_dotdict(str(CURRENT_SYSTEM_FILE))
+                    if current_system_data:
+                        self.itinerary.current_system = current_system_data
                 save_dotdict_to_json(self.itinerary, str(self.route_file))
 
             # Build NavRouteHandler (also calls _progress via wx.CallAfter)
