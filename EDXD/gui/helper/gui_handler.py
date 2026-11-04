@@ -19,7 +19,7 @@ def init_widget(widget, width: int = DEFAULT_WIDTH, height: int = DEFAULT_HEIGHT
         init_static_text(widget=widget, title=title)
     elif widget.Name in ["text"]:
         init_text(widget=widget, title=title)
-    elif widget.Name in ("genbutton", "pushbutton", "togglebutton"):
+    elif widget.Name == "genbutton":
         if is_ctrl_box:
             init_gen_button_ctrl_box(widget=widget, title=title)
         else:
