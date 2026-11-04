@@ -71,20 +71,20 @@ def apply_theme(widget):
     elif widget.Name == "themed_slider":
         _apply_theme_to_slider(widget)
     # Fallback: type-based matching for widgets created without an explicit name
-    #elif isinstance(widget, wx.StaticText):
-    #    _apply_theme_to_static_text(widget)
-    #elif isinstance(widget, wx.TextCtrl):
-    #    _apply_theme_to_text(widget)
-    #elif isinstance(widget, wx.ComboBox):
-    #    _apply_theme_to_combobox(widget)
-    #elif isinstance(widget, wx.DirPickerCtrl):
-    #    _apply_theme_to_dirpickerctrl(widget)
-    #elif isinstance(widget, wx.SpinCtrl):
-    #    _apply_theme_to_spin(widget)
-    #elif isinstance(widget, wx.grid.Grid):
-    #    _apply_theme_to_grid(widget)
-    #elif isinstance(widget, (buttons.GenButton, buttons.GenBitmapButton)):
-    #    _apply_theme_to_button(widget)
+    elif isinstance(widget, wx.StaticText):
+        _apply_theme_to_static_text(widget)
+    elif isinstance(widget, wx.TextCtrl):
+        _apply_theme_to_text(widget)
+    elif isinstance(widget, wx.ComboBox):
+        _apply_theme_to_combobox(widget)
+    elif isinstance(widget, wx.DirPickerCtrl):
+        _apply_theme_to_dirpickerctrl(widget)
+    elif isinstance(widget, wx.SpinCtrl):
+        _apply_theme_to_spin(widget)
+    elif isinstance(widget, wx.grid.Grid):
+        _apply_theme_to_grid(widget)
+    elif isinstance(widget, (buttons.GenButton, buttons.GenBitmapButton)):
+        _apply_theme_to_button(widget)
     else:
         return
 
