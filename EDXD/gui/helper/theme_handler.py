@@ -190,4 +190,3 @@ def _apply_theme_to_slider(widget: ThemedSlider):
     widget.SetAccentColour(theme["foreground"])
     widget.SetGrooveColour(theme["background_hover"])
     widget.SetHandleBgColour(theme["background_hover"])
-    apply_theme(widget.Parent)
