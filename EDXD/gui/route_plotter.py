@@ -540,7 +540,7 @@ class ExplorationItinerary(DynamicDialog):
         self.parameter_panel.add_table_item_label("")
 
         self.spin_efficiency = wx.SpinCtrl(parent=self.parameter_panel.content, min=0, max=100, initial=60, size=wx.Size(BTN_SIZE.width, -1))
-        self.sld_efficiency = ThemedSlider(parent=self.parameter_panel.content, value=0, min_val=0, max_val=100, size=SLIDER_SIZE)
+        self.sld_efficiency = ThemedSlider(parent=self.parameter_panel.content, value=60, min_val=0, max_val=100, size=SLIDER_SIZE)
 
         self.parameter_panel.add_table_item_generic(self.spin_efficiency)
         self.parameter_panel.add_table_item_generic(self.sld_efficiency)

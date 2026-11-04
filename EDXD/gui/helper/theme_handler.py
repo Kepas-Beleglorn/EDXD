@@ -71,20 +71,20 @@ def apply_theme(widget):
     elif widget.Name == "themed_slider":
         _apply_theme_to_slider(widget)
     # Fallback: type-based matching for widgets created without an explicit name
-    elif isinstance(widget, wx.StaticText):
-        _apply_theme_to_static_text(widget)
-    elif isinstance(widget, wx.TextCtrl):
-        _apply_theme_to_text(widget)
-    elif isinstance(widget, wx.ComboBox):
-        _apply_theme_to_combobox(widget)
-    elif isinstance(widget, wx.DirPickerCtrl):
-        _apply_theme_to_dirpickerctrl(widget)
-    elif isinstance(widget, wx.SpinCtrl):
-        _apply_theme_to_spin(widget)
-    elif isinstance(widget, wx.grid.Grid):
-        _apply_theme_to_grid(widget)
-    elif isinstance(widget, (buttons.GenButton, buttons.GenBitmapButton)):
-        _apply_theme_to_button(widget)
+    #elif isinstance(widget, wx.StaticText):
+    #    _apply_theme_to_static_text(widget)
+    #elif isinstance(widget, wx.TextCtrl):
+    #    _apply_theme_to_text(widget)
+    #elif isinstance(widget, wx.ComboBox):
+    #    _apply_theme_to_combobox(widget)
+    #elif isinstance(widget, wx.DirPickerCtrl):
+    #    _apply_theme_to_dirpickerctrl(widget)
+    #elif isinstance(widget, wx.SpinCtrl):
+    #    _apply_theme_to_spin(widget)
+    #elif isinstance(widget, wx.grid.Grid):
+    #    _apply_theme_to_grid(widget)
+    #elif isinstance(widget, (buttons.GenButton, buttons.GenBitmapButton)):
+    #    _apply_theme_to_button(widget)
     else:
         return
 
@@ -104,13 +104,13 @@ def _apply_theme_to_dialog(widget: wx.Dialog):
     # Recursively theme all child widgets
     _apply_theme_to_children(widget)
 
-def _apply_theme_to_panel(widget: wx.Panel):
+def _apply_theme_to_panel(widget: wx.Panel, theme_children: bool = True):
     theme = get_theme()
     widget.SetBackgroundColour(theme["background"])
     widget.SetForegroundColour(theme["foreground"])
-    # Recursively theme all child widgets
-    _apply_theme_to_children(widget)
-
+    if theme_children:
+        # Recursively theme all child widgets
+        _apply_theme_to_children(widget)
 
 def _apply_theme_to_children(parent):
     """Recursively apply theme to all child widgets of a parent."""
@@ -188,5 +188,5 @@ def _apply_theme_to_slider(widget: ThemedSlider):
     widget.SetFont(theme["font"])
 
     widget.SetAccentColour(theme["foreground"])
-    widget.SetGrooveColour(theme["background_hover"])
+    widget.SetGrooveColour(theme["background"])
     widget.SetHandleBgColour(theme["background_hover"])

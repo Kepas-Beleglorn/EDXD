@@ -123,7 +123,7 @@ class ThemedSlider(wx.Control):
 
     def _on_paint(self, event):
         dc = wx.AutoBufferedPaintDC(self)
-        dc.SetBackground(wx.Brush(self.GetParent().GetBackgroundColour()))
+        dc.SetBackground(wx.Brush(self.GetBackgroundColour()))
         dc.Clear()
 
         w, h = self.GetClientSize()
